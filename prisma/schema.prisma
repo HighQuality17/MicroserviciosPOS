@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CASHIER
+  ADMIN
+  AUDITOR
+}
+
+enum Dimension {
+  WEIGHT
+  VOLUME
+  COUNT
+}
+
+enum IngredientMovementType {
+  IN
+  OUT
+  ADJUST
+}
+
+enum SaleItemType {
+  VARIANT
+}
+
+enum DiscountType {
+  NONE
+  PERCENT
+  FIXED
+}
+
+enum SaleStatus {
+  PENDING
+  PAID
+  VOID
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+}
+
+model User {
+  id                  Int                  @id @default(autoincrement())
+  name                String
+  role                UserRole
+  ingredientMovements IngredientMovement[]
+  openedSessions      CashSession[]        @relation("OpenedSessions")
+  sales               Sale[]
+  auditLogs           AuditLog[]
+}
+
+model Location {
+  id           Int               @id @default(autoincrement())
+  name         String            @unique
+  stocks       IngredientStock[]
+  movements    IngredientMovement[]
+  cashSessions CashSession[]
+  sales        Sale[]
+}
+
+model UnitType {
+  id           Int        @id @default(autoincrement())
+  code         String     @unique
+  dimension    Dimension
+  factorToBase Decimal
+  ingredients  Ingredient[]
+}
+
+model Ingredient {
+  id               Int                 @id @default(autoincrement())
+  name             String              @unique
+  dimension        Dimension
+  defaultUnitCode  String
+  defaultUnit      UnitType            @relation(fields: [defaultUnitCode], references: [code])
+  stocks           IngredientStock[]
+  movements        IngredientMovement[]
+  variantRecipe    VariantRecipeItem[]
+}
+
+model IngredientStock {
+  ingredientId   Int
+  locationId     Int
+  qtyOnHandBase  Decimal @default(0)
+  ingredient     Ingredient   @relation(fields: [ingredientId], references: [id])
+  location       Location     @relation(fields: [locationId], references: [id])
+
+  @@id([ingredientId, locationId])
+}
+
+model IngredientMovement {
+  id            Int                    @id @default(autoincrement())
+  ingredientId  Int
+  locationId    Int
+  type          IngredientMovementType
+  qtyBase       Decimal
+  reason        String?
+  refSaleId     Int?
+  createdAt     DateTime               @default(now())
+  userId        Int
+  ingredient    Ingredient             @relation(fields: [ingredientId], references: [id])
+  location      Location               @relation(fields: [locationId], references: [id])
+  user          User                   @relation(fields: [userId], references: [id])
+  sale          Sale?                  @relation(fields: [refSaleId], references: [id])
+}
+
+model Product {
+  id        Int              @id @default(autoincrement())
+  name      String           @unique
+  active    Boolean          @default(true)
+  variants  ProductVariant[]
+}
+
+model ProductVariant {
+  id           Int                 @id @default(autoincrement())
+  productId    Int
+  size         String
+  sku          String              @unique
+  salePrice    Decimal
+  active       Boolean             @default(true)
+  product      Product             @relation(fields: [productId], references: [id])
+  recipeItems  VariantRecipeItem[]
+}
+
+model VariantRecipeItem {
+  variantId        Int
+  ingredientId     Int
+  qtyBaseRequired  Decimal
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+  ingredient       Ingredient     @relation(fields: [ingredientId], references: [id])
+
+  @@id([variantId, ingredientId])
+}
+
+model CashSession {
+  id                  Int       @id @default(autoincrement())
+  locationId          Int
+  openedBy            Int
+  openedAt            DateTime  @default(now())
+  openingCash         Decimal
+  closedAt            DateTime?
+  closingCashExpected Decimal?
+  closingCashCounted  Decimal?
+  location            Location  @relation(fields: [locationId], references: [id])
+  opener              User      @relation("OpenedSessions", fields: [openedBy], references: [id])
+  sales               Sale[]
+}
+
+model Sale {
+  id            Int           @id @default(autoincrement())
+  locationId    Int
+  cashierId     Int
+  cashSessionId Int
+  subtotal      Decimal
+  discountType  DiscountType  @default(NONE)
+  discountValue Decimal @default(0)
+  discountAmount Decimal @default(0)
+  total         Decimal
+  status        SaleStatus    @default(PENDING)
+  createdAt     DateTime      @default(now())
+  location      Location      @relation(fields: [locationId], references: [id])
+  cashier       User          @relation(fields: [cashierId], references: [id])
+  cashSession   CashSession   @relation(fields: [cashSessionId], references: [id])
+  items         SaleItem[]
+  payments      Payment[]
+  movements     IngredientMovement[]
+}
+
+model SaleItem {
+  id         Int          @id @default(autoincrement())
+  saleId     Int
+  itemType   SaleItemType
+  refId      Int
+  qty        Decimal
+  unitPrice  Decimal
+  lineTotal  Decimal
+  sale       Sale         @relation(fields: [saleId], references: [id])
+}
+
+model Payment {
+  id             Int           @id @default(autoincrement())
+  saleId          Int
+  method          PaymentMethod
+  amountReceived  Decimal
+  amountApplied   Decimal
+  changeGiven     Decimal
+  sale            Sale         @relation(fields: [saleId], references: [id])
+}
+
+model AuditLog {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  action       String
+  entity       String
+  entityId     Int?
+  createdAt    DateTime  @default(now())
+  metadataJson String
+  user         User      @relation(fields: [userId], references: [id])
+}

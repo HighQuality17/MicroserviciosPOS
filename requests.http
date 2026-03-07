@@ -1,0 +1,138 @@
+@base = http://localhost:3000/api
+
+### Seed unit types
+POST {{base}}/unit-types/seed
+
+### Create location
+POST {{base}}/locations
+Content-Type: application/json
+
+{
+  "name": "POS1"
+}
+
+### Create ingredient (coffee in grams)
+POST {{base}}/ingredients
+Content-Type: application/json
+
+{
+  "name": "Cafe Molido",
+  "dimension": "WEIGHT",
+  "default_unit_code": "g"
+}
+
+### Adjust stock: +2kg coffee in POS1 (converted to 2000g base)
+POST {{base}}/stock/adjust
+Content-Type: application/json
+
+{
+  "location_id": 1,
+  "ingredient_id": 1,
+  "qty": 2,
+  "unit_code": "kg",
+  "reason": "Ingreso inicial",
+  "user_id": 1
+}
+
+### Stock by location
+GET {{base}}/stock?location_id=1
+
+### Create product
+POST {{base}}/products
+Content-Type: application/json
+
+{
+  "name": "Cafe Americano",
+  "active": true
+}
+
+### Create variant 12oz
+POST {{base}}/variants
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "size": "12oz",
+  "sku": "CAF-AM-12",
+  "sale_price": 7000
+}
+
+### Create variant 16oz
+POST {{base}}/variants
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "size": "16oz",
+  "sku": "CAF-AM-16",
+  "sale_price": 9000
+}
+
+### Set recipe for variant 12oz: 18g coffee
+POST {{base}}/recipes/variant/1
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "ingredient_id": 1,
+      "qty": 18,
+      "unit_code": "g"
+    }
+  ]
+}
+
+### Open cash session
+POST {{base}}/cash/open
+Content-Type: application/json
+
+{
+  "location_id": 1,
+  "opened_by": 1,
+  "opening_cash": 50000
+}
+
+### Current cash session
+GET {{base}}/cash/current?location_id=1
+
+### Create sale with 10% discount
+POST {{base}}/sales
+Content-Type: application/json
+
+{
+  "location_id": 1,
+  "cashier_id": 1,
+  "cash_session_id": 1,
+  "discount_type": "PERCENT",
+  "discount_value": 10,
+  "items": [
+    {
+      "item_type": "VARIANT",
+      "ref_id": 1,
+      "qty": 2
+    }
+  ]
+}
+
+### Pay sale in cash
+POST {{base}}/sales/1/pay
+Content-Type: application/json
+
+{
+  "method": "CASH",
+  "amount_received": 20000,
+  "user_id": 1
+}
+
+### Receipt
+GET {{base}}/sales/1/receipt
+
+### Close cash session
+POST {{base}}/cash/close
+Content-Type: application/json
+
+{
+  "cash_session_id": 1,
+  "closed_by": 1,
+  "closing_cash_counted": 62600
+}
