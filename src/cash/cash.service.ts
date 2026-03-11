@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, SaleStatus } from '@prisma/client';
 import { round } from '../common/utils/number.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CloseCashSessionDto } from './dto/close-cash-session.dto';
@@ -52,28 +52,73 @@ export class CashService {
     if (!user) throw new NotFoundException('User not found');
     if (session.closedAt) throw new BadRequestException('Cash session already closed');
 
-    const cashPayments = await this.prisma.payment.aggregate({
-      _sum: { amountApplied: true },
-      where: {
-        method: PaymentMethod.CASH,
-        sale: {
-          cashSessionId: session.id,
-          status: 'PAID',
+    const [cashPayments, transferPayments] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: {
+          method: PaymentMethod.CASH,
+          sale: {
+            cashSessionId: session.id,
+            status: SaleStatus.PAID,
+          },
         },
-      },
-    });
+      }),
+      this.prisma.payment.findMany({
+        where: {
+          method: PaymentMethod.TRANSFER,
+          sale: {
+            cashSessionId: session.id,
+            status: SaleStatus.PAID,
+          },
+        },
+      }),
+    ]);
 
-    const paidCash = Number(cashPayments._sum.amountApplied ?? 0);
-    const expected = round(Number(session.openingCash) + paidCash, 2);
+    const cashSalesTotal = round(
+      cashPayments.reduce(
+        (sum, payment) => sum + Number(payment.amountApplied),
+        0,
+      ),
+      2,
+    );
+    const transferSalesTotal = round(
+      transferPayments.reduce(
+        (sum, payment) => sum + Number(payment.amountApplied),
+        0,
+      ),
+      2,
+    );
+    const totalChangeGiven = round(
+      cashPayments.reduce(
+        (sum, payment) => sum + Number(payment.changeGiven),
+        0,
+      ),
+      2,
+    );
+    const openingCash = Number(session.openingCash);
+    const closingCashExpected = round(openingCash + cashSalesTotal, 2);
+    const closingCashCounted = round(dto.closing_cash_counted, 2);
+    const difference = round(closingCashCounted - closingCashExpected, 2);
 
-    return this.prisma.cashSession.update({
+    const updatedSession = await this.prisma.cashSession.update({
       where: { id: session.id },
       data: {
         closedAt: new Date(),
-        closingCashExpected: expected,
-        closingCashCounted: dto.closing_cash_counted,
+        closingCashExpected,
+        closingCashCounted,
       },
     });
+
+    return {
+      cash_session_id: updatedSession.id,
+      opening_cash: openingCash,
+      cash_sales_total: cashSalesTotal,
+      transfer_sales_total: transferSalesTotal,
+      total_change_given: totalChangeGiven,
+      closing_cash_expected: closingCashExpected,
+      closing_cash_counted: closingCashCounted,
+      difference,
+      closed_at: updatedSession.closedAt,
+    };
   }
 
   async getCurrent(query: GetCurrentCashQueryDto) {

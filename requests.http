@@ -68,6 +68,33 @@ Content-Type: application/json
   "sale_price": 9000
 }
 
+### Create combo
+POST {{base}}/combos
+Content-Type: application/json
+
+{
+  "name": "Combo Americano Doble",
+  "sale_price": 15000,
+  "active": true
+}
+
+### Set combo items
+POST {{base}}/combos/1/items
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "variant_id": 1,
+      "qty": 1
+    },
+    {
+      "variant_id": 2,
+      "qty": 1
+    }
+  ]
+}
+
 ### Set recipe for variant 12oz: 18g coffee
 POST {{base}}/recipes/variant/1
 Content-Type: application/json
@@ -77,6 +104,20 @@ Content-Type: application/json
     {
       "ingredient_id": 1,
       "qty": 18,
+      "unit_code": "g"
+    }
+  ]
+}
+
+### Set recipe for variant 16oz: 24g coffee
+POST {{base}}/recipes/variant/2
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "ingredient_id": 1,
+      "qty": 24,
       "unit_code": "g"
     }
   ]
@@ -110,6 +151,30 @@ Content-Type: application/json
       "item_type": "VARIANT",
       "ref_id": 1,
       "qty": 2
+    }
+  ]
+}
+
+### Create sale with combo + variant
+POST {{base}}/sales
+Content-Type: application/json
+
+{
+  "location_id": 1,
+  "cashier_id": 1,
+  "cash_session_id": 1,
+  "discount_type": "FIXED",
+  "discount_value": 1000,
+  "items": [
+    {
+      "item_type": "COMBO",
+      "ref_id": 1,
+      "qty": 1
+    },
+    {
+      "item_type": "VARIANT",
+      "ref_id": 1,
+      "qty": 1
     }
   ]
 }

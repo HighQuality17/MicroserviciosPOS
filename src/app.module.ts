@@ -12,6 +12,7 @@ import { VariantsModule } from './variants/variants.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { CashModule } from './cash/cash.module';
 import { SalesModule } from './sales/sales.module';
+import { CombosModule } from './combos/combos.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { SalesModule } from './sales/sales.module';
     ProductsModule,
     VariantsModule,
     RecipesModule,
+    CombosModule,
     CashModule,
     SalesModule,
   ],
