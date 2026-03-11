@@ -11,7 +11,14 @@ import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useCartStore } from '@/store/cartStore';
 import { useSessionStore } from '@/store/sessionStore';
-import type { CartItem as CartItemType, DiscountType, PaymentMethod } from '@/types/api';
+import type {
+  CartItem as CartItemType,
+  CatalogCombo,
+  CatalogResponse,
+  CatalogVariant,
+  DiscountType,
+  PaymentMethod,
+} from '@/types/api';
 import { computeCartTotals } from '@/utils/cart';
 import { formatCurrency } from '@/utils/format';
 
@@ -20,9 +27,6 @@ export function PosPage() {
   const currentLocation = useAppStore((state) => state.currentLocation);
   const currentCashSession = useAppStore((state) => state.currentCashSession);
   const setCurrentCashSession = useAppStore((state) => state.setCurrentCashSession);
-  const sessionVariants = useAppStore((state) => state.sessionVariants);
-  const sessionProducts = useAppStore((state) => state.sessionProducts);
-  const sessionCombos = useAppStore((state) => state.sessionCombos);
   const addRecentReceipt = useAppStore((state) => state.addRecentReceipt);
   const items = useCartStore((state) => state.items);
   const discountType = useCartStore((state) => state.discountType);
@@ -33,6 +37,13 @@ export function PosPage() {
   const clearCart = useCartStore((state) => state.clearCart);
   const setDiscount = useCartStore((state) => state.setDiscount);
 
+  const [catalog, setCatalog] = useState<CatalogResponse>({
+    products: [],
+    variants: [],
+    combos: [],
+  });
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -52,33 +63,54 @@ export function PosPage() {
     void loadCurrentCash();
   }, [currentLocation.id, setCurrentCashSession]);
 
-  const catalog = useMemo(() => {
-    const productsById = new Map(sessionProducts.map((product) => [product.id, product]));
+  useEffect(() => {
+    async function loadCatalog() {
+      try {
+        setCatalogLoading(true);
+        setCatalogError(null);
+        const response = await posApi.getCatalog();
+        setCatalog(response);
+      } catch (error) {
+        setCatalogError(
+          error instanceof Error ? error.message : 'No se pudo cargar el catalogo',
+        );
+      } finally {
+        setCatalogLoading(false);
+      }
+    }
 
-    const variantCards: CartItemType[] = sessionVariants.map((variant) => ({
+    void loadCatalog();
+  }, []);
+
+  const catalogItems = useMemo(() => {
+    const variantCards: CartItemType[] = catalog.variants.map((variant: CatalogVariant) => ({
       key: `catalog-variant-${variant.id}`,
       item_type: 'VARIANT',
       ref_id: variant.id,
-      name: productsById.get(variant.productId)?.name ?? `Producto ${variant.productId}`,
-      subtitle: `${variant.size} · SKU ${variant.sku}`,
-      unit_price: Number(variant.salePrice),
+      name: variant.product_name,
+      subtitle: [variant.size, variant.sku ? `SKU ${variant.sku}` : null]
+        .filter(Boolean)
+        .join(' · '),
+      unit_price: Number(variant.sale_price),
       qty: 1,
     }));
 
-    const comboCards: CartItemType[] = sessionCombos.map((combo) => ({
+    const comboCards: CartItemType[] = catalog.combos.map((combo: CatalogCombo) => ({
       key: `catalog-combo-${combo.id}`,
       item_type: 'COMBO',
       ref_id: combo.id,
       name: combo.name,
-      subtitle: 'Combo',
-      unit_price: Number(combo.salePrice),
+      subtitle: combo.items.length
+        ? `${combo.items.length} items configurados`
+        : 'Combo',
+      unit_price: Number(combo.sale_price),
       qty: 1,
     }));
 
     return [...variantCards, ...comboCards].filter((item) =>
       `${item.name} ${item.subtitle ?? ''}`.toLowerCase().includes(search.toLowerCase()),
     );
-  }, [search, sessionCombos, sessionProducts, sessionVariants]);
+  }, [catalog.combos, catalog.variants, search]);
 
   const totals = useMemo(
     () => computeCartTotals(items, discountType, discountValue),
@@ -147,9 +179,9 @@ export function PosPage() {
             icon={<PackageSearch size={18} />}
           />
           <SummaryCard
-            title="Último receipt"
+            title="Ultimo receipt"
             value={lastReceiptId ? `#${lastReceiptId}` : 'Pendiente'}
-            hint="Disponible también en la pantalla de ventas"
+            hint="Disponible tambien en la pantalla de ventas"
             icon={<AlertCircle size={18} />}
           />
         </div>
@@ -157,7 +189,7 @@ export function PosPage() {
         <Card>
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm text-slate-400">Catálogo de venta</p>
+              <p className="text-sm text-slate-400">Catalogo de venta</p>
               <h2 className="font-display text-2xl font-bold text-white">POS principal</h2>
             </div>
             <div className="w-full md:max-w-md">
@@ -171,20 +203,45 @@ export function PosPage() {
 
           {!currentCashSession ? (
             <div className="mt-5 rounded-3xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-              Abre caja en la pestaña Caja antes de cobrar.
+              Abre caja en la pestana Caja antes de cobrar.
             </div>
           ) : null}
 
-          {catalog.length === 0 ? (
+          {catalogLoading ? (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="glass-panel animate-pulse rounded-3xl p-5"
+                >
+                  <div className="h-6 w-2/3 rounded-full bg-slate-800" />
+                  <div className="mt-3 h-4 w-1/2 rounded-full bg-slate-900" />
+                  <div className="mt-10 h-8 w-24 rounded-full bg-slate-800" />
+                </div>
+              ))}
+            </div>
+          ) : catalogError ? (
             <div className="mt-6">
               <EmptyState
-                title="Catálogo listo, sin endpoint GET aún"
-                description="El backend actual no expone listados de productos/variantes/combos. Esta pantalla usa los elementos creados en la sesión desde Productos y Combos."
+                title="No fue posible cargar el catalogo"
+                description={catalogError}
+                action={
+                  <Button variant="secondary" onClick={() => window.location.reload()}>
+                    Reintentar
+                  </Button>
+                }
+              />
+            </div>
+          ) : catalogItems.length === 0 ? (
+            <div className="mt-6">
+              <EmptyState
+                title="Catalogo vacio"
+                description="El backend no devolvio variantes ni combos activos para esta caja."
               />
             </div>
           ) : (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-              {catalog.map((item) => (
+              {catalogItems.map((item) => (
                 <button
                   key={item.key}
                   type="button"
@@ -197,7 +254,7 @@ export function PosPage() {
                       <p className="mt-1 text-sm text-slate-400">{item.subtitle}</p>
                     </div>
                     <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400">
-                      {item.item_type}
+                      {item.item_type === 'VARIANT' ? 'Variante' : 'Combo'}
                     </span>
                   </div>
                   <div className="mt-8 flex items-center justify-between">
@@ -228,7 +285,7 @@ export function PosPage() {
           {items.length === 0 ? (
             <EmptyState
               title="Sin items cargados"
-              description="Agrega variantes o combos desde el catálogo para preparar la venta."
+              description="Agrega variantes o combos desde el catalogo para preparar la venta."
             />
           ) : (
             items.map((item) => (

@@ -35,6 +35,7 @@ export interface Product {
   id: number;
   name: string;
   active: boolean;
+  variants?: CatalogVariant[];
 }
 
 export interface Variant {
@@ -59,6 +60,7 @@ export interface Combo {
   name: string;
   salePrice: number | string;
   active: boolean;
+  items?: CatalogComboItem[];
 }
 
 export interface ComboItem {
@@ -143,4 +145,50 @@ export interface CartItem {
   subtitle?: string;
   unit_price: number;
   qty: number;
+}
+
+export interface CatalogVariant {
+  id: number;
+  product_id: number;
+  product_name: string;
+  size: string;
+  sku: string;
+  sale_price: number;
+  active: boolean;
+}
+
+export interface CatalogComboItem {
+  id: number;
+  combo_id: number;
+  variant_id: number;
+  qty: number;
+  variant: CatalogVariant;
+}
+
+export interface CatalogCombo {
+  id: number;
+  name: string;
+  sale_price: number;
+  active: boolean;
+  items: CatalogComboItem[];
+}
+
+export interface CatalogProduct {
+  id: number;
+  name: string;
+  active: boolean;
+  variants: Array<{
+    id: number;
+    product_id: number;
+    size: string;
+    sku: string;
+    sale_price: number;
+    active: boolean;
+  }>;
+}
+
+export interface CatalogResponse {
+  products: CatalogProduct[];
+  variants: CatalogVariant[];
+  combos: CatalogCombo[];
 }

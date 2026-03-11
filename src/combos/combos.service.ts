@@ -78,4 +78,45 @@ export class CombosService {
       },
     });
   }
+
+  async findActive() {
+    const combos = await this.prisma.combo.findMany({
+      where: { active: true },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+              },
+            },
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return combos.map((combo) => ({
+      id: combo.id,
+      name: combo.name,
+      sale_price: Number(combo.salePrice),
+      active: combo.active,
+      items: combo.items.map((item) => ({
+        id: item.id,
+        combo_id: item.comboId,
+        variant_id: item.variantId,
+        qty: Number(item.qty),
+        variant: {
+          id: item.variant.id,
+          product_id: item.variant.productId,
+          product_name: item.variant.product.name,
+          size: item.variant.size,
+          sku: item.variant.sku,
+          sale_price: Number(item.variant.salePrice),
+          active: item.variant.active,
+        },
+      })),
+    }));
+  }
 }

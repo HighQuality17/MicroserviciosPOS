@@ -1,5 +1,8 @@
 import { api, unwrap } from '@/services/api/client';
 import type {
+  CatalogProduct,
+  CatalogResponse,
+  CatalogVariant,
   CashCurrentResponse,
   CashSession,
   Combo,
@@ -11,6 +14,9 @@ import type {
 } from '@/types/api';
 
 export const posApi = {
+  getCatalog: () => unwrap<CatalogResponse>(api.get('/catalog')),
+  getProducts: () => unwrap<CatalogProduct[]>(api.get('/products')),
+  getVariants: () => unwrap<CatalogVariant[]>(api.get('/variants')),
   openCash: (payload: {
     location_id: number;
     opened_by: number;

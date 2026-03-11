@@ -18,4 +18,31 @@ export class ProductsService {
       throw new ConflictException('Product name already exists');
     }
   }
+
+  async findActive() {
+    const products = await this.prisma.product.findMany({
+      where: { active: true },
+      include: {
+        variants: {
+          where: { active: true },
+          orderBy: [{ size: 'asc' }, { id: 'asc' }],
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      active: product.active,
+      variants: product.variants.map((variant) => ({
+        id: variant.id,
+        product_id: variant.productId,
+        size: variant.size,
+        sku: variant.sku,
+        sale_price: Number(variant.salePrice),
+        active: variant.active,
+      })),
+    }));
+  }
 }
