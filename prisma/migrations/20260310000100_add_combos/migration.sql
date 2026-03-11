@@ -1,0 +1,17 @@
+CREATE TABLE "Combo" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "salePrice" DECIMAL NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE "ComboItem" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "comboId" INTEGER NOT NULL,
+    "variantId" INTEGER NOT NULL,
+    "qty" DECIMAL NOT NULL,
+    CONSTRAINT "ComboItem_comboId_fkey" FOREIGN KEY ("comboId") REFERENCES "Combo" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "ComboItem_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "ProductVariant" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "Combo_name_key" ON "Combo"("name");

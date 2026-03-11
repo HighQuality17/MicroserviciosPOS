@@ -4,10 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  Combo,
   DiscountType,
   IngredientMovementType,
   PaymentMethod,
   Prisma,
+  ProductVariant,
   SaleItemType,
   SaleStatus,
 } from '@prisma/client';
@@ -15,6 +17,36 @@ import { round } from '../common/utils/number.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { PaySaleDto } from './dto/pay-sale.dto';
+
+interface ExpandedVariantNeed {
+  variantId: number;
+  qty: number;
+}
+
+interface IngredientNeed {
+  ingredientId: number;
+  ingredientName: string;
+  qtyBase: number;
+}
+
+export interface SaleReceiptItem {
+  id: number;
+  item_type: SaleItemType;
+  ref_id: number;
+  description: string;
+  qty: number;
+  unit_price: number;
+  line_total: number;
+}
+
+type SaleItemRecord = {
+  id: number;
+  itemType: SaleItemType;
+  refId: number;
+  qty: Prisma.Decimal;
+  unitPrice: Prisma.Decimal;
+  lineTotal: Prisma.Decimal;
+};
 
 @Injectable()
 export class SalesService {
@@ -39,38 +71,22 @@ export class SalesService {
       );
     }
 
-    const variantIds = dto.items.map((item) => item.ref_id);
-    const variants = await this.prisma.productVariant.findMany({
-      where: {
-        id: { in: variantIds },
-      },
-    });
-    const variantById = new Map(variants.map((v) => [v.id, v]));
+    const pricedItems = await this.priceSaleItems(dto.items);
 
-    const itemsData: Prisma.SaleItemCreateWithoutSaleInput[] = [];
     let subtotal = 0;
+    const itemsData: Prisma.SaleItemCreateWithoutSaleInput[] = pricedItems.map(
+      (item) => {
+        subtotal = round(subtotal + item.lineTotal, 2);
 
-    for (const item of dto.items) {
-      if (item.item_type !== SaleItemType.VARIANT) {
-        throw new BadRequestException('Only VARIANT sale_items are supported');
-      }
-      const variant = variantById.get(item.ref_id);
-      if (!variant || !variant.active) {
-        throw new BadRequestException(`Variant ${item.ref_id} is invalid/inactive`);
-      }
-
-      const unitPrice = Number(variant.salePrice);
-      const lineTotal = round(unitPrice * item.qty, 2);
-      subtotal = round(subtotal + lineTotal, 2);
-
-      itemsData.push({
-        itemType: SaleItemType.VARIANT,
-        refId: item.ref_id,
-        qty: item.qty,
-        unitPrice,
-        lineTotal,
-      });
-    }
+        return {
+          itemType: item.itemType,
+          refId: item.refId,
+          qty: item.qty,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+        };
+      },
+    );
 
     const discountType = dto.discount_type ?? DiscountType.NONE;
     const discountValue = dto.discount_value ?? 0;
@@ -133,29 +149,9 @@ export class SalesService {
     const ingredientNeeds = await this.computeIngredientNeedsFromSaleItems(
       sale.items,
     );
+    await this.assertSufficientStock(sale.locationId, ingredientNeeds);
 
     return this.prisma.$transaction(async (tx) => {
-      for (const need of ingredientNeeds) {
-        const stock = await tx.ingredientStock.findUnique({
-          where: {
-            ingredientId_locationId: {
-              ingredientId: need.ingredientId,
-              locationId: sale.locationId,
-            },
-          },
-        });
-
-        const currentQty = Number(stock?.qtyOnHandBase ?? 0);
-        if (currentQty < need.qtyBase) {
-          const ingredient = await tx.ingredient.findUnique({
-            where: { id: need.ingredientId },
-          });
-          throw new BadRequestException(
-            `Insufficient stock for ingredient ${ingredient?.name ?? need.ingredientId}`,
-          );
-        }
-      }
-
       const payment = await tx.payment.create({
         data: {
           saleId: sale.id,
@@ -247,21 +243,12 @@ export class SalesService {
     });
     if (!sale) throw new NotFoundException('Sale not found');
 
-    const variantIds = sale.items
-      .filter((item) => item.itemType === SaleItemType.VARIANT)
-      .map((item) => item.refId);
-
-    const variants = await this.prisma.productVariant.findMany({
-      where: { id: { in: variantIds } },
-      include: { product: true },
-    });
-    const variantById = new Map(variants.map((v) => [v.id, v]));
+    const detailedItems = await this.buildReceiptItems(sale.items);
+    const payment = sale.payments[0] ?? null;
 
     return {
-      receipt_id: `R-${sale.id.toString().padStart(8, '0')}`,
       sale_id: sale.id,
       created_at: sale.createdAt,
-      status: sale.status,
       location: {
         id: sale.location.id,
         name: sale.location.name,
@@ -270,35 +257,125 @@ export class SalesService {
         id: sale.cashier.id,
         name: sale.cashier.name,
       },
-      items: sale.items.map((item) => {
-        const variant = variantById.get(item.refId);
-        return {
-          id: item.id,
-          item_type: item.itemType,
-          ref_id: item.refId,
-          description: variant
-            ? `${variant.product.name} ${variant.size}`
-            : `Variant ${item.refId}`,
-          qty: Number(item.qty),
-          unit_price: Number(item.unitPrice),
-          line_total: Number(item.lineTotal),
-        };
-      }),
-      totals: {
-        subtotal: Number(sale.subtotal),
-        discount_type: sale.discountType,
-        discount_value: Number(sale.discountValue),
-        discount_amount: Number(sale.discountAmount),
-        total: Number(sale.total),
-      },
-      payments: sale.payments.map((payment) => ({
-        id: payment.id,
-        method: payment.method,
-        amount_received: Number(payment.amountReceived),
-        amount_applied: Number(payment.amountApplied),
-        change_given: Number(payment.changeGiven),
-      })),
+      items: detailedItems,
+      subtotal: Number(sale.subtotal),
+      discount_type: sale.discountType,
+      discount_value: Number(sale.discountValue),
+      discount_amount: Number(sale.discountAmount),
+      total: Number(sale.total),
+      payment_method: payment?.method ?? null,
+      amount_received: payment ? Number(payment.amountReceived) : null,
+      change_given: payment ? Number(payment.changeGiven) : null,
     };
+  }
+
+  private async priceSaleItems(items: CreateSaleDto['items']) {
+    const variantIds = items
+      .filter((item) => item.item_type === SaleItemType.VARIANT)
+      .map((item) => item.ref_id);
+    const comboIds = items
+      .filter((item) => item.item_type === SaleItemType.COMBO)
+      .map((item) => item.ref_id);
+
+    const [variants, combos] = await Promise.all([
+      this.prisma.productVariant.findMany({
+        where: { id: { in: variantIds } },
+      }),
+      this.prisma.combo.findMany({
+        where: { id: { in: comboIds } },
+      }),
+    ]);
+
+    const variantById = new Map(variants.map((variant) => [variant.id, variant]));
+    const comboById = new Map(combos.map((combo) => [combo.id, combo]));
+
+    return items.map((item) => {
+      const catalogItem = this.resolveCatalogItem(
+        item.item_type,
+        item.ref_id,
+        variantById,
+        comboById,
+      );
+
+      const unitPrice = Number(catalogItem.salePrice);
+      const lineTotal = round(unitPrice * item.qty, 2);
+
+      return {
+        itemType: item.item_type,
+        refId: item.ref_id,
+        qty: item.qty,
+        unitPrice,
+        lineTotal,
+      };
+    });
+  }
+
+  private resolveCatalogItem(
+    itemType: SaleItemType,
+    refId: number,
+    variantById: Map<number, ProductVariant>,
+    comboById: Map<number, Combo>,
+  ) {
+    if (itemType === SaleItemType.VARIANT) {
+      const variant = variantById.get(refId);
+      if (!variant || !variant.active) {
+        throw new BadRequestException(`Variant ${refId} is invalid/inactive`);
+      }
+      return variant;
+    }
+
+    if (itemType === SaleItemType.COMBO) {
+      const combo = comboById.get(refId);
+      if (!combo || !combo.active) {
+        throw new BadRequestException(`Combo ${refId} is invalid/inactive`);
+      }
+      return combo;
+    }
+
+    throw new BadRequestException(`Unsupported item_type ${itemType}`);
+  }
+
+  private async buildReceiptItems(items: SaleItemRecord[]): Promise<SaleReceiptItem[]> {
+    const variantIds = items
+      .filter((item) => item.itemType === SaleItemType.VARIANT)
+      .map((item) => item.refId);
+    const comboIds = items
+      .filter((item) => item.itemType === SaleItemType.COMBO)
+      .map((item) => item.refId);
+
+    const [variants, combos] = await Promise.all([
+      this.prisma.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        include: { product: true },
+      }),
+      this.prisma.combo.findMany({
+        where: { id: { in: comboIds } },
+      }),
+    ]);
+
+    const variantById = new Map(variants.map((variant) => [variant.id, variant]));
+    const comboById = new Map(combos.map((combo) => [combo.id, combo]));
+
+    return items.map((item) => ({
+      id: item.id,
+      item_type: item.itemType,
+      ref_id: item.refId,
+      description:
+        item.itemType === SaleItemType.VARIANT
+          ? this.getVariantDescription(item.refId, variantById)
+          : comboById.get(item.refId)?.name ?? `Combo ${item.refId}`,
+      qty: Number(item.qty),
+      unit_price: Number(item.unitPrice),
+      line_total: Number(item.lineTotal),
+    }));
+  }
+
+  private getVariantDescription(
+    refId: number,
+    variantById: Map<number, ProductVariant & { product: { name: string } }>,
+  ) {
+    const variant = variantById.get(refId);
+    return variant ? `${variant.product.name} ${variant.size}` : `Variant ${refId}`;
   }
 
   private computeDiscount(
@@ -356,19 +433,16 @@ export class SalesService {
     throw new BadRequestException('Unsupported payment method');
   }
 
-  private async computeIngredientNeedsFromSaleItems(
-    items: Array<{
-      itemType: SaleItemType;
-      refId: number;
-      qty: Prisma.Decimal;
-    }>,
-  ) {
-    const variantItems = items.filter((item) => item.itemType === SaleItemType.VARIANT);
-    const variantIds = variantItems.map((item) => item.refId);
+  private async computeIngredientNeedsFromSaleItems(items: SaleItemRecord[]) {
+    const expandedVariants = await this.expandSaleItemsToVariants(items);
+    const variantIds = expandedVariants.map((item) => item.variantId);
 
     const recipes = await this.prisma.variantRecipeItem.findMany({
       where: {
         variantId: { in: variantIds },
+      },
+      include: {
+        ingredient: true,
       },
     });
 
@@ -379,30 +453,117 @@ export class SalesService {
       recipeByVariant.set(recipe.variantId, group);
     }
 
-    const totals = new Map<number, number>();
-    for (const saleItem of variantItems) {
-      const recipeItems = recipeByVariant.get(saleItem.refId);
+    const totals = new Map<number, IngredientNeed>();
+    for (const saleItem of expandedVariants) {
+      const recipeItems = recipeByVariant.get(saleItem.variantId);
       if (!recipeItems || recipeItems.length === 0) {
         throw new BadRequestException(
-          `Variant ${saleItem.refId} has no recipe configured`,
+          `Variant ${saleItem.variantId} has no recipe configured`,
         );
       }
 
       for (const recipeItem of recipeItems) {
-        const qty = round(
-          Number(recipeItem.qtyBaseRequired) * Number(saleItem.qty),
+        const qtyBase = round(
+          Number(recipeItem.qtyBaseRequired) * saleItem.qty,
           3,
         );
-        totals.set(
-          recipeItem.ingredientId,
-          round((totals.get(recipeItem.ingredientId) ?? 0) + qty, 3),
-        );
+        const current = totals.get(recipeItem.ingredientId);
+
+        totals.set(recipeItem.ingredientId, {
+          ingredientId: recipeItem.ingredientId,
+          ingredientName: recipeItem.ingredient.name,
+          qtyBase: round((current?.qtyBase ?? 0) + qtyBase, 3),
+        });
       }
     }
 
-    return Array.from(totals.entries()).map(([ingredientId, qtyBase]) => ({
-      ingredientId,
-      qtyBase,
+    return Array.from(totals.values());
+  }
+
+  private async expandSaleItemsToVariants(items: SaleItemRecord[]) {
+    const variantNeeds: ExpandedVariantNeed[] = [];
+    const comboItems = items.filter((item) => item.itemType === SaleItemType.COMBO);
+    const variantItems = items.filter((item) => item.itemType === SaleItemType.VARIANT);
+
+    for (const item of variantItems) {
+      variantNeeds.push({
+        variantId: item.refId,
+        qty: Number(item.qty),
+      });
+    }
+
+    if (comboItems.length === 0) {
+      return variantNeeds;
+    }
+
+    const comboIds = comboItems.map((item) => item.refId);
+    const combos = await this.prisma.combo.findMany({
+      where: { id: { in: comboIds } },
+      include: {
+        items: true,
+      },
+    });
+    const comboById = new Map(combos.map((combo) => [combo.id, combo]));
+
+    for (const comboSaleItem of comboItems) {
+      const combo = comboById.get(comboSaleItem.refId);
+      if (!combo || !combo.active) {
+        throw new BadRequestException(`Combo ${comboSaleItem.refId} is invalid/inactive`);
+      }
+      if (combo.items.length === 0) {
+        throw new BadRequestException(
+          `Combo ${comboSaleItem.refId} has no items configured`,
+        );
+      }
+
+      for (const comboItem of combo.items) {
+        variantNeeds.push({
+          variantId: comboItem.variantId,
+          qty: round(Number(comboItem.qty) * Number(comboSaleItem.qty), 3),
+        });
+      }
+    }
+
+    return this.mergeVariantNeeds(variantNeeds);
+  }
+
+  private mergeVariantNeeds(items: ExpandedVariantNeed[]) {
+    const totals = new Map<number, number>();
+
+    for (const item of items) {
+      totals.set(
+        item.variantId,
+        round((totals.get(item.variantId) ?? 0) + item.qty, 3),
+      );
+    }
+
+    return Array.from(totals.entries()).map(([variantId, qty]) => ({
+      variantId,
+      qty,
     }));
+  }
+
+  private async assertSufficientStock(
+    locationId: number,
+    ingredientNeeds: IngredientNeed[],
+  ) {
+    for (const need of ingredientNeeds) {
+      const stock = await this.prisma.ingredientStock.findUnique({
+        where: {
+          ingredientId_locationId: {
+            ingredientId: need.ingredientId,
+            locationId,
+          },
+        },
+      });
+
+      const currentQty = Number(stock?.qtyOnHandBase ?? 0);
+      if (currentQty < need.qtyBase) {
+        const shortage = round(need.qtyBase - currentQty, 3);
+        throw new BadRequestException(
+          `Insufficient stock for ingredient ${need.ingredientName}. Missing ${shortage} base units`,
+        );
+      }
+    }
   }
 }
