@@ -8,6 +8,13 @@ import { PrismaService } from './prisma/prisma.service';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
@@ -32,6 +39,7 @@ async function bootstrap(): Promise<void> {
   process.on('SIGINT', () => {
     void shutdown();
   });
+
   process.on('SIGTERM', () => {
     void shutdown();
   });

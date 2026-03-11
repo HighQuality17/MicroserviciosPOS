@@ -1,0 +1,146 @@
+export interface ApiResponse<T> {
+  success: true;
+  data: T;
+  timestamp: string;
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  error: {
+    statusCode: number;
+    message: string | string[];
+    path: string;
+    timestamp: string;
+  };
+}
+
+export type UserRole = 'ADMIN' | 'CASHIER' | 'AUDITOR';
+export type DiscountType = 'NONE' | 'PERCENT' | 'FIXED';
+export type PaymentMethod = 'CASH' | 'TRANSFER';
+export type SaleItemType = 'VARIANT' | 'COMBO';
+export type IngredientDimension = 'WEIGHT' | 'VOLUME' | 'COUNT';
+
+export interface User {
+  id: number;
+  name: string;
+  role: UserRole;
+}
+
+export interface Location {
+  id: number;
+  name: string;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  active: boolean;
+}
+
+export interface Variant {
+  id: number;
+  productId: number;
+  size: string;
+  sku: string;
+  salePrice: number | string;
+  active: boolean;
+  product?: Product;
+}
+
+export interface Ingredient {
+  id: number;
+  name: string;
+  dimension: IngredientDimension;
+  defaultUnitCode: string;
+}
+
+export interface Combo {
+  id: number;
+  name: string;
+  salePrice: number | string;
+  active: boolean;
+}
+
+export interface ComboItem {
+  id: number;
+  comboId: number;
+  variantId: number;
+  qty: number | string;
+  variant?: Variant;
+}
+
+export interface CashSession {
+  id: number;
+  locationId: number;
+  openedBy: number;
+  openedAt: string;
+  openingCash: number | string;
+  closedAt: string | null;
+  closingCashExpected?: number | string | null;
+  closingCashCounted?: number | string | null;
+}
+
+export interface CashCurrentResponse {
+  location: Location;
+  current_session: CashSession | null;
+}
+
+export interface StockListItem {
+  ingredientId: number;
+  locationId: number;
+  qtyOnHandBase: number | string;
+  ingredient: Ingredient;
+  location: Location;
+}
+
+export interface StockListResponse {
+  location: Location;
+  items: StockListItem[];
+}
+
+export interface Sale {
+  id: number;
+  subtotal: number | string;
+  discountType: DiscountType;
+  discountValue: number | string;
+  discountAmount: number | string;
+  total: number | string;
+  status: string;
+  createdAt: string;
+}
+
+export interface SaleReceiptItem {
+  id: number;
+  item_type: SaleItemType;
+  ref_id: number;
+  description: string;
+  qty: number;
+  unit_price: number;
+  line_total: number;
+}
+
+export interface SaleReceipt {
+  sale_id: number;
+  created_at: string;
+  location: Location;
+  cashier: Pick<User, 'id' | 'name'>;
+  items: SaleReceiptItem[];
+  subtotal: number;
+  discount_type: DiscountType;
+  discount_value: number;
+  discount_amount: number;
+  total: number;
+  payment_method: PaymentMethod | null;
+  amount_received: number | null;
+  change_given: number | null;
+}
+
+export interface CartItem {
+  key: string;
+  item_type: SaleItemType;
+  ref_id: number;
+  name: string;
+  subtitle?: string;
+  unit_price: number;
+  qty: number;
+}

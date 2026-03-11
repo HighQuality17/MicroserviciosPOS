@@ -1,0 +1,72 @@
+import { api, unwrap } from '@/services/api/client';
+import type {
+  CashCurrentResponse,
+  CashSession,
+  Combo,
+  Ingredient,
+  Product,
+  SaleReceipt,
+  StockListResponse,
+  Variant,
+} from '@/types/api';
+
+export const posApi = {
+  openCash: (payload: {
+    location_id: number;
+    opened_by: number;
+    opening_cash: number;
+  }) => unwrap<CashSession>(api.post('/cash/open', payload)),
+  closeCash: (payload: {
+    cash_session_id: number;
+    closed_by: number;
+    closing_cash_counted: number;
+  }) => unwrap(api.post('/cash/close', payload)),
+  getCurrentCash: (locationId: number) =>
+    unwrap<CashCurrentResponse>(api.get('/cash/current', { params: { location_id: locationId } })),
+  createProduct: (payload: { name: string; active?: boolean }) =>
+    unwrap<Product>(api.post('/products', payload)),
+  createVariant: (payload: {
+    product_id: number;
+    size: string;
+    sku: string;
+    sale_price: number;
+    active?: boolean;
+  }) => unwrap<Variant>(api.post('/variants', payload)),
+  createIngredient: (payload: {
+    name: string;
+    dimension: string;
+    default_unit_code: string;
+  }) => unwrap<Ingredient>(api.post('/ingredients', payload)),
+  adjustStock: (payload: {
+    location_id: number;
+    ingredient_id: number;
+    qty: number;
+    unit_code: string;
+    reason?: string;
+    user_id: number;
+  }) => unwrap(api.post('/stock/adjust', payload)),
+  getStock: (locationId: number) =>
+    unwrap<StockListResponse>(api.get('/stock', { params: { location_id: locationId } })),
+  createCombo: (payload: {
+    name: string;
+    sale_price: number;
+    active?: boolean;
+  }) => unwrap<Combo>(api.post('/combos', payload)),
+  setComboItems: (comboId: number, payload: { items: Array<{ variant_id: number; qty: number }> }) =>
+    unwrap(api.post(`/combos/${comboId}/items`, payload)),
+  createSale: (payload: {
+    location_id: number;
+    cashier_id: number;
+    cash_session_id: number;
+    items: Array<{ item_type: 'VARIANT' | 'COMBO'; ref_id: number; qty: number }>;
+    discount_type?: 'NONE' | 'PERCENT' | 'FIXED';
+    discount_value?: number;
+  }) => unwrap<{ id: number }>(api.post('/sales', payload)),
+  paySale: (saleId: number, payload: {
+    method: 'CASH' | 'TRANSFER';
+    amount_received: number;
+    user_id: number;
+  }) => unwrap(api.post(`/sales/${saleId}/pay`, payload)),
+  getReceipt: (saleId: number) =>
+    unwrap<SaleReceipt>(api.get(`/sales/${saleId}/receipt`)),
+};
