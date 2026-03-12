@@ -1,51 +1,69 @@
 # Changelog
 
-## Sprint 6
+All notable changes to this project are documented in this file.
 
-Release commit: `edd2808`  
-Titulo: `feat: release sprint 6 admin management and real locations`
+## [0.6.0] - 2026-03-11
 
-### Backend
-- Se agrego soporte real para ubicaciones con `GET /api/locations` y `POST /api/locations`.
-- Se expuso `GET /api/ingredients` para listar ingredientes reales desde backend.
-- Se implemento gestion administrativa de catalogo:
-  - `PATCH /api/products/:id`
-  - `PATCH /api/products/:id/status`
-  - `DELETE /api/products/:id`
-  - `PATCH /api/variants/:id`
-  - `PATCH /api/variants/:id/status`
-  - `DELETE /api/variants/:id`
-- Se implemento gestion real de recetas:
-  - `GET /api/recipes/variant/:variantId`
-  - `PUT /api/recipes/variant/:variantId`
-  - `DELETE /api/recipes/variant/:variantId/items/:ingredientId`
-- Se mantuvieron reglas de negocio para no eliminar productos o variantes con uso historico y sugerir desactivacion.
+### Added
+- Real location support in backend and frontend with persistent POS selection.
+- Administrative product and variant management endpoints for update, status changes and guarded deletion.
+- Full recipe management endpoints for variants, including read, replace and item removal.
+- `GET /api/ingredients` to support recipe configuration from the admin frontend.
+- Real admin UI for products, variants and recipes.
+- Scrollable panels for long operational and administrative lists.
+- Sprint 6 release summary in repository history.
 
-### Frontend
-- El selector de POS ahora usa ubicaciones reales del backend en lugar de mocks.
-- Se agrego gestion administrativa real para productos, variantes y recetas en `/products`.
-- Solo `ADMIN` puede ver y ejecutar acciones de catalogo y recetas.
-- Se mejoro `/pos` para traducir errores tecnicos de recetas faltantes a mensajes claros en espanol.
-- Se mejoro `/sales` con historial reciente real y ultima venta persistida desde backend.
-- Se agregaron paneles con scroll interno para mantener layout ordenado en vistas largas.
-- Se corrigieron textos visibles en espanol y problemas de codificacion UTF-8 en archivos recientes.
+### Changed
+- Frontend POS now translates missing-recipe payment errors into user-facing Spanish messages.
+- `/sales` now uses persisted recent receipts and latest sale data from backend.
+- `/admin` and operational views now react to real location data instead of mock POS values.
+- UI feedback, labels and status badges were standardized across admin modules.
+- Recent frontend text encoding issues were normalized back to UTF-8.
 
-### UX y UI
-- Se estandarizaron estados visuales con badges de `Activo/Inactivo` y `Con receta/Sin receta`.
-- Se mejoro la experiencia de formularios numericos evitando valores iniciales molestos.
-- Se reforzo consistencia visual en feedback, estados vacios y paneles administrativos.
+### Fixed
+- `Cannot GET /api/ingredients` by exposing the missing endpoint.
+- Multiple frontend mojibake issues in admin/catalog screens.
+- UX problems caused by numeric inputs with intrusive default values.
 
-## Historial reciente
+## [0.5.0] - 2026-03-11
 
-### Sprint 5
-- Historial reciente de ventas y ultima venta disponible.
-- Mejoras globales de UX en formularios.
+### Added
+- Recent sales history endpoint and latest sale endpoint in backend.
+- `/sales` frontend integration with persisted receipts from SQLite.
 
-### Sprint 4
-- Control de acceso por rol.
-- Sidebar condicionado por rol.
-- Rutas protegidas y vistas de solo lectura para auditoria.
+### Changed
+- Improved receipt view and recent receipt consultation flow.
+- Refined numeric input UX across operational forms.
 
-### Sprint 3
-- Frontend MVP completo del POS con React + Vite + TypeScript + Tailwind.
-- Dashboard administrativo y consumo de backend local.
+## [0.4.0] - 2026-03-11
+
+### Added
+- Role-based navigation and protected routes for `ADMIN`, `CASHIER` and `AUDITOR`.
+- Read-only mode for auditor-facing views.
+
+### Changed
+- Sidebar rendering now depends on centralized permissions.
+- `/sales` and `/admin` distinguish between operational and consultative modes.
+
+## [0.3.0] - 2026-03-10
+
+### Added
+- Frontend MVP with React, Vite, TypeScript, Tailwind, Zustand and Axios.
+- POS, cash, products, ingredients, combos, sales and admin screens.
+- Initial administrative dashboard and backend metric consumption.
+
+### Changed
+- Catalog consumption for `/pos` through consolidated backend endpoints.
+
+## [0.2.0] - 2026-03-10
+
+### Added
+- Combo support in backend.
+- Cash close summary and improved receipt payload.
+- Stock validation before payment confirmation.
+
+## [0.1.0] - 2026-03-06
+
+### Added
+- Initial offline-first POS backend with NestJS, Prisma and SQLite.
+- Core modules for locations, ingredients, stock, products, variants, recipes, cash sessions, sales and payments.
