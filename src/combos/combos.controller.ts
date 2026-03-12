@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { CombosService } from './combos.service';
 import { CreateComboDto } from './dto/create-combo.dto';
 import { UpsertComboItemsDto } from './dto/upsert-combo-items.dto';
@@ -10,6 +10,11 @@ export class CombosController {
   @Post()
   create(@Body() dto: CreateComboDto) {
     return this.combosService.create(dto);
+  }
+
+  @Get()
+  findActive() {
+    return this.combosService.findActive();
   }
 
   @Post(':id/items')

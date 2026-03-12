@@ -46,6 +46,9 @@ Content-Type: application/json
   "active": true
 }
 
+### List active products with variants
+GET {{base}}/products
+
 ### Create variant 12oz
 POST {{base}}/variants
 Content-Type: application/json
@@ -67,6 +70,9 @@ Content-Type: application/json
   "sku": "CAF-AM-16",
   "sale_price": 9000
 }
+
+### List active variants
+GET {{base}}/variants
 
 ### Create combo
 POST {{base}}/combos
@@ -94,6 +100,27 @@ Content-Type: application/json
     }
   ]
 }
+
+### List active combos
+GET {{base}}/combos
+
+### Preferred POS catalog endpoint
+GET {{base}}/catalog
+
+### Admin summary metrics
+GET {{base}}/admin/summary
+
+### Admin sales by payment method
+GET {{base}}/admin/sales-by-payment
+
+### Admin top sold items
+GET {{base}}/admin/top-items
+
+### Admin low stock
+GET {{base}}/admin/low-stock
+
+### Admin recent activity
+GET {{base}}/admin/recent-activity
 
 ### Set recipe for variant 12oz: 18g coffee
 POST {{base}}/recipes/variant/1

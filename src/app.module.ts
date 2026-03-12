@@ -13,6 +13,7 @@ import { RecipesModule } from './recipes/recipes.module';
 import { CashModule } from './cash/cash.module';
 import { SalesModule } from './sales/sales.module';
 import { CombosModule } from './combos/combos.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CombosModule } from './combos/combos.module';
     VariantsModule,
     RecipesModule,
     CombosModule,
+    AdminModule,
     CashModule,
     SalesModule,
   ],

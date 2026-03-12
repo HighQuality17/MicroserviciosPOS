@@ -34,4 +34,29 @@ export class VariantsService {
       throw new ConflictException('Variant sku already exists');
     }
   }
+
+  async findActive() {
+    const variants = await this.prisma.productVariant.findMany({
+      where: {
+        active: true,
+        product: {
+          active: true,
+        },
+      },
+      include: {
+        product: true,
+      },
+      orderBy: [{ product: { name: 'asc' } }, { size: 'asc' }, { id: 'asc' }],
+    });
+
+    return variants.map((variant) => ({
+      id: variant.id,
+      product_id: variant.productId,
+      product_name: variant.product.name,
+      size: variant.size,
+      sku: variant.sku,
+      sale_price: Number(variant.salePrice),
+      active: variant.active,
+    }));
+  }
 }

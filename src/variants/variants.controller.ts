@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { VariantsService } from './variants.service';
 
@@ -9,5 +9,10 @@ export class VariantsController {
   @Post()
   create(@Body() dto: CreateVariantDto) {
     return this.variantsService.create(dto);
+  }
+
+  @Get()
+  findActive() {
+    return this.variantsService.findActive();
   }
 }
