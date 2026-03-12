@@ -10,6 +10,19 @@ import { CreateIngredientDto } from './dto/create-ingredient.dto';
 export class IngredientsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAll() {
+    const ingredients = await this.prisma.ingredient.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    return ingredients.map((ingredient) => ({
+      id: ingredient.id,
+      name: ingredient.name,
+      dimension: ingredient.dimension,
+      default_unit_code: ingredient.defaultUnitCode,
+    }));
+  }
+
   async create(dto: CreateIngredientDto) {
     const unitType = await this.prisma.unitType.findUnique({
       where: { code: dto.default_unit_code },

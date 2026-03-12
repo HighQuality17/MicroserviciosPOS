@@ -13,10 +13,14 @@ import type {
   CashSession,
   Combo,
   Ingredient,
+  Location,
   Product,
+  RecentSalesResponse,
   SaleReceipt,
   StockListResponse,
   Variant,
+  VariantRecipe,
+  LatestSaleResponse,
 } from '@/types/api';
 
 export const posApi = {
@@ -27,6 +31,9 @@ export const posApi = {
   getAdminLowStock: () => unwrap<AdminLowStockItem[]>(api.get('/admin/low-stock')),
   getAdminRecentActivity: () =>
     unwrap<AdminRecentActivityResponse>(api.get('/admin/recent-activity')),
+  getLocations: () => unwrap<Location[]>(api.get('/locations')),
+  createLocation: (payload: { name: string }) =>
+    unwrap<Location>(api.post('/locations', payload)),
   getCatalog: () => unwrap<CatalogResponse>(api.get('/catalog')),
   getProducts: () => unwrap<CatalogProduct[]>(api.get('/products')),
   getVariants: () => unwrap<CatalogVariant[]>(api.get('/variants')),
@@ -46,6 +53,12 @@ export const posApi = {
     unwrap<CashCurrentResponse>(api.get('/cash/current', { params: { location_id: locationId } })),
   createProduct: (payload: { name: string; active?: boolean }) =>
     unwrap<Product>(api.post('/products', payload)),
+  updateProduct: (
+    productId: number,
+    payload: { name?: string; active?: boolean },
+  ) => unwrap<Product>(api.patch(`/products/${productId}`, payload)),
+  updateProductStatus: (productId: number, payload: { active: boolean }) =>
+    unwrap<Product>(api.patch(`/products/${productId}/status`, payload)),
   createVariant: (payload: {
     product_id: number;
     size: string;
@@ -53,6 +66,25 @@ export const posApi = {
     sale_price: number;
     active?: boolean;
   }) => unwrap<Variant>(api.post('/variants', payload)),
+  updateVariant: (
+    variantId: number,
+    payload: {
+      size?: string;
+      sku?: string;
+      sale_price?: number;
+      active?: boolean;
+    },
+  ) => unwrap<Variant>(api.patch(`/variants/${variantId}`, payload)),
+  updateVariantStatus: (variantId: number, payload: { active: boolean }) =>
+    unwrap<Variant>(api.patch(`/variants/${variantId}/status`, payload)),
+  getVariantRecipe: (variantId: number) =>
+    unwrap<VariantRecipe>(api.get(`/recipes/variant/${variantId}`)),
+  updateVariantRecipe: (
+    variantId: number,
+    payload: { items: Array<{ ingredient_id: number; qty: number; unit_code: string }> },
+  ) => unwrap<VariantRecipe>(api.put(`/recipes/variant/${variantId}`, payload)),
+  deleteRecipeItem: (variantId: number, ingredientId: number) =>
+    unwrap<VariantRecipe>(api.delete(`/recipes/variant/${variantId}/items/${ingredientId}`)),
   createIngredient: (payload: {
     name: string;
     dimension: string;
@@ -88,6 +120,9 @@ export const posApi = {
     amount_received: number;
     user_id: number;
   }) => unwrap(api.post(`/sales/${saleId}/pay`, payload)),
+  getRecentSales: (limit = 5) =>
+    unwrap<RecentSalesResponse>(api.get('/sales/recent', { params: { limit } })),
+  getLatestSale: () => unwrap<LatestSaleResponse | null>(api.get('/sales/latest')),
   getSaleReceipt: (saleId: number) =>
     unwrap<SaleReceipt>(api.get(`/sales/${saleId}/receipt`)),
 };

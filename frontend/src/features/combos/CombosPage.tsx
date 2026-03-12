@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Boxes, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
+import { ScrollPanel } from '@/components/ScrollPanel';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import type { CatalogCombo, CatalogVariant } from '@/types/api';
 import { formatCurrency } from '@/utils/format';
+import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
 export function CombosPage() {
   const addSessionCombo = useAppStore((state) => state.addSessionCombo);
@@ -23,11 +25,11 @@ export function CombosPage() {
   const [addingItems, setAddingItems] = useState(false);
 
   const [comboName, setComboName] = useState('');
-  const [comboPrice, setComboPrice] = useState(0);
+  const [comboPriceInput, setComboPriceInput] = useState('');
   const [comboActive, setComboActive] = useState(true);
-  const [selectedComboId, setSelectedComboId] = useState<number>(0);
-  const [selectedVariantId, setSelectedVariantId] = useState<number>(0);
-  const [qty, setQty] = useState(1);
+  const [selectedComboId, setSelectedComboId] = useState('');
+  const [selectedVariantId, setSelectedVariantId] = useState('');
+  const [qtyInput, setQtyInput] = useState('');
 
   const variantsById = useMemo(
     () => new Map(variants.map((variant) => [variant.id, variant])),
@@ -37,18 +39,6 @@ export function CombosPage() {
   useEffect(() => {
     void refreshCatalog();
   }, []);
-
-  useEffect(() => {
-    if (combos.length > 0 && selectedComboId === 0) {
-      setSelectedComboId(combos[0].id);
-    }
-  }, [combos, selectedComboId]);
-
-  useEffect(() => {
-    if (variants.length > 0 && selectedVariantId === 0) {
-      setSelectedVariantId(variants[0].id);
-    }
-  }, [selectedVariantId, variants]);
 
   async function refreshCatalog() {
     try {
@@ -78,6 +68,11 @@ export function CombosPage() {
       setSubmitError('El nombre del combo es obligatorio.');
       return;
     }
+    const comboPrice = parseNumberInput(comboPriceInput);
+    if (comboPrice === null || comboPrice < 0) {
+      setSubmitError('Ingresa un precio de venta válido.');
+      return;
+    }
 
     try {
       setCreatingCombo(true);
@@ -92,7 +87,7 @@ export function CombosPage() {
 
       addSessionCombo(combo);
       setComboName('');
-      setComboPrice(0);
+      setComboPriceInput('');
       setComboActive(true);
       setMessage(`Combo #${combo.id} creado correctamente.`);
       await refreshCatalog();
@@ -106,11 +101,15 @@ export function CombosPage() {
   }
 
   async function handleAddComboItems() {
-    if (selectedComboId <= 0 || selectedVariantId <= 0) {
+    const comboId = Number(selectedComboId);
+    const variantId = Number(selectedVariantId);
+    const qty = parseNumberInput(qtyInput);
+
+    if (!selectedComboId || !selectedVariantId || comboId <= 0 || variantId <= 0) {
       setSubmitError('Selecciona un combo y una variante.');
       return;
     }
-    if (qty <= 0) {
+    if (qty === null || qty <= 0) {
       setSubmitError('La cantidad debe ser mayor a 0.');
       return;
     }
@@ -120,15 +119,15 @@ export function CombosPage() {
       setSubmitError(null);
       setMessage(null);
 
-      await posApi.addComboItems(selectedComboId, {
-        items: [{ variant_id: selectedVariantId, qty }],
+      await posApi.addComboItems(comboId, {
+        items: [{ variant_id: variantId, qty }],
       });
 
-      const selectedVariant = variantsById.get(selectedVariantId);
+      const selectedVariant = variantsById.get(variantId);
       setMessage(
-        `Variante ${selectedVariant?.product_name ?? selectedVariantId} agregada al combo #${selectedComboId}.`,
+        `Variante ${selectedVariant?.product_name ?? variantId} agregada al combo #${comboId}.`,
       );
-      setQty(1);
+      setQtyInput('');
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -147,7 +146,7 @@ export function CombosPage() {
         <SummaryCard
           title="Combos activos"
           value={String(combos.length)}
-          hint="Leidos desde backend"
+          hint="Leídos desde backend"
           icon={<Boxes size={18} />}
         />
         <SummaryCard
@@ -159,7 +158,7 @@ export function CombosPage() {
         <SummaryCard
           title="Cobertura"
           value={combos.length > 0 ? 'Activa' : 'Pendiente'}
-          hint="Pantalla lista para futura edicion y baja"
+          hint="Pantalla lista para futura edición y baja"
           icon={<PackagePlus size={18} />}
         />
       </div>
@@ -201,8 +200,14 @@ export function CombosPage() {
                 type="number"
                 min={0}
                 label="Precio de venta"
-                value={comboPrice}
-                onChange={(event) => setComboPrice(Number(event.target.value))}
+                placeholder="Ej: 12000"
+                value={comboPriceInput}
+                onChange={(event) => {
+                  const nextValue = normalizeNumberInput(event.target.value);
+                  if (nextValue !== null) {
+                    setComboPriceInput(nextValue);
+                  }
+                }}
               />
 
               <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
@@ -228,7 +233,7 @@ export function CombosPage() {
                   {creatingCombo ? 'Guardando...' : 'Crear combo'}
                 </Button>
                 <Button variant="secondary" disabled>
-                  Editar proximamente
+                  Editar próximamente
                 </Button>
               </div>
             </div>
@@ -237,7 +242,7 @@ export function CombosPage() {
           <Card>
             <p className="text-sm text-slate-400">Agregar items al combo</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Composicion comercial
+              Composición comercial
             </h2>
 
             <div className="mt-5 grid gap-4">
@@ -245,18 +250,17 @@ export function CombosPage() {
                 <span className="text-sm font-medium text-slate-200">Combo</span>
                 <select
                   value={selectedComboId}
-                  onChange={(event) => setSelectedComboId(Number(event.target.value))}
+                  onChange={(event) => setSelectedComboId(event.target.value)}
                   className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
                 >
-                  {combos.length === 0 ? (
-                    <option value={0}>Sin combos cargados</option>
-                  ) : (
-                    combos.map((combo) => (
-                      <option key={combo.id} value={combo.id}>
-                        #{combo.id} · {combo.name}
-                      </option>
-                    ))
-                  )}
+                  <option value="">
+                    {combos.length === 0 ? 'Sin combos cargados' : 'Selecciona un combo'}
+                  </option>
+                  {combos.map((combo) => (
+                    <option key={combo.id} value={String(combo.id)}>
+                      #{combo.id} - {combo.name}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -264,18 +268,19 @@ export function CombosPage() {
                 <span className="text-sm font-medium text-slate-200">Variante</span>
                 <select
                   value={selectedVariantId}
-                  onChange={(event) => setSelectedVariantId(Number(event.target.value))}
+                  onChange={(event) => setSelectedVariantId(event.target.value)}
                   className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
                 >
-                  {variants.length === 0 ? (
-                    <option value={0}>Sin variantes cargadas</option>
-                  ) : (
-                    variants.map((variant) => (
-                      <option key={variant.id} value={variant.id}>
-                        #{variant.id} · {variant.product_name} · {variant.size} · {variant.sku}
-                      </option>
-                    ))
-                  )}
+                  <option value="">
+                    {variants.length === 0
+                      ? 'Sin variantes cargadas'
+                      : 'Selecciona una variante'}
+                  </option>
+                  {variants.map((variant) => (
+                    <option key={variant.id} value={String(variant.id)}>
+                      #{variant.id} - {variant.product_name} - {variant.size} - {variant.sku}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -283,8 +288,14 @@ export function CombosPage() {
                 type="number"
                 min={1}
                 label="Cantidad"
-                value={qty}
-                onChange={(event) => setQty(Number(event.target.value))}
+                placeholder="Ej: 2"
+                value={qtyInput}
+                onChange={(event) => {
+                  const nextValue = normalizeNumberInput(event.target.value);
+                  if (nextValue !== null) {
+                    setQtyInput(nextValue);
+                  }
+                }}
               />
 
               <div className="flex gap-3">
@@ -295,7 +306,7 @@ export function CombosPage() {
                   {addingItems ? 'Guardando...' : 'Agregar item'}
                 </Button>
                 <Button variant="secondary" disabled>
-                  Reordenar proximamente
+                  Reordenar próximamente
                 </Button>
               </div>
             </div>
@@ -330,7 +341,7 @@ export function CombosPage() {
               />
             </div>
           ) : (
-            <div className="mt-6 grid gap-4">
+            <ScrollPanel className="mt-6 grid gap-4">
               {combos.map((combo) => (
                 <div
                   key={combo.id}
@@ -353,7 +364,7 @@ export function CombosPage() {
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-slate-500">
-                        ID {combo.id} · {combo.items.length} items configurados
+                        ID {combo.id} - {combo.items.length} items configurados
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
@@ -374,7 +385,7 @@ export function CombosPage() {
                   <div className="mt-5 grid gap-3">
                     {combo.items.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-slate-700 px-4 py-3 text-sm text-slate-500">
-                        El combo aun no tiene variantes asociadas.
+                        El combo aún no tiene variantes asociadas.
                       </div>
                     ) : (
                       combo.items.map((item) => (
@@ -387,7 +398,7 @@ export function CombosPage() {
                               {item.variant.product_name}
                             </p>
                             <p className="text-xs text-slate-500">
-                              {item.variant.size} · {item.variant.sku} · qty {item.qty}
+                              {item.variant.size} - {item.variant.sku} - qty {item.qty}
                             </p>
                           </div>
                           <p className="text-sm font-semibold text-slate-300">
@@ -399,10 +410,13 @@ export function CombosPage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </ScrollPanel>
           )}
         </Card>
       </div>
     </div>
   );
 }
+
+
+

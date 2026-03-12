@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Landmark, Wallet } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
+import { LoadingState } from '@/components/LoadingState';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatCurrency, formatDate, toNumber } from '@/utils/format';
+import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
 interface CloseSummary {
   cash_session_id: number;
@@ -27,7 +29,7 @@ export function CashPage() {
   const currentLocation = useAppStore((state) => state.currentLocation);
   const currentCashSession = useAppStore((state) => state.currentCashSession);
   const setCurrentCashSession = useAppStore((state) => state.setCurrentCashSession);
-  const [openingCash, setOpeningCash] = useState(50000);
+  const [openingCashInput, setOpeningCashInput] = useState('');
   const [closingCashCountedInput, setClosingCashCountedInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -36,6 +38,11 @@ export function CashPage() {
 
   useEffect(() => {
     async function loadCurrentCash() {
+      if (!currentLocation) {
+        setCurrentCashSession(null);
+        return;
+      }
+
       try {
         const response = await posApi.getCurrentCash(currentLocation.id);
         setCurrentCashSession(response.current_session);
@@ -45,10 +52,16 @@ export function CashPage() {
     }
 
     void loadCurrentCash();
-  }, [currentLocation.id, setCurrentCashSession]);
+  }, [currentLocation, setCurrentCashSession]);
 
   async function handleOpenCash() {
-    if (!currentUser) return;
+    if (!currentUser || !currentLocation) return;
+    const openingCash = parseNumberInput(openingCashInput);
+    if (openingCash === null || openingCash < 0) {
+      setError('Ingresa un efectivo inicial válido.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -76,7 +89,7 @@ export function CashPage() {
 
     const closingCashCounted = Number(closingCashCountedInput);
     if (Number.isNaN(closingCashCounted) || closingCashCounted < 0) {
-      setError('El efectivo contado debe ser un numero valido.');
+      setError('El efectivo contado debe ser un número válido.');
       return;
     }
 
@@ -104,7 +117,7 @@ export function CashPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard
           title="Caja activa"
-          value={currentCashSession ? `#${currentCashSession.id}` : 'Sin sesion'}
+      value={currentCashSession ? `#${currentCashSession.id}` : 'Sin sesión'}
           hint={
             currentCashSession
               ? `Abierta ${formatDate(currentCashSession.openedAt)}`
@@ -117,15 +130,17 @@ export function CashPage() {
           value={
             currentCashSession
               ? formatCurrency(toNumber(currentCashSession.openingCash))
-              : formatCurrency(openingCash)
+              : openingCashInput
+                ? formatCurrency(Number(openingCashInput))
+                : 'Pendiente'
           }
-          hint="Efectivo base de la sesion"
+          hint="Efectivo base de la sesión"
           icon={<Landmark size={18} />}
         />
         <SummaryCard
-          title="Location"
-          value={currentLocation.name}
-          hint={`ID ${currentLocation.id}`}
+          title="Ubicación"
+          value={currentLocation?.name ?? 'Sin POS activo'}
+          hint={currentLocation ? `ID ${currentLocation.id}` : 'Crea o selecciona un punto de venta'}
           icon={<Wallet size={18} />}
         />
       </div>
@@ -143,31 +158,54 @@ export function CashPage() {
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
+        {!currentLocation ? (
+          <Card className="xl:col-span-2">
+            <EmptyState
+              title="Sin punto de venta activo"
+              description="Crea una ubicación desde Admin o selecciona un POS válido en el encabezado antes de operar caja."
+            />
+          </Card>
+        ) : null}
+
         <Card>
-          <p className="text-sm text-slate-400">Operacion</p>
+          <p className="text-sm text-slate-400">Operación</p>
           <h2 className="font-display text-2xl font-bold text-white">Apertura de caja</h2>
           <div className="mt-5 grid gap-4">
             <Input
               type="number"
               min={0}
               label="Efectivo inicial"
-              value={openingCash}
-              onChange={(event) => setOpeningCash(Number(event.target.value))}
+              placeholder="Ej: 50000"
+              value={openingCashInput}
+              onChange={(event) => {
+                const nextValue = normalizeNumberInput(event.target.value);
+                if (nextValue !== null) {
+                  setOpeningCashInput(nextValue);
+                }
+              }}
             />
-            <Button disabled={loading || Boolean(currentCashSession)} onClick={handleOpenCash}>
+            <Button
+              disabled={
+                loading ||
+                !currentLocation ||
+                Boolean(currentCashSession) ||
+                !openingCashInput.trim()
+              }
+              onClick={handleOpenCash}
+            >
               {loading ? 'Procesando...' : 'Abrir caja'}
             </Button>
           </div>
         </Card>
 
         <Card>
-          <p className="text-sm text-slate-400">Operacion</p>
+          <p className="text-sm text-slate-400">Operación</p>
           <h2 className="font-display text-2xl font-bold text-white">Cierre de caja</h2>
           {!currentCashSession ? (
             <div className="mt-5">
               <EmptyState
                 title="No hay caja abierta"
-                description="Primero abre una sesion de caja o consulta la ultima sesion desde backend cuando exista historial."
+                description="Primero abre una sesión de caja. Más adelante podrás consultar el historial completo desde esta misma vista."
               />
             </div>
           ) : (
@@ -180,24 +218,16 @@ export function CashPage() {
                   inputMode="numeric"
                   placeholder="Ej: 80000"
                   value={closingCashCountedInput}
-                  onFocus={() => {
-                    if (closingCashCountedInput === '0') {
-                      setClosingCashCountedInput('');
-                    }
-                  }}
                   onChange={(event) => {
-                    const value = event.target.value;
-                    if (value === '') {
-                      setClosingCashCountedInput('');
-                      return;
+                    const nextValue = normalizeNumberInput(event.target.value);
+                    if (nextValue !== null) {
+                      setClosingCashCountedInput(nextValue);
                     }
-
-                    setClosingCashCountedInput(String(Number(value)));
                   }}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/70"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/70 focus:bg-slate-950/90"
                 />
                 <span className="text-xs text-slate-500">
-                  Ingresa el valor contado sin ceros fijos al inicio.
+                  Escribe el valor real contado. El sistema validará el cierre antes de enviarlo.
                 </span>
               </label>
               <Button disabled={loading} onClick={handleCloseCash}>
@@ -210,7 +240,7 @@ export function CashPage() {
 
       {closeSummary ? (
         <Card>
-          <p className="text-sm text-slate-400">Resumen generado por backend</p>
+          <p className="text-sm text-slate-400">Resumen calculado por el backend</p>
           <h2 className="font-display text-2xl font-bold text-white">Resultado del cierre</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {[
@@ -233,3 +263,6 @@ export function CashPage() {
     </div>
   );
 }
+
+
+

@@ -15,9 +15,9 @@ export function Button({
   return (
     <button
       className={clsx(
-        'inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
         variant === 'primary' &&
-          'bg-teal-400 text-slate-950 hover:bg-teal-300',
+          'bg-teal-400 text-slate-950 shadow-[0_10px_30px_rgba(45,212,191,0.18)] hover:bg-teal-300',
         variant === 'secondary' &&
           'border border-slate-700 bg-slate-900/80 text-slate-100 hover:border-sky-400/50 hover:bg-slate-800',
         variant === 'ghost' &&

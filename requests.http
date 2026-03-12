@@ -11,6 +11,17 @@ Content-Type: application/json
   "name": "POS1"
 }
 
+### Create another location
+POST {{base}}/locations
+Content-Type: application/json
+
+{
+  "name": "POS2"
+}
+
+### List available locations
+GET {{base}}/locations
+
 ### Create ingredient (coffee in grams)
 POST {{base}}/ingredients
 Content-Type: application/json
@@ -20,6 +31,9 @@ Content-Type: application/json
   "dimension": "WEIGHT",
   "default_unit_code": "g"
 }
+
+### List ingredients
+GET {{base}}/ingredients
 
 ### Adjust stock: +2kg coffee in POS1 (converted to 2000g base)
 POST {{base}}/stock/adjust
@@ -49,6 +63,25 @@ Content-Type: application/json
 ### List active products with variants
 GET {{base}}/products
 
+### Update product
+PATCH {{base}}/products/1
+Content-Type: application/json
+
+{
+  "name": "Cafe Americano Clasico"
+}
+
+### Deactivate product
+PATCH {{base}}/products/1/status
+Content-Type: application/json
+
+{
+  "active": false
+}
+
+### Delete product if it has no variants or historical usage
+DELETE {{base}}/products/1
+
 ### Create variant 12oz
 POST {{base}}/variants
 Content-Type: application/json
@@ -73,6 +106,27 @@ Content-Type: application/json
 
 ### List active variants
 GET {{base}}/variants
+
+### Update variant
+PATCH {{base}}/variants/1
+Content-Type: application/json
+
+{
+  "size": "12oz Hot",
+  "sku": "CAF-AM-12-HOT",
+  "sale_price": 7500
+}
+
+### Deactivate variant
+PATCH {{base}}/variants/1/status
+Content-Type: application/json
+
+{
+  "active": false
+}
+
+### Delete variant if it has no historical usage or combo assignments
+DELETE {{base}}/variants/1
 
 ### Create combo
 POST {{base}}/combos
@@ -150,6 +204,26 @@ Content-Type: application/json
   ]
 }
 
+### Get recipe for variant 1
+GET {{base}}/recipes/variant/1
+
+### Replace recipe for variant 1
+PUT {{base}}/recipes/variant/1
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "ingredient_id": 1,
+      "qty": 20,
+      "unit_code": "g"
+    }
+  ]
+}
+
+### Delete one recipe item from variant 1
+DELETE {{base}}/recipes/variant/1/items/1
+
 ### Open cash session
 POST {{base}}/cash/open
 Content-Type: application/json
@@ -218,6 +292,12 @@ Content-Type: application/json
 
 ### Receipt
 GET {{base}}/sales/1/receipt
+
+### Recent sales receipts summary
+GET {{base}}/sales/recent?limit=5
+
+### Latest available sale / receipt
+GET {{base}}/sales/latest
 
 ### Close cash session
 POST {{base}}/cash/close

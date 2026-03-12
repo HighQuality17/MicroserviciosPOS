@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Boxes, FlaskConical, Warehouse } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
+import { ScrollPanel } from '@/components/ScrollPanel';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { Ingredient, IngredientDimension, StockListItem } from '@/types/api';
+import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
   WEIGHT: ['g', 'kg'],
@@ -19,6 +21,7 @@ const unitsByDimension: Record<IngredientDimension, string[]> = {
 export function IngredientsPage() {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
+  const availableLocations = useAppStore((state) => state.availableLocations);
   const sessionIngredients = useAppStore((state) => state.sessionIngredients);
   const addSessionIngredient = useAppStore((state) => state.addSessionIngredient);
 
@@ -37,11 +40,11 @@ export function IngredientsPage() {
   const [dimension, setDimension] = useState<IngredientDimension>('WEIGHT');
   const [defaultUnitCode, setDefaultUnitCode] = useState('g');
 
-  const [selectedLocationId, setSelectedLocationId] = useState(currentLocation.id);
-  const [selectedIngredientId, setSelectedIngredientId] = useState<number>(0);
-  const [qty, setQty] = useState(0);
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+  const [selectedIngredientId, setSelectedIngredientId] = useState('');
+  const [qtyInput, setQtyInput] = useState('');
   const [unitCode, setUnitCode] = useState('g');
-  const [reason, setReason] = useState('Ingreso manual');
+  const [reason, setReason] = useState('');
 
   const mergedIngredients = useMemo(() => {
     const stockIngredients = stockItems.map((item) => item.ingredient);
@@ -58,10 +61,14 @@ export function IngredientsPage() {
   }, [ingredients, sessionIngredients, stockItems]);
 
   const selectedIngredient =
-    mergedIngredients.find((ingredient) => ingredient.id === selectedIngredientId) ?? null;
+    mergedIngredients.find((ingredient) => ingredient.id === Number(selectedIngredientId)) ?? null;
 
   const availableDefaultUnits = unitsByDimension[dimension];
   const availableAdjustUnits = unitsByDimension[selectedIngredient?.dimension ?? dimension];
+
+  useEffect(() => {
+    setSelectedLocationId(currentLocation?.id ?? null);
+  }, [currentLocation]);
 
   useEffect(() => {
     setDefaultUnitCode(availableDefaultUnits[0]);
@@ -72,14 +79,23 @@ export function IngredientsPage() {
   }, [availableAdjustUnits]);
 
   useEffect(() => {
-    if (mergedIngredients.length > 0 && selectedIngredientId === 0) {
-      setSelectedIngredientId(mergedIngredients[0].id);
+    if (mergedIngredients.length === 0 && selectedIngredientId !== '') {
+      setSelectedIngredientId('');
     }
   }, [mergedIngredients, selectedIngredientId]);
 
   useEffect(() => {
-    void Promise.all([loadIngredients(), loadStock(currentLocation.id)]);
-  }, [currentLocation.id]);
+    void loadIngredients();
+  }, []);
+
+  useEffect(() => {
+    if (selectedLocationId === null) {
+      setStockItems([]);
+      return;
+    }
+
+    void loadStock(selectedLocationId);
+  }, [selectedLocationId]);
 
   async function loadIngredients() {
     try {
@@ -136,7 +152,9 @@ export function IngredientsPage() {
       setName('');
       setMessage(`Ingrediente #${ingredient.id} creado correctamente.`);
       await loadIngredients();
-      await loadStock(currentLocation.id);
+      if (selectedLocationId !== null) {
+        await loadStock(selectedLocationId);
+      }
     } catch (error) {
       setSubmitError(
         error instanceof Error
@@ -154,6 +172,15 @@ export function IngredientsPage() {
       setSubmitError('Selecciona un ingrediente para ajustar stock.');
       return;
     }
+    if (selectedLocationId === null) {
+      setSubmitError('Selecciona una ubicación válida para ajustar stock.');
+      return;
+    }
+    const qty = parseNumberInput(qtyInput);
+    if (qty === null || qty <= 0) {
+      setSubmitError('Ingresa una cantidad valida mayor a 0.');
+      return;
+    }
 
     try {
       setAdjustingStock(true);
@@ -169,8 +196,8 @@ export function IngredientsPage() {
         user_id: currentUser.id,
       });
 
-      setQty(0);
-      setReason('Ingreso manual');
+      setQtyInput('');
+      setReason('');
       setMessage('Stock ajustado correctamente.');
       await loadStock(selectedLocationId);
     } catch (error) {
@@ -190,21 +217,21 @@ export function IngredientsPage() {
           value={String(mergedIngredients.length)}
           hint={
             ingredients.length > 0
-              ? 'Leidos desde backend'
-              : 'Usando fallback de sesion o stock'
+              ? 'Leídos desde backend'
+              : 'Usando fallback de sesión o stock'
           }
           icon={<FlaskConical size={18} />}
         />
         <SummaryCard
           title="Items con stock"
           value={String(stockItems.length)}
-          hint={currentLocation.name}
+          hint={currentLocation?.name ?? 'Sin POS activo'}
           icon={<Warehouse size={18} />}
         />
         <SummaryCard
           title="Movimientos"
-          value="Proximamente"
-          hint="Seccion visual lista para auditoria de inventario"
+          value="Próximamente"
+          hint="Seccion visual lista para auditoría de inventario"
           icon={<Boxes size={18} />}
         />
       </div>
@@ -221,12 +248,21 @@ export function IngredientsPage() {
         </div>
       ) : null}
 
+      {!currentLocation ? (
+        <Card>
+          <EmptyState
+            title="Sin punto de venta activo"
+            description="Selecciona una ubicación real en el encabezado para consultar y ajustar inventario."
+          />
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
         <div className="grid gap-4">
           <Card>
             <p className="text-sm text-slate-400">Crear ingrediente</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Gestion base del inventario
+              Gestión base del inventario
             </h2>
 
             <div className="mt-5 grid gap-4">
@@ -281,20 +317,27 @@ export function IngredientsPage() {
           <Card>
             <p className="text-sm text-slate-400">Ajuste de stock</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Operacion administrativa
+              Operación administrativa
             </h2>
 
             <div className="mt-5 grid gap-4">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Location</span>
+                <span className="text-sm font-medium text-slate-200">Ubicación</span>
                 <select
-                  value={selectedLocationId}
-                  onChange={(event) => setSelectedLocationId(Number(event.target.value))}
+                  value={selectedLocationId ?? ''}
+                  onChange={(event) =>
+                    setSelectedLocationId(
+                      event.target.value ? Number(event.target.value) : null,
+                    )
+                  }
                   className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
                 >
-                  <option value={currentLocation.id}>
-                    #{currentLocation.id} · {currentLocation.name}
-                  </option>
+                  <option value="">Selecciona una ubicación</option>
+                  {availableLocations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      #{location.id} · {location.name}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -304,14 +347,14 @@ export function IngredientsPage() {
                 </span>
                 <select
                   value={selectedIngredientId}
-                  onChange={(event) => setSelectedIngredientId(Number(event.target.value))}
+                  onChange={(event) => setSelectedIngredientId(event.target.value)}
                   className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
                 >
                   {mergedIngredients.length === 0 ? (
-                    <option value={0}>Sin ingredientes disponibles</option>
+                    <option value="">{mergedIngredients.length === 0 ? 'Sin ingredientes disponibles' : 'Selecciona un ingrediente'}</option>
                   ) : (
                     mergedIngredients.map((ingredient) => (
-                      <option key={ingredient.id} value={ingredient.id}>
+                      <option key={ingredient.id} value={String(ingredient.id)}>
                         #{ingredient.id} · {ingredient.name}
                       </option>
                     ))
@@ -323,8 +366,16 @@ export function IngredientsPage() {
                 <Input
                   type="number"
                   label="Cantidad"
-                  value={qty}
-                  onChange={(event) => setQty(Number(event.target.value))}
+                  placeholder="Ej: 2"
+                  value={qtyInput}
+                  onChange={(event) => {
+                    const nextValue = normalizeNumberInput(event.target.value, {
+                      allowDecimal: true,
+                    });
+                    if (nextValue !== null) {
+                      setQtyInput(nextValue);
+                    }
+                  }}
                 />
 
                 <label className="block space-y-2">
@@ -344,17 +395,22 @@ export function IngredientsPage() {
               </div>
 
               <Input
-                label="Razon"
+                label="Razón"
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
+                placeholder="Ej: Ingreso manual"
               />
 
               <div className="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3 text-sm text-slate-300">
-                Usuario aplicado: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesion'}</span>
+                Usuario aplicado: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesión'}</span>
               </div>
 
               <Button
-                disabled={adjustingStock || mergedIngredients.length === 0}
+                disabled={
+                  adjustingStock ||
+                  selectedLocationId === null ||
+                  mergedIngredients.length === 0
+                }
                 onClick={handleAdjustStock}
               >
                 {adjustingStock ? 'Aplicando...' : 'Ajustar stock'}
@@ -369,7 +425,7 @@ export function IngredientsPage() {
               <div>
                 <p className="text-sm text-slate-400">Listado de ingredientes</p>
                 <h2 className="font-display text-2xl font-bold text-white">
-                  Catalogo base
+                  Catálogo base
                 </h2>
               </div>
               <Button variant="secondary" onClick={() => void loadIngredients()}>
@@ -394,7 +450,7 @@ export function IngredientsPage() {
                 />
               </div>
             ) : (
-              <div className="mt-6 grid gap-3">
+              <ScrollPanel className="mt-6 grid gap-3">
                 {mergedIngredients.map((ingredient) => (
                   <div
                     key={ingredient.id}
@@ -416,12 +472,12 @@ export function IngredientsPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </ScrollPanel>
             )}
 
             {catalogError ? (
               <div className="mt-4 rounded-2xl border border-sky-400/20 bg-sky-400/10 px-4 py-3 text-sm text-sky-100">
-                GET /ingredients no esta disponible o fallo. La vista usa ingredientes de sesion y del stock para no bloquear la operacion.
+                GET /ingredients no esta disponible o fallo. La vista usa ingredientes de sesión y del stock para no bloquear la operacion.
               </div>
             ) : null}
           </Card>
@@ -436,7 +492,11 @@ export function IngredientsPage() {
               </div>
               <Button
                 variant="secondary"
-                onClick={() => void loadStock(selectedLocationId)}
+                onClick={() => {
+                  if (selectedLocationId !== null) {
+                    void loadStock(selectedLocationId);
+                  }
+                }}
               >
                 Refrescar
               </Button>
@@ -455,11 +515,11 @@ export function IngredientsPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin stock registrado"
-                  description="Ajusta inventario para empezar a ver existencias por location."
+                  description="Ajusta inventario para empezar a ver existencias por ubicación."
                 />
               </div>
             ) : (
-              <div className="mt-6 grid gap-3">
+              <ScrollPanel className="mt-6 grid gap-3">
                 {stockItems.map((item) => (
                   <div
                     key={`${item.ingredientId}-${item.locationId}`}
@@ -481,7 +541,7 @@ export function IngredientsPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </ScrollPanel>
             )}
 
             {stockError ? (
@@ -498,7 +558,7 @@ export function IngredientsPage() {
             </h2>
             <div className="mt-6">
               <EmptyState
-                title="Historial de movimientos proximamente"
+                title="Historial de movimientos próximamente"
                 description="La base visual ya esta lista para mostrar ingresos, salidas, ajustes y referencias de venta cuando el backend exponga el endpoint GET correspondiente."
               />
             </div>
@@ -508,3 +568,8 @@ export function IngredientsPage() {
     </div>
   );
 }
+
+
+
+
+

@@ -12,6 +12,14 @@ import { CombosPage } from '@/features/combos/CombosPage';
 import { SalesPage } from '@/features/sales/SalesPage';
 import { AdminPage } from '@/features/admin/AdminPage';
 import { ProtectedRoute } from '@/app/router/ProtectedRoute';
+import { AccessDeniedPage } from '@/features/access/AccessDeniedPage';
+import { getAllowedRolesForRoute, getDefaultRouteForRole } from '@/app/permissions';
+import { useSessionStore } from '@/store/sessionStore';
+
+function HomeRedirect() {
+  const currentUser = useSessionStore((state) => state.currentUser);
+  return <Navigate to={getDefaultRouteForRole(currentUser?.role)} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -26,18 +34,71 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="/pos" replace /> },
-      { path: '/pos', element: <PosPage /> },
-      { path: '/cash', element: <CashPage /> },
-      { path: '/products', element: <ProductsPage /> },
-      { path: '/ingredients', element: <IngredientsPage /> },
-      { path: '/combos', element: <CombosPage /> },
-      { path: '/sales', element: <SalesPage /> },
-      { path: '/admin', element: <AdminPage /> },
+      { index: true, element: <HomeRedirect /> },
+      {
+        path: '/pos',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/pos')}>
+            <PosPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/cash',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/cash')}>
+            <CashPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/products',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/products')}>
+            <ProductsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/ingredients',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/ingredients')}>
+            <IngredientsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/combos',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/combos')}>
+            <CombosPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/sales',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/sales')}>
+            <SalesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/admin')}>
+            <AdminPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/access-denied',
+        element: <AccessDeniedPage />,
+      },
     ],
   },
   {
     path: '*',
-    element: <Navigate to="/pos" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Boxes,
@@ -11,11 +11,17 @@ import {
 } from 'lucide-react';
 import { AdminChartCard } from '@/components/AdminChartCard';
 import { AlertCard } from '@/components/AlertCard';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { Input } from '@/components/Input';
 import { KpiCard } from '@/components/KpiCard';
+import { RoleModeBanner } from '@/components/RoleModeBanner';
+import { ScrollPanel } from '@/components/ScrollPanel';
 import { SectionHeader } from '@/components/SectionHeader';
+import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
+import { useAppStore } from '@/store/appStore';
 import { formatCurrency, formatDate } from '@/utils/format';
 import type {
   AdminLowStockItem,
@@ -47,6 +53,13 @@ function SkeletonRows({ rows = 4 }: { rows?: number }) {
 }
 
 export function AdminPage() {
+  const { isAdmin, isAuditor, can } = usePermissions();
+  const availableLocations = useAppStore((state) => state.availableLocations);
+  const locationsLoading = useAppStore((state) => state.locationsLoading);
+  const locationsError = useAppStore((state) => state.locationsError);
+  const setAvailableLocations = useAppStore((state) => state.setAvailableLocations);
+  const setLocationsLoading = useAppStore((state) => state.setLocationsLoading);
+  const setLocationsError = useAppStore((state) => state.setLocationsError);
   const [summary, setSummary] = useState<AdminSummary | null>(null);
   const [salesByPayment, setSalesByPayment] = useState<AdminSalesByPaymentItem[]>([]);
   const [topItems, setTopItems] = useState<AdminTopItem[]>([]);
@@ -64,6 +77,10 @@ export function AdminPage() {
   const [topItemsError, setTopItemsError] = useState<string | null>(null);
   const [lowStockError, setLowStockError] = useState<string | null>(null);
   const [recentActivityError, setRecentActivityError] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState('');
+  const [locationMessage, setLocationMessage] = useState<string | null>(null);
+  const [locationSubmitError, setLocationSubmitError] = useState<string | null>(null);
+  const [creatingLocation, setCreatingLocation] = useState(false);
 
   useEffect(() => {
     void loadDashboard();
@@ -75,6 +92,48 @@ export function AdminPage() {
     void loadTopItems();
     void loadLowStock();
     void loadRecentActivity();
+  }
+
+  async function refreshLocations() {
+    try {
+      setLocationsLoading(true);
+      setLocationsError(null);
+      const locations = await posApi.getLocations();
+      setAvailableLocations(locations);
+    } catch (error) {
+      setLocationsError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible cargar los puntos de venta',
+      );
+    } finally {
+      setLocationsLoading(false);
+    }
+  }
+
+  async function handleCreateLocation() {
+    if (!locationName.trim()) {
+      setLocationSubmitError('Escribe el nombre del punto de venta.');
+      return;
+    }
+
+    try {
+      setCreatingLocation(true);
+      setLocationSubmitError(null);
+      setLocationMessage(null);
+      const location = await posApi.createLocation({ name: locationName.trim() });
+      setLocationName('');
+      setLocationMessage(`Punto de venta ${location.name} creado correctamente.`);
+      await refreshLocations();
+    } catch (error) {
+      setLocationSubmitError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible crear el punto de venta',
+      );
+    } finally {
+      setCreatingLocation(false);
+    }
   }
 
   async function loadSummary() {
@@ -101,7 +160,7 @@ export function AdminPage() {
       setSalesByPaymentError(
         error instanceof Error
           ? error.message
-          : 'No fue posible cargar ventas por metodo de pago',
+          : 'No fue posible cargar ventas por método de pago',
       );
     } finally {
       setSalesByPaymentLoading(false);
@@ -182,17 +241,29 @@ export function AdminPage() {
 
   const currentCashSessionLabel = summary?.current_cash_session
     ? `Abierta #${summary.current_cash_session.id}`
-    : 'Sin sesion';
+    : 'Sin sesión';
 
   return (
     <div className="grid gap-6">
+      {isAuditor ? (
+        <RoleModeBanner
+          title="Panel en modo auditoría"
+          description="Este dashboard es de solo lectura para el rol AUDITOR. Puedes revisar métricas, alertas y actividad reciente sin ejecutar acciones operativas."
+          tone="warning"
+        />
+      ) : null}
+
       <Card className="overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-teal-300/12 via-sky-300/10 to-transparent" />
         <div className="relative">
           <SectionHeader
-            eyebrow="Administracion"
+            eyebrow="Administración"
             title="Panel administrativo"
-            description="Dashboard operativo conectado a metricas reales del backend para monitorear ventas, caja, stock y actividad reciente."
+            description={
+              isAdmin
+                ? 'Dashboard operativo conectado a métricas reales del backend para monitorear ventas, caja, stock y actividad reciente.'
+                : 'Vista de consulta conectada a métricas reales del backend para auditoría, seguimiento y revisión operativa.'
+            }
           />
         </div>
       </Card>
@@ -201,16 +272,16 @@ export function AdminPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <KpiCard
-          title="Ventas del dia"
+          title="Ventas del día"
           value={summaryLoading ? '...' : formatCurrency(summary?.sales_today_total ?? 0)}
           hint="Total vendido hoy"
           icon={<ShoppingBag size={18} />}
           tone="success"
         />
         <KpiCard
-          title="Numero de ventas"
+          title="Número de ventas"
           value={summaryLoading ? '...' : String(summary?.sales_count ?? 0)}
-          hint="Ventas pagadas del dia"
+          hint="Ventas pagadas del día"
           icon={<Receipt size={18} />}
         />
         <KpiCard
@@ -233,7 +304,7 @@ export function AdminPage() {
         <KpiCard
           title="Productos activos"
           value={summaryLoading ? '...' : String(summary?.active_products_count ?? 0)}
-          hint="Conteo real del catalogo"
+          hint="Conteo real del catálogo"
           icon={<Boxes size={18} />}
         />
         <KpiCard
@@ -249,8 +320,8 @@ export function AdminPage() {
         {salesByPaymentError ? (
           <Card>
             <SectionHeader
-              title="Ventas por metodo de pago"
-              description="Distribucion operativa reciente"
+              title="Ventas por método de pago"
+              description="Distribución operativa reciente"
             />
             <div className="mt-6">
               <BlockError message={salesByPaymentError} />
@@ -259,8 +330,8 @@ export function AdminPage() {
         ) : salesByPaymentLoading ? (
           <Card>
             <SectionHeader
-              title="Ventas por metodo de pago"
-              description="Distribucion operativa reciente"
+              title="Ventas por método de pago"
+              description="Distribución operativa reciente"
             />
             <div className="mt-6">
               <SkeletonRows rows={3} />
@@ -268,13 +339,13 @@ export function AdminPage() {
           </Card>
         ) : (
           <AdminChartCard
-            title="Ventas por metodo de pago"
-            description="Distribucion operativa reciente"
+            title="Ventas por método de pago"
+            description="Distribución operativa reciente"
             data={paymentMethodData}
             chartType="pie"
             valueFormat="currency"
-            emptyTitle="Sin ventas por metodo registradas"
-            emptyDescription="Aparecera informacion cuando existan pagos confirmados."
+            emptyTitle="Sin ventas por método registradas"
+            emptyDescription="Aparecerá informacion cuando existan pagos confirmados."
             footer={
               <p className="text-xs text-slate-500">
                 Totales reales agregados desde pagos registrados.
@@ -286,7 +357,7 @@ export function AdminPage() {
         {topItemsError ? (
           <Card>
             <SectionHeader
-              title="Productos mas vendidos"
+              title="Productos más vendidos"
               description="Ranking real de items"
             />
             <div className="mt-6">
@@ -296,7 +367,7 @@ export function AdminPage() {
         ) : topItemsLoading ? (
           <Card>
             <SectionHeader
-              title="Productos mas vendidos"
+              title="Productos más vendidos"
               description="Ranking real de items"
             />
             <div className="mt-6">
@@ -305,7 +376,7 @@ export function AdminPage() {
           </Card>
         ) : (
           <AdminChartCard
-            title="Productos mas vendidos"
+            title="Productos más vendidos"
             description="Ranking real de items"
             data={topItemsData}
             chartType="bar"
@@ -326,7 +397,7 @@ export function AdminPage() {
           <SectionHeader
             eyebrow="Alertas"
             title="Estado operativo"
-            description="Senales rapidas sobre caja, inventario y ventas."
+            description="Senales rápidas sobre caja, inventario y ventas."
           />
 
           <div className="mt-6 grid gap-3">
@@ -342,8 +413,8 @@ export function AdminPage() {
                   }
                   description={
                     summary?.current_cash_session
-                      ? `Sesion #${summary.current_cash_session.id} activa en ${summary.current_cash_session.location_name}.`
-                      : 'No hay una sesion de caja activa en este momento.'
+                      ? `Sesión #${summary.current_cash_session.id} activa en ${summary.current_cash_session.location_name}.`
+                      : 'No hay una sesión de caja activa en este momento.'
                   }
                   tone={summary?.current_cash_session ? 'success' : 'warning'}
                   icon={<Wallet size={18} />}
@@ -381,7 +452,7 @@ export function AdminPage() {
                   description={
                     (summary?.sales_count ?? 0) > 0
                       ? `${summary?.sales_count ?? 0} ventas pagadas registradas hoy.`
-                      : 'Todavia no hay ventas pagadas para el dia actual.'
+                      : 'Todavía no hay ventas pagadas para el día actual.'
                   }
                   tone={(summary?.sales_count ?? 0) > 0 ? 'info' : 'warning'}
                   icon={<Receipt size={18} />}
@@ -410,11 +481,11 @@ export function AdminPage() {
             <div className="mt-6">
               <EmptyState
                 title="Sin actividad reciente"
-                description="Aparecera movimiento aqui cuando existan ventas, aperturas de caja o ajustes de inventario."
+                description="Aparecerá movimiento aqui cuando existan ventas, aperturas de caja o ajustes de inventario."
               />
             </div>
           ) : (
-            <div className="mt-6 grid gap-3">
+            <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[34rem]">
               {recentActivity.map((item) => (
                 <div
                   key={`${item.activity_type}-${item.entity_id}-${item.created_at}`}
@@ -434,10 +505,127 @@ export function AdminPage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </ScrollPanel>
           )}
         </Card>
       </div>
+
+      {isAdmin ? (
+        <Card>
+          <SectionHeader
+            eyebrow="Siguiente fase"
+            title="Controles administrativos"
+            description="La base visual queda preparada para acciones futuras como exportación, configuración de alertas y reglas de supervisión."
+          />
+
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
+            {['Exportacion de reportes', 'Alertas configurables', 'Reglas por sucursal'].map(
+              (item) => (
+                <div
+                  key={item}
+                  className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5"
+                >
+                  <p className="font-medium text-white">{item}</p>
+                  <p className="mt-2 text-sm text-slate-400">
+                    Disponible cuando la siguiente fase habilite acciones administrativas.
+                  </p>
+                </div>
+              ),
+            )}
+          </div>
+        </Card>
+      ) : null}
+
+      {can('canManageLocations') ? (
+        <Card>
+          <SectionHeader
+            eyebrow="Ubicaciones"
+            title="Puntos de venta"
+            description="Gestiona los POS reales disponibles para caja, inventario y ventas."
+          />
+
+          {locationMessage ? (
+            <div className="mt-4 rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+              {locationMessage}
+            </div>
+          ) : null}
+
+          {locationSubmitError ? (
+            <div className="mt-4 rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+              {locationSubmitError}
+            </div>
+          ) : null}
+
+          {locationsError ? (
+            <div className="mt-4">
+              <BlockError message={locationsError} />
+            </div>
+          ) : null}
+
+          <div className="mt-6 grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+            <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
+              <p className="text-sm text-slate-400">Crear ubicación</p>
+              <h3 className="mt-2 font-display text-2xl font-bold text-white">
+                Nuevo punto de venta
+              </h3>
+
+              <div className="mt-5 grid gap-4">
+                <Input
+                  label="Nombre del POS"
+                  placeholder="Ej: POS Centro"
+                  value={locationName}
+                  onChange={(event) => setLocationName(event.target.value)}
+                />
+                <Button
+                  disabled={creatingLocation || !locationName.trim()}
+                  onClick={handleCreateLocation}
+                >
+                  {creatingLocation ? 'Guardando...' : 'Crear punto de venta'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-slate-400">Ubicaciones reales</p>
+                  <h3 className="mt-2 font-display text-2xl font-bold text-white">
+                    POS disponibles
+                  </h3>
+                </div>
+                <Button variant="secondary" onClick={() => void refreshLocations()}>
+                  Refrescar
+                </Button>
+              </div>
+
+              {locationsLoading ? (
+                <div className="mt-6">
+                  <SkeletonRows rows={3} />
+                </div>
+              ) : availableLocations.length === 0 ? (
+                <div className="mt-6">
+                  <EmptyState
+                    title="Sin puntos de venta"
+                    description="Crea la primera ubicación para operar caja, inventario y ventas con datos reales."
+                  />
+                </div>
+              ) : (
+                <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[20rem]">
+                  {availableLocations.map((location) => (
+                    <div
+                      key={location.id}
+                      className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4"
+                    >
+                      <p className="font-medium text-white">{location.name}</p>
+                      <p className="mt-1 text-sm text-slate-400">ID {location.id}</p>
+                    </div>
+                  ))}
+                </ScrollPanel>
+              )}
+            </div>
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }
@@ -447,4 +635,6 @@ function formatActivityType(activityType: AdminRecentActivityItem['activity_type
   if (activityType === 'CASH_SESSION') return 'Caja';
   return 'Inventario';
 }
+
+
 
