@@ -2,6 +2,7 @@
 import { Boxes, FlaskConical, Warehouse } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { AccessState } from '@/components/AccessState';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { ScrollPanel } from '@/components/ScrollPanel';
@@ -10,6 +11,7 @@ import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { Ingredient, IngredientDimension, StockListItem } from '@/types/api';
+import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
 import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
@@ -31,6 +33,8 @@ export function IngredientsPage() {
   const [loadingStock, setLoadingStock] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [stockError, setStockError] = useState<string | null>(null);
+  const [catalogAccessDenied, setCatalogAccessDenied] = useState(false);
+  const [stockAccessDenied, setStockAccessDenied] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [creatingIngredient, setCreatingIngredient] = useState(false);
@@ -101,13 +105,15 @@ export function IngredientsPage() {
     try {
       setLoadingCatalog(true);
       setCatalogError(null);
+      setCatalogAccessDenied(false);
       const response = await posApi.getIngredients();
       setIngredients(response);
     } catch (error) {
       setIngredients([]);
+      setCatalogAccessDenied(isAccessDeniedError(error));
       setCatalogError(
         error instanceof Error
-          ? error.message
+          ? translateProtectedError(error, 'No fue posible cargar ingredientes')
           : 'No fue posible cargar ingredientes',
       );
     } finally {
@@ -119,12 +125,16 @@ export function IngredientsPage() {
     try {
       setLoadingStock(true);
       setStockError(null);
+      setStockAccessDenied(false);
       const response = await posApi.getStock(locationId);
       setStockItems(response.items);
     } catch (error) {
       setStockItems([]);
+      setStockAccessDenied(isAccessDeniedError(error));
       setStockError(
-        error instanceof Error ? error.message : 'No fue posible cargar stock',
+        error instanceof Error
+          ? translateProtectedError(error, 'No fue posible cargar stock')
+          : 'No fue posible cargar stock',
       );
     } finally {
       setLoadingStock(false);
@@ -255,6 +265,10 @@ export function IngredientsPage() {
             description="Selecciona una ubicación real en el encabezado para consultar y ajustar inventario."
           />
         </Card>
+      ) : null}
+
+      {catalogAccessDenied || stockAccessDenied ? (
+        <AccessState description="Tu perfil actual no tiene permiso para consultar o gestionar ingredientes e inventario." />
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">

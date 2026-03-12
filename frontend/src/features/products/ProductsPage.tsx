@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BookOpenCheck, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { AccessState } from '@/components/AccessState';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
@@ -13,6 +14,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { formatCurrency } from '@/utils/format';
+import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
 import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 import type {
   CatalogProduct,
@@ -47,6 +49,7 @@ export function ProductsPage() {
   const [recipeStatusByVariant, setRecipeStatusByVariant] = useState<Record<number, boolean>>({});
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogAccessDenied, setCatalogAccessDenied] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [creatingProduct, setCreatingProduct] = useState(false);
@@ -108,6 +111,7 @@ export function ProductsPage() {
     try {
       setLoadingCatalog(true);
       setCatalogError(null);
+      setCatalogAccessDenied(false);
 
       const [productsResponse, variantsResponse, ingredientsResponse] = await Promise.all([
         posApi.getProducts(),
@@ -120,9 +124,15 @@ export function ProductsPage() {
       setIngredients(ingredientsResponse);
       await loadRecipeStatuses(variantsResponse);
     } catch (error) {
+      setCatalogAccessDenied(isAccessDeniedError(error));
       setCatalogError(
         error instanceof Error
-          ? translateCatalogError(error.message)
+          ? translateCatalogError(
+              translateProtectedError(
+                error,
+                'No fue posible cargar productos, variantes y recetas.',
+              ),
+            )
           : 'No fue posible cargar productos, variantes y recetas.',
       );
     } finally {
@@ -544,6 +554,10 @@ export function ProductsPage() {
         <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
           {catalogError}
         </div>
+      ) : null}
+
+      {catalogAccessDenied ? (
+        <AccessState description="Tu perfil actual no puede consultar productos, variantes ni recetas administrativas." />
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">

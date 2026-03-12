@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { posApi } from '@/services/api/posApi';
 import { clearStoredToken, setStoredToken } from '@/services/api/tokenStorage';
+import { useAppStore } from '@/store/appStore';
+import { useCartStore } from '@/store/cartStore';
 import type { AuthUser } from '@/types/api';
 
 interface LoginPayload {
@@ -91,6 +93,8 @@ export const useSessionStore = create<SessionState>()(
       },
       clearSession: () => {
         clearStoredToken();
+        useCartStore.getState().resetCartState();
+        useAppStore.getState().resetAppState();
         set({
           currentUser: null,
           accessToken: null,

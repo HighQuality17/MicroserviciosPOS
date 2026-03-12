@@ -1,5 +1,7 @@
 import axios from 'axios';
 import type { ApiErrorResponse, ApiResponse } from '@/types/api';
+import { notifyUnauthorized } from '@/services/api/authEvents';
+import { ApiRequestError } from '@/services/api/errors';
 import { getStoredToken } from '@/services/api/tokenStorage';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
@@ -24,12 +26,20 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const payload = error.response?.data as ApiErrorResponse | undefined;
+    const statusCode = payload?.error?.statusCode ?? error.response?.status ?? 500;
+    const path = payload?.error?.path;
     const message = payload?.error?.message;
     const normalizedMessage = Array.isArray(message)
       ? message.join(', ')
       : message ?? 'No fue posible completar la solicitud';
 
-    return Promise.reject(new Error(normalizedMessage));
+    const apiError = new ApiRequestError(normalizedMessage, statusCode, path);
+
+    if (statusCode === 401) {
+      notifyUnauthorized();
+    }
+
+    return Promise.reject(apiError);
   },
 );
 
