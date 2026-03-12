@@ -1,17 +1,56 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
+import { getDefaultRouteForRole } from '@/app/permissions';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
-import { buildMockUser, useSessionStore } from '@/store/sessionStore';
-import type { UserRole } from '@/types/api';
+import { useSessionStore } from '@/store/sessionStore';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const setCurrentUser = useSessionStore((state) => state.setCurrentUser);
-  const [name, setName] = useState('Cajero principal');
-  const [role, setRole] = useState<UserRole>('ADMIN');
+  const currentUser = useSessionStore((state) => state.currentUser);
+  const isReady = useSessionStore((state) => state.isReady);
+  const isAuthenticating = useSessionStore((state) => state.isAuthenticating);
+  const login = useSessionStore((state) => state.login);
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      navigate(getDefaultRouteForRole(currentUser.role), { replace: true });
+    }
+  }, [currentUser, navigate]);
+
+  if (isReady && currentUser) {
+    return <Navigate to={getDefaultRouteForRole(currentUser.role)} replace />;
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    const normalizedIdentifier = identifier.trim();
+    if (!normalizedIdentifier || !password.trim()) {
+      setError('Ingresa tu usuario y contraseña.');
+      return;
+    }
+
+    try {
+      await login({
+        username: normalizedIdentifier.includes('@') ? undefined : normalizedIdentifier,
+        email: normalizedIdentifier.includes('@') ? normalizedIdentifier : undefined,
+        password,
+      });
+    } catch (loginError) {
+      setError(
+        loginError instanceof Error
+          ? normalizeLoginError(loginError.message)
+          : 'No fue posible iniciar sesión.',
+      );
+    }
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
@@ -49,47 +88,63 @@ export function LoginPage() {
               <ShieldCheck size={22} />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold text-white">Ingreso local</h2>
+              <h2 className="font-display text-2xl font-bold text-white">Ingreso seguro</h2>
               <p className="text-sm text-slate-400">
-                Acceso temporal mientras llega la autenticación real.
+                Accede con tu usuario real del backend local.
               </p>
             </div>
           </div>
 
-          <div className="grid gap-4">
+          <form className="grid gap-4" onSubmit={handleSubmit}>
             <Input
-              label="Nombre"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Nombre del usuario"
+              label="Usuario o correo"
+              value={identifier}
+              onChange={(event) => setIdentifier(event.target.value)}
+              placeholder="Ej: admin o admin@local.pos"
+              autoComplete="username"
             />
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Perfil</span>
-              <select
-                value={role}
-                onChange={(event) => setRole(event.target.value as UserRole)}
-                className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-teal-400/70 focus:bg-slate-950/90"
-              >
-                <option value="ADMIN">Administrador</option>
-                <option value="CASHIER">Cajero</option>
-                <option value="AUDITOR">Auditor</option>
-              </select>
-            </label>
+            <Input
+              label="Contraseña"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Tu contraseña"
+              autoComplete="current-password"
+            />
 
-            <Button
-              className="mt-2"
-              onClick={() => {
-                setCurrentUser(buildMockUser(name || 'Usuario local', role));
-                navigate('/pos');
-              }}
-            >
-              Entrar al sistema
+            {error ? (
+              <p className="rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                {error}
+              </p>
+            ) : null}
+
+            <p className="text-xs text-slate-500">
+              Usuarios iniciales: <span className="text-slate-300">admin</span>,
+              <span className="ml-1 text-slate-300">cashier</span>,
+              <span className="ml-1 text-slate-300">auditor</span>.
+            </p>
+
+            <Button type="submit" className="mt-2" disabled={isAuthenticating}>
+              {isAuthenticating ? 'Ingresando...' : 'Entrar al sistema'}
             </Button>
-          </div>
+          </form>
         </Card>
       </div>
     </div>
   );
 }
 
+function normalizeLoginError(message: string) {
+  const normalizedMessage = message.toLowerCase();
+
+  if (normalizedMessage.includes('credenciales')) {
+    return 'Usuario o contraseña incorrectos.';
+  }
+
+  if (normalizedMessage.includes('email o username')) {
+    return 'Ingresa un usuario o correo válido.';
+  }
+
+  return message;
+}
