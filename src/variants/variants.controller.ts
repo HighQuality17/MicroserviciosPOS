@@ -7,27 +7,36 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
 import { UpdateVariantStatusDto } from './dto/update-variant-status.dto';
 import { VariantsService } from './variants.service';
 
 @Controller('variants')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class VariantsController {
   constructor(private readonly variantsService: VariantsService) {}
 
   @Post()
+  @Roles(UserRole.ADMIN)
   create(@Body() dto: CreateVariantDto) {
     return this.variantsService.create(dto);
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.AUDITOR)
   findActive() {
     return this.variantsService.findActive();
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateVariantDto,
@@ -36,6 +45,7 @@ export class VariantsController {
   }
 
   @Patch(':id/status')
+  @Roles(UserRole.ADMIN)
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateVariantStatusDto,
@@ -44,6 +54,7 @@ export class VariantsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.variantsService.remove(id);
   }

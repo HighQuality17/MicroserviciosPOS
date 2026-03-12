@@ -26,6 +26,16 @@ export interface User {
   role: UserRole;
 }
 
+export interface AuthUser extends User {
+  username: string;
+  email: string;
+}
+
+export interface AuthLoginResponse {
+  access_token: string;
+  user: User;
+}
+
 export interface Location {
   id: number;
   name: string;

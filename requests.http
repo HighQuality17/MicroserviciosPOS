@@ -1,4 +1,22 @@
 @base = http://localhost:3000/api
+@token = replace-with-jwt-token
+
+# Nota: todos los endpoints siguientes, excepto /auth/login, / y /health,
+# requieren:
+# Authorization: Bearer {{token}}
+
+### Login with admin user
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "Pos123456!"
+}
+
+### Get current authenticated user
+GET {{base}}/auth/me
+Authorization: Bearer {{token}}
 
 ### Seed unit types
 POST {{base}}/unit-types/seed
@@ -6,6 +24,7 @@ POST {{base}}/unit-types/seed
 ### Create location
 POST {{base}}/locations
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "POS1"
@@ -14,6 +33,7 @@ Content-Type: application/json
 ### Create another location
 POST {{base}}/locations
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "POS2"
@@ -21,10 +41,12 @@ Content-Type: application/json
 
 ### List available locations
 GET {{base}}/locations
+Authorization: Bearer {{token}}
 
 ### Create ingredient (coffee in grams)
 POST {{base}}/ingredients
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "Cafe Molido",
@@ -34,10 +56,12 @@ Content-Type: application/json
 
 ### List ingredients
 GET {{base}}/ingredients
+Authorization: Bearer {{token}}
 
 ### Adjust stock: +2kg coffee in POS1 (converted to 2000g base)
 POST {{base}}/stock/adjust
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "location_id": 1,
@@ -50,10 +74,12 @@ Content-Type: application/json
 
 ### Stock by location
 GET {{base}}/stock?location_id=1
+Authorization: Bearer {{token}}
 
 ### Create product
 POST {{base}}/products
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "Cafe Americano",
@@ -62,10 +88,12 @@ Content-Type: application/json
 
 ### List active products with variants
 GET {{base}}/products
+Authorization: Bearer {{token}}
 
 ### Update product
 PATCH {{base}}/products/1
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "Cafe Americano Clasico"
@@ -74,6 +102,7 @@ Content-Type: application/json
 ### Deactivate product
 PATCH {{base}}/products/1/status
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "active": false
@@ -81,10 +110,12 @@ Content-Type: application/json
 
 ### Delete product if it has no variants or historical usage
 DELETE {{base}}/products/1
+Authorization: Bearer {{token}}
 
 ### Create variant 12oz
 POST {{base}}/variants
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "product_id": 1,
@@ -96,6 +127,7 @@ Content-Type: application/json
 ### Create variant 16oz
 POST {{base}}/variants
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "product_id": 1,
@@ -106,10 +138,12 @@ Content-Type: application/json
 
 ### List active variants
 GET {{base}}/variants
+Authorization: Bearer {{token}}
 
 ### Update variant
 PATCH {{base}}/variants/1
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "size": "12oz Hot",
@@ -120,6 +154,7 @@ Content-Type: application/json
 ### Deactivate variant
 PATCH {{base}}/variants/1/status
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "active": false
@@ -127,10 +162,12 @@ Content-Type: application/json
 
 ### Delete variant if it has no historical usage or combo assignments
 DELETE {{base}}/variants/1
+Authorization: Bearer {{token}}
 
 ### Create combo
 POST {{base}}/combos
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "Combo Americano Doble",
@@ -141,6 +178,7 @@ Content-Type: application/json
 ### Set combo items
 POST {{base}}/combos/1/items
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "items": [
@@ -157,28 +195,36 @@ Content-Type: application/json
 
 ### List active combos
 GET {{base}}/combos
+Authorization: Bearer {{token}}
 
 ### Preferred POS catalog endpoint
 GET {{base}}/catalog
+Authorization: Bearer {{token}}
 
 ### Admin summary metrics
 GET {{base}}/admin/summary
+Authorization: Bearer {{token}}
 
 ### Admin sales by payment method
 GET {{base}}/admin/sales-by-payment
+Authorization: Bearer {{token}}
 
 ### Admin top sold items
 GET {{base}}/admin/top-items
+Authorization: Bearer {{token}}
 
 ### Admin low stock
 GET {{base}}/admin/low-stock
+Authorization: Bearer {{token}}
 
 ### Admin recent activity
 GET {{base}}/admin/recent-activity
+Authorization: Bearer {{token}}
 
 ### Set recipe for variant 12oz: 18g coffee
 POST {{base}}/recipes/variant/1
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "items": [
@@ -193,6 +239,7 @@ Content-Type: application/json
 ### Set recipe for variant 16oz: 24g coffee
 POST {{base}}/recipes/variant/2
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "items": [
@@ -206,10 +253,12 @@ Content-Type: application/json
 
 ### Get recipe for variant 1
 GET {{base}}/recipes/variant/1
+Authorization: Bearer {{token}}
 
 ### Replace recipe for variant 1
 PUT {{base}}/recipes/variant/1
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "items": [
@@ -223,10 +272,12 @@ Content-Type: application/json
 
 ### Delete one recipe item from variant 1
 DELETE {{base}}/recipes/variant/1/items/1
+Authorization: Bearer {{token}}
 
 ### Open cash session
 POST {{base}}/cash/open
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "location_id": 1,
@@ -236,10 +287,12 @@ Content-Type: application/json
 
 ### Current cash session
 GET {{base}}/cash/current?location_id=1
+Authorization: Bearer {{token}}
 
 ### Create sale with 10% discount
 POST {{base}}/sales
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "location_id": 1,
@@ -259,6 +312,7 @@ Content-Type: application/json
 ### Create sale with combo + variant
 POST {{base}}/sales
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "location_id": 1,
@@ -283,6 +337,7 @@ Content-Type: application/json
 ### Pay sale in cash
 POST {{base}}/sales/1/pay
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "method": "CASH",
@@ -292,16 +347,20 @@ Content-Type: application/json
 
 ### Receipt
 GET {{base}}/sales/1/receipt
+Authorization: Bearer {{token}}
 
 ### Recent sales receipts summary
 GET {{base}}/sales/recent?limit=5
+Authorization: Bearer {{token}}
 
 ### Latest available sale / receipt
 GET {{base}}/sales/latest
+Authorization: Bearer {{token}}
 
 ### Close cash session
 POST {{base}}/cash/close
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "cash_session_id": 1,

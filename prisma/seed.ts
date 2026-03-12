@@ -1,4 +1,5 @@
-import { PrismaClient, Dimension } from '@prisma/client';
+import { hash } from 'bcrypt';
+import { PrismaClient, Dimension, UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -25,12 +26,47 @@ async function seedUnitTypes(): Promise<void> {
 
 async function main(): Promise<void> {
   await seedUnitTypes();
-  // Minimal user seed for local testing.
-  await prisma.user.upsert({
-    where: { id: 1 },
-    update: {},
-    create: { id: 1, name: 'Admin', role: 'ADMIN' },
-  });
+  const defaultPasswordHash = await hash('Pos123456!', 10);
+  const users = [
+    {
+      id: 1,
+      name: 'Administrador',
+      username: 'admin',
+      email: 'admin@local.pos',
+      role: UserRole.ADMIN,
+    },
+    {
+      id: 2,
+      name: 'Cajero Principal',
+      username: 'cashier',
+      email: 'cashier@local.pos',
+      role: UserRole.CASHIER,
+    },
+    {
+      id: 3,
+      name: 'Auditor',
+      username: 'auditor',
+      email: 'auditor@local.pos',
+      role: UserRole.AUDITOR,
+    },
+  ];
+
+  for (const user of users) {
+    await prisma.user.upsert({
+      where: { id: user.id },
+      update: {
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        passwordHash: defaultPasswordHash,
+        role: user.role,
+      },
+      create: {
+        ...user,
+        passwordHash: defaultPasswordHash,
+      },
+    });
+  }
 }
 
 main()

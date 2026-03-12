@@ -14,10 +14,12 @@ import { CashModule } from './cash/cash.module';
 import { SalesModule } from './sales/sales.module';
 import { CombosModule } from './combos/combos.module';
 import { AdminModule } from './admin/admin.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
     PrismaModule,
+    AuthModule,
     AuditModule,
     LocationsModule,
     UnitTypesModule,

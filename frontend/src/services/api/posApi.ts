@@ -4,6 +4,8 @@ import type {
   AdminRecentActivityResponse,
   AdminSalesByPaymentResponse,
   AdminSummary,
+  AuthLoginResponse,
+  AuthUser,
   AdminTopItemsResponse,
   CatalogCombo,
   CatalogProduct,
@@ -24,6 +26,9 @@ import type {
 } from '@/types/api';
 
 export const posApi = {
+  login: (payload: { email?: string; username?: string; password: string }) =>
+    unwrap<AuthLoginResponse>(api.post('/auth/login', payload)),
+  getMe: () => unwrap<AuthUser>(api.get('/auth/me')),
   getAdminSummary: () => unwrap<AdminSummary>(api.get('/admin/summary')),
   getAdminSalesByPayment: () =>
     unwrap<AdminSalesByPaymentResponse>(api.get('/admin/sales-by-payment')),

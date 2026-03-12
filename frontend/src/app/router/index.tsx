@@ -1,24 +1,60 @@
-import {
-  Navigate,
-  createBrowserRouter,
-} from 'react-router-dom';
+import { Suspense, lazy, type ReactNode } from 'react';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/layouts/AppLayout';
 import { LoginPage } from '@/features/login/LoginPage';
 import { PosPage } from '@/features/pos/PosPage';
 import { CashPage } from '@/features/cash/CashPage';
-import { ProductsPage } from '@/features/products/ProductsPage';
-import { IngredientsPage } from '@/features/ingredients/IngredientsPage';
-import { CombosPage } from '@/features/combos/CombosPage';
-import { SalesPage } from '@/features/sales/SalesPage';
-import { AdminPage } from '@/features/admin/AdminPage';
 import { ProtectedRoute } from '@/app/router/ProtectedRoute';
 import { AccessDeniedPage } from '@/features/access/AccessDeniedPage';
+import { LoadingState } from '@/components/LoadingState';
 import { getAllowedRolesForRoute, getDefaultRouteForRole } from '@/app/permissions';
 import { useSessionStore } from '@/store/sessionStore';
+
+const ProductsPage = lazy(() =>
+  import('@/features/products/ProductsPage').then((module) => ({
+    default: module.ProductsPage,
+  })),
+);
+const IngredientsPage = lazy(() =>
+  import('@/features/ingredients/IngredientsPage').then((module) => ({
+    default: module.IngredientsPage,
+  })),
+);
+const CombosPage = lazy(() =>
+  import('@/features/combos/CombosPage').then((module) => ({
+    default: module.CombosPage,
+  })),
+);
+const SalesPage = lazy(() =>
+  import('@/features/sales/SalesPage').then((module) => ({
+    default: module.SalesPage,
+  })),
+);
+const AdminPage = lazy(() =>
+  import('@/features/admin/AdminPage').then((module) => ({
+    default: module.AdminPage,
+  })),
+);
 
 function HomeRedirect() {
   const currentUser = useSessionStore((state) => state.currentUser);
   return <Navigate to={getDefaultRouteForRole(currentUser?.role)} replace />;
+}
+
+function LazyRoute({ children }: { children: ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <LoadingState
+          title="Cargando módulo"
+          description="Estamos preparando esta pantalla administrativa."
+          rows={4}
+        />
+      }
+    >
+      {children}
+    </Suspense>
+  );
 }
 
 export const router = createBrowserRouter([
@@ -55,7 +91,9 @@ export const router = createBrowserRouter([
         path: '/products',
         element: (
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/products')}>
-            <ProductsPage />
+            <LazyRoute>
+              <ProductsPage />
+            </LazyRoute>
           </ProtectedRoute>
         ),
       },
@@ -63,7 +101,9 @@ export const router = createBrowserRouter([
         path: '/ingredients',
         element: (
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/ingredients')}>
-            <IngredientsPage />
+            <LazyRoute>
+              <IngredientsPage />
+            </LazyRoute>
           </ProtectedRoute>
         ),
       },
@@ -71,7 +111,9 @@ export const router = createBrowserRouter([
         path: '/combos',
         element: (
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/combos')}>
-            <CombosPage />
+            <LazyRoute>
+              <CombosPage />
+            </LazyRoute>
           </ProtectedRoute>
         ),
       },
@@ -79,7 +121,9 @@ export const router = createBrowserRouter([
         path: '/sales',
         element: (
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/sales')}>
-            <SalesPage />
+            <LazyRoute>
+              <SalesPage />
+            </LazyRoute>
           </ProtectedRoute>
         ),
       },
@@ -87,7 +131,9 @@ export const router = createBrowserRouter([
         path: '/admin',
         element: (
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/admin')}>
-            <AdminPage />
+            <LazyRoute>
+              <AdminPage />
+            </LazyRoute>
           </ProtectedRoute>
         ),
       },
