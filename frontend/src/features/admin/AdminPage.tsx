@@ -14,7 +14,9 @@ import { AlertCard } from '@/components/AlertCard';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { KpiCard } from '@/components/KpiCard';
+import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { SectionHeader } from '@/components/SectionHeader';
+import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
 import { formatCurrency, formatDate } from '@/utils/format';
 import type {
@@ -47,6 +49,7 @@ function SkeletonRows({ rows = 4 }: { rows?: number }) {
 }
 
 export function AdminPage() {
+  const { isAdmin, isAuditor } = usePermissions();
   const [summary, setSummary] = useState<AdminSummary | null>(null);
   const [salesByPayment, setSalesByPayment] = useState<AdminSalesByPaymentItem[]>([]);
   const [topItems, setTopItems] = useState<AdminTopItem[]>([]);
@@ -186,13 +189,25 @@ export function AdminPage() {
 
   return (
     <div className="grid gap-6">
+      {isAuditor ? (
+        <RoleModeBanner
+          title="Panel en modo auditoria"
+          description="Este dashboard es de solo lectura para el rol AUDITOR. Puedes revisar metricas, alertas y actividad reciente sin ejecutar acciones operativas."
+          tone="warning"
+        />
+      ) : null}
+
       <Card className="overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-teal-300/12 via-sky-300/10 to-transparent" />
         <div className="relative">
           <SectionHeader
             eyebrow="Administracion"
             title="Panel administrativo"
-            description="Dashboard operativo conectado a metricas reales del backend para monitorear ventas, caja, stock y actividad reciente."
+            description={
+              isAdmin
+                ? 'Dashboard operativo conectado a metricas reales del backend para monitorear ventas, caja, stock y actividad reciente.'
+                : 'Vista de consulta conectada a metricas reales del backend para auditoria, seguimiento y revision operativa.'
+            }
           />
         </div>
       </Card>
@@ -438,6 +453,32 @@ export function AdminPage() {
           )}
         </Card>
       </div>
+
+      {isAdmin ? (
+        <Card>
+          <SectionHeader
+            eyebrow="Siguiente fase"
+            title="Controles administrativos"
+            description="La base visual queda preparada para acciones futuras como exportacion, configuracion de alertas y reglas de supervision."
+          />
+
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
+            {['Exportacion de reportes', 'Alertas configurables', 'Reglas por sucursal'].map(
+              (item) => (
+                <div
+                  key={item}
+                  className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5"
+                >
+                  <p className="font-medium text-white">{item}</p>
+                  <p className="mt-2 text-sm text-slate-400">
+                    Disponible cuando la siguiente fase habilite acciones administrativas.
+                  </p>
+                </div>
+              ),
+            )}
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }

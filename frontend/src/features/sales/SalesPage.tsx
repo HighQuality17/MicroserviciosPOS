@@ -1,18 +1,21 @@
 import { useMemo, useState } from 'react';
-import { History, ReceiptText, Search } from 'lucide-react';
+import { History, ReceiptText, Search, Shield } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
+import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import type { SaleReceipt } from '@/types/api';
+import { usePermissions } from '@/hooks/usePermissions';
 import { formatCurrency, formatDate } from '@/utils/format';
 
 export function SalesPage() {
   const recentReceipts = useAppStore((state) => state.recentReceipts);
   const addRecentReceipt = useAppStore((state) => state.addRecentReceipt);
+  const { can, isAdmin, isAuditor, isCashier } = usePermissions();
 
   const [saleId, setSaleId] = useState(1);
   const [selectedReceipt, setSelectedReceipt] = useState<SaleReceipt | null>(
@@ -24,6 +27,7 @@ export function SalesPage() {
 
   const latestReceipt = recentReceipts[0] ?? null;
   const visibleReceipt = selectedReceipt ?? latestReceipt;
+  const canOperateSales = can('canOperateSales');
 
   const stats = useMemo(() => {
     return {
@@ -59,6 +63,18 @@ export function SalesPage() {
 
   return (
     <div className="grid gap-4">
+      {!canOperateSales ? (
+        <RoleModeBanner
+          title={isAuditor ? 'Modo auditoria' : 'Modo de consulta operativa'}
+          description={
+            isAuditor
+              ? 'Esta vista es completamente de solo lectura. Puedes consultar comprobantes y revisar detalle de ventas sin ejecutar acciones operativas.'
+              : 'Como cajero, aqui solo puedes consultar comprobantes y revisar ventas recientes. Las acciones administrativas se mantienen ocultas.'
+          }
+          tone={isAuditor ? 'warning' : 'info'}
+        />
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard
           title="Comprobantes recientes"
@@ -140,16 +156,14 @@ export function SalesPage() {
                       {latestReceipt.location.name}
                     </p>
                     <p className="mt-2 text-sm text-slate-500">
-                      {formatDate(latestReceipt.created_at)} · {latestReceipt.cashier.name}
+                      {formatDate(latestReceipt.created_at)} - {latestReceipt.cashier.name}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-display text-3xl font-bold text-teal-300">
                       {formatCurrency(latestReceipt.total)}
                     </p>
-                    <p className="text-sm text-slate-400">
-                      {stats.latestPayment}
-                    </p>
+                    <p className="text-sm text-slate-400">{stats.latestPayment}</p>
                   </div>
                 </div>
                 <div className="mt-5 flex gap-3">
@@ -159,32 +173,60 @@ export function SalesPage() {
                   >
                     Ver detalle
                   </Button>
-                  <Button variant="ghost" disabled>
-                    Reimprimir proximamente
-                  </Button>
+                  {canOperateSales ? (
+                    <Button variant="ghost" disabled>
+                      Reimpresion avanzada proximamente
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             )}
           </Card>
 
-          <Card>
-            <p className="text-sm text-slate-400">Historial</p>
-            <h2 className="font-display text-2xl font-bold text-white">
-              Proximamente: historial completo
-            </h2>
-            <div className="mt-6">
-              <EmptyState
-                title="Tabla de ventas en espera"
-                description="La estructura visual queda lista para integrarse cuando el backend exponga un GET /sales con filtros, paginacion y estado."
-              />
-            </div>
-          </Card>
+          {isAdmin ? (
+            <Card>
+              <p className="text-sm text-slate-400">Acciones de gestion</p>
+              <h2 className="font-display text-2xl font-bold text-white">
+                Operaciones para siguiente fase
+              </h2>
+              <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-3 text-slate-200">
+                    <Shield size={18} />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Vista preparada para gestion</p>
+                    <p className="mt-2 text-sm text-slate-400">
+                      Aqui se integraran exportacion, reimpresion y filtros avanzados cuando el backend exponga historial completo.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ) : (
+            <Card>
+              <p className="text-sm text-slate-400">Historial</p>
+              <h2 className="font-display text-2xl font-bold text-white">
+                Proximamente: historial completo
+              </h2>
+              <div className="mt-6">
+                <EmptyState
+                  title={
+                    isCashier
+                      ? 'Consulta operativa en espera'
+                      : 'Historial de auditoria en espera'
+                  }
+                  description="La estructura visual queda lista para integrarse cuando el backend exponga un GET /sales con filtros, paginacion y estado."
+                />
+              </div>
+            </Card>
+          )}
         </div>
 
         <Card>
           <p className="text-sm text-slate-400">Detalle de venta</p>
           <h2 className="font-display text-2xl font-bold text-white">
-            Comprobante administrativo
+            {isAdmin ? 'Comprobante administrativo' : 'Comprobante de consulta'}
           </h2>
 
           {!visibleReceipt ? (
@@ -247,7 +289,7 @@ export function SalesPage() {
                       <div>
                         <p className="font-medium text-white">{item.description}</p>
                         <p className="mt-1 text-xs text-slate-500">
-                          {item.item_type} · x{item.qty} · {formatCurrency(item.unit_price)}
+                          {item.item_type} - x{item.qty} - {formatCurrency(item.unit_price)}
                         </p>
                       </div>
                       <p className="font-semibold text-slate-200">
@@ -318,3 +360,4 @@ export function SalesPage() {
     </div>
   );
 }
+
