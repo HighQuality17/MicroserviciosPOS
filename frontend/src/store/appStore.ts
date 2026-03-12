@@ -30,6 +30,7 @@ interface AppState {
   addSessionIngredient: (ingredient: Ingredient) => void;
   addSessionCombo: (combo: Combo) => void;
   addRecentReceipt: (receipt: SaleReceipt) => void;
+  resetAppState: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -80,6 +81,19 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ sessionCombos: upsertById(state.sessionCombos, combo) })),
   addRecentReceipt: (receipt) =>
     set((state) => ({ recentReceipts: upsertReceipt(state.recentReceipts, receipt) })),
+  resetAppState: () =>
+    set({
+      availableLocations: [],
+      currentLocation: null,
+      locationsLoading: false,
+      locationsError: null,
+      currentCashSession: null,
+      sessionProducts: [],
+      sessionVariants: [],
+      sessionIngredients: [],
+      sessionCombos: [],
+      recentReceipts: [],
+    }),
 }));
 
 function upsertById<T extends { id: number }>(items: T[], item: T): T[] {

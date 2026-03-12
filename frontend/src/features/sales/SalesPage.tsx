@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { History, ReceiptText, Search, Shield } from 'lucide-react';
+import { AccessState } from '@/components/AccessState';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -11,6 +12,7 @@ import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import type { LatestSaleResponse, SaleReceipt, SaleRecentItem } from '@/types/api';
 import { usePermissions } from '@/hooks/usePermissions';
+import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
 import { formatCurrency, formatDate } from '@/utils/format';
 
 function BlockError({ message }: { message: string }) {
@@ -46,6 +48,8 @@ export function SalesPage() {
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [latestError, setLatestError] = useState<string | null>(null);
   const [recentError, setRecentError] = useState<string | null>(null);
+  const [latestAccessDenied, setLatestAccessDenied] = useState(false);
+  const [recentAccessDenied, setRecentAccessDenied] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const canOperateSales = can('canOperateSales');
@@ -70,12 +74,14 @@ export function SalesPage() {
     try {
       setRecentLoading(true);
       setRecentError(null);
+      setRecentAccessDenied(false);
       const response = await posApi.getRecentSales(5);
       setRecentSales(response.items);
     } catch (error) {
+      setRecentAccessDenied(isAccessDeniedError(error));
       setRecentError(
         error instanceof Error
-          ? error.message
+          ? translateProtectedError(error, 'No fue posible cargar comprobantes recientes')
           : 'No fue posible cargar comprobantes recientes',
       );
     } finally {
@@ -87,6 +93,7 @@ export function SalesPage() {
     try {
       setLatestLoading(true);
       setLatestError(null);
+      setLatestAccessDenied(false);
       const sale = await posApi.getLatestSale();
       setLatestSale(sale);
       if (sale) {
@@ -94,9 +101,10 @@ export function SalesPage() {
         setSelectedReceipt((current) => current ?? sale);
       }
     } catch (error) {
+      setLatestAccessDenied(isAccessDeniedError(error));
       setLatestError(
         error instanceof Error
-          ? error.message
+          ? translateProtectedError(error, 'No fue posible cargar la última venta disponible')
           : 'No fue posible cargar la ultima venta disponible',
       );
     } finally {
@@ -178,6 +186,10 @@ export function SalesPage() {
         <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
           {receiptError}
         </div>
+      ) : null}
+
+      {(latestAccessDenied || recentAccessDenied) ? (
+        <AccessState description="Tu perfil actual no tiene permiso para consultar el historial y los comprobantes de ventas." />
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">

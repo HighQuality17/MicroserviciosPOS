@@ -2,6 +2,7 @@
 import { Boxes, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { AccessState } from '@/components/AccessState';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { ScrollPanel } from '@/components/ScrollPanel';
@@ -9,6 +10,7 @@ import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import type { CatalogCombo, CatalogVariant } from '@/types/api';
+import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
 import { formatCurrency } from '@/utils/format';
 import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
@@ -19,6 +21,7 @@ export function CombosPage() {
   const [variants, setVariants] = useState<CatalogVariant[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogAccessDenied, setCatalogAccessDenied] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [creatingCombo, setCreatingCombo] = useState(false);
@@ -44,6 +47,7 @@ export function CombosPage() {
     try {
       setLoadingCatalog(true);
       setCatalogError(null);
+      setCatalogAccessDenied(false);
 
       const [combosResponse, variantsResponse] = await Promise.all([
         posApi.getCombos(),
@@ -53,9 +57,10 @@ export function CombosPage() {
       setCombos(combosResponse);
       setVariants(variantsResponse);
     } catch (error) {
+      setCatalogAccessDenied(isAccessDeniedError(error));
       setCatalogError(
         error instanceof Error
-          ? error.message
+          ? translateProtectedError(error, 'No fue posible cargar combos y variantes')
           : 'No fue posible cargar combos y variantes',
       );
     } finally {
@@ -179,6 +184,10 @@ export function CombosPage() {
         <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
           {catalogError}
         </div>
+      ) : null}
+
+      {catalogAccessDenied ? (
+        <AccessState description="Tu perfil actual no tiene permiso para consultar o gestionar combos." />
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">

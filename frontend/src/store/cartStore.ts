@@ -9,6 +9,7 @@ interface CartState {
   updateQty: (key: string, qty: number) => void;
   removeItem: (key: string) => void;
   clearCart: () => void;
+  resetCartState: () => void;
   setDiscount: (discountType: DiscountType, discountValue: number) => void;
 }
 
@@ -53,6 +54,12 @@ export const useCartStore = create<CartState>((set) => ({
       items: state.items.filter((item) => item.key !== key),
     })),
   clearCart: () =>
+    set({
+      items: [],
+      discountType: 'NONE',
+      discountValue: 0,
+    }),
+  resetCartState: () =>
     set({
       items: [],
       discountType: 'NONE',

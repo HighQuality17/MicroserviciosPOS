@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { AdminChartCard } from '@/components/AdminChartCard';
 import { AlertCard } from '@/components/AlertCard';
+import { AccessState } from '@/components/AccessState';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -23,6 +24,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
 import type {
   AdminLowStockItem,
   AdminRecentActivityItem,
@@ -81,6 +83,7 @@ export function AdminPage() {
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
   const [locationSubmitError, setLocationSubmitError] = useState<string | null>(null);
   const [creatingLocation, setCreatingLocation] = useState(false);
+  const [summaryAccessDenied, setSummaryAccessDenied] = useState(false);
 
   useEffect(() => {
     void loadDashboard();
@@ -140,10 +143,14 @@ export function AdminPage() {
     try {
       setSummaryLoading(true);
       setSummaryError(null);
+      setSummaryAccessDenied(false);
       setSummary(await posApi.getAdminSummary());
     } catch (error) {
+      setSummaryAccessDenied(isAccessDeniedError(error));
       setSummaryError(
-        error instanceof Error ? error.message : 'No fue posible cargar el resumen',
+        error instanceof Error
+          ? translateProtectedError(error, 'No fue posible cargar el resumen')
+          : 'No fue posible cargar el resumen',
       );
     } finally {
       setSummaryLoading(false);
@@ -269,6 +276,10 @@ export function AdminPage() {
       </Card>
 
       {summaryError ? <BlockError message={summaryError} /> : null}
+
+      {summaryAccessDenied ? (
+        <AccessState description="Tu perfil actual no tiene permiso para consultar el dashboard administrativo." />
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <KpiCard
