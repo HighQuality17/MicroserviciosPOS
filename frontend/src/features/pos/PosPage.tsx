@@ -150,7 +150,7 @@ export function PosPage() {
         user_id: currentUser.id,
       });
 
-      const receipt = await posApi.getReceipt(sale.id);
+      const receipt = await posApi.getSaleReceipt(sale.id);
       addRecentReceipt(receipt);
       setLastReceiptId(receipt.sale_id);
       clearCart();

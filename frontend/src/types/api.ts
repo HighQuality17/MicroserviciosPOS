@@ -192,3 +192,62 @@ export interface CatalogResponse {
   variants: CatalogVariant[];
   combos: CatalogCombo[];
 }
+
+export interface AdminSummary {
+  sales_today_total: number;
+  sales_count: number;
+  average_ticket: number;
+  current_cash_session: {
+    id: number;
+    location_id: number;
+    location_name: string;
+    opened_by: number;
+    opened_by_name: string;
+    opened_at: string;
+    opening_cash: number;
+  } | null;
+  active_products_count: number;
+  low_stock_count: number;
+}
+
+export interface AdminSalesByPaymentItem {
+  method: PaymentMethod;
+  total: number;
+}
+
+export interface AdminSalesByPaymentResponse {
+  items: AdminSalesByPaymentItem[];
+}
+
+export interface AdminTopItem {
+  name: string;
+  item_type: SaleItemType;
+  qty_sold: number;
+}
+
+export interface AdminTopItemsResponse {
+  items: AdminTopItem[];
+}
+
+export interface AdminLowStockItem {
+  ingredient_id: number;
+  ingredient_name: string;
+  dimension: IngredientDimension;
+  location_id: number;
+  location_name: string;
+  qty_on_hand_base: number;
+  threshold: number;
+}
+
+export interface AdminRecentActivityItem {
+  activity_type: 'SALE' | 'CASH_SESSION' | 'STOCK_ADJUSTMENT';
+  action: string;
+  created_at: string;
+  entity_id: number;
+  title: string;
+  subtitle: string;
+}
+
+export interface AdminRecentActivityResponse {
+  items: AdminRecentActivityItem[];
+}

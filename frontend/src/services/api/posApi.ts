@@ -1,5 +1,11 @@
 import { api, unwrap } from '@/services/api/client';
 import type {
+  AdminLowStockItem,
+  AdminRecentActivityResponse,
+  AdminSalesByPaymentResponse,
+  AdminSummary,
+  AdminTopItemsResponse,
+  CatalogCombo,
   CatalogProduct,
   CatalogResponse,
   CatalogVariant,
@@ -14,9 +20,18 @@ import type {
 } from '@/types/api';
 
 export const posApi = {
+  getAdminSummary: () => unwrap<AdminSummary>(api.get('/admin/summary')),
+  getAdminSalesByPayment: () =>
+    unwrap<AdminSalesByPaymentResponse>(api.get('/admin/sales-by-payment')),
+  getAdminTopItems: () => unwrap<AdminTopItemsResponse>(api.get('/admin/top-items')),
+  getAdminLowStock: () => unwrap<AdminLowStockItem[]>(api.get('/admin/low-stock')),
+  getAdminRecentActivity: () =>
+    unwrap<AdminRecentActivityResponse>(api.get('/admin/recent-activity')),
   getCatalog: () => unwrap<CatalogResponse>(api.get('/catalog')),
   getProducts: () => unwrap<CatalogProduct[]>(api.get('/products')),
   getVariants: () => unwrap<CatalogVariant[]>(api.get('/variants')),
+  getCombos: () => unwrap<CatalogCombo[]>(api.get('/combos')),
+  getIngredients: () => unwrap<Ingredient[]>(api.get('/ingredients')),
   openCash: (payload: {
     location_id: number;
     opened_by: number;
@@ -58,7 +73,7 @@ export const posApi = {
     sale_price: number;
     active?: boolean;
   }) => unwrap<Combo>(api.post('/combos', payload)),
-  setComboItems: (comboId: number, payload: { items: Array<{ variant_id: number; qty: number }> }) =>
+  addComboItems: (comboId: number, payload: { items: Array<{ variant_id: number; qty: number }> }) =>
     unwrap(api.post(`/combos/${comboId}/items`, payload)),
   createSale: (payload: {
     location_id: number;
@@ -73,6 +88,6 @@ export const posApi = {
     amount_received: number;
     user_id: number;
   }) => unwrap(api.post(`/sales/${saleId}/pay`, payload)),
-  getReceipt: (saleId: number) =>
+  getSaleReceipt: (saleId: number) =>
     unwrap<SaleReceipt>(api.get(`/sales/${saleId}/receipt`)),
 };

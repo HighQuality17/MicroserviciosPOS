@@ -10,4 +10,5 @@ export class IngredientsController {
   create(@Body() dto: CreateIngredientDto) {
     return this.ingredientsService.create(dto);
   }
+  
 }

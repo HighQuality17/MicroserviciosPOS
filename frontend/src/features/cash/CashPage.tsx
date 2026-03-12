@@ -28,7 +28,7 @@ export function CashPage() {
   const currentCashSession = useAppStore((state) => state.currentCashSession);
   const setCurrentCashSession = useAppStore((state) => state.setCurrentCashSession);
   const [openingCash, setOpeningCash] = useState(50000);
-  const [closingCashCounted, setClosingCashCounted] = useState(0);
+  const [closingCashCountedInput, setClosingCashCountedInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +69,17 @@ export function CashPage() {
 
   async function handleCloseCash() {
     if (!currentCashSession || !currentUser) return;
+    if (!closingCashCountedInput.trim()) {
+      setError('Ingresa el efectivo contado antes de cerrar caja.');
+      return;
+    }
+
+    const closingCashCounted = Number(closingCashCountedInput);
+    if (Number.isNaN(closingCashCounted) || closingCashCounted < 0) {
+      setError('El efectivo contado debe ser un numero valido.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -79,6 +90,7 @@ export function CashPage() {
       });
       setCloseSummary(summary as CloseSummary);
       setCurrentCashSession(null);
+      setClosingCashCountedInput('');
       setMessage(`Caja #${currentCashSession.id} cerrada correctamente.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cerrar caja');
@@ -92,8 +104,12 @@ export function CashPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard
           title="Caja activa"
-          value={currentCashSession ? `#${currentCashSession.id}` : 'Sin sesión'}
-          hint={currentCashSession ? `Abierta ${formatDate(currentCashSession.openedAt)}` : 'Abre una caja para empezar'}
+          value={currentCashSession ? `#${currentCashSession.id}` : 'Sin sesion'}
+          hint={
+            currentCashSession
+              ? `Abierta ${formatDate(currentCashSession.openedAt)}`
+              : 'Abre una caja para empezar'
+          }
           icon={<Wallet size={18} />}
         />
         <SummaryCard
@@ -103,7 +119,7 @@ export function CashPage() {
               ? formatCurrency(toNumber(currentCashSession.openingCash))
               : formatCurrency(openingCash)
           }
-          hint="Efectivo base de la sesión"
+          hint="Efectivo base de la sesion"
           icon={<Landmark size={18} />}
         />
         <SummaryCard
@@ -128,7 +144,7 @@ export function CashPage() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <p className="text-sm text-slate-400">Operación</p>
+          <p className="text-sm text-slate-400">Operacion</p>
           <h2 className="font-display text-2xl font-bold text-white">Apertura de caja</h2>
           <div className="mt-5 grid gap-4">
             <Input
@@ -145,24 +161,45 @@ export function CashPage() {
         </Card>
 
         <Card>
-          <p className="text-sm text-slate-400">Operación</p>
+          <p className="text-sm text-slate-400">Operacion</p>
           <h2 className="font-display text-2xl font-bold text-white">Cierre de caja</h2>
           {!currentCashSession ? (
             <div className="mt-5">
               <EmptyState
                 title="No hay caja abierta"
-                description="Primero abre una sesión de caja o consulta la última sesión desde backend cuando exista historial."
+                description="Primero abre una sesion de caja o consulta la ultima sesion desde backend cuando exista historial."
               />
             </div>
           ) : (
             <div className="mt-5 grid gap-4">
-              <Input
-                type="number"
-                min={0}
-                label="Efectivo contado"
-                value={closingCashCounted}
-                onChange={(event) => setClosingCashCounted(Number(event.target.value))}
-              />
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-200">Efectivo contado</span>
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  placeholder="Ej: 80000"
+                  value={closingCashCountedInput}
+                  onFocus={() => {
+                    if (closingCashCountedInput === '0') {
+                      setClosingCashCountedInput('');
+                    }
+                  }}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === '') {
+                      setClosingCashCountedInput('');
+                      return;
+                    }
+
+                    setClosingCashCountedInput(String(Number(value)));
+                  }}
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/70"
+                />
+                <span className="text-xs text-slate-500">
+                  Ingresa el valor contado sin ceros fijos al inicio.
+                </span>
+              </label>
               <Button disabled={loading} onClick={handleCloseCash}>
                 {loading ? 'Procesando...' : 'Cerrar caja'}
               </Button>
