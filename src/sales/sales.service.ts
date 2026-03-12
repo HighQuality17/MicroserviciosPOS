@@ -39,6 +39,28 @@ export interface SaleReceiptItem {
   line_total: number;
 }
 
+export interface SaleRecentItem {
+  sale_id: number;
+  created_at: Date;
+  total: number;
+  status: SaleStatus;
+  payment_method: PaymentMethod | null;
+  amount_received: number | null;
+  change_given: number | null;
+  location: {
+    id: number;
+    name: string;
+  };
+  cashier: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface RecentSalesResponse {
+  items: SaleRecentItem[];
+}
+
 type SaleItemRecord = {
   id: number;
   itemType: SaleItemType;
@@ -47,6 +69,28 @@ type SaleItemRecord = {
   unitPrice: Prisma.Decimal;
   lineTotal: Prisma.Decimal;
 };
+
+type SaleWithReceiptRelations = Prisma.SaleGetPayload<{
+  include: {
+    items: true;
+    payments: true;
+    location: true;
+    cashier: true;
+  };
+}>;
+
+type SaleWithSummaryRelations = Prisma.SaleGetPayload<{
+  include: {
+    payments: {
+      orderBy: {
+        id: 'desc';
+      };
+      take: 1;
+    };
+    location: true;
+    cashier: true;
+  };
+}>;
 
 @Injectable()
 export class SalesService {
@@ -232,8 +276,34 @@ export class SalesService {
   }
 
   async receipt(id: number) {
-    const sale = await this.prisma.sale.findUnique({
-      where: { id },
+    const sale = await this.findSaleForReceipt(id);
+    if (!sale) throw new NotFoundException('Sale not found');
+
+    return this.buildReceiptResponse(sale);
+  }
+
+  async recent(limit = 5): Promise<RecentSalesResponse> {
+    const sales = await this.prisma.sale.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        payments: {
+          orderBy: { id: 'desc' },
+          take: 1,
+        },
+        location: true,
+        cashier: true,
+      },
+    });
+
+    return {
+      items: sales.map((sale) => this.buildRecentSaleSummary(sale)),
+    };
+  }
+
+  async latest() {
+    const sale = await this.prisma.sale.findFirst({
+      orderBy: { createdAt: 'desc' },
       include: {
         items: true,
         payments: true,
@@ -241,31 +311,16 @@ export class SalesService {
         cashier: true,
       },
     });
-    if (!sale) throw new NotFoundException('Sale not found');
 
-    const detailedItems = await this.buildReceiptItems(sale.items);
-    const payment = sale.payments[0] ?? null;
+    if (!sale) {
+      return null;
+    }
+
+    const receipt = await this.buildReceiptResponse(sale);
 
     return {
-      sale_id: sale.id,
-      created_at: sale.createdAt,
-      location: {
-        id: sale.location.id,
-        name: sale.location.name,
-      },
-      cashier: {
-        id: sale.cashier.id,
-        name: sale.cashier.name,
-      },
-      items: detailedItems,
-      subtotal: Number(sale.subtotal),
-      discount_type: sale.discountType,
-      discount_value: Number(sale.discountValue),
-      discount_amount: Number(sale.discountAmount),
-      total: Number(sale.total),
-      payment_method: payment?.method ?? null,
-      amount_received: payment ? Number(payment.amountReceived) : null,
-      change_given: payment ? Number(payment.changeGiven) : null,
+      ...receipt,
+      status: sale.status,
     };
   }
 
@@ -376,6 +431,67 @@ export class SalesService {
   ) {
     const variant = variantById.get(refId);
     return variant ? `${variant.product.name} ${variant.size}` : `Variant ${refId}`;
+  }
+
+  private async findSaleForReceipt(id: number) {
+    return this.prisma.sale.findUnique({
+      where: { id },
+      include: {
+        items: true,
+        payments: true,
+        location: true,
+        cashier: true,
+      },
+    });
+  }
+
+  private async buildReceiptResponse(sale: SaleWithReceiptRelations) {
+    const detailedItems = await this.buildReceiptItems(sale.items);
+    const payment = sale.payments[0] ?? null;
+
+    return {
+      sale_id: sale.id,
+      created_at: sale.createdAt,
+      location: {
+        id: sale.location.id,
+        name: sale.location.name,
+      },
+      cashier: {
+        id: sale.cashier.id,
+        name: sale.cashier.name,
+      },
+      items: detailedItems,
+      subtotal: Number(sale.subtotal),
+      discount_type: sale.discountType,
+      discount_value: Number(sale.discountValue),
+      discount_amount: Number(sale.discountAmount),
+      total: Number(sale.total),
+      payment_method: payment?.method ?? null,
+      amount_received: payment ? Number(payment.amountReceived) : null,
+      change_given: payment ? Number(payment.changeGiven) : null,
+    };
+  }
+
+  private buildRecentSaleSummary(sale: SaleWithSummaryRelations): SaleRecentItem {
+    const payment = sale.payments[0] ?? null;
+
+    return {
+      sale_id: sale.id,
+      created_at: sale.createdAt,
+      total: Number(sale.total),
+      status: sale.status,
+      payment_method: payment?.method ?? null,
+      amount_received: payment ? Number(payment.amountReceived) : null,
+      change_given: payment ? Number(payment.changeGiven) : null,
+      location: {
+        id: sale.location.id,
+        name: sale.location.name,
+      },
+      cashier: {
+        id: sale.cashier.id,
+        name: sale.cashier.name,
+      },
+    };
   }
 
   private computeDiscount(

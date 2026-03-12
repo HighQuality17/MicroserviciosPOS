@@ -21,6 +21,7 @@ import type {
 } from '@/types/api';
 import { computeCartTotals } from '@/utils/cart';
 import { formatCurrency } from '@/utils/format';
+import { normalizeNumberInput } from '@/utils/numberInput';
 
 export function PosPage() {
   const currentUser = useSessionStore((state) => state.currentUser);
@@ -45,6 +46,7 @@ export function PosPage() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [discountInput, setDiscountInput] = useState('');
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -81,6 +83,10 @@ export function PosPage() {
 
     void loadCatalog();
   }, []);
+
+  useEffect(() => {
+    setDiscountInput(discountValue > 0 ? String(discountValue) : '');
+  }, [discountValue]);
 
   const catalogItems = useMemo(() => {
     const variantCards: CartItemType[] = catalog.variants.map((variant: CatalogVariant) => ({
@@ -318,9 +324,18 @@ export function PosPage() {
             <Input
               type="number"
               min={0}
-              value={discountValue}
-              onChange={(event) => setDiscount(discountType, Number(event.target.value))}
               label="Valor"
+              placeholder="Ej: 10"
+              value={discountInput}
+              onChange={(event) => {
+                const nextValue = normalizeNumberInput(event.target.value, {
+                  allowDecimal: true,
+                });
+                if (nextValue !== null) {
+                  setDiscountInput(nextValue);
+                  setDiscount(discountType, nextValue === '' ? 0 : Number(nextValue));
+                }
+              }}
             />
           </div>
 

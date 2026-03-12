@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { History, ReceiptText, Search, Shield } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -8,44 +8,110 @@ import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
-import type { SaleReceipt } from '@/types/api';
+import type { LatestSaleResponse, SaleReceipt, SaleRecentItem } from '@/types/api';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatCurrency, formatDate } from '@/utils/format';
+
+function BlockError({ message }: { message: string }) {
+  return (
+    <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+      {message}
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="mt-6 h-40 animate-pulse rounded-3xl border border-slate-800 bg-slate-950/50" />
+  );
+}
 
 export function SalesPage() {
   const recentReceipts = useAppStore((state) => state.recentReceipts);
   const addRecentReceipt = useAppStore((state) => state.addRecentReceipt);
   const { can, isAdmin, isAuditor, isCashier } = usePermissions();
 
-  const [saleId, setSaleId] = useState(1);
+  const [saleIdInput, setSaleIdInput] = useState('');
   const [selectedReceipt, setSelectedReceipt] = useState<SaleReceipt | null>(
     recentReceipts[0] ?? null,
   );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [latestSale, setLatestSale] = useState<LatestSaleResponse | null>(null);
+  const [recentSales, setRecentSales] = useState<SaleRecentItem[]>([]);
+
+  const [receiptLoading, setReceiptLoading] = useState(false);
+  const [latestLoading, setLatestLoading] = useState(true);
+  const [recentLoading, setRecentLoading] = useState(true);
+
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [latestError, setLatestError] = useState<string | null>(null);
+  const [recentError, setRecentError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const latestReceipt = recentReceipts[0] ?? null;
-  const visibleReceipt = selectedReceipt ?? latestReceipt;
   const canOperateSales = can('canOperateSales');
+  const visibleReceipt = selectedReceipt ?? latestSale ?? recentReceipts[0] ?? null;
+
+  useEffect(() => {
+    void loadRecentSales();
+    void loadLatestSale();
+  }, []);
 
   const stats = useMemo(() => {
-    return {
-      totalReceipts: recentReceipts.length,
-      latestTotal: latestReceipt ? formatCurrency(latestReceipt.total) : 'Sin dato',
-      latestPayment: latestReceipt?.payment_method ?? 'Pendiente',
-    };
-  }, [latestReceipt, recentReceipts.length]);
+    const latestReference = latestSale ?? recentReceipts[0] ?? null;
 
-  async function handleFetchReceipt() {
+    return {
+      totalReceipts: recentSales.length,
+      latestTotal: latestReference ? formatCurrency(latestReference.total) : 'Sin dato',
+      latestPayment: formatPaymentMethod(latestReference?.payment_method ?? null),
+    };
+  }, [latestSale, recentReceipts, recentSales.length]);
+
+  async function loadRecentSales() {
+    try {
+      setRecentLoading(true);
+      setRecentError(null);
+      const response = await posApi.getRecentSales(5);
+      setRecentSales(response.items);
+    } catch (error) {
+      setRecentError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible cargar comprobantes recientes',
+      );
+    } finally {
+      setRecentLoading(false);
+    }
+  }
+
+  async function loadLatestSale() {
+    try {
+      setLatestLoading(true);
+      setLatestError(null);
+      const sale = await posApi.getLatestSale();
+      setLatestSale(sale);
+      if (sale) {
+        addRecentReceipt(sale);
+        setSelectedReceipt((current) => current ?? sale);
+      }
+    } catch (error) {
+      setLatestError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible cargar la ultima venta disponible',
+      );
+    } finally {
+      setLatestLoading(false);
+    }
+  }
+
+  async function handleFetchReceipt(saleId: number) {
     if (saleId <= 0) {
-      setError('Ingresa un sale_id valido.');
+      setReceiptError('Ingresa un sale_id valido.');
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      setReceiptLoading(true);
+      setReceiptError(null);
       setMessage(null);
 
       const receipt = await posApi.getSaleReceipt(saleId);
@@ -53,12 +119,17 @@ export function SalesPage() {
       setSelectedReceipt(receipt);
       setMessage(`Comprobante de la venta #${receipt.sale_id} cargado correctamente.`);
     } catch (err) {
-      setError(
+      setReceiptError(
         err instanceof Error ? err.message : 'No se pudo consultar el comprobante',
       );
     } finally {
-      setLoading(false);
+      setReceiptLoading(false);
     }
+  }
+
+  async function handleManualSearch() {
+    const saleId = Number(saleIdInput);
+    await handleFetchReceipt(saleId);
   }
 
   return (
@@ -78,20 +149,20 @@ export function SalesPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard
           title="Comprobantes recientes"
-          value={String(stats.totalReceipts)}
-          hint="Guardados en sesion desde POS o consulta manual"
+          value={recentLoading ? '...' : String(stats.totalReceipts)}
+          hint="Ultimos 5 comprobantes persistidos en base local"
           icon={<ReceiptText size={18} />}
         />
         <SummaryCard
           title="Ultimo total"
-          value={stats.latestTotal}
-          hint="Ultima venta disponible en la sesion"
+          value={latestLoading ? '...' : stats.latestTotal}
+          hint="Ultima venta disponible en backend"
           icon={<Search size={18} />}
         />
         <SummaryCard
           title="Historial completo"
           value="Proximamente"
-          hint="Pendiente de un futuro GET /sales"
+          hint="Base lista para filtros y listado extendido"
           icon={<History size={18} />}
         />
       </div>
@@ -102,13 +173,13 @@ export function SalesPage() {
         </div>
       ) : null}
 
-      {error ? (
+      {receiptError ? (
         <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {error}
+          {receiptError}
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
+      <div className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
         <div className="grid gap-4">
           <Card>
             <p className="text-sm text-slate-400">Consultar venta</p>
@@ -121,55 +192,66 @@ export function SalesPage() {
                 type="number"
                 min={1}
                 label="ID de venta"
-                value={saleId}
-                onChange={(event) => setSaleId(Number(event.target.value))}
+                placeholder="Ej: 125"
+                value={saleIdInput}
+                onChange={(event) => setSaleIdInput(event.target.value)}
               />
-              <Button disabled={loading} onClick={handleFetchReceipt}>
-                {loading ? 'Consultando...' : 'Buscar comprobante'}
+              <Button disabled={receiptLoading} onClick={handleManualSearch}>
+                {receiptLoading ? 'Consultando...' : 'Buscar comprobante'}
               </Button>
               <p className="text-sm text-slate-500">
-                El backend actual no expone historial completo con `GET /sales`.
-                Esta vista se centra en comprobantes recientes y consulta manual por ID.
+                Puedes consultar cualquier venta puntual por identificador y abrir su comprobante completo.
               </p>
             </div>
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Ultimo comprobante</p>
+            <p className="text-sm text-slate-400">Ultima venta disponible</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Ultima venta disponible
+              Ultimo comprobante persistido
             </h2>
 
-            {!latestReceipt ? (
+            {latestError ? (
+              <div className="mt-6">
+                <BlockError message={latestError} />
+              </div>
+            ) : latestLoading ? (
+              <SkeletonCard />
+            ) : !latestSale ? (
               <div className="mt-6">
                 <EmptyState
-                  title="Sin comprobantes recientes"
-                  description="Completa una venta desde POS o consulta un sale_id para ver aqui el ultimo comprobante."
+                  title="Sin ventas registradas"
+                  description="La ultima venta disponible aparecera aqui cuando exista al menos un comprobante persistido."
                 />
               </div>
             ) : (
               <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm text-slate-400">Venta #{latestReceipt.sale_id}</p>
+                    <p className="text-sm text-slate-400">Venta #{latestSale.sale_id}</p>
                     <p className="mt-2 font-display text-2xl font-bold text-white">
-                      {latestReceipt.location.name}
+                      {latestSale.location.name}
                     </p>
                     <p className="mt-2 text-sm text-slate-500">
-                      {formatDate(latestReceipt.created_at)} - {latestReceipt.cashier.name}
+                      {formatDate(latestSale.created_at)} - {latestSale.cashier.name}
+                    </p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">
+                      {formatStatus(latestSale.status)}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-display text-3xl font-bold text-teal-300">
-                      {formatCurrency(latestReceipt.total)}
+                      {formatCurrency(latestSale.total)}
                     </p>
-                    <p className="text-sm text-slate-400">{stats.latestPayment}</p>
+                    <p className="text-sm text-slate-400">
+                      {formatPaymentMethod(latestSale.payment_method)}
+                    </p>
                   </div>
                 </div>
                 <div className="mt-5 flex gap-3">
                   <Button
                     variant="secondary"
-                    onClick={() => setSelectedReceipt(latestReceipt)}
+                    onClick={() => setSelectedReceipt(latestSale)}
                   >
                     Ver detalle
                   </Button>
@@ -179,6 +261,65 @@ export function SalesPage() {
                     </Button>
                   ) : null}
                 </div>
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <p className="text-sm text-slate-400">Comprobantes recientes</p>
+            <h2 className="font-display text-2xl font-bold text-white">
+              Ultimos 5 registros
+            </h2>
+
+            {recentError ? (
+              <div className="mt-6">
+                <BlockError message={recentError} />
+              </div>
+            ) : recentLoading ? (
+              <div className="mt-6 grid gap-3">
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            ) : recentSales.length === 0 ? (
+              <div className="mt-6">
+                <EmptyState
+                  title="Sin comprobantes recientes"
+                  description="Cuando existan ventas pagadas, veras aqui los ultimos comprobantes disponibles."
+                />
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-3">
+                {recentSales.map((sale) => (
+                  <button
+                    key={sale.sale_id}
+                    type="button"
+                    onClick={() => void handleFetchReceipt(sale.sale_id)}
+                    className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4 text-left transition hover:border-teal-300/40 hover:bg-slate-900/80"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-slate-400">Venta #{sale.sale_id}</p>
+                        <p className="mt-2 font-medium text-white">
+                          {sale.location.name}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {formatDate(sale.created_at)}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500">
+                          {sale.cashier.name} - {formatStatus(sale.status)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-teal-300">
+                          {formatCurrency(sale.total)}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {formatPaymentMethod(sale.payment_method)}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </Card>
@@ -233,7 +374,7 @@ export function SalesPage() {
             <div className="mt-6">
               <EmptyState
                 title="Sin comprobante seleccionado"
-                description="Consulta un sale_id o usa el ultimo comprobante generado desde POS."
+                description="Selecciona una venta reciente, carga la ultima disponible o consulta un sale_id para ver su detalle."
               />
             </div>
           ) : (
@@ -257,7 +398,7 @@ export function SalesPage() {
                       {formatCurrency(visibleReceipt.total)}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {visibleReceipt.payment_method ?? 'Pendiente'}
+                      {formatPaymentMethod(visibleReceipt.payment_method)}
                     </p>
                   </div>
                 </div>
@@ -332,7 +473,7 @@ export function SalesPage() {
                   <div className="mt-4 grid gap-3 text-sm">
                     <div className="flex items-center justify-between text-slate-300">
                       <span>Metodo de pago</span>
-                      <span>{visibleReceipt.payment_method ?? 'N/A'}</span>
+                      <span>{formatPaymentMethod(visibleReceipt.payment_method)}</span>
                     </div>
                     <div className="flex items-center justify-between text-slate-300">
                       <span>Monto recibido</span>
@@ -361,3 +502,15 @@ export function SalesPage() {
   );
 }
 
+function formatPaymentMethod(method: string | null) {
+  if (method === 'CASH') return 'Efectivo';
+  if (method === 'TRANSFER') return 'Transferencia';
+  return 'Pendiente';
+}
+
+function formatStatus(status: string) {
+  if (status === 'PAID') return 'Pagada';
+  if (status === 'PENDING') return 'Pendiente';
+  if (status === 'VOID') return 'Anulada';
+  return status;
+}

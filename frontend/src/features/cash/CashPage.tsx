@@ -9,6 +9,7 @@ import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatCurrency, formatDate, toNumber } from '@/utils/format';
+import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
 interface CloseSummary {
   cash_session_id: number;
@@ -27,7 +28,7 @@ export function CashPage() {
   const currentLocation = useAppStore((state) => state.currentLocation);
   const currentCashSession = useAppStore((state) => state.currentCashSession);
   const setCurrentCashSession = useAppStore((state) => state.setCurrentCashSession);
-  const [openingCash, setOpeningCash] = useState(50000);
+  const [openingCashInput, setOpeningCashInput] = useState('');
   const [closingCashCountedInput, setClosingCashCountedInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -49,6 +50,12 @@ export function CashPage() {
 
   async function handleOpenCash() {
     if (!currentUser) return;
+    const openingCash = parseNumberInput(openingCashInput);
+    if (openingCash === null || openingCash < 0) {
+      setError('Ingresa un efectivo inicial valido.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -117,7 +124,9 @@ export function CashPage() {
           value={
             currentCashSession
               ? formatCurrency(toNumber(currentCashSession.openingCash))
-              : formatCurrency(openingCash)
+              : openingCashInput
+                ? formatCurrency(Number(openingCashInput))
+                : 'Pendiente'
           }
           hint="Efectivo base de la sesion"
           icon={<Landmark size={18} />}
@@ -151,10 +160,19 @@ export function CashPage() {
               type="number"
               min={0}
               label="Efectivo inicial"
-              value={openingCash}
-              onChange={(event) => setOpeningCash(Number(event.target.value))}
+              placeholder="Ej: 50000"
+              value={openingCashInput}
+              onChange={(event) => {
+                const nextValue = normalizeNumberInput(event.target.value);
+                if (nextValue !== null) {
+                  setOpeningCashInput(nextValue);
+                }
+              }}
             />
-            <Button disabled={loading || Boolean(currentCashSession)} onClick={handleOpenCash}>
+            <Button
+              disabled={loading || Boolean(currentCashSession) || !openingCashInput.trim()}
+              onClick={handleOpenCash}
+            >
               {loading ? 'Procesando...' : 'Abrir caja'}
             </Button>
           </div>
@@ -180,19 +198,11 @@ export function CashPage() {
                   inputMode="numeric"
                   placeholder="Ej: 80000"
                   value={closingCashCountedInput}
-                  onFocus={() => {
-                    if (closingCashCountedInput === '0') {
-                      setClosingCashCountedInput('');
-                    }
-                  }}
                   onChange={(event) => {
-                    const value = event.target.value;
-                    if (value === '') {
-                      setClosingCashCountedInput('');
-                      return;
+                    const nextValue = normalizeNumberInput(event.target.value);
+                    if (nextValue !== null) {
+                      setClosingCashCountedInput(nextValue);
                     }
-
-                    setClosingCashCountedInput(String(Number(value)));
                   }}
                   className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/70"
                 />

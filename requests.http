@@ -219,6 +219,12 @@ Content-Type: application/json
 ### Receipt
 GET {{base}}/sales/1/receipt
 
+### Recent sales receipts summary
+GET {{base}}/sales/recent?limit=5
+
+### Latest available sale / receipt
+GET {{base}}/sales/latest
+
 ### Close cash session
 POST {{base}}/cash/close
 Content-Type: application/json

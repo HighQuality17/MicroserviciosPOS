@@ -5,8 +5,10 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CreateSaleDto } from './dto/create-sale.dto';
+import { GetRecentSalesQueryDto } from './dto/get-recent-sales-query.dto';
 import { PaySaleDto } from './dto/pay-sale.dto';
 import { SalesService } from './sales.service';
 
@@ -22,6 +24,16 @@ export class SalesController {
   @Post(':id/pay')
   pay(@Param('id', ParseIntPipe) id: number, @Body() dto: PaySaleDto) {
     return this.salesService.pay(id, dto);
+  }
+
+  @Get('recent')
+  recent(@Query() query: GetRecentSalesQueryDto) {
+    return this.salesService.recent(query.limit);
+  }
+
+  @Get('latest')
+  latest() {
+    return this.salesService.latest();
   }
 
   @Get(':id/receipt')

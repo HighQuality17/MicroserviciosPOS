@@ -9,6 +9,7 @@ import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { Ingredient, IngredientDimension, StockListItem } from '@/types/api';
+import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
   WEIGHT: ['g', 'kg'],
@@ -38,10 +39,10 @@ export function IngredientsPage() {
   const [defaultUnitCode, setDefaultUnitCode] = useState('g');
 
   const [selectedLocationId, setSelectedLocationId] = useState(currentLocation.id);
-  const [selectedIngredientId, setSelectedIngredientId] = useState<number>(0);
-  const [qty, setQty] = useState(0);
+  const [selectedIngredientId, setSelectedIngredientId] = useState('');
+  const [qtyInput, setQtyInput] = useState('');
   const [unitCode, setUnitCode] = useState('g');
-  const [reason, setReason] = useState('Ingreso manual');
+  const [reason, setReason] = useState('');
 
   const mergedIngredients = useMemo(() => {
     const stockIngredients = stockItems.map((item) => item.ingredient);
@@ -58,7 +59,7 @@ export function IngredientsPage() {
   }, [ingredients, sessionIngredients, stockItems]);
 
   const selectedIngredient =
-    mergedIngredients.find((ingredient) => ingredient.id === selectedIngredientId) ?? null;
+    mergedIngredients.find((ingredient) => ingredient.id === Number(selectedIngredientId)) ?? null;
 
   const availableDefaultUnits = unitsByDimension[dimension];
   const availableAdjustUnits = unitsByDimension[selectedIngredient?.dimension ?? dimension];
@@ -72,8 +73,8 @@ export function IngredientsPage() {
   }, [availableAdjustUnits]);
 
   useEffect(() => {
-    if (mergedIngredients.length > 0 && selectedIngredientId === 0) {
-      setSelectedIngredientId(mergedIngredients[0].id);
+    if (mergedIngredients.length === 0 && selectedIngredientId !== '') {
+      setSelectedIngredientId('');
     }
   }, [mergedIngredients, selectedIngredientId]);
 
@@ -154,6 +155,11 @@ export function IngredientsPage() {
       setSubmitError('Selecciona un ingrediente para ajustar stock.');
       return;
     }
+    const qty = parseNumberInput(qtyInput);
+    if (qty === null || qty <= 0) {
+      setSubmitError('Ingresa una cantidad valida mayor a 0.');
+      return;
+    }
 
     try {
       setAdjustingStock(true);
@@ -169,8 +175,8 @@ export function IngredientsPage() {
         user_id: currentUser.id,
       });
 
-      setQty(0);
-      setReason('Ingreso manual');
+      setQtyInput('');
+      setReason('');
       setMessage('Stock ajustado correctamente.');
       await loadStock(selectedLocationId);
     } catch (error) {
@@ -304,14 +310,14 @@ export function IngredientsPage() {
                 </span>
                 <select
                   value={selectedIngredientId}
-                  onChange={(event) => setSelectedIngredientId(Number(event.target.value))}
+                  onChange={(event) => setSelectedIngredientId(event.target.value)}
                   className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
                 >
                   {mergedIngredients.length === 0 ? (
-                    <option value={0}>Sin ingredientes disponibles</option>
+                    <option value="">{mergedIngredients.length === 0 ? 'Sin ingredientes disponibles' : 'Selecciona un ingrediente'}</option>
                   ) : (
                     mergedIngredients.map((ingredient) => (
-                      <option key={ingredient.id} value={ingredient.id}>
+                      <option key={ingredient.id} value={String(ingredient.id)}>
                         #{ingredient.id} · {ingredient.name}
                       </option>
                     ))
@@ -323,8 +329,16 @@ export function IngredientsPage() {
                 <Input
                   type="number"
                   label="Cantidad"
-                  value={qty}
-                  onChange={(event) => setQty(Number(event.target.value))}
+                  placeholder="Ej: 2"
+                  value={qtyInput}
+                  onChange={(event) => {
+                    const nextValue = normalizeNumberInput(event.target.value, {
+                      allowDecimal: true,
+                    });
+                    if (nextValue !== null) {
+                      setQtyInput(nextValue);
+                    }
+                  }}
                 />
 
                 <label className="block space-y-2">
@@ -347,6 +361,7 @@ export function IngredientsPage() {
                 label="Razon"
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
+                placeholder="Ej: Ingreso manual"
               />
 
               <div className="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3 text-sm text-slate-300">
@@ -508,3 +523,4 @@ export function IngredientsPage() {
     </div>
   );
 }
+

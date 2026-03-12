@@ -14,9 +14,11 @@ import type {
   Combo,
   Ingredient,
   Product,
+  RecentSalesResponse,
   SaleReceipt,
   StockListResponse,
   Variant,
+  LatestSaleResponse,
 } from '@/types/api';
 
 export const posApi = {
@@ -88,6 +90,9 @@ export const posApi = {
     amount_received: number;
     user_id: number;
   }) => unwrap(api.post(`/sales/${saleId}/pay`, payload)),
+  getRecentSales: (limit = 5) =>
+    unwrap<RecentSalesResponse>(api.get('/sales/recent', { params: { limit } })),
+  getLatestSale: () => unwrap<LatestSaleResponse | null>(api.get('/sales/latest')),
   getSaleReceipt: (saleId: number) =>
     unwrap<SaleReceipt>(api.get(`/sales/${saleId}/receipt`)),
 };

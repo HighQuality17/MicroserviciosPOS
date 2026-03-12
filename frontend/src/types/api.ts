@@ -137,6 +137,26 @@ export interface SaleReceipt {
   change_given: number | null;
 }
 
+export interface SaleRecentItem {
+  sale_id: number;
+  created_at: string;
+  total: number;
+  status: string;
+  payment_method: PaymentMethod | null;
+  amount_received: number | null;
+  change_given: number | null;
+  location: Location;
+  cashier: Pick<User, 'id' | 'name'>;
+}
+
+export interface RecentSalesResponse {
+  items: SaleRecentItem[];
+}
+
+export interface LatestSaleResponse extends SaleReceipt {
+  status: string;
+}
+
 export interface CartItem {
   key: string;
   item_type: SaleItemType;

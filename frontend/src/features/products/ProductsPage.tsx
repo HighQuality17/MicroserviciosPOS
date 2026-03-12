@@ -8,6 +8,7 @@ import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { formatCurrency } from '@/utils/format';
+import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 import type { CatalogProduct, CatalogVariant } from '@/types/api';
 
 export function ProductsPage() {
@@ -25,13 +26,13 @@ export function ProductsPage() {
 
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
-  const [productCategory, setProductCategory] = useState('Bebidas');
+  const [productCategory, setProductCategory] = useState('');
   const [productActive, setProductActive] = useState(true);
 
-  const [variantProductId, setVariantProductId] = useState<number>(0);
-  const [variantSize, setVariantSize] = useState('12oz');
+  const [variantProductId, setVariantProductId] = useState('');
+  const [variantSize, setVariantSize] = useState('');
   const [variantSku, setVariantSku] = useState('');
-  const [variantPrice, setVariantPrice] = useState(0);
+  const [variantPriceInput, setVariantPriceInput] = useState('');
   const [variantActive, setVariantActive] = useState(true);
 
   const productsById = useMemo(
@@ -66,9 +67,6 @@ export function ProductsPage() {
       setProducts(productsResponse);
       setVariants(variantsResponse);
 
-      if (productsResponse.length > 0 && variantProductId === 0) {
-        setVariantProductId(productsResponse[0].id);
-      }
     } catch (error) {
       setCatalogError(
         error instanceof Error
@@ -99,7 +97,7 @@ export function ProductsPage() {
       addSessionProduct(product);
       setProductName('');
       setProductDescription('');
-      setProductCategory('Bebidas');
+      setProductCategory('');
       setProductActive(true);
       setMessage(`Producto #${product.id} creado correctamente.`);
       await refreshCatalog();
@@ -113,7 +111,10 @@ export function ProductsPage() {
   }
 
   async function handleCreateVariant() {
-    if (variantProductId <= 0) {
+    const productId = Number(variantProductId);
+    const variantPrice = parseNumberInput(variantPriceInput);
+
+    if (!variantProductId || productId <= 0) {
       setSubmitError('Selecciona un producto para la variante.');
       return;
     }
@@ -121,7 +122,7 @@ export function ProductsPage() {
       setSubmitError('Tamaño y SKU son obligatorios.');
       return;
     }
-    if (variantPrice < 0) {
+    if (variantPrice === null || variantPrice < 0) {
       setSubmitError('El precio debe ser mayor o igual a 0.');
       return;
     }
@@ -132,7 +133,7 @@ export function ProductsPage() {
       setMessage(null);
 
       const variant = await posApi.createVariant({
-        product_id: variantProductId,
+        product_id: productId,
         size: variantSize.trim(),
         sku: variantSku.trim(),
         sale_price: variantPrice,
@@ -140,8 +141,10 @@ export function ProductsPage() {
       });
 
       addSessionVariant(variant);
+      setVariantProductId('');
+      setVariantSize('');
       setVariantSku('');
-      setVariantPrice(0);
+      setVariantPriceInput('');
       setVariantActive(true);
       setMessage(`Variante #${variant.id} creada correctamente.`);
       await refreshCatalog();
@@ -227,6 +230,7 @@ export function ProductsPage() {
                 label="Categoria"
                 value={productCategory}
                 onChange={(event) => setProductCategory(event.target.value)}
+                placeholder="Ej: Bebidas"
                 hint="Preparado visualmente para una futura fase de catalogacion."
               />
 
@@ -267,18 +271,19 @@ export function ProductsPage() {
                 <span className="text-sm font-medium text-slate-200">Producto</span>
                 <select
                   value={variantProductId}
-                  onChange={(event) => setVariantProductId(Number(event.target.value))}
+                  onChange={(event) => setVariantProductId(event.target.value)}
                   className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
                 >
-                  {products.length === 0 ? (
-                    <option value={0}>Sin productos cargados</option>
-                  ) : (
-                    products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        #{product.id} · {product.name}
-                      </option>
-                    ))
-                  )}
+                  <option value="">
+                    {products.length === 0 ? 'Sin productos cargados' : 'Selecciona un producto'}
+                  </option>
+                  {products.length > 0
+                    ? products.map((product) => (
+                        <option key={product.id} value={String(product.id)}>
+                          #{product.id} - {product.name}
+                        </option>
+                      ))
+                    : null}
                 </select>
               </label>
 
@@ -287,11 +292,13 @@ export function ProductsPage() {
                   label="Tamano"
                   value={variantSize}
                   onChange={(event) => setVariantSize(event.target.value)}
+                  placeholder="Ej: 12oz"
                 />
                 <Input
                   label="SKU"
                   value={variantSku}
                   onChange={(event) => setVariantSku(event.target.value)}
+                  placeholder="Ej: CAF-AM-12"
                 />
               </div>
 
@@ -299,8 +306,14 @@ export function ProductsPage() {
                 type="number"
                 min={0}
                 label="Precio de venta"
-                value={variantPrice}
-                onChange={(event) => setVariantPrice(Number(event.target.value))}
+                placeholder="Ej: 12000"
+                value={variantPriceInput}
+                onChange={(event) => {
+                  const nextValue = normalizeNumberInput(event.target.value);
+                  if (nextValue !== null) {
+                    setVariantPriceInput(nextValue);
+                  }
+                }}
               />
 
               <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
@@ -493,3 +506,7 @@ export function ProductsPage() {
     </div>
   );
 }
+
+
+
+
