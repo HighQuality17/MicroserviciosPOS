@@ -32,7 +32,8 @@ export type PermissionCapability =
   | 'canOperatePos'
   | 'canOperateCash'
   | 'canManageCatalog'
-  | 'canManageInventory';
+  | 'canManageInventory'
+  | 'canManageLocations';
 
 const navigationItems: NavigationItem[] = [
   { to: '/pos', label: 'POS', icon: ShoppingCart },
@@ -65,6 +66,7 @@ const capabilitiesByRole: Record<UserRole, Record<PermissionCapability, boolean>
     canOperateCash: true,
     canManageCatalog: true,
     canManageInventory: true,
+    canManageLocations: true,
   },
   CASHIER: {
     canViewAdmin: false,
@@ -74,6 +76,7 @@ const capabilitiesByRole: Record<UserRole, Record<PermissionCapability, boolean>
     canOperateCash: true,
     canManageCatalog: false,
     canManageInventory: false,
+    canManageLocations: false,
   },
   AUDITOR: {
     canViewAdmin: true,
@@ -83,6 +86,7 @@ const capabilitiesByRole: Record<UserRole, Record<PermissionCapability, boolean>
     canOperateCash: false,
     canManageCatalog: false,
     canManageInventory: false,
+    canManageLocations: false,
   },
 };
 

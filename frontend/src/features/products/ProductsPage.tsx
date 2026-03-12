@@ -1,28 +1,60 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Layers3, PackagePlus, Shapes } from 'lucide-react';
+import { BookOpenCheck, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
+import { LoadingState } from '@/components/LoadingState';
+import { Modal } from '@/components/Modal';
+import { ScrollPanel } from '@/components/ScrollPanel';
+import { StatusBadge } from '@/components/StatusBadge';
 import { SummaryCard } from '@/components/SummaryCard';
+import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { formatCurrency } from '@/utils/format';
 import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
-import type { CatalogProduct, CatalogVariant } from '@/types/api';
+import type {
+  CatalogProduct,
+  CatalogVariant,
+  Ingredient,
+  IngredientDimension,
+  VariantRecipe,
+} from '@/types/api';
+
+type RecipeDraftItem = {
+  ingredient_id: string;
+  qtyInput: string;
+  unit_code: string;
+  persisted: boolean;
+};
+
+const unitsByDimension: Record<IngredientDimension, string[]> = {
+  WEIGHT: ['g', 'kg'],
+  VOLUME: ['ml', 'L'],
+  COUNT: ['unit'],
+};
 
 export function ProductsPage() {
+  const { can } = usePermissions();
+  const canManageCatalog = can('canManageCatalog');
   const addSessionProduct = useAppStore((state) => state.addSessionProduct);
   const addSessionVariant = useAppStore((state) => state.addSessionVariant);
 
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [variants, setVariants] = useState<CatalogVariant[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [recipeStatusByVariant, setRecipeStatusByVariant] = useState<Record<number, boolean>>({});
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [creatingProduct, setCreatingProduct] = useState(false);
   const [creatingVariant, setCreatingVariant] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(false);
+  const [editingVariant, setEditingVariant] = useState(false);
+  const [savingRecipe, setSavingRecipe] = useState(false);
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
 
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
@@ -35,20 +67,38 @@ export function ProductsPage() {
   const [variantPriceInput, setVariantPriceInput] = useState('');
   const [variantActive, setVariantActive] = useState(true);
 
-  const productsById = useMemo(
-    () => new Map(products.map((product) => [product.id, product])),
-    [products],
+  const [productEditorOpen, setProductEditorOpen] = useState(false);
+  const [variantEditorOpen, setVariantEditorOpen] = useState(false);
+  const [recipeModalOpen, setRecipeModalOpen] = useState(false);
+
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<CatalogVariant | null>(null);
+  const [loadedRecipe, setLoadedRecipe] = useState<VariantRecipe | null>(null);
+
+  const [editProductName, setEditProductName] = useState('');
+  const [editProductActive, setEditProductActive] = useState(true);
+  const [editVariantSize, setEditVariantSize] = useState('');
+  const [editVariantSku, setEditVariantSku] = useState('');
+  const [editVariantPriceInput, setEditVariantPriceInput] = useState('');
+  const [editVariantActive, setEditVariantActive] = useState(true);
+  const [recipeDraftItems, setRecipeDraftItems] = useState<RecipeDraftItem[]>([]);
+
+  const ingredientsById = useMemo(
+    () => new Map(ingredients.map((ingredient) => [ingredient.id, ingredient])),
+    [ingredients],
   );
 
-  const enrichedProducts = useMemo(() => {
-    return products.map((product) => ({
-      ...product,
-      relatedVariants:
-        product.variants.length > 0
-          ? product.variants
-          : variants.filter((variant) => variant.product_id === product.id),
-    }));
-  }, [products, variants]);
+  const enrichedProducts = useMemo(
+    () =>
+      products.map((product) => ({
+        ...product,
+        relatedVariants:
+          product.variants.length > 0
+            ? product.variants
+            : variants.filter((variant) => variant.product_id === product.id),
+      })),
+    [products, variants],
+  );
 
   useEffect(() => {
     void refreshCatalog();
@@ -59,23 +109,40 @@ export function ProductsPage() {
       setLoadingCatalog(true);
       setCatalogError(null);
 
-      const [productsResponse, variantsResponse] = await Promise.all([
+      const [productsResponse, variantsResponse, ingredientsResponse] = await Promise.all([
         posApi.getProducts(),
         posApi.getVariants(),
+        posApi.getIngredients(),
       ]);
 
       setProducts(productsResponse);
       setVariants(variantsResponse);
-
+      setIngredients(ingredientsResponse);
+      await loadRecipeStatuses(variantsResponse);
     } catch (error) {
       setCatalogError(
         error instanceof Error
-          ? error.message
-          : 'No fue posible cargar productos y variantes',
+          ? translateCatalogError(error.message)
+          : 'No fue posible cargar productos, variantes y recetas.',
       );
     } finally {
       setLoadingCatalog(false);
     }
+  }
+
+  async function loadRecipeStatuses(currentVariants: CatalogVariant[]) {
+    const responses = await Promise.all(
+      currentVariants.map(async (variant) => {
+        try {
+          const recipe = await posApi.getVariantRecipe(variant.id);
+          return [variant.id, recipe.has_recipe] as const;
+        } catch {
+          return [variant.id, false] as const;
+        }
+      }),
+    );
+
+    setRecipeStatusByVariant(Object.fromEntries(responses));
   }
 
   async function handleCreateProduct() {
@@ -103,7 +170,9 @@ export function ProductsPage() {
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : 'No se pudo crear el producto',
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo crear el producto.',
       );
     } finally {
       setCreatingProduct(false);
@@ -150,10 +219,289 @@ export function ProductsPage() {
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : 'No se pudo crear la variante',
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo crear la variante.',
       );
     } finally {
       setCreatingVariant(false);
+    }
+  }
+
+  function openProductEditor(product: CatalogProduct) {
+    setSelectedProduct(product);
+    setEditProductName(product.name);
+    setEditProductActive(product.active);
+    setProductEditorOpen(true);
+    setSubmitError(null);
+  }
+
+  async function handleSaveProduct() {
+    if (!selectedProduct) return;
+    if (!editProductName.trim()) {
+      setSubmitError('El nombre del producto es obligatorio.');
+      return;
+    }
+
+    try {
+      setEditingProduct(true);
+      setSubmitError(null);
+      await posApi.updateProduct(selectedProduct.id, {
+        name: editProductName.trim(),
+        active: editProductActive,
+      });
+      setProductEditorOpen(false);
+      setMessage(`Producto #${selectedProduct.id} actualizado correctamente.`);
+      await refreshCatalog();
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo actualizar el producto.',
+      );
+    } finally {
+      setEditingProduct(false);
+    }
+  }
+
+  async function handleToggleProductStatus(product: CatalogProduct) {
+    try {
+      setSubmitError(null);
+      setMessage(null);
+      await posApi.updateProductStatus(product.id, { active: !product.active });
+      setMessage(
+        `Producto #${product.id} ${product.active ? 'desactivado' : 'activado'} correctamente.`,
+      );
+      await refreshCatalog();
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo cambiar el estado del producto.',
+      );
+    }
+  }
+
+  function openVariantEditor(variant: CatalogVariant) {
+    setSelectedVariant(variant);
+    setEditVariantSize(variant.size);
+    setEditVariantSku(variant.sku);
+    setEditVariantPriceInput(String(Number(variant.sale_price)));
+    setEditVariantActive(variant.active);
+    setVariantEditorOpen(true);
+    setSubmitError(null);
+  }
+
+  async function handleSaveVariant() {
+    if (!selectedVariant) return;
+    const salePrice = parseNumberInput(editVariantPriceInput);
+
+    if (!editVariantSize.trim() || !editVariantSku.trim()) {
+      setSubmitError('Tamaño y SKU son obligatorios.');
+      return;
+    }
+    if (salePrice === null || salePrice < 0) {
+      setSubmitError('El precio de venta debe ser válido.');
+      return;
+    }
+
+    try {
+      setEditingVariant(true);
+      setSubmitError(null);
+      await posApi.updateVariant(selectedVariant.id, {
+        size: editVariantSize.trim(),
+        sku: editVariantSku.trim(),
+        sale_price: salePrice,
+        active: editVariantActive,
+      });
+      setVariantEditorOpen(false);
+      setMessage(`Variante #${selectedVariant.id} actualizada correctamente.`);
+      await refreshCatalog();
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo actualizar la variante.',
+      );
+    } finally {
+      setEditingVariant(false);
+    }
+  }
+
+  async function handleToggleVariantStatus(variant: CatalogVariant) {
+    try {
+      setSubmitError(null);
+      setMessage(null);
+      await posApi.updateVariantStatus(variant.id, { active: !variant.active });
+      setMessage(
+        `Variante #${variant.id} ${variant.active ? 'desactivada' : 'activada'} correctamente.`,
+      );
+      await refreshCatalog();
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo cambiar el estado de la variante.',
+      );
+    }
+  }
+
+  async function openRecipeManager(variant: CatalogVariant) {
+    try {
+      setLoadingRecipe(true);
+      setSubmitError(null);
+      setSelectedVariant(variant);
+      setRecipeModalOpen(true);
+      const recipe = await posApi.getVariantRecipe(variant.id);
+      setLoadedRecipe(recipe);
+      setRecipeDraftItems(
+        recipe.items.length > 0
+          ? recipe.items.map((item) => ({
+              ingredient_id: String(item.ingredient_id),
+              qtyInput: String(item.qty_base_required),
+              unit_code: item.default_unit_code,
+              persisted: true,
+            }))
+          : [createEmptyRecipeDraft()],
+      );
+    } catch (error) {
+      setRecipeModalOpen(false);
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo cargar la receta de la variante.',
+      );
+    } finally {
+      setLoadingRecipe(false);
+    }
+  }
+
+  function handleRecipeDraftChange(
+    index: number,
+    field: keyof RecipeDraftItem,
+    value: string | boolean,
+  ) {
+    setRecipeDraftItems((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        const nextItem = { ...item, [field]: value } as RecipeDraftItem;
+        if (field === 'ingredient_id') {
+          const ingredient = ingredientsById.get(Number(value));
+          nextItem.unit_code = ingredient ? unitsByDimension[ingredient.dimension][0] : 'g';
+        }
+        return nextItem;
+      }),
+    );
+  }
+
+  function handleAddRecipeRow() {
+    setRecipeDraftItems((current) => [...current, createEmptyRecipeDraft()]);
+  }
+
+  async function handleDeleteRecipeRow(index: number) {
+    if (!selectedVariant) return;
+    const row = recipeDraftItems[index];
+    const ingredientId = Number(row.ingredient_id);
+
+    if (!row.persisted || Number.isNaN(ingredientId)) {
+      setRecipeDraftItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
+      return;
+    }
+
+    try {
+      setSavingRecipe(true);
+      setSubmitError(null);
+      const recipe = await posApi.deleteRecipeItem(selectedVariant.id, ingredientId);
+      setLoadedRecipe(recipe);
+      setRecipeDraftItems(
+        recipe.items.length > 0
+          ? recipe.items.map((item) => ({
+              ingredient_id: String(item.ingredient_id),
+              qtyInput: String(item.qty_base_required),
+              unit_code: item.default_unit_code,
+              persisted: true,
+            }))
+          : [createEmptyRecipeDraft()],
+      );
+      setRecipeStatusByVariant((current) => ({
+        ...current,
+        [selectedVariant.id]: recipe.has_recipe,
+      }));
+      setMessage(`Ingrediente eliminado de la receta de la variante #${selectedVariant.id}.`);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo eliminar el ingrediente de la receta.',
+      );
+    } finally {
+      setSavingRecipe(false);
+    }
+  }
+
+  async function handleSaveRecipe() {
+    if (!selectedVariant) return;
+
+    const validRows = recipeDraftItems.filter(
+      (item) => item.ingredient_id && item.qtyInput.trim() && item.unit_code,
+    );
+
+    if (validRows.length === 0) {
+      setSubmitError('Agrega al menos un ingrediente con cantidad para guardar la receta.');
+      return;
+    }
+
+    const ingredientIds = validRows.map((item) => Number(item.ingredient_id));
+    if (new Set(ingredientIds).size !== ingredientIds.length) {
+      setSubmitError('No repitas ingredientes dentro de la misma receta.');
+      return;
+    }
+
+    const payloadItems = [];
+    for (const row of validRows) {
+      const qty = parseNumberInput(row.qtyInput);
+      if (qty === null || qty <= 0) {
+        setSubmitError('Todas las cantidades de la receta deben ser mayores a 0.');
+        return;
+      }
+      payloadItems.push({
+        ingredient_id: Number(row.ingredient_id),
+        qty,
+        unit_code: row.unit_code,
+      });
+    }
+
+    try {
+      setSavingRecipe(true);
+      setSubmitError(null);
+      const recipe = await posApi.updateVariantRecipe(selectedVariant.id, {
+        items: payloadItems,
+      });
+      setLoadedRecipe(recipe);
+      setRecipeDraftItems(
+        recipe.items.map((item) => ({
+          ingredient_id: String(item.ingredient_id),
+          qtyInput: String(item.qty_base_required),
+          unit_code: item.default_unit_code,
+          persisted: true,
+        })),
+      );
+      setRecipeStatusByVariant((current) => ({
+        ...current,
+        [selectedVariant.id]: recipe.has_recipe,
+      }));
+      setMessage(`Receta de la variante #${selectedVariant.id} guardada correctamente.`);
+      setRecipeModalOpen(false);
+      await refreshCatalog();
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo guardar la receta.',
+      );
+    } finally {
+      setSavingRecipe(false);
     }
   }
 
@@ -163,7 +511,7 @@ export function ProductsPage() {
         <SummaryCard
           title="Productos"
           value={String(products.length)}
-          hint="Catalogo real cargado desde backend"
+          hint="Catálogo real cargado desde el backend"
           icon={<PackagePlus size={18} />}
         />
         <SummaryCard
@@ -173,10 +521,10 @@ export function ProductsPage() {
           icon={<Shapes size={18} />}
         />
         <SummaryCard
-          title="Cobertura"
-          value={products.length > 0 ? 'Activa' : 'Pendiente'}
-          hint="Pantalla preparada para futura edicion y baja"
-          icon={<Layers3 size={18} />}
+          title="Recetas configuradas"
+          value={String(Object.values(recipeStatusByVariant).filter(Boolean).length)}
+          hint="Visibilidad operativa para variantes vendibles"
+          icon={<BookOpenCheck size={18} />}
         />
       </div>
 
@@ -201,7 +549,7 @@ export function ProductsPage() {
       <div className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
         <div className="grid gap-4">
           <Card>
-            <p className="text-sm text-slate-400">Gestion de productos</p>
+            <p className="text-sm text-slate-400">Gestión de productos</p>
             <h2 className="font-display text-2xl font-bold text-white">Crear producto</h2>
             <div className="mt-5 grid gap-4">
               <Input
@@ -212,9 +560,7 @@ export function ProductsPage() {
               />
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">
-                  Descripcion
-                </span>
+                <span className="text-sm font-medium text-slate-200">Descripción</span>
                 <textarea
                   value={productDescription}
                   onChange={(event) => setProductDescription(event.target.value)}
@@ -222,24 +568,22 @@ export function ProductsPage() {
                   className="min-h-28 w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-teal-400/70"
                 />
                 <span className="text-xs text-slate-500">
-                  Aun no se envia al backend. Solo se persisten `name` y `active`.
+                  Aún no se envía al backend. Por ahora solo se persisten nombre y estado.
                 </span>
               </label>
 
               <Input
-                label="Categoria"
+                label="Categoría"
                 value={productCategory}
                 onChange={(event) => setProductCategory(event.target.value)}
                 placeholder="Ej: Bebidas"
-                hint="Preparado visualmente para una futura fase de catalogacion."
+                hint="Preparado visualmente para una futura fase de catalogación."
               />
 
               <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-white">Activo</p>
-                  <p className="text-xs text-slate-500">
-                    Se envia al backend en el alta actual.
-                  </p>
+                  <p className="text-xs text-slate-500">Se envía al backend en el alta actual.</p>
                 </div>
                 <input
                   type="checkbox"
@@ -251,20 +595,22 @@ export function ProductsPage() {
 
               <div className="flex gap-3">
                 <Button
-                  disabled={creatingProduct || !productName.trim()}
+                  disabled={!canManageCatalog || creatingProduct || !productName.trim()}
                   onClick={handleCreateProduct}
                 >
                   {creatingProduct ? 'Guardando...' : 'Crear producto'}
                 </Button>
-                <Button variant="secondary" disabled>
-                  Editar proximamente
-                </Button>
+                {!canManageCatalog ? (
+                  <Button variant="secondary" disabled>
+                    Solo lectura
+                  </Button>
+                ) : null}
               </div>
             </div>
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Gestion de variantes</p>
+            <p className="text-sm text-slate-400">Gestión de variantes</p>
             <h2 className="font-display text-2xl font-bold text-white">Crear variante</h2>
             <div className="mt-5 grid gap-4">
               <label className="block space-y-2">
@@ -277,19 +623,17 @@ export function ProductsPage() {
                   <option value="">
                     {products.length === 0 ? 'Sin productos cargados' : 'Selecciona un producto'}
                   </option>
-                  {products.length > 0
-                    ? products.map((product) => (
-                        <option key={product.id} value={String(product.id)}>
-                          #{product.id} - {product.name}
-                        </option>
-                      ))
-                    : null}
+                  {products.map((product) => (
+                    <option key={product.id} value={String(product.id)}>
+                      #{product.id} · {product.name}
+                    </option>
+                  ))}
                 </select>
               </label>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
-                  label="Tamano"
+                  label="Tamaño"
                   value={variantSize}
                   onChange={(event) => setVariantSize(event.target.value)}
                   placeholder="Ej: 12oz"
@@ -310,9 +654,7 @@ export function ProductsPage() {
                 value={variantPriceInput}
                 onChange={(event) => {
                   const nextValue = normalizeNumberInput(event.target.value);
-                  if (nextValue !== null) {
-                    setVariantPriceInput(nextValue);
-                  }
+                  if (nextValue !== null) setVariantPriceInput(nextValue);
                 }}
               />
 
@@ -320,7 +662,7 @@ export function ProductsPage() {
                 <div>
                   <p className="text-sm font-medium text-white">Activa</p>
                   <p className="text-xs text-slate-500">
-                    Las variantes inactivas no deben ir al POS.
+                    Las variantes inactivas no se muestran en POS.
                   </p>
                 </div>
                 <input
@@ -333,14 +675,16 @@ export function ProductsPage() {
 
               <div className="flex gap-3">
                 <Button
-                  disabled={creatingVariant || products.length === 0}
+                  disabled={!canManageCatalog || creatingVariant || products.length === 0}
                   onClick={handleCreateVariant}
                 >
                   {creatingVariant ? 'Guardando...' : 'Crear variante'}
                 </Button>
-                <Button variant="secondary" disabled>
-                  Duplicar proximamente
-                </Button>
+                {!canManageCatalog ? (
+                  <Button variant="secondary" disabled>
+                    Solo lectura
+                  </Button>
+                ) : null}
               </div>
             </div>
           </Card>
@@ -351,9 +695,7 @@ export function ProductsPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-slate-400">Listado real</p>
-                <h2 className="font-display text-2xl font-bold text-white">
-                  Productos
-                </h2>
+                <h2 className="font-display text-2xl font-bold text-white">Productos</h2>
               </div>
               <Button variant="secondary" onClick={() => void refreshCatalog()}>
                 Refrescar
@@ -361,23 +703,22 @@ export function ProductsPage() {
             </div>
 
             {loadingCatalog ? (
-              <div className="mt-6 grid gap-3">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-28 animate-pulse rounded-3xl border border-slate-800 bg-slate-950/50"
-                  />
-                ))}
+              <div className="mt-6">
+                <LoadingState
+                  title="Cargando productos"
+                  description="Estamos preparando el catálogo y sus variantes activas."
+                  rows={4}
+                />
               </div>
             ) : enrichedProducts.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
                   title="Sin productos cargados"
-                  description="Usa el formulario de la izquierda para crear el primer producto del catalogo."
+                  description="Usa el formulario de la izquierda para crear el primer producto del catálogo."
                 />
               </div>
             ) : (
-              <div className="mt-6 grid gap-4">
+              <ScrollPanel className="mt-6 grid gap-4">
                 {enrichedProducts.map((product) => (
                   <div
                     key={product.id}
@@ -386,38 +727,34 @@ export function ProductsPage() {
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <div className="flex items-center gap-3">
-                          <p className="font-display text-xl font-bold text-white">
-                            {product.name}
-                          </p>
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs ${
-                              product.active
-                                ? 'bg-emerald-500/15 text-emerald-300'
-                                : 'bg-slate-700/60 text-slate-300'
-                            }`}
-                          >
-                            {product.active ? 'Activo' : 'Inactivo'}
-                          </span>
+                          <p className="font-display text-xl font-bold text-white">{product.name}</p>
+                          <StatusBadge
+                            label={product.active ? 'Activo' : 'Inactivo'}
+                            tone={product.active ? 'success' : 'default'}
+                          />
                         </div>
                         <p className="mt-2 text-sm text-slate-500">
                           ID {product.id} · {product.relatedVariants.length} variantes asociadas
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" disabled>
-                          Editar
-                        </Button>
-                        <Button variant="ghost" disabled>
-                          Desactivar
-                        </Button>
-                      </div>
+                      {canManageCatalog ? (
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="ghost" onClick={() => openProductEditor(product)}>
+                            Editar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => void handleToggleProductStatus(product)}
+                          >
+                            {product.active ? 'Desactivar' : 'Activar'}
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       {product.relatedVariants.length === 0 ? (
-                        <span className="text-sm text-slate-500">
-                          Sin variantes asociadas aun.
-                        </span>
+                        <span className="text-sm text-slate-500">Sin variantes asociadas aún.</span>
                       ) : (
                         product.relatedVariants.map((variant) => (
                           <span
@@ -431,7 +768,7 @@ export function ProductsPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </ScrollPanel>
             )}
           </Card>
 
@@ -457,56 +794,325 @@ export function ProductsPage() {
               </div>
             ) : (
               <div className="mt-6 overflow-hidden rounded-3xl border border-slate-800">
-                <div className="grid grid-cols-[80px_minmax(0,1.4fr)_100px_150px_140px_110px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
+                <div className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
                   <span>ID</span>
                   <span>Producto</span>
-                  <span>Size</span>
+                  <span>Tamaño</span>
                   <span>SKU</span>
                   <span>Precio</span>
                   <span>Estado</span>
+                  <span>Receta</span>
                 </div>
-                {variants.map((variant) => (
-                  <div
-                    key={variant.id}
-                    className="grid grid-cols-[80px_minmax(0,1.4fr)_100px_150px_140px_110px] gap-3 border-t border-slate-800 bg-slate-950/50 px-4 py-4 text-sm text-slate-200"
-                  >
-                    <span className="text-slate-400">#{variant.id}</span>
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-white">
-                        {variant.product_name}
-                      </p>
-                      <p className="truncate text-xs text-slate-500">
-                        product_id {variant.product_id}
-                      </p>
-                    </div>
-                    <span>{variant.size}</span>
-                    <span className="truncate">{variant.sku}</span>
-                    <span>{formatCurrency(Number(variant.sale_price))}</span>
-                    <span
-                      className={
-                        variant.active ? 'text-emerald-300' : 'text-slate-400'
-                      }
-                    >
-                      {variant.active ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </div>
-                ))}
+                <ScrollPanel maxHeightClassName="max-h-[34rem]">
+                  {variants.map((variant) => {
+                    const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
+                    return (
+                      <div
+                        key={variant.id}
+                        className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 border-t border-slate-800 bg-slate-950/50 px-4 py-4 text-sm text-slate-200"
+                      >
+                        <span className="text-slate-400">#{variant.id}</span>
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-white">{variant.product_name}</p>
+                          <p className="truncate text-xs text-slate-500">
+                            product_id {variant.product_id}
+                          </p>
+                        </div>
+                        <span>{variant.size}</span>
+                        <span className="truncate">{variant.sku}</span>
+                        <span>{formatCurrency(Number(variant.sale_price))}</span>
+                        <StatusBadge
+                          label={variant.active ? 'Activa' : 'Inactiva'}
+                          tone={variant.active ? 'success' : 'default'}
+                        />
+                        <StatusBadge
+                          label={hasRecipe ? 'Con receta' : 'Sin receta'}
+                          tone={hasRecipe ? 'info' : 'warning'}
+                        />
+                        {canManageCatalog ? (
+                          <div className="col-span-full flex flex-wrap gap-2 border-t border-slate-800 pt-3">
+                            <Button variant="ghost" onClick={() => openVariantEditor(variant)}>
+                              Editar variante
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              onClick={() => void handleToggleVariantStatus(variant)}
+                            >
+                              {variant.active ? 'Desactivar' : 'Activar'}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              onClick={() => void openRecipeManager(variant)}
+                            >
+                              Gestionar receta
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </ScrollPanel>
               </div>
             )}
 
             {variants.length > 0 ? (
               <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-xs text-slate-500">
-                La pantalla queda preparada para futuras acciones de editar, desactivar o
-                reasignar variantes sin cambiar la estructura visual.
+                Las variantes activas sin receta seguirán detectándose aquí para que administración complete la configuración antes de vender.
               </div>
             ) : null}
           </Card>
         </div>
       </div>
+
+      <Modal
+        open={productEditorOpen}
+        onClose={() => setProductEditorOpen(false)}
+        title="Editar producto"
+        subtitle="Actualiza el nombre visible y el estado comercial del producto."
+      >
+        <div className="grid gap-4">
+          <Input
+            label="Nombre"
+            value={editProductName}
+            onChange={(event) => setEditProductName(event.target.value)}
+            placeholder="Nombre del producto"
+          />
+          <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-white">Activo</p>
+              <p className="text-xs text-slate-500">
+                Si lo desactivas, dejará de mostrarse en los listados operativos.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={editProductActive}
+              onChange={(event) => setEditProductActive(event.target.checked)}
+              className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-teal-400"
+            />
+          </label>
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setProductEditorOpen(false)}>
+              Cancelar
+            </Button>
+            <Button disabled={editingProduct} onClick={handleSaveProduct}>
+              {editingProduct ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={variantEditorOpen}
+        onClose={() => setVariantEditorOpen(false)}
+        title="Editar variante"
+        subtitle="Ajusta tamaño, SKU, precio y estado de la variante seleccionada."
+      >
+        <div className="grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Tamaño"
+              value={editVariantSize}
+              onChange={(event) => setEditVariantSize(event.target.value)}
+              placeholder="Ej: 16oz"
+            />
+            <Input
+              label="SKU"
+              value={editVariantSku}
+              onChange={(event) => setEditVariantSku(event.target.value)}
+              placeholder="Ej: LAT-AV-16"
+            />
+          </div>
+          <Input
+            type="number"
+            min={0}
+            label="Precio de venta"
+            value={editVariantPriceInput}
+            onChange={(event) => {
+              const nextValue = normalizeNumberInput(event.target.value);
+              if (nextValue !== null) setEditVariantPriceInput(nextValue);
+            }}
+            placeholder="Ej: 15000"
+          />
+          <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-white">Activa</p>
+              <p className="text-xs text-slate-500">
+                Las variantes inactivas no se muestran en POS.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={editVariantActive}
+              onChange={(event) => setEditVariantActive(event.target.checked)}
+              className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-teal-400"
+            />
+          </label>
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setVariantEditorOpen(false)}>
+              Cancelar
+            </Button>
+            <Button disabled={editingVariant} onClick={handleSaveVariant}>
+              {editingVariant ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={recipeModalOpen}
+        onClose={() => setRecipeModalOpen(false)}
+        title="Gestionar receta"
+        subtitle={
+          selectedVariant
+            ? `${selectedVariant.product_name} · ${selectedVariant.size} · ${selectedVariant.sku}`
+            : 'Configura los ingredientes de la variante'
+        }
+      >
+        {loadingRecipe ? (
+          <LoadingState
+            title="Cargando receta"
+            description="Estamos leyendo la configuración actual de ingredientes."
+            rows={3}
+          />
+        ) : (
+          <div className="grid gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <StatusBadge
+                label={loadedRecipe?.has_recipe ? 'Con receta' : 'Sin receta'}
+                tone={loadedRecipe?.has_recipe ? 'info' : 'warning'}
+              />
+              <p className="text-sm text-slate-400">
+                Todas las cantidades se guardan en unidad base según el ingrediente.
+              </p>
+            </div>
+
+            <ScrollPanel maxHeightClassName="max-h-[24rem]" className="grid gap-3">
+              {recipeDraftItems.map((item, index) => {
+                const ingredient = ingredientsById.get(Number(item.ingredient_id));
+                const availableUnits = ingredient
+                  ? unitsByDimension[ingredient.dimension]
+                  : ['g', 'kg', 'ml', 'L', 'unit'];
+
+                return (
+                  <div
+                    key={`${item.ingredient_id}-${index}`}
+                    className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4"
+                  >
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_120px_110px_auto] lg:items-end">
+                      <label className="block space-y-2">
+                        <span className="text-sm font-medium text-slate-200">Ingrediente</span>
+                        <select
+                          value={item.ingredient_id}
+                          onChange={(event) =>
+                            handleRecipeDraftChange(index, 'ingredient_id', event.target.value)
+                          }
+                          className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
+                        >
+                          <option value="">Selecciona un ingrediente</option>
+                          {ingredients.map((ingredientOption) => (
+                            <option key={ingredientOption.id} value={ingredientOption.id}>
+                              #{ingredientOption.id} · {ingredientOption.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        label="Cantidad"
+                        placeholder="Ej: 18"
+                        value={item.qtyInput}
+                        onChange={(event) => {
+                          const nextValue = normalizeNumberInput(event.target.value, {
+                            allowDecimal: true,
+                          });
+                          if (nextValue !== null) {
+                            handleRecipeDraftChange(index, 'qtyInput', nextValue);
+                          }
+                        }}
+                      />
+                      <label className="block space-y-2">
+                        <span className="text-sm font-medium text-slate-200">Unidad</span>
+                        <select
+                          value={item.unit_code}
+                          onChange={(event) =>
+                            handleRecipeDraftChange(index, 'unit_code', event.target.value)
+                          }
+                          className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
+                        >
+                          {availableUnits.map((unit) => (
+                            <option key={unit} value={unit}>
+                              {unit}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <Button
+                        variant="ghost"
+                        disabled={savingRecipe}
+                        onClick={() => void handleDeleteRecipeRow(index)}
+                      >
+                        {item.persisted ? 'Eliminar' : 'Quitar'}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </ScrollPanel>
+
+            <div className="flex flex-wrap justify-between gap-3">
+              <Button variant="secondary" onClick={handleAddRecipeRow}>
+                Agregar ingrediente
+              </Button>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setRecipeModalOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button disabled={savingRecipe} onClick={() => void handleSaveRecipe()}>
+                  {savingRecipe ? 'Guardando...' : 'Guardar receta'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
 
+function createEmptyRecipeDraft(): RecipeDraftItem {
+  return {
+    ingredient_id: '',
+    qtyInput: '',
+    unit_code: 'g',
+    persisted: false,
+  };
+}
 
+function translateCatalogError(message: string) {
+  if (message === 'Product name already exists') return 'Ya existe un producto con ese nombre.';
+  if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
+  if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
+  if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';
+  if (message.includes('historical sales')) {
+    return 'No se puede eliminar porque ya tiene ventas históricas. Desactívalo en su lugar.';
+  }
+  if (message.includes('assigned to one or more combos')) {
+    return 'No se puede eliminar porque la variante está asociada a combos. Quita esas relaciones primero.';
+  }
+  if (message.includes('variants configured')) {
+    return 'No se puede eliminar el producto mientras tenga variantes configuradas.';
+  }
+  if (message.includes('dimension mismatch')) {
+    return 'La unidad seleccionada no corresponde con la dimensión del ingrediente.';
+  }
+  if (message.includes('unit_code') && message.includes('invalid')) {
+    return 'La unidad seleccionada no es válida para la receta.';
+  }
+  if (message.includes('qty must be > 0')) {
+    return 'Todas las cantidades de la receta deben ser mayores a 0.';
+  }
 
-
+  return message;
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
@@ -47,7 +47,7 @@ export function PaymentModal({
     if (method === 'CASH') {
       const parsedAmount = parseNumberInput(amountReceivedInput);
       if (parsedAmount === null || parsedAmount < total) {
-        setValidationError('Ingresa un monto recibido valido mayor o igual al total.');
+        setValidationError('Ingresa un monto recibido válido mayor o igual al total.');
         return;
       }
     }
@@ -64,7 +64,7 @@ export function PaymentModal({
       open={open}
       onClose={onClose}
       title="Cobrar venta"
-      subtitle="Confirma el metodo de pago y envia la venta al backend local."
+      subtitle="Confirma el método de pago y envía la venta al backend local."
     >
       <div className="grid gap-5">
         <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
@@ -76,7 +76,7 @@ export function PaymentModal({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Metodo</span>
+            <span className="text-sm font-medium text-slate-200">Método</span>
             <select
               value={method}
               onChange={(event) => {
@@ -145,4 +145,6 @@ export function PaymentModal({
     </Modal>
   );
 }
+
+
 

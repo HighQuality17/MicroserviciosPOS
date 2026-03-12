@@ -177,6 +177,24 @@ export interface CatalogVariant {
   active: boolean;
 }
 
+export interface VariantRecipeItem {
+  ingredient_id: number;
+  ingredient_name: string;
+  dimension: IngredientDimension;
+  default_unit_code: string;
+  qty_base_required: number;
+}
+
+export interface VariantRecipe {
+  variant_id: number;
+  product_id: number;
+  product_name: string;
+  size: string;
+  active: boolean;
+  has_recipe: boolean;
+  items: VariantRecipeItem[];
+}
+
 export interface CatalogComboItem {
   id: number;
   combo_id: number;

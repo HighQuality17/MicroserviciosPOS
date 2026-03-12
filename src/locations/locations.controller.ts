@@ -1,10 +1,15 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { LocationsService } from './locations.service';
 
 @Controller('locations')
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
+
+  @Get()
+  findAll() {
+    return this.locationsService.findAll();
+  }
 
   @Post()
   create(@Body() dto: CreateLocationDto) {

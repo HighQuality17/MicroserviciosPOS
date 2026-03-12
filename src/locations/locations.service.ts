@@ -6,6 +6,12 @@ import { CreateLocationDto } from './dto/create-location.dto';
 export class LocationsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAll() {
+    return this.prisma.location.findMany({
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async create(dto: CreateLocationDto) {
     try {
       return await this.prisma.location.create({

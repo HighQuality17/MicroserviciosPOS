@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, PackageSearch, Receipt } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { CartItem } from '@/components/CartItem';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
+import { LoadingState } from '@/components/LoadingState';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
@@ -22,6 +23,8 @@ import type {
 import { computeCartTotals } from '@/utils/cart';
 import { formatCurrency } from '@/utils/format';
 import { normalizeNumberInput } from '@/utils/numberInput';
+
+const missingRecipePattern = /^Variant (\d+) has no recipe configured$/i;
 
 export function PosPage() {
   const currentUser = useSessionStore((state) => state.currentUser);
@@ -54,6 +57,11 @@ export function PosPage() {
 
   useEffect(() => {
     async function loadCurrentCash() {
+      if (!currentLocation) {
+        setCurrentCashSession(null);
+        return;
+      }
+
       try {
         const response = await posApi.getCurrentCash(currentLocation.id);
         setCurrentCashSession(response.current_session);
@@ -63,7 +71,7 @@ export function PosPage() {
     }
 
     void loadCurrentCash();
-  }, [currentLocation.id, setCurrentCashSession]);
+  }, [currentLocation, setCurrentCashSession]);
 
   useEffect(() => {
     async function loadCatalog() {
@@ -74,7 +82,7 @@ export function PosPage() {
         setCatalog(response);
       } catch (error) {
         setCatalogError(
-          error instanceof Error ? error.message : 'No se pudo cargar el catalogo',
+          error instanceof Error ? error.message : 'No se pudo cargar el catálogo',
         );
       } finally {
         setCatalogLoading(false);
@@ -123,11 +131,31 @@ export function PosPage() {
     [discountType, discountValue, items],
   );
 
+  const variantNameById = useMemo(() => {
+    const map = new Map<number, string>();
+
+    for (const variant of catalog.variants) {
+      const label = [variant.product_name, variant.size || null]
+        .filter(Boolean)
+        .join(' · ');
+      map.set(variant.id, label || `Variante #${variant.id}`);
+    }
+
+    for (const item of items) {
+      if (item.item_type === 'VARIANT' && !map.has(item.ref_id)) {
+        const label = [item.name, item.subtitle || null].filter(Boolean).join(' · ');
+        map.set(item.ref_id, label || `Variante #${item.ref_id}`);
+      }
+    }
+
+    return map;
+  }, [catalog.variants, items]);
+
   async function handleConfirmPayment(payload: {
     method: PaymentMethod;
     amount_received: number;
   }) {
-    if (!currentUser) return;
+    if (!currentUser || !currentLocation) return;
     if (!currentCashSession) {
       setPaymentError('No hay una caja abierta para registrar la venta.');
       return;
@@ -162,7 +190,7 @@ export function PosPage() {
       clearCart();
       setPaymentOpen(false);
     } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : 'Error de pago');
+      setPaymentError(formatPosPaymentError(error, variantNameById));
     } finally {
       setPaymentLoading(false);
     }
@@ -175,19 +203,23 @@ export function PosPage() {
           <SummaryCard
             title="Caja actual"
             value={currentCashSession ? `#${currentCashSession.id}` : 'Sin abrir'}
-            hint="Necesaria para confirmar ventas"
+            hint={
+              currentLocation
+                ? 'Necesaria para confirmar ventas'
+                : 'Selecciona primero un punto de venta real'
+            }
             icon={<Receipt size={18} />}
           />
           <SummaryCard
             title="Items en carrito"
             value={String(items.length)}
-            hint="Se agrupan por item_type + ref_id"
+            hint="Se agrupan por tipo de ítem e identificador"
             icon={<PackageSearch size={18} />}
           />
           <SummaryCard
-            title="Ultimo receipt"
+            title="Último comprobante"
             value={lastReceiptId ? `#${lastReceiptId}` : 'Pendiente'}
-            hint="Disponible tambien en la pantalla de ventas"
+            hint="Disponible también en la pantalla de ventas"
             icon={<AlertCircle size={18} />}
           />
         </div>
@@ -195,7 +227,7 @@ export function PosPage() {
         <Card>
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm text-slate-400">Catalogo de venta</p>
+              <p className="text-sm text-slate-400">Catálogo de venta</p>
               <h2 className="font-display text-2xl font-bold text-white">POS principal</h2>
             </div>
             <div className="w-full md:max-w-md">
@@ -207,29 +239,28 @@ export function PosPage() {
             </div>
           </div>
 
-          {!currentCashSession ? (
+          {!currentLocation ? (
             <div className="mt-5 rounded-3xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-              Abre caja en la pestana Caja antes de cobrar.
+              Crea o selecciona un POS válido en el encabezado para cargar la operación.
+            </div>
+          ) : !currentCashSession ? (
+            <div className="mt-5 rounded-3xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              Abre la caja en la pestaña Caja antes de cobrar.
             </div>
           ) : null}
 
           {catalogLoading ? (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="glass-panel animate-pulse rounded-3xl p-5"
-                >
-                  <div className="h-6 w-2/3 rounded-full bg-slate-800" />
-                  <div className="mt-3 h-4 w-1/2 rounded-full bg-slate-900" />
-                  <div className="mt-10 h-8 w-24 rounded-full bg-slate-800" />
-                </div>
-              ))}
+            <div className="mt-6">
+              <LoadingState
+                title="Cargando catálogo"
+                description="Estamos trayendo variantes y combos activos para esta caja."
+                rows={4}
+              />
             </div>
           ) : catalogError ? (
             <div className="mt-6">
               <EmptyState
-                title="No fue posible cargar el catalogo"
+                title="No fue posible cargar el catálogo"
                 description={catalogError}
                 action={
                   <Button variant="secondary" onClick={() => window.location.reload()}>
@@ -241,8 +272,8 @@ export function PosPage() {
           ) : catalogItems.length === 0 ? (
             <div className="mt-6">
               <EmptyState
-                title="Catalogo vacio"
-                description="El backend no devolvio variantes ni combos activos para esta caja."
+                title="Catálogo vacío"
+                description="No hay variantes ni combos activos disponibles para esta caja."
               />
             </div>
           ) : (
@@ -252,6 +283,7 @@ export function PosPage() {
                   key={item.key}
                   type="button"
                   onClick={() => addItem(item)}
+                  disabled={!currentLocation}
                   className="glass-panel rounded-3xl p-5 text-left transition hover:-translate-y-0.5 hover:border-teal-300/30"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -291,7 +323,7 @@ export function PosPage() {
           {items.length === 0 ? (
             <EmptyState
               title="Sin items cargados"
-              description="Agrega variantes o combos desde el catalogo para preparar la venta."
+              description="Agrega variantes o combos desde el catálogo para preparar la venta."
             />
           ) : (
             items.map((item) => (
@@ -356,7 +388,10 @@ export function PosPage() {
             </div>
           </div>
 
-          <Button disabled={items.length === 0} onClick={() => setPaymentOpen(true)}>
+          <Button
+            disabled={items.length === 0 || !currentLocation || !currentCashSession}
+            onClick={() => setPaymentOpen(true)}
+          >
             Cobrar
           </Button>
         </div>
@@ -373,3 +408,25 @@ export function PosPage() {
     </div>
   );
 }
+
+function formatPosPaymentError(error: unknown, variantNameById: Map<number, string>) {
+  const fallbackMessage = error instanceof Error ? error.message : 'No fue posible procesar el pago.';
+  const missingRecipeMatch = fallbackMessage.match(missingRecipePattern);
+
+  if (!missingRecipeMatch) {
+    return fallbackMessage;
+  }
+
+  const variantId = Number(missingRecipeMatch[1]);
+  const variantName = variantNameById.get(variantId);
+
+  if (variantName) {
+    return `La variante "${variantName}" no tiene receta configurada. Revísala en administración antes de cobrar esta venta.`;
+  }
+
+  return 'La variante seleccionada no tiene receta configurada. Revísala en administración antes de cobrar esta venta.';
+}
+
+
+
+

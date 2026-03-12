@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Boxes, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
+import { ScrollPanel } from '@/components/ScrollPanel';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -69,7 +70,7 @@ export function CombosPage() {
     }
     const comboPrice = parseNumberInput(comboPriceInput);
     if (comboPrice === null || comboPrice < 0) {
-      setSubmitError('Ingresa un precio de venta valido.');
+      setSubmitError('Ingresa un precio de venta válido.');
       return;
     }
 
@@ -145,7 +146,7 @@ export function CombosPage() {
         <SummaryCard
           title="Combos activos"
           value={String(combos.length)}
-          hint="Leidos desde backend"
+          hint="Leídos desde backend"
           icon={<Boxes size={18} />}
         />
         <SummaryCard
@@ -157,7 +158,7 @@ export function CombosPage() {
         <SummaryCard
           title="Cobertura"
           value={combos.length > 0 ? 'Activa' : 'Pendiente'}
-          hint="Pantalla lista para futura edicion y baja"
+          hint="Pantalla lista para futura edición y baja"
           icon={<PackagePlus size={18} />}
         />
       </div>
@@ -232,7 +233,7 @@ export function CombosPage() {
                   {creatingCombo ? 'Guardando...' : 'Crear combo'}
                 </Button>
                 <Button variant="secondary" disabled>
-                  Editar proximamente
+                  Editar próximamente
                 </Button>
               </div>
             </div>
@@ -241,7 +242,7 @@ export function CombosPage() {
           <Card>
             <p className="text-sm text-slate-400">Agregar items al combo</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Composicion comercial
+              Composición comercial
             </h2>
 
             <div className="mt-5 grid gap-4">
@@ -305,7 +306,7 @@ export function CombosPage() {
                   {addingItems ? 'Guardando...' : 'Agregar item'}
                 </Button>
                 <Button variant="secondary" disabled>
-                  Reordenar proximamente
+                  Reordenar próximamente
                 </Button>
               </div>
             </div>
@@ -340,7 +341,7 @@ export function CombosPage() {
               />
             </div>
           ) : (
-            <div className="mt-6 grid gap-4">
+            <ScrollPanel className="mt-6 grid gap-4">
               {combos.map((combo) => (
                 <div
                   key={combo.id}
@@ -384,7 +385,7 @@ export function CombosPage() {
                   <div className="mt-5 grid gap-3">
                     {combo.items.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-slate-700 px-4 py-3 text-sm text-slate-500">
-                        El combo aun no tiene variantes asociadas.
+                        El combo aún no tiene variantes asociadas.
                       </div>
                     ) : (
                       combo.items.map((item) => (
@@ -409,11 +410,13 @@ export function CombosPage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </ScrollPanel>
           )}
         </Card>
       </div>
     </div>
   );
 }
+
+
 

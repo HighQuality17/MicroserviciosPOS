@@ -1,4 +1,4 @@
-import { ShieldAlert } from 'lucide-react';
+﻿import { ShieldAlert } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -40,7 +40,7 @@ export function AccessDeniedPage() {
 
           <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950/50 p-5 text-sm text-slate-300">
             <p>
-              Usuario: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesion'}</span>
+              Usuario: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesión'}</span>
             </p>
             <p className="mt-2">
               Rol: <span className="font-medium text-white">{currentUser?.role ?? 'N/A'}</span>
@@ -60,4 +60,7 @@ export function AccessDeniedPage() {
     </div>
   );
 }
+
+
+
 

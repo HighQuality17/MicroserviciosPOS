@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { History, ReceiptText, Search, Shield } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
+import { ScrollPanel } from '@/components/ScrollPanel';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -136,11 +137,11 @@ export function SalesPage() {
     <div className="grid gap-4">
       {!canOperateSales ? (
         <RoleModeBanner
-          title={isAuditor ? 'Modo auditoria' : 'Modo de consulta operativa'}
+          title={isAuditor ? 'Modo auditoría' : 'Modo de consulta operativa'}
           description={
             isAuditor
               ? 'Esta vista es completamente de solo lectura. Puedes consultar comprobantes y revisar detalle de ventas sin ejecutar acciones operativas.'
-              : 'Como cajero, aqui solo puedes consultar comprobantes y revisar ventas recientes. Las acciones administrativas se mantienen ocultas.'
+              : 'Como cajero, aquí solo puedes consultar comprobantes y revisar ventas recientes. Las acciones administrativas se mantienen ocultas.'
           }
           tone={isAuditor ? 'warning' : 'info'}
         />
@@ -150,18 +151,18 @@ export function SalesPage() {
         <SummaryCard
           title="Comprobantes recientes"
           value={recentLoading ? '...' : String(stats.totalReceipts)}
-          hint="Ultimos 5 comprobantes persistidos en base local"
+          hint="Últimos 5 comprobantes persistidos en base local"
           icon={<ReceiptText size={18} />}
         />
         <SummaryCard
-          title="Ultimo total"
+          title="Último total"
           value={latestLoading ? '...' : stats.latestTotal}
-          hint="Ultima venta disponible en backend"
+          hint="Última venta disponible en el backend"
           icon={<Search size={18} />}
         />
         <SummaryCard
           title="Historial completo"
-          value="Proximamente"
+          value="Próximamente"
           hint="Base lista para filtros y listado extendido"
           icon={<History size={18} />}
         />
@@ -184,7 +185,7 @@ export function SalesPage() {
           <Card>
             <p className="text-sm text-slate-400">Consultar venta</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Buscar comprobante por sale_id
+              Buscar comprobante por ID de venta
             </h2>
 
             <div className="mt-5 grid gap-4">
@@ -200,15 +201,15 @@ export function SalesPage() {
                 {receiptLoading ? 'Consultando...' : 'Buscar comprobante'}
               </Button>
               <p className="text-sm text-slate-500">
-                Puedes consultar cualquier venta puntual por identificador y abrir su comprobante completo.
+                Puedes consultar cualquier venta puntual por su identificador y abrir el comprobante completo.
               </p>
             </div>
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Ultima venta disponible</p>
+            <p className="text-sm text-slate-400">Última venta disponible</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Ultimo comprobante persistido
+              Último comprobante persistido
             </h2>
 
             {latestError ? (
@@ -221,7 +222,7 @@ export function SalesPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin ventas registradas"
-                  description="La ultima venta disponible aparecera aqui cuando exista al menos un comprobante persistido."
+                  description="La última venta disponible aparecerá aquí cuando exista al menos un comprobante persistido."
                 />
               </div>
             ) : (
@@ -257,7 +258,7 @@ export function SalesPage() {
                   </Button>
                   {canOperateSales ? (
                     <Button variant="ghost" disabled>
-                      Reimpresion avanzada proximamente
+                      Reimpresión avanzada próximamente
                     </Button>
                   ) : null}
                 </div>
@@ -268,7 +269,7 @@ export function SalesPage() {
           <Card>
             <p className="text-sm text-slate-400">Comprobantes recientes</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Ultimos 5 registros
+              Últimos 5 registros
             </h2>
 
             {recentError ? (
@@ -284,11 +285,11 @@ export function SalesPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin comprobantes recientes"
-                  description="Cuando existan ventas pagadas, veras aqui los ultimos comprobantes disponibles."
+                  description="Cuando existan ventas pagadas, verás aquí los últimos comprobantes disponibles."
                 />
               </div>
             ) : (
-              <div className="mt-6 grid gap-3">
+              <ScrollPanel className="mt-6 grid gap-3">
                 {recentSales.map((sale) => (
                   <button
                     key={sale.sale_id}
@@ -320,15 +321,15 @@ export function SalesPage() {
                     </div>
                   </button>
                 ))}
-              </div>
+              </ScrollPanel>
             )}
           </Card>
 
           {isAdmin ? (
             <Card>
-              <p className="text-sm text-slate-400">Acciones de gestion</p>
+              <p className="text-sm text-slate-400">Acciones de gestión</p>
               <h2 className="font-display text-2xl font-bold text-white">
-                Operaciones para siguiente fase
+                Operaciónes para siguiente fase
               </h2>
               <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
                 <div className="flex items-start gap-3">
@@ -336,9 +337,9 @@ export function SalesPage() {
                     <Shield size={18} />
                   </div>
                   <div>
-                    <p className="font-medium text-white">Vista preparada para gestion</p>
+                    <p className="font-medium text-white">Vista preparada para gestión</p>
                     <p className="mt-2 text-sm text-slate-400">
-                      Aqui se integraran exportacion, reimpresion y filtros avanzados cuando el backend exponga historial completo.
+                      Aquí se integrarán exportación, reimpresión y filtros avanzados cuando el backend exponga el historial completo.
                     </p>
                   </div>
                 </div>
@@ -348,16 +349,16 @@ export function SalesPage() {
             <Card>
               <p className="text-sm text-slate-400">Historial</p>
               <h2 className="font-display text-2xl font-bold text-white">
-                Proximamente: historial completo
+                Próximamente: historial completo
               </h2>
               <div className="mt-6">
                 <EmptyState
                   title={
                     isCashier
                       ? 'Consulta operativa en espera'
-                      : 'Historial de auditoria en espera'
+                      : 'Historial de auditoría en espera'
                   }
-                  description="La estructura visual queda lista para integrarse cuando el backend exponga un GET /sales con filtros, paginacion y estado."
+                  description="La estructura visual queda lista para integrarse cuando el backend exponga un GET /sales con filtros, paginación y estado."
                 />
               </div>
             </Card>
@@ -374,7 +375,7 @@ export function SalesPage() {
             <div className="mt-6">
               <EmptyState
                 title="Sin comprobante seleccionado"
-                description="Selecciona una venta reciente, carga la ultima disponible o consulta un sale_id para ver su detalle."
+                description="Selecciona una venta reciente, carga la última disponible o consulta un ID de venta para ver su detalle."
               />
             </div>
           ) : (
@@ -406,7 +407,7 @@ export function SalesPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
-                  <p className="text-sm text-slate-500">Ubicacion</p>
+                  <p className="text-sm text-slate-500">Ubicación</p>
                   <p className="mt-2 font-medium text-white">
                     {visibleReceipt.location.name}
                   </p>
@@ -421,7 +422,7 @@ export function SalesPage() {
 
               <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
                 <p className="text-sm text-slate-400">Items</p>
-                <div className="mt-4 grid gap-3">
+                <ScrollPanel className="mt-4 grid gap-3" maxHeightClassName="max-h-[20rem]">
                   {visibleReceipt.items.map((item) => (
                     <div
                       key={item.id}
@@ -438,7 +439,7 @@ export function SalesPage() {
                       </p>
                     </div>
                   ))}
-                </div>
+                </ScrollPanel>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -472,7 +473,7 @@ export function SalesPage() {
                   <p className="text-sm text-slate-500">Pago</p>
                   <div className="mt-4 grid gap-3 text-sm">
                     <div className="flex items-center justify-between text-slate-300">
-                      <span>Metodo de pago</span>
+                      <span>Método de pago</span>
                       <span>{formatPaymentMethod(visibleReceipt.payment_method)}</span>
                     </div>
                     <div className="flex items-center justify-between text-slate-300">
@@ -514,3 +515,5 @@ function formatStatus(status: string) {
   if (status === 'VOID') return 'Anulada';
   return status;
 }
+
+

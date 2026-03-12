@@ -1,4 +1,4 @@
-import { ChefHat, LogOut } from 'lucide-react';
+﻿import { ChefHat, LogOut } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { getNavigationByRole } from '@/app/permissions';
@@ -58,3 +58,4 @@ export function Sidebar() {
     </aside>
   );
 }
+

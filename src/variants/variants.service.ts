@@ -4,8 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { SaleItemType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVariantDto } from './dto/create-variant.dto';
+import { UpdateVariantDto } from './dto/update-variant.dto';
+import { UpdateVariantStatusDto } from './dto/update-variant-status.dto';
 
 @Injectable()
 export class VariantsService {
@@ -49,7 +52,118 @@ export class VariantsService {
       orderBy: [{ product: { name: 'asc' } }, { size: 'asc' }, { id: 'asc' }],
     });
 
-    return variants.map((variant) => ({
+    return variants.map((variant) => this.mapVariant(variant));
+  }
+
+  async update(id: number, dto: UpdateVariantDto) {
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id },
+    });
+
+    if (!variant) throw new NotFoundException('Variant not found');
+    if (dto.sale_price !== undefined && dto.sale_price < 0) {
+      throw new BadRequestException('sale_price must be >= 0');
+    }
+
+    try {
+      const variant = await this.prisma.productVariant.update({
+        where: { id },
+        data: {
+          ...(dto.size !== undefined ? { size: dto.size.trim() } : {}),
+          ...(dto.sku !== undefined ? { sku: dto.sku.trim() } : {}),
+          ...(dto.sale_price !== undefined ? { salePrice: dto.sale_price } : {}),
+          ...(dto.active !== undefined ? { active: dto.active } : {}),
+        },
+        include: {
+          product: true,
+        },
+      });
+
+      return this.mapVariant(variant);
+    } catch {
+      throw new ConflictException('Variant sku already exists');
+    }
+  }
+
+  async updateStatus(id: number, dto: UpdateVariantStatusDto) {
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id },
+    });
+
+    if (!variant) throw new NotFoundException('Variant not found');
+
+    const updatedVariant = await this.prisma.productVariant.update({
+      where: { id },
+      data: { active: dto.active },
+      include: {
+        product: true,
+      },
+    });
+
+    return this.mapVariant(updatedVariant);
+  }
+
+  async remove(id: number) {
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id },
+      include: {
+        product: true,
+      },
+    });
+
+    if (!variant) throw new NotFoundException('Variant not found');
+
+    const [historicalSalesCount, comboAssignmentsCount] = await Promise.all([
+      this.prisma.saleItem.count({
+        where: {
+          itemType: SaleItemType.VARIANT,
+          refId: id,
+        },
+      }),
+      this.prisma.comboItem.count({
+        where: { variantId: id },
+      }),
+    ]);
+
+    if (historicalSalesCount > 0) {
+      throw new BadRequestException(
+        'Variant has historical sales. Deactivate it instead of deleting.',
+      );
+    }
+
+    if (comboAssignmentsCount > 0) {
+      throw new BadRequestException(
+        'Variant is assigned to one or more combos. Remove it from those combos before deleting.',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.variantRecipeItem.deleteMany({
+        where: { variantId: id },
+      });
+
+      await tx.productVariant.delete({
+        where: { id },
+      });
+    });
+
+    return {
+      id,
+      deleted: true,
+      message: 'Variant deleted successfully',
+    };
+  }
+
+  private mapVariant(variant: {
+    id: number;
+    productId: number;
+    size: string;
+    sku: string;
+    salePrice: unknown;
+    active: boolean;
+    product: { name: string };
+  }) {
+    return {
       id: variant.id,
       product_id: variant.productId,
       product_name: variant.product.name,
@@ -57,6 +171,6 @@ export class VariantsService {
       sku: variant.sku,
       sale_price: Number(variant.salePrice),
       active: variant.active,
-    }));
+    };
   }
 }
