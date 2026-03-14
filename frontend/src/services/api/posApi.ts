@@ -19,6 +19,7 @@ import type {
   Product,
   RecentSalesResponse,
   SaleReceipt,
+  SalesHistoryResponse,
   StockListResponse,
   Variant,
   VariantRecipe,
@@ -125,9 +126,21 @@ export const posApi = {
     amount_received: number;
     user_id: number;
   }) => unwrap(api.post(`/sales/${saleId}/pay`, payload)),
+  getSales: (params?: {
+    page?: number;
+    limit?: number;
+    status?: 'PENDING' | 'PAID' | 'VOID';
+    payment_method?: 'CASH' | 'TRANSFER';
+    date_from?: string;
+    date_to?: string;
+    location_id?: number;
+  }) => unwrap<SalesHistoryResponse>(api.get('/sales', { params })),
   getRecentSales: (limit = 5) =>
     unwrap<RecentSalesResponse>(api.get('/sales/recent', { params: { limit } })),
   getLatestSale: () => unwrap<LatestSaleResponse | null>(api.get('/sales/latest')),
   getSaleReceipt: (saleId: number) =>
     unwrap<SaleReceipt>(api.get(`/sales/${saleId}/receipt`)),
 };
+
+
+

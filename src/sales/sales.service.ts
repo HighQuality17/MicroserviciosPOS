@@ -16,6 +16,7 @@ import {
 import { round } from '../common/utils/number.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
+import { GetSalesQueryDto } from './dto/get-sales-query.dto';
 import { PaySaleDto } from './dto/pay-sale.dto';
 
 interface ExpandedVariantNeed {
@@ -59,6 +60,26 @@ export interface SaleRecentItem {
 
 export interface RecentSalesResponse {
   items: SaleRecentItem[];
+}
+
+export interface SaleListItem {
+  sale_id: number;
+  created_at: Date;
+  total: number;
+  status: SaleStatus;
+  payment_method: PaymentMethod | null;
+  location_id: number;
+  location_name: string;
+  cashier_id: number;
+  cashier_name: string;
+}
+
+export interface SalesListResponse {
+  items: SaleListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }
 
 type SaleItemRecord = {
@@ -282,6 +303,37 @@ export class SalesService {
     return this.buildReceiptResponse(sale);
   }
 
+  async findAll(query: GetSalesQueryDto): Promise<SalesListResponse> {
+    const where = this.buildSalesListWhere(query);
+    const skip = (query.page - 1) * query.limit;
+
+    const [total, sales] = await Promise.all([
+      this.prisma.sale.count({ where }),
+      this.prisma.sale.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: query.limit,
+        include: {
+          payments: {
+            orderBy: { id: 'desc' },
+            take: 1,
+          },
+          location: true,
+          cashier: true,
+        },
+      }),
+    ]);
+
+    return {
+      items: sales.map((sale) => this.buildSalesListItem(sale)),
+      total,
+      page: query.page,
+      limit: query.limit,
+      total_pages: total === 0 ? 0 : Math.ceil(total / query.limit),
+    };
+  }
+
   async recent(limit = 5): Promise<RecentSalesResponse> {
     const sales = await this.prisma.sale.findMany({
       orderBy: { createdAt: 'desc' },
@@ -494,6 +546,68 @@ export class SalesService {
     };
   }
 
+  private buildSalesListItem(sale: SaleWithSummaryRelations): SaleListItem {
+    const payment = sale.payments[0] ?? null;
+
+    return {
+      sale_id: sale.id,
+      created_at: sale.createdAt,
+      total: Number(sale.total),
+      status: sale.status,
+      payment_method: payment?.method ?? null,
+      location_id: sale.location.id,
+      location_name: sale.location.name,
+      cashier_id: sale.cashier.id,
+      cashier_name: sale.cashier.name,
+    };
+  }
+
+  private buildSalesListWhere(query: GetSalesQueryDto): Prisma.SaleWhereInput {
+    const where: Prisma.SaleWhereInput = {};
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.location_id) {
+      where.locationId = query.location_id;
+    }
+
+    if (query.payment_method) {
+      where.payments = {
+        some: {
+          method: query.payment_method,
+        },
+      };
+    }
+
+    if (query.date_from || query.date_to) {
+      const createdAt: Prisma.DateTimeFilter = {};
+
+      if (query.date_from) {
+        createdAt.gte = new Date(query.date_from);
+      }
+
+      if (query.date_to) {
+        const endDate = new Date(query.date_to);
+        endDate.setHours(23, 59, 59, 999);
+        createdAt.lte = endDate;
+      }
+
+      if (
+        createdAt.gte instanceof Date &&
+        createdAt.lte instanceof Date &&
+        createdAt.gte > createdAt.lte
+      ) {
+        throw new BadRequestException('date_from cannot be greater than date_to');
+      }
+
+      where.createdAt = createdAt;
+    }
+
+    return where;
+  }
+
   private computeDiscount(
     subtotal: number,
     discountType: DiscountType,
@@ -683,3 +797,5 @@ export class SalesService {
     }
   }
 }
+
+

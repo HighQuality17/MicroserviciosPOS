@@ -367,3 +367,4 @@ Authorization: Bearer {{token}}
   "closed_by": 1,
   "closing_cash_counted": 62600
 }
+
