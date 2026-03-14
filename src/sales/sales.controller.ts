@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { GetRecentSalesQueryDto } from './dto/get-recent-sales-query.dto';
+import { GetSalesQueryDto } from './dto/get-sales-query.dto';
 import { PaySaleDto } from './dto/pay-sale.dto';
 import { SalesService } from './sales.service';
 
@@ -32,6 +33,12 @@ export class SalesController {
   @Roles(UserRole.ADMIN, UserRole.CASHIER)
   pay(@Param('id', ParseIntPipe) id: number, @Body() dto: PaySaleDto) {
     return this.salesService.pay(id, dto);
+  }
+
+  @Get()
+  @Roles(UserRole.ADMIN, UserRole.CASHIER, UserRole.AUDITOR)
+  findAll(@Query() query: GetSalesQueryDto) {
+    return this.salesService.findAll(query);
   }
 
   @Get('recent')

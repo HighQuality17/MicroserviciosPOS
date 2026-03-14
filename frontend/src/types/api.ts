@@ -167,6 +167,26 @@ export interface LatestSaleResponse extends SaleReceipt {
   status: string;
 }
 
+export interface SalesHistoryItem {
+  sale_id: number;
+  created_at: string;
+  total: number;
+  status: string;
+  payment_method: PaymentMethod | null;
+  location_id: number;
+  location_name: string;
+  cashier_id: number;
+  cashier_name: string;
+}
+
+export interface SalesHistoryResponse {
+  items: SalesHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
 export interface CartItem {
   key: string;
   item_type: SaleItemType;
@@ -299,3 +319,5 @@ export interface AdminRecentActivityItem {
 export interface AdminRecentActivityResponse {
   items: AdminRecentActivityItem[];
 }
+
+
