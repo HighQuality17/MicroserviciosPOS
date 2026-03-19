@@ -516,8 +516,8 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid min-w-0 gap-4 sm:gap-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryCard
           title="Productos"
           value={String(products.length)}
@@ -560,8 +560,8 @@ export function ProductsPage() {
         <AccessState description="Tu perfil actual no puede consultar productos, variantes ni recetas administrativas." />
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
-        <div className="grid gap-4">
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
             <p className="text-sm text-slate-400">Gestión de productos</p>
             <h2 className="font-display text-2xl font-bold text-white">Crear producto</h2>
@@ -704,7 +704,7 @@ export function ProductsPage() {
           </Card>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -807,65 +807,67 @@ export function ProductsPage() {
                 />
               </div>
             ) : (
-              <div className="mt-6 overflow-hidden rounded-3xl border border-slate-800">
-                <div className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
-                  <span>ID</span>
-                  <span>Producto</span>
-                  <span>Tamaño</span>
-                  <span>SKU</span>
-                  <span>Precio</span>
-                  <span>Estado</span>
-                  <span>Receta</span>
-                </div>
-                <ScrollPanel maxHeightClassName="max-h-[34rem]">
-                  {variants.map((variant) => {
-                    const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
-                    return (
-                      <div
-                        key={variant.id}
-                        className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 border-t border-slate-800 bg-slate-950/50 px-4 py-4 text-sm text-slate-200"
-                      >
-                        <span className="text-slate-400">#{variant.id}</span>
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-white">{variant.product_name}</p>
-                          <p className="truncate text-xs text-slate-500">
-                            product_id {variant.product_id}
-                          </p>
-                        </div>
-                        <span>{variant.size}</span>
-                        <span className="truncate">{variant.sku}</span>
-                        <span>{formatCurrency(Number(variant.sale_price))}</span>
-                        <StatusBadge
-                          label={variant.active ? 'Activa' : 'Inactiva'}
-                          tone={variant.active ? 'success' : 'default'}
-                        />
-                        <StatusBadge
-                          label={hasRecipe ? 'Con receta' : 'Sin receta'}
-                          tone={hasRecipe ? 'info' : 'warning'}
-                        />
-                        {canManageCatalog ? (
-                          <div className="col-span-full flex flex-wrap gap-2 border-t border-slate-800 pt-3">
-                            <Button variant="ghost" onClick={() => openVariantEditor(variant)}>
-                              Editar variante
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => void handleToggleVariantStatus(variant)}
-                            >
-                              {variant.active ? 'Desactivar' : 'Activar'}
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              onClick={() => void openRecipeManager(variant)}
-                            >
-                              Gestionar receta
-                            </Button>
+              <div className="mt-6 overflow-x-auto">
+                <div className="min-w-[860px] overflow-hidden rounded-3xl border border-slate-800">
+                  <div className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <span>ID</span>
+                    <span>Producto</span>
+                    <span>Tamano</span>
+                    <span>SKU</span>
+                    <span>Precio</span>
+                    <span>Estado</span>
+                    <span>Receta</span>
+                  </div>
+                  <ScrollPanel maxHeightClassName="max-h-[34rem]">
+                    {variants.map((variant) => {
+                      const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
+                      return (
+                        <div
+                          key={variant.id}
+                          className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 border-t border-slate-800 bg-slate-950/50 px-4 py-4 text-sm text-slate-200"
+                        >
+                          <span className="text-slate-400">#{variant.id}</span>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-white">{variant.product_name}</p>
+                            <p className="truncate text-xs text-slate-500">
+                              product_id {variant.product_id}
+                            </p>
                           </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </ScrollPanel>
+                          <span>{variant.size}</span>
+                          <span className="truncate">{variant.sku}</span>
+                          <span>{formatCurrency(Number(variant.sale_price))}</span>
+                          <StatusBadge
+                            label={variant.active ? 'Activa' : 'Inactiva'}
+                            tone={variant.active ? 'success' : 'default'}
+                          />
+                          <StatusBadge
+                            label={hasRecipe ? 'Con receta' : 'Sin receta'}
+                            tone={hasRecipe ? 'info' : 'warning'}
+                          />
+                          {canManageCatalog ? (
+                            <div className="col-span-full flex flex-wrap gap-2 border-t border-slate-800 pt-3">
+                              <Button variant="ghost" onClick={() => openVariantEditor(variant)}>
+                                Editar variante
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => void handleToggleVariantStatus(variant)}
+                              >
+                                {variant.active ? 'Desactivar' : 'Activar'}
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                onClick={() => void openRecipeManager(variant)}
+                              >
+                                Gestionar receta
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </ScrollPanel>
+                </div>
               </div>
             )}
 
@@ -884,7 +886,7 @@ export function ProductsPage() {
         title="Editar producto"
         subtitle="Actualiza el nombre visible y el estado comercial del producto."
       >
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4 sm:gap-5">
           <Input
             label="Nombre"
             value={editProductName}
@@ -922,7 +924,7 @@ export function ProductsPage() {
         title="Editar variante"
         subtitle="Ajusta tamaño, SKU, precio y estado de la variante seleccionada."
       >
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4 sm:gap-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label="Tamaño"
@@ -990,7 +992,7 @@ export function ProductsPage() {
             rows={3}
           />
         ) : (
-          <div className="grid gap-4">
+          <div className="grid min-w-0 gap-4 sm:gap-5">
             <div className="flex flex-wrap items-center gap-3">
               <StatusBadge
                 label={loadedRecipe?.has_recipe ? 'Con receta' : 'Sin receta'}

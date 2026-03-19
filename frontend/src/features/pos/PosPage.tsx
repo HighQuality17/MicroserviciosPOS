@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, PackageSearch, Receipt } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -197,9 +197,9 @@ export function PosPage() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="grid gap-4">
-        <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid min-w-0 gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid min-w-0 gap-4 sm:gap-5">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <SummaryCard
             title="Caja actual"
             value={currentCashSession ? `#${currentCashSession.id}` : 'Sin abrir'}
