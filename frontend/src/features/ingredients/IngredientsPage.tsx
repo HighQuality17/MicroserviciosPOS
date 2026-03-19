@@ -90,7 +90,9 @@ export function IngredientsPage() {
     mergedIngredients.find((ingredient) => ingredient.id === Number(selectedIngredientId)) ?? null;
 
   const availableDefaultUnits = unitsByDimension[dimension];
-  const availableAdjustUnits = unitsByDimension[selectedIngredient?.dimension ?? dimension];
+  const availableAdjustUnits = selectedIngredient
+  ? unitsByDimension[selectedIngredient.dimension]
+  : [];
 
   useEffect(() => {
     setSelectedLocationId(currentLocation?.id ?? null);
@@ -101,8 +103,20 @@ export function IngredientsPage() {
   }, [availableDefaultUnits]);
 
   useEffect(() => {
-    setUnitCode(availableAdjustUnits[0]);
-  }, [availableAdjustUnits]);
+  if (!selectedIngredient) {
+    setUnitCode('');
+    return;
+  }
+
+  const allowedUnits = unitsByDimension[selectedIngredient.dimension];
+  const defaultUnit = selectedIngredient.defaultUnitCode;
+
+  setUnitCode(
+    allowedUnits.includes(defaultUnit as (typeof allowedUnits)[number])
+      ? defaultUnit
+      : allowedUnits[0]
+  );
+}, [selectedIngredient]);
 
   useEffect(() => {
     if (mergedIngredients.length === 0 && selectedIngredientId !== '') {
@@ -181,6 +195,7 @@ export function IngredientsPage() {
       });
 
       addSessionIngredient(ingredient);
+      setSelectedIngredientId(String(ingredient.id));
       setName('');
       setMessage(`Ingrediente #${ingredient.id} creado correctamente.`);
       await loadIngredients();
@@ -361,12 +376,10 @@ export function IngredientsPage() {
                 <span className="text-sm font-medium text-slate-200">Ubicación</span>
                 <select
                   value={selectedLocationId ?? ''}
-                  onChange={(event) =>
-                    setSelectedLocationId(
-                      event.target.value ? Number(event.target.value) : null,
-                    )
-                  }
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setSelectedLocationId(value ? Number(value) : null);
+                  }}
                 >
                   <option value="">Selecciona una ubicación</option>
                   {availableLocations.map((location) => (
