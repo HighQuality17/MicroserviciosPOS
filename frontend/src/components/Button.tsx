@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { ButtonHTMLAttributes, ReactNode, forwardRef } from 'react';
 import clsx from 'clsx';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -6,16 +6,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
 }
 
-export function Button({
-  children,
-  className,
-  variant = 'primary',
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { children, className, variant = 'primary', ...props },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       className={clsx(
-        'inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
         variant === 'primary' &&
           'bg-teal-400 text-slate-950 shadow-[0_10px_30px_rgba(45,212,191,0.18)] hover:bg-teal-300',
         variant === 'secondary' &&
@@ -31,4 +30,4 @@ export function Button({
       {children}
     </button>
   );
-}
+});

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Boxes, FlaskConical, Warehouse } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -257,8 +257,8 @@ export function IngredientsPage() {
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid min-w-0 gap-4 sm:gap-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryCard
           title="Ingredientes"
           value={String(mergedIngredients.length)}
@@ -308,8 +308,8 @@ export function IngredientsPage() {
         <AccessState description="Tu perfil actual no tiene permiso para consultar o gestionar ingredientes e inventario." />
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
-        <div className="grid gap-4">
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
             <p className="text-sm text-slate-400">Crear ingrediente</p>
             <h2 className="font-display text-2xl font-bold text-white">
@@ -380,6 +380,7 @@ export function IngredientsPage() {
                     const value = event.currentTarget.value;
                     setSelectedLocationId(value ? Number(value) : null);
                   }}
+                  className="min-h-11 w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
                 >
                   <option value="">Selecciona una ubicación</option>
                   {availableLocations.map((location) => (
@@ -468,7 +469,7 @@ export function IngredientsPage() {
           </Card>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
             <div className="flex items-center justify-between gap-3">
               <div>

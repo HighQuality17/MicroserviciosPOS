@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Boxes, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -146,8 +146,8 @@ export function CombosPage() {
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid min-w-0 gap-4 sm:gap-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryCard
           title="Combos activos"
           value={String(combos.length)}
@@ -190,8 +190,8 @@ export function CombosPage() {
         <AccessState description="Tu perfil actual no tiene permiso para consultar o gestionar combos." />
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
-        <div className="grid gap-4">
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
             <p className="text-sm text-slate-400">Crear combo</p>
             <h2 className="font-display text-2xl font-bold text-white">
@@ -234,7 +234,7 @@ export function CombosPage() {
                 />
               </label>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   disabled={creatingCombo || !comboName.trim()}
                   onClick={handleCreateCombo}
@@ -307,7 +307,7 @@ export function CombosPage() {
                 }}
               />
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   disabled={addingItems || combos.length === 0 || variants.length === 0}
                   onClick={handleAddComboItems}

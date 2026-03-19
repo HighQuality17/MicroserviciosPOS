@@ -1,9 +1,20 @@
-﻿import { MapPin } from 'lucide-react';
+import { Menu, MapPin } from 'lucide-react';
+import { Button } from '@/components/Button';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatUserRole } from '@/utils/copy';
 
-export function Header() {
+interface HeaderProps {
+  navigationId: string;
+  isNavigationOpen: boolean;
+  onOpenNavigation: () => void;
+}
+
+export function Header({
+  navigationId,
+  isNavigationOpen,
+  onOpenNavigation,
+}: HeaderProps) {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
   const availableLocations = useAppStore((state) => state.availableLocations);
@@ -12,54 +23,76 @@ export function Header() {
   const setCurrentLocation = useAppStore((state) => state.setCurrentLocation);
 
   return (
-    <header className="glass-panel flex flex-col gap-4 rounded-[2rem] p-5 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-          POS local offline-first
-        </p>
-        <h1 className="font-display text-3xl font-bold text-white">
-          Microservicios POS
-        </h1>
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">
-          <MapPin size={16} className="text-teal-300" />
-          {locationsLoading ? (
-            <span>Cargando puntos de venta...</span>
-          ) : availableLocations.length === 0 || !currentLocation ? (
-            <span className="text-amber-100">
-              {locationsError ? 'Sin POS disponibles' : 'Sin ubicaciones creadas'}
-            </span>
-          ) : availableLocations.length <= 1 ? (
-            <span>{currentLocation.name}</span>
-          ) : (
-            <select
-              aria-label="Punto de venta activo"
-              value={String(currentLocation.id)}
-              onChange={(event) => {
-                const nextLocation = availableLocations.find(
-                  (item) => item.id === Number(event.target.value),
-                );
-                if (nextLocation) {
-                  setCurrentLocation(nextLocation);
-                }
-              }}
-              className="min-w-28 bg-transparent text-sm text-slate-200 outline-none"
-            >
-              {availableLocations.map((item) => (
-                <option
-                  key={item.id}
-                  value={String(item.id)}
-                  className="bg-slate-950 text-slate-100"
+    <header className="glass-panel rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex items-start gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            className="shrink-0 lg:hidden"
+            aria-label="Abrir menu de navegacion"
+            aria-controls={navigationId}
+            aria-expanded={isNavigationOpen}
+            onClick={onOpenNavigation}
+          >
+            <Menu size={18} />
+            <span>Menu</span>
+          </Button>
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+              POS local offline-first
+            </p>
+            <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
+              Microservicios POS
+            </h1>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <div className="flex w-full min-w-0 items-center gap-2 rounded-2xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-300 sm:w-auto sm:max-w-full">
+            <MapPin size={16} className="shrink-0 text-teal-300" />
+            <div className="min-w-0 flex-1">
+              {locationsLoading ? (
+                <span>Cargando puntos de venta...</span>
+              ) : availableLocations.length === 0 || !currentLocation ? (
+                <span className="text-amber-100">
+                  {locationsError ? 'Sin POS disponibles' : 'Sin ubicaciones creadas'}
+                </span>
+              ) : availableLocations.length <= 1 ? (
+                <span className="block truncate">{currentLocation.name}</span>
+              ) : (
+                <select
+                  aria-label="Punto de venta activo"
+                  value={String(currentLocation.id)}
+                  onChange={(event) => {
+                    const nextLocation = availableLocations.find(
+                      (item) => item.id === Number(event.target.value),
+                    );
+                    if (nextLocation) {
+                      setCurrentLocation(nextLocation);
+                    }
+                  }}
+                  className="w-full min-w-0 bg-transparent text-sm text-slate-200 outline-none sm:min-w-[12rem]"
                 >
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </label>
-        <div className="rounded-2xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">
-          {currentUser?.name} · {formatUserRole(currentUser?.role)}
+                  {availableLocations.map((item) => (
+                    <option
+                      key={item.id}
+                      value={String(item.id)}
+                      className="bg-slate-950 text-slate-100"
+                    >
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+
+          <div className="w-full rounded-2xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-300 sm:w-auto">
+            <span className="block truncate">
+              {currentUser?.name} / {formatUserRole(currentUser?.role)}
+            </span>
+          </div>
         </div>
       </div>
     </header>

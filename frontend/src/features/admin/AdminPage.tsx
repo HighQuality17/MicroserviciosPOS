@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Boxes,
@@ -251,7 +251,7 @@ export function AdminPage() {
     : 'Sin sesión';
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-5 sm:gap-6">
       {isAuditor ? (
         <RoleModeBanner
           title="Panel en modo auditoría"
@@ -281,7 +281,7 @@ export function AdminPage() {
         <AccessState description="Tu perfil actual no tiene permiso para consultar el dashboard administrativo." />
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <KpiCard
           title="Ventas del día"
           value={summaryLoading ? '...' : formatCurrency(summary?.sales_today_total ?? 0)}
@@ -327,7 +327,7 @@ export function AdminPage() {
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
         {salesByPaymentError ? (
           <Card>
             <SectionHeader
@@ -403,7 +403,7 @@ export function AdminPage() {
         )}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <Card>
           <SectionHeader
             eyebrow="Alertas"
@@ -529,7 +529,7 @@ export function AdminPage() {
             description="La base visual queda preparada para acciones futuras como exportación, configuración de alertas y reglas de supervisión."
           />
 
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {['Exportacion de reportes', 'Alertas configurables', 'Reglas por sucursal'].map(
               (item) => (
                 <div
@@ -573,7 +573,7 @@ export function AdminPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <div className="mt-6 grid min-w-0 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
             <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
               <p className="text-sm text-slate-400">Crear ubicación</p>
               <h3 className="mt-2 font-display text-2xl font-bold text-white">

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Landmark, Wallet } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -113,8 +113,8 @@ export function CashPage() {
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid min-w-0 gap-4 sm:gap-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryCard
           title="Caja activa"
       value={currentCashSession ? `#${currentCashSession.id}` : 'Sin sesión'}
@@ -157,7 +157,7 @@ export function CashPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid items-start gap-4 xl:grid-cols-2">
         {!currentLocation ? (
           <Card className="xl:col-span-2">
             <EmptyState
@@ -224,7 +224,7 @@ export function CashPage() {
                       setClosingCashCountedInput(nextValue);
                     }
                   }}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/70 focus:bg-slate-950/90"
+                  className="min-h-11 w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/70 focus:bg-slate-950/90"
                 />
                 <span className="text-xs text-slate-500">
                   Escribe el valor real contado. El sistema validará el cierre antes de enviarlo.
@@ -242,7 +242,7 @@ export function CashPage() {
         <Card>
           <p className="text-sm text-slate-400">Resumen calculado por el backend</p>
           <h2 className="font-display text-2xl font-bold text-white">Resultado del cierre</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[
               ['Apertura', formatCurrency(closeSummary.opening_cash)],
               ['Ventas efectivo', formatCurrency(closeSummary.cash_sales_total)],

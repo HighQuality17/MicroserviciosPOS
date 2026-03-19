@@ -8,7 +8,12 @@ interface CardProps {
 
 export function Card({ children, className }: CardProps) {
   return (
-    <section className={clsx('glass-panel relative rounded-3xl p-5', className)}>
+    <section
+      className={clsx(
+        'glass-panel relative min-w-0 rounded-[1.75rem] p-4 sm:rounded-3xl sm:p-5 lg:p-6',
+        className,
+      )}
+    >
       {children}
     </section>
   );

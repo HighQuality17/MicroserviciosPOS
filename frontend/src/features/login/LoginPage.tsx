@@ -53,20 +53,26 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="grid w-full max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="glass-panel-strong rounded-[2rem] p-8 lg:p-12">
+    <main
+      className="flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-10"
+      aria-labelledby="login-title"
+    >
+      <div className="grid w-full max-w-6xl items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-6">
+        <section
+          aria-labelledby="login-title"
+          className="glass-panel-strong rounded-[1.75rem] p-6 sm:rounded-[2rem] sm:p-8 lg:p-10 xl:p-12"
+        >
           <p className="text-xs uppercase tracking-[0.35em] text-teal-300/70">
             POS local offline-first
           </p>
-          <h1 className="font-display mt-5 text-5xl font-bold text-white">
+          <h1 id="login-title" className="font-display mt-5 text-3xl font-bold text-white sm:text-4xl xl:text-5xl">
             Opera ventas, caja e inventario desde una sola superficie.
           </h1>
-          <p className="mt-6 max-w-2xl text-lg text-slate-300">
+          <p className="mt-6 max-w-2xl text-base text-slate-300 sm:text-lg">
             Interfaz pensada para escritorio con flujo de venta rápido, control de caja
             y una base lista para crecer hacia administración avanzada y Electron.
           </p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[
               'Cobro con cambio automático',
               'Caja por ubicación',
@@ -82,7 +88,7 @@ export function LoginPage() {
           </div>
         </section>
 
-        <Card className="self-center p-8">
+        <Card className="self-center p-6 sm:p-8">
           <div className="mb-8 flex items-center gap-3">
             <div className="rounded-2xl bg-teal-400/20 p-3 text-teal-300">
               <ShieldCheck size={22} />
@@ -114,7 +120,10 @@ export function LoginPage() {
             />
 
             {error ? (
-              <p className="rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+              <p
+                role="alert"
+                className="rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100"
+              >
                 {error}
               </p>
             ) : null}
@@ -125,13 +134,13 @@ export function LoginPage() {
               <span className="ml-1 text-slate-300">auditor</span>.
             </p>
 
-            <Button type="submit" className="mt-2" disabled={isAuthenticating}>
+            <Button type="submit" className="mt-2 w-full sm:w-auto" disabled={isAuthenticating}>
               {isAuthenticating ? 'Ingresando...' : 'Entrar al sistema'}
             </Button>
           </form>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }
 

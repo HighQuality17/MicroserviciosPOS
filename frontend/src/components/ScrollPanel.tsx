@@ -13,7 +13,13 @@ export function ScrollPanel({
   maxHeightClassName = 'max-h-[32rem]',
 }: ScrollPanelProps) {
   return (
-    <div className={clsx('overflow-y-auto pr-2', maxHeightClassName, className)}>
+    <div
+      className={clsx(
+        'min-w-0 overflow-y-auto pr-0 sm:pr-2',
+        maxHeightClassName,
+        className,
+      )}
+    >
       {children}
     </div>
   );
