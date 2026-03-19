@@ -20,6 +20,28 @@ const unitsByDimension: Record<IngredientDimension, string[]> = {
   COUNT: ['unit'],
 };
 
+const dimensionLabels: Record<IngredientDimension, string> = {
+  WEIGHT: 'Peso',
+  VOLUME: 'Volumen',
+  COUNT: 'Cantidad',
+};
+
+const unitLabels: Record<string, string> = {
+  g: 'g',
+  kg: 'kg',
+  ml: 'ml',
+  L: 'L',
+  unit: 'unidad',
+};
+
+function getDimensionLabel(dimension: IngredientDimension) {
+  return dimensionLabels[dimension];
+}
+
+function getUnitLabel(unitCode: string) {
+  return unitLabels[unitCode] ?? unitCode;
+}
+
 export function IngredientsPage() {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
@@ -240,8 +262,8 @@ export function IngredientsPage() {
         />
         <SummaryCard
           title="Movimientos"
-          value="Próximamente"
-          hint="Seccion visual lista para auditoría de inventario"
+          value="Sin movimientos recientes"
+          hint="Aqui se mostraran los ultimos ajustes de inventario"
           icon={<Boxes size={18} />}
         />
       </div>
@@ -296,9 +318,9 @@ export function IngredientsPage() {
                   }
                   className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
                 >
-                  <option value="WEIGHT">WEIGHT</option>
-                  <option value="VOLUME">VOLUME</option>
-                  <option value="COUNT">COUNT</option>
+                  <option value="WEIGHT">{getDimensionLabel('WEIGHT')}</option>
+                  <option value="VOLUME">{getDimensionLabel('VOLUME')}</option>
+                  <option value="COUNT">{getDimensionLabel('COUNT')}</option>
                 </select>
               </label>
 
@@ -313,7 +335,7 @@ export function IngredientsPage() {
                 >
                   {availableDefaultUnits.map((unit) => (
                     <option key={unit} value={unit}>
-                      {unit}
+                      {getUnitLabel(unit)}
                     </option>
                   ))}
                 </select>
@@ -401,7 +423,7 @@ export function IngredientsPage() {
                   >
                     {availableAdjustUnits.map((unit) => (
                       <option key={unit} value={unit}>
-                        {unit}
+                        {getUnitLabel(unit)}
                       </option>
                     ))}
                   </select>
@@ -474,14 +496,12 @@ export function IngredientsPage() {
                       <div>
                         <p className="font-medium text-white">{ingredient.name}</p>
                         <p className="mt-1 text-sm text-slate-400">
-                          {ingredient.dimension} · {ingredient.defaultUnitCode}
+                          {getDimensionLabel(ingredient.dimension)} -{' '}
+                          {getUnitLabel(ingredient.defaultUnitCode)}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-slate-500">ID {ingredient.id}</p>
-                        <p className="text-xs text-slate-600">
-                          {ingredients.length > 0 ? 'backend' : 'fallback'}
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -543,7 +563,8 @@ export function IngredientsPage() {
                       <div>
                         <p className="font-medium text-white">{item.ingredient.name}</p>
                         <p className="mt-1 text-sm text-slate-400">
-                          {item.location.name} · {item.ingredient.dimension}
+                          {item.location.name} -{' '}
+                          {getDimensionLabel(item.ingredient.dimension)}
                         </p>
                       </div>
                       <div className="text-right">
@@ -572,8 +593,8 @@ export function IngredientsPage() {
             </h2>
             <div className="mt-6">
               <EmptyState
-                title="Historial de movimientos próximamente"
-                description="La base visual ya esta lista para mostrar ingresos, salidas, ajustes y referencias de venta cuando el backend exponga el endpoint GET correspondiente."
+                title="Sin movimientos recientes"
+                description="Aqui se mostraran los ultimos ajustes de inventario."
               />
             </div>
           </Card>
