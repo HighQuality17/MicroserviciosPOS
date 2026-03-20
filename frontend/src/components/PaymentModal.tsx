@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
+import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
 import { Select } from '@/components/Select';
@@ -62,6 +63,7 @@ export function PaymentModal({
 
   return (
     <Modal
+      id="payment-dialog"
       open={open}
       onClose={onClose}
       title="Cobrar venta"
@@ -131,14 +133,7 @@ export function PaymentModal({
           </div>
         </div>
 
-        {error ? (
-          <div
-            role="alert"
-            className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
-          >
-            {error}
-          </div>
-        ) : null}
+        {error ? <FeedbackMessage tone="error">{error}</FeedbackMessage> : null}
 
         <div className="flex justify-end gap-3">
           <Button variant="ghost" type="button" onClick={onClose}>

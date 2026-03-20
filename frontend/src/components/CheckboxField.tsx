@@ -45,12 +45,12 @@ export function CheckboxField({
             {required ? <span aria-hidden="true" className="text-rose-300"> *</span> : null}
           </label>
           {description ? (
-            <p id={descriptionId} className="mt-1 text-xs text-slate-500">
+            <p id={descriptionId} className="mt-1 text-xs text-slate-400">
               {description}
             </p>
           ) : null}
           {error ? (
-            <p id={errorId} className="mt-2 text-xs text-rose-200">
+            <p id={errorId} className="mt-2 text-xs text-rose-100">
               {error}
             </p>
           ) : null}
@@ -62,7 +62,7 @@ export function CheckboxField({
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy || undefined}
           className={clsx(
-            'mt-1 h-5 w-5 shrink-0 rounded border-slate-600 bg-slate-900 text-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-60',
+            'mt-1 h-5 w-5 shrink-0 rounded border-slate-500 bg-slate-900 text-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-70',
             isInvalid && 'border-rose-400/70 focus-visible:ring-rose-400/20',
             checkboxClassName,
           )}

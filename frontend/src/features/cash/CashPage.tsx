@@ -3,6 +3,7 @@ import { Landmark, Wallet } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { SummaryCard } from '@/components/SummaryCard';
@@ -145,17 +146,9 @@ export function CashPage() {
         />
       </div>
 
-      {message ? (
-        <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          {message}
-        </div>
-      ) : null}
+      {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 
-      {error ? (
-        <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {error}
-        </div>
-      ) : null}
+      {error ? <FeedbackMessage tone="error">{error}</FeedbackMessage> : null}
 
       <div className="grid items-start gap-4 xl:grid-cols-2">
         {!currentLocation ? (

@@ -288,6 +288,7 @@ export function PosPage() {
                   type="button"
                   onClick={() => addItem(item)}
                   disabled={!currentLocation}
+                  aria-label={`Agregar ${item.item_type === 'VARIANT' ? 'variante' : 'combo'} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
                   className="glass-panel rounded-3xl p-5 text-left transition hover:-translate-y-0.5 hover:border-teal-300/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -391,6 +392,8 @@ export function PosPage() {
 
           <Button
             disabled={items.length === 0 || !currentLocation || !currentCashSession}
+            aria-haspopup="dialog"
+            aria-controls="payment-dialog"
             onClick={() => setPaymentOpen(true)}
           >
             Cobrar

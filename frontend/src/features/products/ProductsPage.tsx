@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
 import { CheckboxField } from '@/components/CheckboxField';
+import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
@@ -541,23 +542,11 @@ export function ProductsPage() {
         />
       </div>
 
-      {message ? (
-        <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          {message}
-        </div>
-      ) : null}
+      {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 
-      {submitError ? (
-        <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {submitError}
-        </div>
-      ) : null}
+      {submitError ? <FeedbackMessage tone="error">{submitError}</FeedbackMessage> : null}
 
-      {catalogError ? (
-        <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {catalogError}
-        </div>
-      ) : null}
+      {catalogError ? <FeedbackMessage tone="error">{catalogError}</FeedbackMessage> : null}
 
       {catalogAccessDenied ? (
         <AccessState description="Tu perfil actual no puede consultar productos, variantes ni recetas administrativas." />
@@ -716,7 +705,7 @@ export function ProductsPage() {
                 />
               </div>
             ) : (
-              <ScrollPanel className="mt-6 grid gap-4">
+              <ScrollPanel className="mt-6 grid gap-4" tabIndex={0} aria-label="Listado de productos">
                 {enrichedProducts.map((product) => (
                   <div
                     key={product.id}
@@ -737,7 +726,7 @@ export function ProductsPage() {
                       </div>
                       {canManageCatalog ? (
                         <div className="flex flex-wrap gap-2">
-                          <Button variant="ghost" onClick={() => openProductEditor(product)}>
+                          <Button variant="ghost" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
                             Editar
                           </Button>
                           <Button
@@ -802,7 +791,7 @@ export function ProductsPage() {
                     <span>Estado</span>
                     <span>Receta</span>
                   </div>
-                  <ScrollPanel maxHeightClassName="max-h-[34rem]">
+                  <ScrollPanel maxHeightClassName="max-h-[34rem]" tabIndex={0} aria-label="Listado de variantes">
                     {variants.map((variant) => {
                       const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
                       return (
@@ -830,7 +819,7 @@ export function ProductsPage() {
                           />
                           {canManageCatalog ? (
                             <div className="col-span-full flex flex-wrap gap-2 border-t border-slate-800 pt-3">
-                              <Button variant="ghost" onClick={() => openVariantEditor(variant)}>
+                              <Button variant="ghost" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(variant)}>
                                 Editar variante
                               </Button>
                               <Button
@@ -839,10 +828,7 @@ export function ProductsPage() {
                               >
                                 {variant.active ? 'Desactivar' : 'Activar'}
                               </Button>
-                              <Button
-                                variant="secondary"
-                                onClick={() => void openRecipeManager(variant)}
-                              >
+                              <Button variant="secondary" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(variant)}>
                                 Gestionar receta
                               </Button>
                             </div>
@@ -865,6 +851,7 @@ export function ProductsPage() {
       </div>
 
       <Modal
+        id="product-editor-dialog"
         open={productEditorOpen}
         onClose={() => setProductEditorOpen(false)}
         title="Editar producto"
@@ -895,6 +882,7 @@ export function ProductsPage() {
       </Modal>
 
       <Modal
+        id="variant-editor-dialog"
         open={variantEditorOpen}
         onClose={() => setVariantEditorOpen(false)}
         title="Editar variante"
@@ -944,6 +932,7 @@ export function ProductsPage() {
       </Modal>
 
       <Modal
+        id="recipe-manager-dialog"
         open={recipeModalOpen}
         onClose={() => setRecipeModalOpen(false)}
         title="Gestionar receta"
@@ -971,7 +960,7 @@ export function ProductsPage() {
               </p>
             </div>
 
-            <ScrollPanel maxHeightClassName="max-h-[24rem]" className="grid gap-3">
+            <ScrollPanel maxHeightClassName="max-h-[24rem]" className="grid gap-3" tabIndex={0} aria-label="Ingredientes configurados para la receta">
               {recipeDraftItems.map((item, index) => {
                 const ingredient = ingredientsById.get(Number(item.ingredient_id));
                 const availableUnits = ingredient

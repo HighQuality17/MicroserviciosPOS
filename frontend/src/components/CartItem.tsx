@@ -15,13 +15,13 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-medium text-white">{item.name}</p>
-          {item.subtitle ? <p className="mt-1 text-xs text-slate-500">{item.subtitle}</p> : null}
+          {item.subtitle ? <p className="mt-1 text-xs text-slate-400">{item.subtitle}</p> : null}
         </div>
         <Button
           type="button"
           variant="ghost"
           onClick={onRemove}
-          className="min-h-10 rounded-xl px-2.5 py-2 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300"
+          className="min-h-10 rounded-xl px-2.5 py-2 text-slate-300 hover:bg-rose-500/10 hover:text-rose-200"
           aria-label={
             item.subtitle
               ? 'Eliminar ' + item.name + ' ' + item.subtitle + ' del carrito'
@@ -41,7 +41,14 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
           >
             <Minus size={14} />
           </Button>
-          <span className="w-10 text-center text-sm font-semibold text-white">{item.qty}</span>
+          <span
+            className="w-10 text-center text-sm font-semibold text-white"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={'Cantidad actual de ' + item.name + ': ' + item.qty}
+          >
+            {item.qty}
+          </span>
           <Button
             variant="secondary"
             className="px-3 py-2"
