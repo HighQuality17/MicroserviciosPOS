@@ -210,26 +210,21 @@ export function CashPage() {
             </div>
           ) : (
             <div className="mt-5 grid gap-4">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Efectivo contado</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="Ej: 80000"
-                  value={closingCashCountedInput}
-                  onChange={(event) => {
-                    const nextValue = normalizeNumberInput(event.target.value);
-                    if (nextValue !== null) {
-                      setClosingCashCountedInput(nextValue);
-                    }
-                  }}
-                  className="min-h-11 w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-teal-400/70 focus:bg-slate-950/90"
-                />
-                <span className="text-xs text-slate-500">
-                  Escribe el valor real contado. El sistema validará el cierre antes de enviarlo.
-                </span>
-              </label>
+              <Input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                label="Efectivo contado"
+                placeholder="Ej: 80000"
+                hint="Escribe el valor real contado. El sistema validara el cierre antes de enviarlo."
+                value={closingCashCountedInput}
+                onChange={(event) => {
+                  const nextValue = normalizeNumberInput(event.target.value);
+                  if (nextValue !== null) {
+                    setClosingCashCountedInput(nextValue);
+                  }
+                }}
+              />
               <Button disabled={loading} onClick={handleCloseCash}>
                 {loading ? 'Procesando...' : 'Cerrar caja'}
               </Button>

@@ -1,7 +1,8 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
+import { Select } from '@/components/Select';
 import type { PaymentMethod } from '@/types/api';
 import { formatCurrency } from '@/utils/format';
 import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
@@ -47,7 +48,7 @@ export function PaymentModal({
     if (method === 'CASH') {
       const parsedAmount = parseNumberInput(amountReceivedInput);
       if (parsedAmount === null || parsedAmount < total) {
-        setValidationError('Ingresa un monto recibido válido mayor o igual al total.');
+        setValidationError('Ingresa un monto recibido valido mayor o igual al total.');
         return;
       }
     }
@@ -64,9 +65,15 @@ export function PaymentModal({
       open={open}
       onClose={onClose}
       title="Cobrar venta"
-      subtitle="Confirma el método de pago y envía la venta al backend local."
+      subtitle="Confirma el metodo de pago y envia la venta al backend local."
     >
-      <div className="grid gap-5">
+      <form
+        className="grid gap-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleConfirm();
+        }}
+      >
         <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
           <p className="text-sm text-slate-400">Total a pagar</p>
           <p className="mt-2 font-display text-4xl font-bold text-teal-300">
@@ -75,21 +82,18 @@ export function PaymentModal({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-200">Método</span>
-            <select
-              value={method}
-              onChange={(event) => {
-                setMethod(event.target.value as PaymentMethod);
-                setAmountReceivedInput('');
-                setValidationError(null);
-              }}
-              className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-            >
-              <option value="CASH">Efectivo</option>
-              <option value="TRANSFER">Transferencia</option>
-            </select>
-          </label>
+          <Select
+            label="Metodo"
+            value={method}
+            onChange={(event) => {
+              setMethod(event.target.value as PaymentMethod);
+              setAmountReceivedInput('');
+              setValidationError(null);
+            }}
+          >
+            <option value="CASH">Efectivo</option>
+            <option value="TRANSFER">Transferencia</option>
+          </Select>
 
           <Input
             type="number"
@@ -97,6 +101,12 @@ export function PaymentModal({
             step="100"
             label="Monto recibido"
             placeholder={method === 'TRANSFER' ? 'Se aplica el total exacto' : 'Ej: 20000'}
+            hint={
+              method === 'TRANSFER'
+                ? 'En transferencia se aplica automaticamente el total exacto.'
+                : 'Ingresa el efectivo recibido para calcular el cambio.'
+            }
+            error={method === 'CASH' ? validationError ?? undefined : undefined}
             value={method === 'TRANSFER' ? '' : amountReceivedInput}
             onChange={(event) => {
               const nextValue = normalizeNumberInput(event.target.value, {
@@ -121,30 +131,24 @@ export function PaymentModal({
           </div>
         </div>
 
-        {validationError ? (
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            {validationError}
-          </div>
-        ) : null}
-
         {error ? (
-          <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          <div
+            role="alert"
+            className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
+          >
             {error}
           </div>
         ) : null}
 
         <div className="flex justify-end gap-3">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" type="button" onClick={onClose}>
             Cancelar
           </Button>
-          <Button disabled={loading} onClick={() => void handleConfirm()}>
+          <Button type="submit" disabled={loading} aria-busy={loading}>
             {loading ? 'Procesando...' : 'Confirmar pago'}
           </Button>
         </div>
-      </div>
+      </form>
     </Modal>
   );
 }
-
-
-

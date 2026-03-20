@@ -3,12 +3,15 @@ import { BookOpenCheck, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
+import { CheckboxField } from '@/components/CheckboxField';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { Modal } from '@/components/Modal';
+import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
+import { Textarea } from '@/components/Textarea';
 import { SummaryCard } from '@/components/SummaryCard';
 import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
@@ -573,18 +576,14 @@ export function ProductsPage() {
                 placeholder="Latte avellana"
               />
 
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Descripción</span>
-                <textarea
-                  value={productDescription}
-                  onChange={(event) => setProductDescription(event.target.value)}
-                  placeholder="Campo visual preparado para la siguiente fase de backend."
-                  className="min-h-28 w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-teal-400/70"
-                />
-                <span className="text-xs text-slate-500">
-                  Aún no se envía al backend. Por ahora solo se persisten nombre y estado.
-                </span>
-              </label>
+              <Textarea
+                label="Descripcion"
+                value={productDescription}
+                onChange={(event) => setProductDescription(event.target.value)}
+                placeholder="Campo visual preparado para la siguiente fase de backend."
+                hint="Aun no se envia al backend. Por ahora solo se persisten nombre y estado."
+              />
+
 
               <Input
                 label="Categoría"
@@ -594,18 +593,13 @@ export function ProductsPage() {
                 hint="Preparado visualmente para una futura fase de catalogación."
               />
 
-              <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-white">Activo</p>
-                  <p className="text-xs text-slate-500">Se envía al backend en el alta actual.</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={productActive}
-                  onChange={(event) => setProductActive(event.target.checked)}
-                  className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-teal-400"
-                />
-              </label>
+              <CheckboxField
+                label="Activo"
+                description="Se envia al backend en el alta actual."
+                checked={productActive}
+                onChange={(event) => setProductActive(event.target.checked)}
+              />
+
 
               <div className="flex gap-3">
                 <Button
@@ -627,23 +621,21 @@ export function ProductsPage() {
             <p className="text-sm text-slate-400">Gestión de variantes</p>
             <h2 className="font-display text-2xl font-bold text-white">Crear variante</h2>
             <div className="mt-5 grid gap-4">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Producto</span>
-                <select
-                  value={variantProductId}
-                  onChange={(event) => setVariantProductId(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                >
-                  <option value="">
-                    {products.length === 0 ? 'Sin productos cargados' : 'Selecciona un producto'}
+              <Select
+                label="Producto"
+                value={variantProductId}
+                onChange={(event) => setVariantProductId(event.target.value)}
+              >
+                <option value="">
+                  {products.length === 0 ? 'Sin productos cargados' : 'Selecciona un producto'}
+                </option>
+                {products.map((product) => (
+                  <option key={product.id} value={String(product.id)}>
+                    #{product.id} / {product.name}
                   </option>
-                  {products.map((product) => (
-                    <option key={product.id} value={String(product.id)}>
-                      #{product.id} · {product.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                ))}
+              </Select>
+
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
@@ -672,20 +664,12 @@ export function ProductsPage() {
                 }}
               />
 
-              <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-white">Activa</p>
-                  <p className="text-xs text-slate-500">
-                    Las variantes inactivas no se muestran en POS.
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={variantActive}
-                  onChange={(event) => setVariantActive(event.target.checked)}
-                  className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-teal-400"
-                />
-              </label>
+              <CheckboxField
+                label="Activa"
+                description="Las variantes inactivas no se muestran en POS."
+                checked={variantActive}
+                onChange={(event) => setVariantActive(event.target.checked)}
+              />
 
               <div className="flex gap-3">
                 <Button
@@ -807,7 +791,7 @@ export function ProductsPage() {
                 />
               </div>
             ) : (
-              <div className="mt-6 overflow-x-auto">
+              <div className="mt-6 overflow-x-auto overscroll-x-contain touch-pan-x pb-1">
                 <div className="min-w-[860px] overflow-hidden rounded-3xl border border-slate-800">
                   <div className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
                     <span>ID</span>
@@ -893,20 +877,12 @@ export function ProductsPage() {
             onChange={(event) => setEditProductName(event.target.value)}
             placeholder="Nombre del producto"
           />
-          <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-white">Activo</p>
-              <p className="text-xs text-slate-500">
-                Si lo desactivas, dejará de mostrarse en los listados operativos.
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={editProductActive}
-              onChange={(event) => setEditProductActive(event.target.checked)}
-              className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-teal-400"
-            />
-          </label>
+          <CheckboxField
+            label="Activo"
+            description="Si lo desactivas, dejara de mostrarse en los listados operativos."
+            checked={editProductActive}
+            onChange={(event) => setEditProductActive(event.target.checked)}
+          />
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setProductEditorOpen(false)}>
               Cancelar
@@ -950,20 +926,12 @@ export function ProductsPage() {
             }}
             placeholder="Ej: 15000"
           />
-          <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-white">Activa</p>
-              <p className="text-xs text-slate-500">
-                Las variantes inactivas no se muestran en POS.
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={editVariantActive}
-              onChange={(event) => setEditVariantActive(event.target.checked)}
-              className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-teal-400"
-            />
-          </label>
+          <CheckboxField
+            label="Activa"
+            description="Las variantes inactivas no se muestran en POS."
+            checked={editVariantActive}
+            onChange={(event) => setEditVariantActive(event.target.checked)}
+          />
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setVariantEditorOpen(false)}>
               Cancelar
@@ -1016,23 +984,20 @@ export function ProductsPage() {
                     className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4"
                   >
                     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_120px_110px_auto] lg:items-end">
-                      <label className="block space-y-2">
-                        <span className="text-sm font-medium text-slate-200">Ingrediente</span>
-                        <select
-                          value={item.ingredient_id}
-                          onChange={(event) =>
-                            handleRecipeDraftChange(index, 'ingredient_id', event.target.value)
-                          }
-                          className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                        >
-                          <option value="">Selecciona un ingrediente</option>
-                          {ingredients.map((ingredientOption) => (
-                            <option key={ingredientOption.id} value={ingredientOption.id}>
-                              #{ingredientOption.id} · {ingredientOption.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <Select
+                        label="Ingrediente"
+                        value={item.ingredient_id}
+                        onChange={(event) =>
+                          handleRecipeDraftChange(index, 'ingredient_id', event.target.value)
+                        }
+                      >
+                        <option value="">Selecciona un ingrediente</option>
+                        {ingredients.map((ingredientOption) => (
+                          <option key={ingredientOption.id} value={ingredientOption.id}>
+                            #{ingredientOption.id} / {ingredientOption.name}
+                          </option>
+                        ))}
+                      </Select>
                       <Input
                         type="number"
                         min={0}
@@ -1048,22 +1013,19 @@ export function ProductsPage() {
                           }
                         }}
                       />
-                      <label className="block space-y-2">
-                        <span className="text-sm font-medium text-slate-200">Unidad</span>
-                        <select
-                          value={item.unit_code}
-                          onChange={(event) =>
-                            handleRecipeDraftChange(index, 'unit_code', event.target.value)
-                          }
-                          className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                        >
-                          {availableUnits.map((unit) => (
-                            <option key={unit} value={unit}>
-                              {unit}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <Select
+                        label="Unidad"
+                        value={item.unit_code}
+                        onChange={(event) =>
+                          handleRecipeDraftChange(index, 'unit_code', event.target.value)
+                        }
+                      >
+                        {availableUnits.map((unit) => (
+                          <option key={unit} value={unit}>
+                            {unit}
+                          </option>
+                        ))}
+                      </Select>
                       <Button
                         variant="ghost"
                         disabled={savingRecipe}

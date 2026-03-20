@@ -6,6 +6,7 @@ import { CartItem } from '@/components/CartItem';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
+import { Select } from '@/components/Select';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
@@ -232,9 +233,12 @@ export function PosPage() {
             </div>
             <div className="w-full md:max-w-md">
               <Input
+                label="Buscar en catalogo"
+                labelClassName="sr-only"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Buscar por nombre, talla o SKU"
+                hint="Filtra por nombre, tamano o SKU sin salir del teclado."
               />
             </div>
           </div>
@@ -284,7 +288,7 @@ export function PosPage() {
                   type="button"
                   onClick={() => addItem(item)}
                   disabled={!currentLocation}
-                  className="glass-panel rounded-3xl p-5 text-left transition hover:-translate-y-0.5 hover:border-teal-300/30"
+                  className="glass-panel rounded-3xl p-5 text-left transition hover:-translate-y-0.5 hover:border-teal-300/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -339,20 +343,17 @@ export function PosPage() {
 
         <div className="mt-6 grid gap-4 border-t border-slate-800 pt-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-200">Descuento</span>
-              <select
-                value={discountType}
-                onChange={(event) =>
-                  setDiscount(event.target.value as DiscountType, discountValue)
-                }
-                className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-              >
-                <option value="NONE">Sin descuento</option>
-                <option value="PERCENT">Porcentaje</option>
-                <option value="FIXED">Valor fijo</option>
-              </select>
-            </label>
+            <Select
+              label="Descuento"
+              value={discountType}
+              onChange={(event) =>
+                setDiscount(event.target.value as DiscountType, discountValue)
+              }
+            >
+              <option value="NONE">Sin descuento</option>
+              <option value="PERCENT">Porcentaje</option>
+              <option value="FIXED">Valor fijo</option>
+            </Select>
             <Input
               type="number"
               min={0}
