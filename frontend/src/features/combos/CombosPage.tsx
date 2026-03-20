@@ -4,8 +4,10 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
 import { EmptyState } from '@/components/EmptyState';
+import { CheckboxField } from '@/components/CheckboxField';
 import { Input } from '@/components/Input';
 import { ScrollPanel } from '@/components/ScrollPanel';
+import { Select } from '@/components/Select';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -218,21 +220,12 @@ export function CombosPage() {
                   }
                 }}
               />
-
-              <label className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-white">Activo</p>
-                  <p className="text-xs text-slate-500">
-                    Solo combos activos deben aparecer en POS.
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={comboActive}
-                  onChange={(event) => setComboActive(event.target.checked)}
-                  className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-teal-400"
-                />
-              </label>
+              <CheckboxField
+                label="Activo"
+                description="Solo combos activos deben aparecer en POS."
+                checked={comboActive}
+                onChange={(event) => setComboActive(event.target.checked)}
+              />
 
               <div className="flex flex-wrap gap-3">
                 <Button
@@ -255,43 +248,38 @@ export function CombosPage() {
             </h2>
 
             <div className="mt-5 grid gap-4">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Combo</span>
-                <select
-                  value={selectedComboId}
-                  onChange={(event) => setSelectedComboId(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                >
-                  <option value="">
-                    {combos.length === 0 ? 'Sin combos cargados' : 'Selecciona un combo'}
+              <Select
+                label="Combo"
+                value={selectedComboId}
+                onChange={(event) => setSelectedComboId(event.target.value)}
+              >
+                <option value="">
+                  {combos.length === 0 ? 'Sin combos cargados' : 'Selecciona un combo'}
+                </option>
+                {combos.map((combo) => (
+                  <option key={combo.id} value={String(combo.id)}>
+                    #{combo.id} - {combo.name}
                   </option>
-                  {combos.map((combo) => (
-                    <option key={combo.id} value={String(combo.id)}>
-                      #{combo.id} - {combo.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                ))}
+              </Select>
 
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Variante</span>
-                <select
-                  value={selectedVariantId}
-                  onChange={(event) => setSelectedVariantId(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                >
-                  <option value="">
-                    {variants.length === 0
-                      ? 'Sin variantes cargadas'
-                      : 'Selecciona una variante'}
+              <Select
+                label="Variante"
+                value={selectedVariantId}
+                onChange={(event) => setSelectedVariantId(event.target.value)}
+              >
+                <option value="">
+                  {variants.length === 0
+                    ? 'Sin variantes cargadas'
+                    : 'Selecciona una variante'}
+                </option>
+                {variants.map((variant) => (
+                  <option key={variant.id} value={String(variant.id)}>
+                    #{variant.id} - {variant.product_name} - {variant.size} - {variant.sku}
                   </option>
-                  {variants.map((variant) => (
-                    <option key={variant.id} value={String(variant.id)}>
-                      #{variant.id} - {variant.product_name} - {variant.size} - {variant.sku}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                ))}
+              </Select>
+
 
               <Input
                 type="number"

@@ -72,7 +72,7 @@ export function Header({
                       setCurrentLocation(nextLocation);
                     }
                   }}
-                  className="w-full min-w-0 bg-transparent text-sm text-slate-200 outline-none sm:min-w-[12rem]"
+                  className="w-full min-w-0 rounded-xl bg-transparent text-sm text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:min-w-[12rem]"
                 >
                   {availableLocations.map((item) => (
                     <option

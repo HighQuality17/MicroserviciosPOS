@@ -8,6 +8,7 @@ import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { ScrollPanel } from '@/components/ScrollPanel';
+import { Select } from '@/components/Select';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -407,7 +408,7 @@ export function SalesPage() {
                       aria-pressed={isSelected}
                       onClick={() => void handleSelectReceipt(sale.sale_id)}
                       className={[
-                        'rounded-3xl border p-4 text-left transition',
+                        'rounded-3xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
                         isSelected
                           ? 'border-teal-300/50 bg-slate-900/80'
                           : 'border-slate-800 bg-slate-950/50 hover:border-teal-300/40 hover:bg-slate-900/80',
@@ -642,60 +643,52 @@ export function SalesPage() {
 
             <div className="mt-5 grid gap-4 rounded-3xl border border-slate-800 bg-slate-950/40 p-4">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-200">Estado</span>
-                  <select
-                    value={filters.status}
-                    onChange={(event) =>
-                      setFilters((current) => ({
-                        ...current,
-                        status: event.target.value as SaleStatusFilter,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                  >
-                    <option value="">Todos</option>
-                    <option value="PAID">Pagada</option>
-                    <option value="PENDING">Pendiente</option>
-                    <option value="VOID">Anulada</option>
-                  </select>
-                </label>
+                <Select
+                  label="Estado"
+                  value={filters.status}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      status: event.target.value as SaleStatusFilter,
+                    }))
+                  }
+                >
+                  <option value="">Todos</option>
+                  <option value="PAID">Pagada</option>
+                  <option value="PENDING">Pendiente</option>
+                  <option value="VOID">Anulada</option>
+                </Select>
 
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-200">Método de pago</span>
-                  <select
-                    value={filters.payment_method}
-                    onChange={(event) =>
-                      setFilters((current) => ({
-                        ...current,
-                        payment_method: event.target.value as PaymentMethodFilter,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                  >
-                    <option value="">Todos</option>
-                    <option value="CASH">Efectivo</option>
-                    <option value="TRANSFER">Transferencia</option>
-                  </select>
-                </label>
 
-                <label className="block space-y-2 md:col-span-2 xl:col-span-1">
-                  <span className="text-sm font-medium text-slate-200">Ubicación</span>
-                  <select
-                    value={filters.location_id}
-                    onChange={(event) =>
-                      setFilters((current) => ({ ...current, location_id: event.target.value }))
-                    }
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                  >
-                    <option value="">Todas las ubicaciones</option>
-                    {availableLocations.map((location) => (
-                      <option key={location.id} value={String(location.id)}>
-                        #{location.id} · {location.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <Select
+                  label="Metodo de pago"
+                  value={filters.payment_method}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      payment_method: event.target.value as PaymentMethodFilter,
+                    }))
+                  }
+                >
+                  <option value="">Todos</option>
+                  <option value="CASH">Efectivo</option>
+                  <option value="TRANSFER">Transferencia</option>
+                </Select>
+                <Select
+                  label="Ubicacion"
+                  wrapperClassName="md:col-span-2 xl:col-span-1"
+                  value={filters.location_id}
+                  onChange={(event) =>
+                    setFilters((current) => ({ ...current, location_id: event.target.value }))
+                  }
+                >
+                  <option value="">Todas las ubicaciones</option>
+                  {availableLocations.map((location) => (
+                    <option key={location.id} value={String(location.id)}>
+                      #{location.id} / {location.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -770,7 +763,7 @@ export function SalesPage() {
                             aria-pressed={isSelected}
                             onClick={() => void handleSelectReceipt(sale.sale_id)}
                             className={[
-                              'grid w-full grid-cols-[92px_150px_120px_110px_140px_140px_minmax(0,1fr)_110px] gap-3 border-t border-slate-800 px-4 py-4 text-left text-sm text-slate-200 transition',
+                              'grid w-full grid-cols-[92px_150px_120px_110px_140px_140px_minmax(0,1fr)_110px] gap-3 border-t border-slate-800 px-4 py-4 text-left text-sm text-slate-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
                               isSelected
                                 ? 'bg-slate-900/90 ring-1 ring-inset ring-teal-300/50'
                                 : 'bg-slate-950/50 hover:bg-slate-900/70',
@@ -795,7 +788,7 @@ export function SalesPage() {
                   <span>
                     {historyTotal} ventas encontradas · página {historyPage} de {Math.max(historyTotalPages, 1)}
                   </span>
-                  <div className="flex gap-3">
+                  <nav className="flex gap-3" aria-label="Paginacion del historial de ventas">
                     <Button
                       variant="secondary"
                       disabled={historyPage <= 1 || historyLoading}
@@ -810,7 +803,7 @@ export function SalesPage() {
                     >
                       Siguiente
                     </Button>
-                  </div>
+                  </nav>
                 </div>
               </>
             )}

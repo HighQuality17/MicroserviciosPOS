@@ -6,6 +6,7 @@ import { AccessState } from '@/components/AccessState';
 import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { ScrollPanel } from '@/components/ScrollPanel';
+import { Select } from '@/components/Select';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -324,37 +325,31 @@ export function IngredientsPage() {
                 placeholder="Leche entera"
               />
 
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Dimension</span>
-                <select
-                  value={dimension}
-                  onChange={(event) =>
-                    setDimension(event.target.value as IngredientDimension)
-                  }
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                >
-                  <option value="WEIGHT">{getDimensionLabel('WEIGHT')}</option>
-                  <option value="VOLUME">{getDimensionLabel('VOLUME')}</option>
-                  <option value="COUNT">{getDimensionLabel('COUNT')}</option>
-                </select>
-              </label>
+              <Select
+                label="Dimension"
+                value={dimension}
+                onChange={(event) =>
+                  setDimension(event.target.value as IngredientDimension)
+                }
+              >
+                <option value="WEIGHT">{getDimensionLabel('WEIGHT')}</option>
+                <option value="VOLUME">{getDimensionLabel('VOLUME')}</option>
+                <option value="COUNT">{getDimensionLabel('COUNT')}</option>
+              </Select>
 
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">
-                  Unidad por defecto
-                </span>
-                <select
-                  value={defaultUnitCode}
-                  onChange={(event) => setDefaultUnitCode(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                >
-                  {availableDefaultUnits.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {getUnitLabel(unit)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+
+              <Select
+                label="Unidad por defecto"
+                value={defaultUnitCode}
+                onChange={(event) => setDefaultUnitCode(event.target.value)}
+              >
+                {availableDefaultUnits.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {getUnitLabel(unit)}
+                  </option>
+                ))}
+              </Select>
+
 
               <Button
                 disabled={creatingIngredient || !name.trim()}
@@ -372,45 +367,41 @@ export function IngredientsPage() {
             </h2>
 
             <div className="mt-5 grid gap-4">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">Ubicación</span>
-                <select
-                  value={selectedLocationId ?? ''}
-                  onChange={(event) => {
-                    const value = event.currentTarget.value;
-                    setSelectedLocationId(value ? Number(value) : null);
-                  }}
-                  className="min-h-11 w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                >
-                  <option value="">Selecciona una ubicación</option>
-                  {availableLocations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      #{location.id} · {location.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <Select
+                label="Ubicacion"
+                value={selectedLocationId ?? ""}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setSelectedLocationId(value ? Number(value) : null);
+                }}
+              >
+                <option value="">Selecciona una ubicacion</option>
+                {availableLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    #{location.id} / {location.name}
+                  </option>
+                ))}
+              </Select>
 
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-200">
-                  Ingrediente
-                </span>
-                <select
-                  value={selectedIngredientId}
-                  onChange={(event) => setSelectedIngredientId(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                >
-                  {mergedIngredients.length === 0 ? (
-                    <option value="">{mergedIngredients.length === 0 ? 'Sin ingredientes disponibles' : 'Selecciona un ingrediente'}</option>
-                  ) : (
-                    mergedIngredients.map((ingredient) => (
-                      <option key={ingredient.id} value={String(ingredient.id)}>
-                        #{ingredient.id} · {ingredient.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </label>
+
+              <Select
+                label="Ingrediente"
+                value={selectedIngredientId}
+                onChange={(event) => setSelectedIngredientId(event.target.value)}
+              >
+                {mergedIngredients.length === 0 ? (
+                  <option value="">
+                    {mergedIngredients.length === 0 ? 'Sin ingredientes disponibles' : 'Selecciona un ingrediente'}
+                  </option>
+                ) : (
+                  mergedIngredients.map((ingredient) => (
+                    <option key={ingredient.id} value={String(ingredient.id)}>
+                      #{ingredient.id} / {ingredient.name}
+                    </option>
+                  ))
+                )}
+              </Select>
+
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
@@ -428,20 +419,17 @@ export function IngredientsPage() {
                   }}
                 />
 
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-200">Unidad</span>
-                  <select
-                    value={unitCode}
-                    onChange={(event) => setUnitCode(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none focus:border-teal-400/70"
-                  >
-                    {availableAdjustUnits.map((unit) => (
-                      <option key={unit} value={unit}>
-                        {getUnitLabel(unit)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <Select
+                  label="Unidad"
+                  value={unitCode}
+                  onChange={(event) => setUnitCode(event.target.value)}
+                >
+                  {availableAdjustUnits.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {getUnitLabel(unit)}
+                    </option>
+                  ))}
+                </Select>
               </div>
 
               <Input
