@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
 import { EmptyState } from '@/components/EmptyState';
+import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
@@ -284,17 +285,9 @@ export function IngredientsPage() {
         />
       </div>
 
-      {message ? (
-        <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          {message}
-        </div>
-      ) : null}
+      {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 
-      {submitError ? (
-        <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {submitError}
-        </div>
-      ) : null}
+      {submitError ? <FeedbackMessage tone="error">{submitError}</FeedbackMessage> : null}
 
       {!currentLocation ? (
         <Card>
@@ -488,7 +481,7 @@ export function IngredientsPage() {
                 />
               </div>
             ) : (
-              <ScrollPanel className="mt-6 grid gap-3">
+              <ScrollPanel className="mt-6 grid gap-3" tabIndex={0} aria-label="Catalogo de ingredientes">
                 {mergedIngredients.map((ingredient) => (
                   <div
                     key={ingredient.id}
@@ -512,9 +505,9 @@ export function IngredientsPage() {
             )}
 
             {catalogError ? (
-              <div className="mt-4 rounded-2xl border border-sky-400/20 bg-sky-400/10 px-4 py-3 text-sm text-sky-100">
-                GET /ingredients no esta disponible o fallo. La vista usa ingredientes de sesión y del stock para no bloquear la operacion.
-              </div>
+              <FeedbackMessage tone="info" className="mt-4">
+                GET /ingredients no esta disponible o fallo. La vista usa ingredientes de sesion y del stock para no bloquear la operacion.
+              </FeedbackMessage>
             ) : null}
           </Card>
 
@@ -555,7 +548,7 @@ export function IngredientsPage() {
                 />
               </div>
             ) : (
-              <ScrollPanel className="mt-6 grid gap-3">
+              <ScrollPanel className="mt-6 grid gap-3" tabIndex={0} aria-label="Stock por ubicacion">
                 {stockItems.map((item) => (
                   <div
                     key={`${item.ingredientId}-${item.locationId}`}
@@ -582,9 +575,9 @@ export function IngredientsPage() {
             )}
 
             {stockError ? (
-              <div className="mt-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+              <FeedbackMessage tone="error" className="mt-4">
                 {stockError}
-              </div>
+              </FeedbackMessage>
             ) : null}
           </Card>
 

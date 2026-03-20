@@ -15,6 +15,7 @@ import { AccessState } from '@/components/AccessState';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { KpiCard } from '@/components/KpiCard';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
@@ -34,11 +35,7 @@ import type {
 } from '@/types/api';
 
 function BlockError({ message }: { message: string }) {
-  return (
-    <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-      {message}
-    </div>
-  );
+  return <FeedbackMessage tone="error">{message}</FeedbackMessage>;
 }
 
 function SkeletonRows({ rows = 4 }: { rows?: number }) {
@@ -496,7 +493,7 @@ export function AdminPage() {
               />
             </div>
           ) : (
-            <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[34rem]">
+            <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[34rem]" tabIndex={0} aria-label="Actividad reciente">
               {recentActivity.map((item) => (
                 <div
                   key={`${item.activity_type}-${item.entity_id}-${item.created_at}`}
@@ -556,15 +553,15 @@ export function AdminPage() {
           />
 
           {locationMessage ? (
-            <div className="mt-4 rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            <FeedbackMessage tone="success" className="mt-4">
               {locationMessage}
-            </div>
+            </FeedbackMessage>
           ) : null}
 
           {locationSubmitError ? (
-            <div className="mt-4 rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            <FeedbackMessage tone="error" className="mt-4">
               {locationSubmitError}
-            </div>
+            </FeedbackMessage>
           ) : null}
 
           {locationsError ? (
@@ -621,7 +618,7 @@ export function AdminPage() {
                   />
                 </div>
               ) : (
-                <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[20rem]">
+                <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[20rem]" tabIndex={0} aria-label="Puntos de venta disponibles">
                   {availableLocations.map((location) => (
                     <div
                       key={location.id}

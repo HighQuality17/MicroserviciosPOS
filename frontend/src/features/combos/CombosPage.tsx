@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
 import { EmptyState } from '@/components/EmptyState';
+import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { CheckboxField } from '@/components/CheckboxField';
 import { Input } from '@/components/Input';
 import { ScrollPanel } from '@/components/ScrollPanel';
@@ -170,23 +171,11 @@ export function CombosPage() {
         />
       </div>
 
-      {message ? (
-        <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          {message}
-        </div>
-      ) : null}
+      {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 
-      {submitError ? (
-        <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {submitError}
-        </div>
-      ) : null}
+      {submitError ? <FeedbackMessage tone="error">{submitError}</FeedbackMessage> : null}
 
-      {catalogError ? (
-        <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {catalogError}
-        </div>
-      ) : null}
+      {catalogError ? <FeedbackMessage tone="error">{catalogError}</FeedbackMessage> : null}
 
       {catalogAccessDenied ? (
         <AccessState description="Tu perfil actual no tiene permiso para consultar o gestionar combos." />
@@ -338,7 +327,7 @@ export function CombosPage() {
               />
             </div>
           ) : (
-            <ScrollPanel className="mt-6 grid gap-4">
+            <ScrollPanel className="mt-6 grid gap-4" tabIndex={0} aria-label="Listado de combos comerciales">
               {combos.map((combo) => (
                 <div
                   key={combo.id}

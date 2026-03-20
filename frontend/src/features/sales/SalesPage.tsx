@@ -4,6 +4,7 @@ import { AccessState } from '@/components/AccessState';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
@@ -45,11 +46,7 @@ const defaultFilters: HistoryFilters = {
 type SelectableReceipt = SaleReceipt | LatestSaleResponse;
 
 function BlockError({ message }: { message: string }) {
-  return (
-    <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-      {message}
-    </div>
-  );
+  return <FeedbackMessage tone="error">{message}</FeedbackMessage>;
 }
 
 function SkeletonCard({ height = 'h-40' }: { height?: string }) {
@@ -98,6 +95,7 @@ export function SalesPage() {
   const [historyAccessDenied, setHistoryAccessDenied] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pendingDetailScroll, setPendingDetailScroll] = useState(false);
+  const [detailAnnouncement, setDetailAnnouncement] = useState('');
 
   const canOperateSales = can('canOperateSales');
   const visibleReceipt = useMemo(() => {
@@ -148,6 +146,9 @@ export function SalesPage() {
 
     const frame = window.requestAnimationFrame(() => {
       detailSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setDetailAnnouncement(
+        'Detalle de la venta #' + selectedSaleId + ' listo para consulta.',
+      );
       setPendingDetailScroll(false);
     });
 
@@ -249,6 +250,7 @@ export function SalesPage() {
       return;
     }
 
+    setDetailAnnouncement('');
     setSelectedSaleId(saleId);
     setPendingDetailScroll(true);
     setReceiptError(null);
@@ -334,17 +336,13 @@ export function SalesPage() {
         />
       </div>
 
-      {message ? (
-        <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          {message}
-        </div>
-      ) : null}
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {detailAnnouncement}
+      </p>
 
-      {receiptError ? (
-        <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {receiptError}
-        </div>
-      ) : null}
+      {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
+
+      {receiptError ? <FeedbackMessage tone="error">{receiptError}</FeedbackMessage> : null}
 
       {latestAccessDenied || recentAccessDenied || historyAccessDenied ? (
         <AccessState description="Tu perfil actual no tiene permiso para consultar el historial y los comprobantes de ventas." />
@@ -397,7 +395,7 @@ export function SalesPage() {
                 />
               </div>
             ) : (
-              <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[24rem]">
+              <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[24rem]" tabIndex={0} aria-label="Comprobantes recientes">
                 {recentSales.map((sale) => {
                   const isSelected = selectedSaleId === sale.sale_id;
 
@@ -406,6 +404,7 @@ export function SalesPage() {
                       key={sale.sale_id}
                       type="button"
                       aria-pressed={isSelected}
+                      aria-label={getRecentSaleButtonLabel(sale, isSelected)}
                       onClick={() => void handleSelectReceipt(sale.sale_id)}
                       className={[
                         'rounded-3xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
@@ -481,7 +480,7 @@ export function SalesPage() {
                   </div>
                 </div>
                 <div className="mt-5 flex gap-3">
-                  <Button variant="secondary" onClick={() => void handleSelectReceipt(latestSale.sale_id, { receipt: latestSale })}>
+                  <Button variant="secondary" aria-label={`Ver detalle de la venta #${latestSale.sale_id}`} onClick={() => void handleSelectReceipt(latestSale.sale_id, { receipt: latestSale })}>
                     Ver detalle
                   </Button>
                 </div>
@@ -491,10 +490,10 @@ export function SalesPage() {
         </div>
 
         <div className="grid min-w-0 gap-4">
-          <section ref={detailSectionRef} className="min-w-0 scroll-mt-4 lg:scroll-mt-6">
-            <Card>
+          <section ref={detailSectionRef} aria-labelledby="sales-detail-title" aria-busy={isDetailPending} className="min-w-0 scroll-mt-4 lg:scroll-mt-6">
+            <Card aria-labelledby="sales-detail-title">
               <p className="text-sm text-slate-400">Detalle de venta</p>
-              <h2 className="font-display text-2xl font-bold text-white">
+              <h2 id="sales-detail-title" className="font-display text-2xl font-bold text-white">
                 Comprobante de consulta
               </h2>
 
@@ -549,7 +548,7 @@ export function SalesPage() {
 
                 <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
                   <p className="text-sm text-slate-400">Ítems</p>
-                  <ScrollPanel className="mt-4 grid gap-3" maxHeightClassName="max-h-[18rem]">
+                  <ScrollPanel className="mt-4 grid gap-3" maxHeightClassName="max-h-[18rem]" tabIndex={0} aria-label="Items del comprobante seleccionado">
                     {visibleReceipt.items.map((item) => (
                       <div
                         key={item.id}
@@ -625,11 +624,11 @@ export function SalesPage() {
           </Card>
           </section>
 
-          <Card>
+          <Card aria-labelledby="sales-history-title">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm text-slate-400">Historial real</p>
-                <h2 className="font-display text-2xl font-bold text-white">
+                <h2 id="sales-history-title" className="font-display text-2xl font-bold text-white">
                   Historial completo de ventas
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
@@ -742,7 +741,7 @@ export function SalesPage() {
               <>
                 <div className="mt-6 overflow-x-auto overscroll-x-contain touch-pan-x pb-1">
                   <div className="min-w-[1100px] overflow-hidden rounded-3xl border border-slate-800">
-                    <div className="grid grid-cols-[92px_150px_120px_110px_140px_140px_minmax(0,1fr)_110px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <div aria-hidden="true" className="grid grid-cols-[92px_150px_120px_110px_140px_140px_minmax(0,1fr)_110px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
                       <span>ID</span>
                       <span>Fecha</span>
                       <span>Total</span>
@@ -752,7 +751,7 @@ export function SalesPage() {
                       <span>Cajero</span>
                       <span>Acción</span>
                     </div>
-                    <ScrollPanel maxHeightClassName="max-h-[30rem]">
+                    <ScrollPanel maxHeightClassName="max-h-[30rem]" tabIndex={0} aria-label="Resultados del historial de ventas">
                       {historyItems.map((sale) => {
                         const isSelected = selectedSaleId === sale.sale_id;
 
@@ -761,6 +760,7 @@ export function SalesPage() {
                             key={sale.sale_id}
                             type="button"
                             aria-pressed={isSelected}
+                            aria-label={getHistorySaleButtonLabel(sale, isSelected)}
                             onClick={() => void handleSelectReceipt(sale.sale_id)}
                             className={[
                               'grid w-full grid-cols-[92px_150px_120px_110px_140px_140px_minmax(0,1fr)_110px] gap-3 border-t border-slate-800 px-4 py-4 text-left text-sm text-slate-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
@@ -812,6 +812,38 @@ export function SalesPage() {
       </div>
     </div>
   );
+}
+
+function getRecentSaleButtonLabel(sale: SaleRecentItem, isSelected: boolean) {
+  return [
+    isSelected ? 'Venta seleccionada.' : null,
+    'Venta #' + sale.sale_id + '.',
+    'Fecha ' + formatDate(sale.created_at) + '.',
+    'Total ' + formatCurrency(sale.total) + '.',
+    'Estado ' + formatStatus(sale.status) + '.',
+    'Pago ' + formatPaymentMethod(sale.payment_method) + '.',
+    'Ubicacion ' + sale.location.name + '.',
+    'Cajero ' + sale.cashier.name + '.',
+    'Abrir detalle.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+function getHistorySaleButtonLabel(sale: SalesHistoryItem, isSelected: boolean) {
+  return [
+    isSelected ? 'Venta seleccionada.' : null,
+    'Venta #' + sale.sale_id + '.',
+    'Fecha ' + formatDate(sale.created_at) + '.',
+    'Total ' + formatCurrency(sale.total) + '.',
+    'Estado ' + formatStatus(sale.status) + '.',
+    'Pago ' + formatPaymentMethod(sale.payment_method) + '.',
+    'Ubicacion ' + sale.location_name + '.',
+    'Cajero ' + sale.cashier_name + '.',
+    'Abrir detalle.',
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function formatPaymentMethod(method: string | null) {
