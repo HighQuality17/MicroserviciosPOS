@@ -52,7 +52,7 @@ function BlockError({ message }: { message: string }) {
 function SkeletonCard({ height = 'h-40' }: { height?: string }) {
   return (
     <div
-      className={`surface-subtle animate-pulse rounded-3xl ${height}`}
+      className={`data-list-card animate-pulse rounded-3xl ${height}`}
     />
   );
 }
@@ -407,10 +407,10 @@ export function SalesPage() {
                       aria-label={getRecentSaleButtonLabel(sale, isSelected)}
                       onClick={() => void handleSelectReceipt(sale.sale_id)}
                       className={[
-                        'rounded-3xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16]',
+                        'data-list-card rounded-3xl p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16]',
                         isSelected
                           ? 'border-violet-300/40 bg-[linear-gradient(135deg,rgba(99,102,241,0.16),rgba(139,92,246,0.12))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
-                          : 'border-[color:var(--line)] bg-white/[0.03] hover:border-violet-300/28 hover:bg-white/[0.05]',
+                          : 'hover:-translate-y-0.5',
                       ].join(' ')}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -552,7 +552,7 @@ export function SalesPage() {
                     {visibleReceipt.items.map((item) => (
                       <div
                         key={item.id}
-                        className="surface-subtle flex items-center justify-between rounded-2xl px-4 py-3"
+                        className="data-list-card flex items-center justify-between rounded-2xl px-4 py-3"
                       >
                         <div>
                           <p className="font-medium text-white">{item.description}</p>
@@ -640,7 +640,7 @@ export function SalesPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-4 surface-subtle rounded-3xl p-4">
+            <div className="toolbar-shell mt-5 grid gap-4 rounded-3xl p-4">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <Select
                   label="Estado"
@@ -783,7 +783,7 @@ export function SalesPage() {
                               Cajero
                             </th>
                             <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                              Acci??n
+                              Acción
                             </th>
                           </tr>
                         </thead>
@@ -825,7 +825,7 @@ export function SalesPage() {
                                   <span className="block truncate">{sale.cashier_name}</span>
                                 </td>
                                 <td className="px-4 py-4 align-middle whitespace-nowrap">
-                                  <span className="inline-flex min-h-9 items-center rounded-full border border-[color:var(--line)] bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-100">
+                                  <span className="table-action-chip text-white">
                                     Ver detalle
                                   </span>
                                 </td>
@@ -837,7 +837,7 @@ export function SalesPage() {
                     </ScrollPanel>
                   </div>
                 </div>
-                <div className="mt-4 surface-subtle flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-muted)]">
+                <div className="toolbar-shell mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-muted)]">
                   <span>
                     {historyTotal} ventas encontradas · página {historyPage} de {Math.max(historyTotalPages, 1)}
                   </span>

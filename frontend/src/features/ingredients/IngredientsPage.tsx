@@ -432,7 +432,7 @@ export function IngredientsPage() {
                 placeholder="Ej: Ingreso manual"
               />
 
-              <div className="surface-subtle rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)]">
+              <div className="toolbar-shell rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)]">
                 Usuario aplicado: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesión'}</span>
               </div>
 
@@ -469,7 +469,7 @@ export function IngredientsPage() {
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="surface-subtle h-20 animate-pulse rounded-3xl"
+                    className="data-list-card h-20 animate-pulse rounded-3xl"
                   />
                 ))}
               </div>
@@ -485,7 +485,7 @@ export function IngredientsPage() {
                 {mergedIngredients.map((ingredient) => (
                   <div
                     key={ingredient.id}
-                    className="surface-subtle rounded-3xl p-4"
+                    className="data-list-card rounded-3xl p-4"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -536,7 +536,7 @@ export function IngredientsPage() {
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="surface-subtle h-24 animate-pulse rounded-3xl"
+                    className="data-list-card h-24 animate-pulse rounded-3xl"
                   />
                 ))}
               </div>
@@ -552,7 +552,7 @@ export function IngredientsPage() {
                 {stockItems.map((item) => (
                   <div
                     key={`${item.ingredientId}-${item.locationId}`}
-                    className="surface-subtle rounded-3xl p-4"
+                    className="data-list-card rounded-3xl p-4"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>

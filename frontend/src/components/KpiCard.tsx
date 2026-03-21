@@ -7,8 +7,15 @@ interface KpiCardProps {
   value: string;
   hint?: string;
   icon?: ReactNode;
-  tone?: 'default' | 'success' | 'warning';
+  tone?: 'default' | 'success' | 'warning' | 'info';
 }
+
+const toneToIconShell: Record<NonNullable<KpiCardProps['tone']>, string> = {
+  default: 'default',
+  success: 'success',
+  warning: 'warning',
+  info: 'violet',
+};
 
 export function KpiCard({
   title,
@@ -20,30 +27,38 @@ export function KpiCard({
   const isCurrencyValue = value.includes('$');
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="metric-card">
       <div
+        aria-hidden="true"
         className={clsx(
-          'absolute inset-x-0 top-0 h-px',
-          tone === 'default' && 'bg-gradient-to-r from-transparent via-violet-300/70 to-transparent',
-          tone === 'success' && 'bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent',
-          tone === 'warning' && 'bg-gradient-to-r from-transparent via-amber-300/70 to-transparent',
+          'absolute inset-x-0 top-0 h-[2px] opacity-90',
+          tone === 'default' && 'bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent',
+          tone === 'info' && 'bg-gradient-to-r from-transparent via-violet-300/75 to-transparent',
+          tone === 'success' && 'bg-gradient-to-r from-transparent via-emerald-300/80 to-transparent',
+          tone === 'warning' && 'bg-gradient-to-r from-transparent via-amber-300/80 to-transparent',
         )}
       />
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-[color:var(--text-secondary)]">{title}</p>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[color:var(--text-secondary)]">
+            {title}
+          </p>
           <p
             className={clsx(
-              'mt-3 font-display text-3xl font-bold',
+              'mt-3 font-display text-[2.15rem] font-bold leading-none sm:text-[2.35rem]',
               isCurrencyValue ? 'metric-accent-strong' : 'text-white',
             )}
           >
             {value}
           </p>
-          {hint ? <p className="mt-2 text-xs text-[color:var(--text-muted)]">{hint}</p> : null}
+          {hint ? (
+            <p className="mt-3 max-w-[22rem] text-xs leading-5 text-[color:var(--text-muted)]">
+              {hint}
+            </p>
+          ) : null}
         </div>
         {icon ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-violet-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <div className="panel-icon-shell shrink-0" data-tone={toneToIconShell[tone]}>
             {icon}
           </div>
         ) : null}

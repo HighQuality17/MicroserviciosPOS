@@ -709,7 +709,7 @@ export function ProductsPage() {
                 {enrichedProducts.map((product) => (
                   <div
                     key={product.id}
-                    className="surface-subtle rounded-3xl p-5"
+                    className="data-list-card rounded-3xl p-5"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
@@ -768,7 +768,7 @@ export function ProductsPage() {
                 {Array.from({ length: 5 }).map((_, index) => (
                   <div
                     key={index}
-                    className="surface-subtle h-20 animate-pulse rounded-3xl"
+                    className="data-list-card h-20 animate-pulse rounded-3xl"
                   />
                 ))}
               </div>
@@ -915,7 +915,7 @@ export function ProductsPage() {
             )}
 
             {variants.length > 0 ? (
-              <div className="mt-4 surface-subtle rounded-2xl px-4 py-3 text-xs text-[color:var(--text-faint)]">
+              <div className="toolbar-shell mt-4 rounded-2xl px-4 py-3 text-xs text-[color:var(--text-faint)]">
                 Las variantes activas sin receta seguirán detectándose aquí para que administración complete la configuración antes de vender.
               </div>
             ) : null}
@@ -1043,7 +1043,7 @@ export function ProductsPage() {
                 return (
                   <div
                     key={`${item.ingredient_id}-${index}`}
-                    className="surface-subtle rounded-3xl p-4"
+                    className="data-list-card rounded-3xl p-4"
                   >
                     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_120px_110px_auto] lg:items-end">
                       <Select

@@ -240,7 +240,7 @@ export function CashPage() {
               ['Contado', formatCurrency(closeSummary.closing_cash_counted)],
               ['Diferencia', formatCurrency(closeSummary.difference)],
             ].map(([label, value]) => (
-              <div key={label} className="surface-subtle rounded-3xl p-4">
+              <div key={label} className="surface-subtle-strong rounded-3xl p-4">
                 <p className="text-sm text-[color:var(--text-faint)]">{label}</p>
                 <p className="mt-2 font-display text-2xl font-bold metric-accent">{value}</p>
               </div>

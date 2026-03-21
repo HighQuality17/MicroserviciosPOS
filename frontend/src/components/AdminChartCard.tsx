@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { SectionHeader } from '@/components/SectionHeader';
 import {
   Bar,
   BarChart,
@@ -53,8 +54,7 @@ export function AdminChartCard({
 
   return (
     <Card>
-      <p className="text-sm text-[color:var(--text-secondary)]">{title}</p>
-      <h3 className="font-display mt-2 text-2xl font-bold text-white">{description}</h3>
+      <SectionHeader eyebrow="Analitica" title={title} description={description} />
 
       {data.length === 0 ? (
         <div className="mt-6">
@@ -62,81 +62,72 @@ export function AdminChartCard({
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              {chartType === 'pie' ? (
-                <PieChart>
-                  <Pie
+          <div className="surface-subtle rounded-[1.7rem] p-4">
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === 'pie' ? (
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      dataKey="value"
+                      nameKey="label"
+                      innerRadius={56}
+                      outerRadius={86}
+                      paddingAngle={2}
+                      stroke="rgba(15, 23, 42, 0.9)"
+                      strokeWidth={2}
+                    >
+                      {chartData.map((entry) => (
+                        <Cell key={entry.label} fill={entry.color ?? '#67e8f9'} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
+                    <Legend
+                      wrapperStyle={{ color: '#d5daf8', paddingTop: 12 }}
+                      formatter={(value) => <span style={{ color: '#d5daf8' }}>{String(value)}</span>}
+                    />
+                  </PieChart>
+                ) : (
+                  <BarChart
                     data={chartData}
-                    dataKey="value"
-                    nameKey="label"
-                    innerRadius={56}
-                    outerRadius={86}
-                    paddingAngle={2}
-                    stroke="rgba(15, 23, 42, 0.9)"
-                    strokeWidth={2}
+                    layout="vertical"
+                    margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
                   >
-                    {chartData.map((entry) => (
-                      <Cell
-                        key={entry.label}
-                        fill={entry.color ?? '#a78bfa'}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
-                  <Legend
-                    wrapperStyle={{ color: '#d5daf8', paddingTop: 12 }}
-                    formatter={(value) => (
-                      <span style={{ color: '#d5daf8' }}>{String(value)}</span>
-                    )}
-                  />
-                </PieChart>
-              ) : (
-                <BarChart
-                  data={chartData}
-                  layout="vertical"
-                  margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
-                >
-                  <CartesianGrid stroke="rgba(129, 140, 248, 0.12)" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fill: '#9ca6cf', fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="shortLabel"
-                    width={132}
-                    tick={{ fill: '#d5daf8', fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
-                  <Bar dataKey="value" radius={[0, 10, 10, 0]} maxBarSize={28}>
-                    {chartData.map((entry) => (
-                      <Cell
-                        key={entry.label}
-                        fill={entry.color ?? '#a78bfa'}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              )}
-            </ResponsiveContainer>
+                    <CartesianGrid stroke="rgba(129, 140, 248, 0.12)" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      tick={{ fill: '#9ca6cf', fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="shortLabel"
+                      width={132}
+                      tick={{ fill: '#d5daf8', fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
+                    <Bar dataKey="value" radius={[0, 10, 10, 0]} maxBarSize={28}>
+                      {chartData.map((entry) => (
+                        <Cell key={entry.label} fill={entry.color ?? '#67e8f9'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </div>
           </div>
 
           <div className="grid gap-3">
             {chartData.map((item) => (
               <div
                 key={item.label}
-                className="surface-subtle flex items-center justify-between rounded-2xl px-4 py-3"
+                className="data-list-card flex items-center justify-between rounded-2xl px-4 py-3"
               >
                 <div className="flex items-center gap-3">
-                  <span
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: item.color ?? '#a78bfa' }}
-                  />
+                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color ?? '#67e8f9' }} />
                   <span className="text-sm text-[color:var(--text-secondary)]">{item.label}</span>
                 </div>
                 <span className={valueFormat === 'currency' ? 'text-sm font-medium metric-accent' : 'text-sm font-medium text-white'}>
