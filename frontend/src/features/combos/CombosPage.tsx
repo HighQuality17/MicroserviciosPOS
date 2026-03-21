@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Boxes, PackagePlus, Shapes } from 'lucide-react';
+import { Boxes, CircleDot, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
@@ -9,7 +9,7 @@ import { CheckboxField } from '@/components/CheckboxField';
 import { Input } from '@/components/Input';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
-import { SummaryCard } from '@/components/SummaryCard';
+import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import type { CatalogCombo, CatalogVariant } from '@/types/api';
@@ -78,7 +78,7 @@ export function CombosPage() {
     }
     const comboPrice = parseNumberInput(comboPriceInput);
     if (comboPrice === null || comboPrice < 0) {
-      setSubmitError('Ingresa un precio de venta válido.');
+      setSubmitError('Ingresa un precio de venta valido.');
       return;
     }
 
@@ -148,28 +148,145 @@ export function CombosPage() {
     }
   }
 
+  const activeCombosCount = combos.filter((combo) => combo.active).length;
+  const activeVariantsCount = variants.filter((variant) => variant.active).length;
+  const readyCombosCount = combos.filter((combo) => combo.active && combo.items.length > 0).length;
+  const comboStatusTone = catalogAccessDenied
+    ? 'danger'
+    : catalogError
+      ? 'warning'
+      : loadingCatalog
+        ? 'info'
+        : 'success';
+  const comboStatusLabel = catalogAccessDenied
+    ? 'Acceso restringido'
+    : catalogError
+      ? 'Revision requerida'
+      : loadingCatalog
+        ? 'Sincronizando'
+        : combos.length > 0
+          ? 'Modulo operativo'
+          : 'Sin combos';
+  const comboCoverageTone = loadingCatalog
+    ? 'info'
+    : readyCombosCount > 0
+      ? 'success'
+      : activeCombosCount > 0
+        ? 'warning'
+        : 'default';
+  const comboBadgeLabel = loadingCatalog
+    ? 'Sincronizando'
+    : activeCombosCount > 0
+      ? 'Operativos'
+      : combos.length > 0
+        ? 'Pendientes'
+        : 'Sin combos';
+  const comboVariantBadgeLabel = loadingCatalog
+    ? 'Sincronizando'
+    : variants.length > 0
+      ? 'Base para combos'
+      : 'Sin variantes';
+  const comboReadyBadgeLabel = loadingCatalog
+    ? 'Verificando'
+    : activeCombosCount === 0
+      ? 'Sin activos'
+      : readyCombosCount === activeCombosCount
+        ? 'POS listo'
+        : readyCombosCount > 0
+          ? 'Cobertura parcial'
+          : 'Pendiente';
+
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <SummaryCard
-          title="Combos activos"
-          value={String(combos.length)}
-          hint="Leídos desde backend"
-          icon={<Boxes size={18} />}
-        />
-        <SummaryCard
-          title="Variantes disponibles"
-          value={String(variants.length)}
-          hint="Usadas para armar combos"
-          icon={<Shapes size={18} />}
-        />
-        <SummaryCard
-          title="Cobertura"
-          value={combos.length > 0 ? 'Activa' : 'Pendiente'}
-          hint="Pantalla lista para futura edición y baja"
-          icon={<PackagePlus size={18} />}
-        />
-      </div>
+      <section className="pos-status-bar" aria-label="Estado operativo de combos">
+        <div className="pos-status-shell">
+          <div className="pos-status-intro">
+            <div className="pos-status-beacon" aria-hidden="true">
+              <CircleDot size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="section-kicker">Operacion comercial</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                  Control de combos
+                </h1>
+                <StatusBadge label={comboStatusLabel} tone={comboStatusTone} />
+              </div>
+              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
+                Resume altas comerciales, variantes disponibles y cobertura real sin
+                quitar protagonismo a la composicion del combo.
+              </p>
+            </div>
+          </div>
+
+          <div className="pos-status-grid">
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={activeCombosCount > 0 ? 'success' : 'default'}>
+                <Boxes size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Combos activos</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{String(activeCombosCount)}</p>
+                  <StatusBadge
+                    label={comboBadgeLabel}
+                    tone={combos.length > 0 ? 'success' : 'default'}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {loadingCatalog
+                    ? 'Leyendo combos comerciales desde backend'
+                    : `${combos.length} creados en total para operar y administrar`}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={variants.length > 0 ? 'info' : 'default'}>
+                <Shapes size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Variantes disponibles</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{String(variants.length)}</p>
+                  <StatusBadge
+                    label={comboVariantBadgeLabel}
+                    tone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {loadingCatalog
+                    ? 'Preparando variantes para composicion comercial'
+                    : `${activeVariantsCount} activas para composicion comercial`}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={comboCoverageTone}>
+                <PackagePlus size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Listos para vender</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{String(readyCombosCount)}</p>
+                  <StatusBadge
+                    label={comboReadyBadgeLabel}
+                    tone={comboCoverageTone}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {loadingCatalog
+                    ? 'Verificando composicion comercial de cada combo'
+                    : activeCombosCount > 0
+                      ? `${readyCombosCount}/${activeCombosCount} combos activos con items configurados`
+                      : 'Activa combos para medir cobertura comercial'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 
@@ -224,16 +341,16 @@ export function CombosPage() {
                   {creatingCombo ? 'Guardando...' : 'Crear combo'}
                 </Button>
                 <Button variant="secondary" disabled>
-                  Editar próximamente
+                  Editar proximamente
                 </Button>
               </div>
             </div>
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Agregar ítems al combo</p>
+            <p className="text-sm text-slate-400">Agregar items al combo</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Composición comercial
+              Composicion comercial
             </h2>
 
             <div className="mt-5 grid gap-4">
@@ -269,7 +386,6 @@ export function CombosPage() {
                 ))}
               </Select>
 
-
               <Input
                 type="number"
                 min={1}
@@ -289,10 +405,10 @@ export function CombosPage() {
                   disabled={addingItems || combos.length === 0 || variants.length === 0}
                   onClick={handleAddComboItems}
                 >
-                  {addingItems ? 'Guardando...' : 'Agregar ítem'}
+                  {addingItems ? 'Guardando...' : 'Agregar item'}
                 </Button>
                 <Button variant="secondary" disabled>
-                  Reordenar próximamente
+                  Reordenar proximamente
                 </Button>
               </div>
             </div>
@@ -371,7 +487,7 @@ export function CombosPage() {
                   <div className="mt-5 grid gap-3">
                     {combo.items.length === 0 ? (
                       <div className="toolbar-shell rounded-2xl border-dashed px-4 py-3 text-sm text-[color:var(--text-faint)]">
-                        El combo aún no tiene variantes asociadas.
+                        El combo aun no tiene variantes asociadas.
                       </div>
                     ) : (
                       combo.items.map((item) => (
@@ -403,6 +519,4 @@ export function CombosPage() {
     </div>
   );
 }
-
-
 

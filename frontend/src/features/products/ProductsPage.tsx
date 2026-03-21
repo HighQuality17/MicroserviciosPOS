@@ -542,6 +542,25 @@ export function ProductsPage() {
     : configuredRecipesCount === variants.length
       ? 'success'
       : 'info';
+  const productBadgeLabel = loadingCatalog
+    ? 'Sincronizando'
+    : products.length > 0
+      ? 'Catalogo activo'
+      : 'Sin catalogo';
+  const variantBadgeLabel = loadingCatalog
+    ? 'Sincronizando'
+    : variants.length > 0
+      ? 'Listas para venta'
+      : 'Sin variantes';
+  const recipeBadgeLabel = loadingCatalog
+    ? 'Verificando'
+    : variants.length === 0
+      ? 'Sin variantes'
+      : configuredRecipesCount === variants.length
+        ? 'Cobertura completa'
+        : configuredRecipesCount > 0
+          ? 'Cobertura parcial'
+          : 'Sin cobertura';
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
       <section className="pos-status-bar" aria-label="Estado operativo de productos">
@@ -575,7 +594,7 @@ export function ProductsPage() {
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <p className="pos-status-chip__value">{String(products.length)}</p>
                   <StatusBadge
-                    label={loadingCatalog ? 'Cargando' : `${activeProductsCount} activos`}
+                    label={productBadgeLabel}
                     tone={loadingCatalog ? 'info' : products.length > 0 ? 'success' : 'default'}
                   />
                 </div>
@@ -584,7 +603,7 @@ export function ProductsPage() {
                     ? 'Sin permisos para consultar el catalogo'
                     : loadingCatalog
                       ? 'Sincronizando productos desde backend'
-                      : 'Base principal del catalogo comercial'}
+                      : `${activeProductsCount} activos en el catalogo comercial`}
                 </p>
               </div>
             </div>
@@ -598,7 +617,7 @@ export function ProductsPage() {
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <p className="pos-status-chip__value">{String(variants.length)}</p>
                   <StatusBadge
-                    label={loadingCatalog ? 'Cargando' : `${activeVariantsCount} activas`}
+                    label={variantBadgeLabel}
                     tone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
                   />
                 </div>
@@ -607,7 +626,7 @@ export function ProductsPage() {
                     ? 'Sin visibilidad de variantes operativas'
                     : loadingCatalog
                       ? 'Preparando datos para POS y combos'
-                      : 'Listas para venta, combos y recetas'}
+                      : `${activeVariantsCount} activas para POS, combos y recetas`}
                 </p>
               </div>
             </div>
@@ -621,7 +640,7 @@ export function ProductsPage() {
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <p className="pos-status-chip__value">{String(configuredRecipesCount)}</p>
                   <StatusBadge
-                    label={variants.length > 0 ? `${configuredRecipesCount}/${variants.length}` : 'Sin variantes'}
+                    label={recipeBadgeLabel}
                     tone={recipeCoverageTone}
                   />
                 </div>
@@ -630,7 +649,9 @@ export function ProductsPage() {
                     ? 'El estado de recetas requiere permisos administrativos'
                     : loadingCatalog
                       ? 'Verificando cobertura operativa de recetas'
-                      : 'Control clave antes de vender variantes'}
+                      : variants.length > 0
+                        ? `Cobertura actual: ${configuredRecipesCount}/${variants.length} variantes con receta`
+                        : 'Agrega variantes para medir cobertura'}
                 </p>
               </div>
             </div>
@@ -1252,4 +1273,5 @@ function translateCatalogError(message: string) {
 
   return message;
 }
+
 
