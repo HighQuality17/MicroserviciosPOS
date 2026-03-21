@@ -1,6 +1,38 @@
 # Changelog
 
-All notable changes to this project are documented in this file.
+Registro de cambios relevantes del proyecto. Las entradas historicas previas se conservan y los cierres recientes por sprint se documentan adicionalmente en `docs/sprints/`.
+
+## [Sprint 8] - 2026-03-21
+
+### Changed
+- Se reemplazaron los bloques superiores de KPI por barras compactas premium en POS, Caja, Productos, Ingredientes, Combos, Ventas y Admin.
+- Se unifico el lenguaje visual operativo del frontend con superficies oscuras premium, chips de estado, badges cualitativos y jerarquia tipografica mas consistente.
+- La vista Ventas mejoro la lectura de comprobantes recientes y del detalle de ticket usando solo datos ya disponibles en frontend.
+- La vista Admin evoluciono hacia un dashboard ejecutivo con barra superior, bloques de panorama y radar, analitica mejor integrada y mejor balance visual entre paneles.
+- El layout del POS quedo mas estable frente al crecimiento del carrito, sin deformar la lectura superior.
+
+### Fixed
+- Se eliminaron badges redundantes en Productos y Combos cuando repetian el mismo dato cuantitativo mostrado como metrica principal.
+- Ingredientes sustituyo indicadores poco utiles por senales mas operativas, incluyendo lectura de creados y reposicion de stock.
+- El dashboard Admin recibio una pasada fina de alineacion, alturas, espaciado y reticula para mejorar consistencia visual.
+
+### Docs
+- Se agrego documentacion de cierre para Sprint 7 y Sprint 8 en `docs/sprints/`.
+
+## [Sprint 7] - 2026-03-19
+
+### Added
+- Se incorporaron y consolidaron controles de formulario mas accesibles y consistentes, incluyendo mejoras en Button, Input, Modal, CheckboxField, Select y Textarea.
+- Se establecio una base visual compartida para paneles, badges, estados, tarjetas y superficies del sistema.
+
+### Changed
+- Se reforzo el comportamiento responsive del layout principal, header, sidebar, scroll containers y vistas operativas.
+- La pantalla de login recibio un rediseno visual y estructural para mejorar la primera impresion del acceso al sistema.
+- Ventas y otros modulos operativos mejoraron legibilidad, flujo y consistencia de interfaz.
+- El sistema visual premium se fue refinando en fases sucesivas para preparar el terreno del Sprint 8.
+
+### Fixed
+- Se corrigieron inconsistencias de foco visible, espaciado, scroll, mensajes de feedback y legibilidad en varias vistas administrativas y operativas.
 
 ## [0.6.0] - 2026-03-11
 
