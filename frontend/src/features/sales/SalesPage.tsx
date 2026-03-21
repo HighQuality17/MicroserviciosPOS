@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Filter, History, ReceiptText, Search } from 'lucide-react';
+import { CircleDot, Filter, History, ReceiptText, Search } from 'lucide-react';
 import { AccessState } from '@/components/AccessState';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -10,7 +10,7 @@ import { LoadingState } from '@/components/LoadingState';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
-import { SummaryCard } from '@/components/SummaryCard';
+import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import type {
@@ -26,6 +26,7 @@ import { formatCurrency, formatDate } from '@/utils/format';
 
 type SaleStatusFilter = '' | 'PENDING' | 'PAID' | 'VOID';
 type PaymentMethodFilter = '' | PaymentMethod;
+type StatusBadgeTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
 
 interface HistoryFilters {
   status: SaleStatusFilter;
@@ -167,6 +168,77 @@ export function SalesPage() {
     };
   }, [historyLoading, historyTotal, latestSale, recentReceipts, recentSales.length]);
 
+
+  const latestReference = latestSale ?? recentReceipts[0] ?? null;
+  const activeFilterCount = useMemo(
+    () => Object.values(appliedFilters).filter((value) => value !== '').length,
+    [appliedFilters],
+  );
+  const salesStatusTone: StatusBadgeTone = latestAccessDenied || recentAccessDenied || historyAccessDenied
+    ? 'warning'
+    : latestLoading || recentLoading || historyLoading
+      ? 'info'
+      : historyTotal > 0 || recentSales.length > 0 || latestReference
+        ? 'success'
+        : 'default';
+  const salesStatusLabel = latestAccessDenied || recentAccessDenied || historyAccessDenied
+    ? 'Acceso parcial'
+    : latestLoading || recentLoading || historyLoading
+      ? 'Sincronizando'
+      : historyTotal > 0 || recentSales.length > 0 || latestReference
+        ? 'Operacion activa'
+        : 'Sin ventas';
+  const recentStatusLabel = recentLoading
+    ? 'Actualizando'
+    : recentSales.length > 0
+      ? 'Actividad reciente'
+      : 'Sin comprobantes';
+  const latestStatusLabel = latestLoading
+    ? 'Consultando'
+    : latestReference
+      ? 'Ticket mas reciente'
+      : 'Sin referencia';
+  const filteredStatusLabel = historyLoading
+    ? 'Consultando'
+    : activeFilterCount > 0
+      ? 'Filtros aplicados'
+      : historyTotal > 0
+        ? 'Historial listo'
+        : 'Sin resultados';
+  const recentStatusTone: StatusBadgeTone = recentLoading
+    ? 'info'
+    : recentSales.length > 0
+      ? 'success'
+      : 'default';
+  const latestStatusTone: StatusBadgeTone = latestLoading
+    ? 'info'
+    : latestReference
+      ? 'info'
+      : 'default';
+  const filteredStatusTone: StatusBadgeTone = historyLoading
+    ? 'info'
+    : historyTotal > 0
+      ? activeFilterCount > 0
+        ? 'warning'
+        : 'success'
+      : 'default';
+
+  const detailMetrics = useMemo(() => {
+    if (!visibleReceipt) {
+      return {
+        status: null as string | null,
+        lines: 0,
+        units: 0,
+      };
+    }
+
+    return {
+      status: getReceiptStatus(visibleReceipt),
+      lines: visibleReceipt.items.length,
+      units: visibleReceipt.items.reduce((total, item) => total + item.qty, 0),
+    };
+  }, [visibleReceipt]);
+
   async function loadRecentSales() {
     try {
       setRecentLoading(true);
@@ -202,8 +274,8 @@ export function SalesPage() {
       setLatestAccessDenied(isAccessDeniedError(error));
       setLatestError(
         error instanceof Error
-          ? translateProtectedError(error, 'No fue posible cargar la última venta disponible')
-          : 'No fue posible cargar la última venta disponible',
+          ? translateProtectedError(error, 'No fue posible cargar la ultima venta disponible')
+          : 'No fue posible cargar la ultima venta disponible',
       );
     } finally {
       setLatestLoading(false);
@@ -246,7 +318,7 @@ export function SalesPage() {
     options?: { receipt?: SelectableReceipt | null },
   ) {
     if (saleId <= 0) {
-      setReceiptError('Ingresa un ID de venta válido.');
+      setReceiptError('Ingresa un ID de venta valido.');
       return;
     }
 
@@ -305,36 +377,99 @@ export function SalesPage() {
     <div className="grid min-w-0 gap-4 sm:gap-5">
       {!canOperateSales ? (
         <RoleModeBanner
-          title={isAuditor ? 'Modo auditoría' : 'Modo de consulta operativa'}
+          title={isAuditor ? 'Modo auditoria' : 'Modo de consulta operativa'}
           description={
             isAuditor
-              ? 'Esta vista es completamente de solo lectura. Puedes consultar ventas, revisar filtros históricos y abrir comprobantes sin ejecutar acciones operativas.'
-              : 'Como cajero, aquí solo puedes consultar comprobantes y revisar ventas recientes e históricas permitidas. Las acciones operativas avanzadas se mantienen ocultas.'
+              ? 'Esta vista es completamente de solo lectura. Puedes consultar ventas, revisar filtros historicos y abrir comprobantes sin ejecutar acciones operativas.'
+              : 'Como cajero, aqui solo puedes consultar comprobantes y revisar ventas recientes e historicas permitidas. Las acciones operativas avanzadas se mantienen ocultas.'
           }
           tone={isAuditor ? 'warning' : 'info'}
         />
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <SummaryCard
-          title="Comprobantes recientes"
-          value={recentLoading ? '...' : String(stats.totalReceipts)}
-          hint="Últimos 5 comprobantes persistidos en base local"
-          icon={<ReceiptText size={18} />}
-        />
-        <SummaryCard
-          title="Último total"
-          value={latestLoading ? '...' : stats.latestTotal}
-          hint="Última venta disponible en el backend"
-          icon={<Search size={18} />}
-        />
-        <SummaryCard
-          title="Ventas filtradas"
-          value={stats.filteredSales}
-          hint="Resultado actual del historial"
-          icon={<History size={18} />}
-        />
-      </div>
+      <section className="pos-status-bar" aria-label="Estado operativo de ventas">
+        <div className="pos-status-shell">
+          <div className="pos-status-intro">
+            <div className="pos-status-beacon" aria-hidden="true">
+              <CircleDot size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="section-kicker">Operacion comercial</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-3xl font-bold text-white sm:text-[2rem]">
+                  Control de ventas
+                </h1>
+                <StatusBadge label={salesStatusLabel} tone={salesStatusTone} />
+              </div>
+              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
+                Resume el pulso del modulo, deja mas espacio util al historial y mejora la lectura del comprobante sin tocar la operacion.
+              </p>
+            </div>
+          </div>
+
+          <div className="pos-status-grid">
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={recentSales.length > 0 ? 'success' : 'default'}>
+                <ReceiptText size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Comprobantes recientes</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{recentLoading ? '...' : String(stats.totalReceipts)}</p>
+                  <StatusBadge label={recentStatusLabel} tone={recentStatusTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {recentLoading
+                    ? 'Actualizando los ultimos comprobantes persistidos'
+                    : recentSales.length > 0
+                      ? 'Ultimos 5 tickets listos para consulta operativa'
+                      : 'Las ventas pagadas apareceran aqui en cuanto existan registros'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={latestReference ? 'info' : 'default'}>
+                <Search size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Ultimo total</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{latestLoading ? '...' : stats.latestTotal}</p>
+                  <StatusBadge label={latestStatusLabel} tone={latestStatusTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {latestLoading
+                    ? 'Consultando la ultima venta disponible'
+                    : latestReference
+                      ? `Venta #${latestReference.sale_id} - ${formatPaymentMethod(latestReference.payment_method)}`
+                      : 'Todavia no hay un comprobante de referencia para mostrar'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={historyTotal > 0 ? 'warning' : 'default'}>
+                <History size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Ventas filtradas</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{stats.filteredSales}</p>
+                  <StatusBadge label={filteredStatusLabel} tone={filteredStatusTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {historyLoading
+                    ? 'Cargando resultados del historial real'
+                    : activeFilterCount > 0
+                      ? `${activeFilterCount} filtros activos - pagina ${historyPage} de ${Math.max(historyTotalPages, 1)}`
+                      : `Pagina ${historyPage} de ${Math.max(historyTotalPages, 1)} con lectura operativa completa`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {detailAnnouncement}
@@ -375,8 +510,16 @@ export function SalesPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Últimos 5 registros</p>
-            <h2 className="font-display text-2xl font-bold text-white">Comprobantes recientes</h2>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm text-slate-400">Ultimos 5 registros</p>
+                <h2 className="font-display text-2xl font-bold text-white">Comprobantes recientes</h2>
+              </div>
+              <StatusBadge
+                label={recentLoading ? 'Actualizando' : recentSales.length > 0 ? 'Listos' : 'Sin ventas'}
+                tone={recentLoading ? 'info' : recentSales.length > 0 ? 'success' : 'default'}
+              />
+            </div>
 
             {recentError ? (
               <div className="mt-6">
@@ -384,18 +527,18 @@ export function SalesPage() {
               </div>
             ) : recentLoading ? (
               <div className="mt-6 grid gap-3">
-                <SkeletonCard height="h-28" />
-                <SkeletonCard height="h-28" />
+                <SkeletonCard height="h-36" />
+                <SkeletonCard height="h-36" />
               </div>
             ) : recentSales.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
                   title="Sin comprobantes recientes"
-                  description="Cuando existan ventas pagadas, verás aquí los últimos comprobantes disponibles."
+                  description="Cuando existan ventas pagadas, veras aqui los ultimos comprobantes disponibles."
                 />
               </div>
             ) : (
-              <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[24rem]" tabIndex={0} aria-label="Comprobantes recientes">
+              <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[28rem]" tabIndex={0} aria-label="Comprobantes recientes">
                 {recentSales.map((sale) => {
                   const isSelected = selectedSaleId === sale.sale_id;
 
@@ -413,21 +556,39 @@ export function SalesPage() {
                           : 'hover:-translate-y-0.5',
                       ].join(' ')}
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="text-sm text-slate-400">Venta #{sale.sale_id}</p>
-                          <p className="mt-2 truncate font-medium text-white">{sale.location.name}</p>
-                          <p className="mt-1 text-sm text-[color:var(--text-faint)]">{formatDate(sale.created_at)}</p>
-                          <p className="mt-2 text-xs text-[color:var(--text-faint)]">
-                            {sale.cashier.name} / {formatStatus(sale.status)}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm text-slate-400">Venta #{sale.sale_id}</p>
+                            <StatusBadge label={formatStatus(sale.status)} tone={getSaleStatusTone(sale.status)} />
+                          </div>
+                          <p className="mt-2 text-sm text-[color:var(--text-faint)]">{formatDate(sale.created_at)}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold metric-accent">{formatCurrency(sale.total)}</p>
-                          <p className="mt-1 text-sm text-slate-400">
-                            {formatPaymentMethod(sale.payment_method)}
-                          </p>
+                          <p className="font-display text-2xl font-bold metric-accent-strong">{formatCurrency(sale.total)}</p>
+                          <p className="mt-1 text-xs text-[color:var(--text-faint)]">Cobro principal</p>
                         </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        <div className="surface-subtle rounded-2xl px-3 py-2">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Ubicacion / POS</p>
+                          <p className="mt-1 truncate text-sm font-medium text-white">{sale.location.name}</p>
+                        </div>
+                        <div className="surface-subtle rounded-2xl px-3 py-2">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Cajero</p>
+                          <p className="mt-1 truncate text-sm font-medium text-white">{sale.cashier.name}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <StatusBadge label={formatPaymentMethod(sale.payment_method)} tone={getPaymentMethodTone(sale.payment_method)} />
+                        {sale.amount_received !== null ? (
+                          <span className="text-xs text-[color:var(--text-faint)]">Recibido {formatCurrency(sale.amount_received)}</span>
+                        ) : null}
+                        {sale.change_given !== null && sale.change_given > 0 ? (
+                          <span className="text-xs text-[color:var(--text-faint)]">Cambio {formatCurrency(sale.change_given)}</span>
+                        ) : null}
                       </div>
                     </button>
                   );
@@ -437,8 +598,16 @@ export function SalesPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Última venta disponible</p>
-            <h2 className="font-display text-2xl font-bold text-white">Último comprobante persistido</h2>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm text-slate-400">Ultima venta disponible</p>
+                <h2 className="font-display text-2xl font-bold text-white">Ultimo comprobante persistido</h2>
+              </div>
+              <StatusBadge
+                label={latestLoading ? 'Consultando' : latestSale ? 'Disponible' : 'Sin ventas'}
+                tone={latestLoading ? 'info' : latestSale ? 'success' : 'default'}
+              />
+            </div>
 
             {latestError ? (
               <div className="mt-6">
@@ -446,39 +615,46 @@ export function SalesPage() {
               </div>
             ) : latestLoading ? (
               <div className="mt-6">
-                <SkeletonCard height="h-52" />
+                <SkeletonCard height="h-64" />
               </div>
             ) : !latestSale ? (
               <div className="mt-6">
                 <EmptyState
                   title="Sin ventas registradas"
-                  description="La última venta disponible aparecerá aquí cuando exista al menos un comprobante persistido."
+                  description="La ultima venta disponible aparecera aqui cuando exista al menos un comprobante persistido."
                 />
               </div>
             ) : (
               <div className="mt-6 surface-subtle-strong rounded-3xl p-5">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-sm text-slate-400">Venta #{latestSale.sale_id}</p>
-                    <p className="mt-2 truncate font-display text-2xl font-bold text-white">
-                      {latestSale.location.name}
-                    </p>
-                    <p className="mt-2 text-sm text-[color:var(--text-faint)]">
-                      {formatDate(latestSale.created_at)} · {latestSale.cashier.name}
-                    </p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
-                      {formatStatus(latestSale.status)}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm text-slate-400">Venta #{latestSale.sale_id}</p>
+                      <StatusBadge label={formatStatus(latestSale.status)} tone={getSaleStatusTone(latestSale.status)} />
+                      <StatusBadge label={formatPaymentMethod(latestSale.payment_method)} tone={getPaymentMethodTone(latestSale.payment_method)} />
+                    </div>
+                    <p className="mt-3 truncate font-display text-2xl font-bold text-white">{latestSale.location.name}</p>
+                    <p className="mt-2 text-sm text-[color:var(--text-faint)]">{formatDate(latestSale.created_at)}</p>
+                    <p className="mt-1 text-sm text-[color:var(--text-faint)]">Cajero: {latestSale.cashier.name}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-display text-3xl font-bold metric-accent-strong">
-                      {formatCurrency(latestSale.total)}
-                    </p>
-                    <p className="text-sm text-slate-400">
-                      {formatPaymentMethod(latestSale.payment_method)}
-                    </p>
+                    <p className="text-sm text-slate-400">Total registrado</p>
+                    <p className="mt-2 font-display text-3xl font-bold metric-accent-strong">{formatCurrency(latestSale.total)}</p>
+                    <p className="mt-1 text-xs text-[color:var(--text-faint)]">{latestSale.items.length} lineas - {latestSale.items.reduce((total, item) => total + item.qty, 0)} items</p>
                   </div>
                 </div>
+
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="surface-subtle rounded-2xl px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Cobro recibido</p>
+                    <p className="mt-1 text-sm font-medium text-white">{latestSale.amount_received !== null ? formatCurrency(latestSale.amount_received) : 'No informado'}</p>
+                  </div>
+                  <div className="surface-subtle rounded-2xl px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Cambio entregado</p>
+                    <p className="mt-1 text-sm font-medium text-white">{latestSale.change_given !== null ? formatCurrency(latestSale.change_given) : 'No aplica'}</p>
+                  </div>
+                </div>
+
                 <div className="mt-5 flex gap-3">
                   <Button variant="secondary" aria-label={`Ver detalle de la venta #${latestSale.sale_id}`} onClick={() => void handleSelectReceipt(latestSale.sale_id, { receipt: latestSale })}>
                     Ver detalle
@@ -497,131 +673,163 @@ export function SalesPage() {
                 Comprobante de consulta
               </h2>
 
-            {isDetailPending ? (
-              <div className="mt-6">
-                <LoadingState
-                  title="Cargando detalle"
-                  description="Estamos preparando el comprobante seleccionado."
-                  rows={3}
-                />
-              </div>
-            ) : !visibleReceipt ? (
-              <div className="mt-6">
-                <EmptyState
-                  title="Sin comprobante seleccionado"
-                  description="Selecciona una venta del historial, carga la última disponible o consulta un ID para ver su detalle."
-                />
-              </div>
-            ) : (
-              <div className="mt-6 grid gap-5">
-                <div className="surface-subtle-strong rounded-[2rem] p-6">
-                  <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.25em] text-[color:var(--text-faint)]">Comprobante</p>
-                      <h3 className="mt-3 font-display text-4xl font-bold text-white">
-                        Venta #{visibleReceipt.sale_id}
-                      </h3>
-                      <p className="mt-3 text-sm text-slate-400">{formatDate(visibleReceipt.created_at)}</p>
-                    </div>
-                    <div className="surface-subtle rounded-3xl px-5 py-4 text-right">
-                      <p className="text-sm text-slate-400">Total</p>
-                      <p className="mt-2 font-display text-3xl font-bold metric-accent-strong">
-                        {formatCurrency(visibleReceipt.total)}
-                      </p>
-                      <p className="mt-1 text-xs text-[color:var(--text-faint)]">
-                        {formatPaymentMethod(visibleReceipt.payment_method)}
-                      </p>
-                    </div>
-                  </div>
+              {isDetailPending ? (
+                <div className="mt-6">
+                  <LoadingState
+                    title="Cargando detalle"
+                    description="Estamos preparando el comprobante seleccionado."
+                    rows={3}
+                  />
                 </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="surface-subtle rounded-3xl p-5">
-                    <p className="text-sm text-[color:var(--text-faint)]">Ubicación</p>
-                    <p className="mt-2 font-medium text-white">{visibleReceipt.location.name}</p>
-                  </div>
-                  <div className="surface-subtle rounded-3xl p-5">
-                    <p className="text-sm text-[color:var(--text-faint)]">Cajero</p>
-                    <p className="mt-2 font-medium text-white">{visibleReceipt.cashier.name}</p>
-                  </div>
+              ) : !visibleReceipt ? (
+                <div className="mt-6">
+                  <EmptyState
+                    title="Sin comprobante seleccionado"
+                    description="Selecciona una venta del historial, carga la ultima disponible o consulta un ID para ver su detalle."
+                  />
                 </div>
-
-                <div className="surface-subtle rounded-3xl p-5">
-                  <p className="text-sm text-slate-400">Ítems</p>
-                  <ScrollPanel className="mt-4 grid gap-3" maxHeightClassName="max-h-[18rem]" tabIndex={0} aria-label="Items del comprobante seleccionado">
-                    {visibleReceipt.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="data-list-card flex items-center justify-between rounded-2xl px-4 py-3"
-                      >
-                        <div>
-                          <p className="font-medium text-white">{item.description}</p>
-                          <p className="mt-1 text-xs text-[color:var(--text-faint)]">
-                            {item.item_type} · x{item.qty} · {formatCurrency(item.unit_price)}
-                          </p>
+              ) : (
+                <div className="mt-6 grid gap-5">
+                  <div className="surface-subtle-strong rounded-[2rem] p-6">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-xs uppercase tracking-[0.25em] text-[color:var(--text-faint)]">Comprobante</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <h3 className="font-display text-4xl font-bold text-white">Venta #{visibleReceipt.sale_id}</h3>
+                          {detailMetrics.status ? (
+                            <StatusBadge label={formatStatus(detailMetrics.status)} tone={getSaleStatusTone(detailMetrics.status)} />
+                          ) : null}
+                          <StatusBadge label={formatPaymentMethod(visibleReceipt.payment_method)} tone={getPaymentMethodTone(visibleReceipt.payment_method)} />
                         </div>
-                        <p className="font-semibold metric-accent">{formatCurrency(item.line_total)}</p>
+                        <p className="mt-3 text-sm text-slate-400">{formatDate(visibleReceipt.created_at)}</p>
+                        <p className="mt-1 text-sm text-[color:var(--text-faint)]">Ticket listo para auditoria, caja y validacion comercial.</p>
                       </div>
-                    ))}
-                  </ScrollPanel>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="surface-subtle rounded-3xl p-5">
-                    <p className="text-sm text-[color:var(--text-faint)]">Resumen</p>
-                    <div className="mt-4 grid gap-3 text-sm">
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Subtotal</span>
-                        <span className="metric-accent">{formatCurrency(visibleReceipt.subtotal)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Tipo de descuento</span>
-                        <span>{visibleReceipt.discount_type}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Valor del descuento</span>
-                        <span>{visibleReceipt.discount_value}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Monto descontado</span>
-                        <span className="metric-accent">{formatCurrency(visibleReceipt.discount_amount)}</span>
-                      </div>
-                      <div className="flex items-center justify-between border-t border-[color:var(--line)] pt-3 font-semibold text-white">
-                        <span>Total</span>
-                        <span className="metric-accent-strong">{formatCurrency(visibleReceipt.total)}</span>
+                      <div className="surface-subtle rounded-3xl px-5 py-4 text-right">
+                        <p className="text-sm text-slate-400">Total</p>
+                        <p className="mt-2 font-display text-3xl font-bold metric-accent-strong">{formatCurrency(visibleReceipt.total)}</p>
+                        <p className="mt-1 text-xs text-[color:var(--text-faint)]">{detailMetrics.lines} lineas - {detailMetrics.units} items</p>
                       </div>
                     </div>
                   </div>
 
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="surface-subtle rounded-3xl p-5">
+                      <p className="text-sm text-[color:var(--text-faint)]">Fecha y hora</p>
+                      <p className="mt-2 font-medium text-white">{formatDate(visibleReceipt.created_at)}</p>
+                    </div>
+                    <div className="surface-subtle rounded-3xl p-5">
+                      <p className="text-sm text-[color:var(--text-faint)]">Ubicacion</p>
+                      <p className="mt-2 font-medium text-white">{visibleReceipt.location.name}</p>
+                    </div>
+                    <div className="surface-subtle rounded-3xl p-5">
+                      <p className="text-sm text-[color:var(--text-faint)]">Cajero</p>
+                      <p className="mt-2 font-medium text-white">{visibleReceipt.cashier.name}</p>
+                    </div>
+                    <div className="surface-subtle rounded-3xl p-5">
+                      <p className="text-sm text-[color:var(--text-faint)]">Estado comercial</p>
+                      {detailMetrics.status ? (
+                        <div className="mt-2">
+                          <StatusBadge label={formatStatus(detailMetrics.status)} tone={getSaleStatusTone(detailMetrics.status)} />
+                        </div>
+                      ) : (
+                        <p className="mt-2 font-medium text-white">No informado</p>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="surface-subtle rounded-3xl p-5">
-                    <p className="text-sm text-[color:var(--text-faint)]">Pago</p>
-                    <div className="mt-4 grid gap-3 text-sm">
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Método de pago</span>
-                        <span>{formatPaymentMethod(visibleReceipt.payment_method)}</span>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm text-slate-400">Items</p>
+                        <h3 className="mt-2 font-display text-2xl font-bold text-white">Detalle de compra</h3>
                       </div>
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Monto recibido</span>
-                        <span>
-                          {visibleReceipt.amount_received !== null
-                            ? formatCurrency(visibleReceipt.amount_received)
-                            : 'N/A'}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusBadge label={`${detailMetrics.lines} lineas`} tone="default" />
+                        <StatusBadge label={`${detailMetrics.units} items`} tone="info" />
                       </div>
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Cambio entregado</span>
-                        <span>
-                          {visibleReceipt.change_given !== null
-                            ? formatCurrency(visibleReceipt.change_given)
-                            : 'N/A'}
-                        </span>
+                    </div>
+
+                    <ScrollPanel className="mt-4 grid gap-3" maxHeightClassName="max-h-[18rem]" tabIndex={0} aria-label="Items del comprobante seleccionado">
+                      {visibleReceipt.items.map((item) => (
+                        <div key={item.id} className="data-list-card rounded-2xl px-4 py-3">
+                          <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="font-medium text-white">{item.description}</p>
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <StatusBadge label={formatSaleItemType(item.item_type)} tone="default" className="min-w-[88px] justify-center" />
+                                <span className="text-xs text-[color:var(--text-faint)]">x{item.qty} - {formatCurrency(item.unit_price)} c/u</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Total linea</p>
+                              <p className="mt-1 font-semibold metric-accent">{formatCurrency(item.line_total)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </ScrollPanel>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="surface-subtle rounded-3xl p-5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm text-[color:var(--text-faint)]">Resumen comercial</p>
+                        <StatusBadge label={formatDiscountType(visibleReceipt.discount_type)} tone={visibleReceipt.discount_amount > 0 ? 'warning' : 'default'} />
+                      </div>
+                      <div className="mt-4 grid gap-3 text-sm">
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span>Subtotal</span>
+                          <span className="metric-accent">{formatCurrency(visibleReceipt.subtotal)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span>Tipo de descuento</span>
+                          <span>{formatDiscountType(visibleReceipt.discount_type)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span>Valor de regla</span>
+                          <span>{formatDiscountValue(visibleReceipt.discount_type, visibleReceipt.discount_value)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span>Monto descontado</span>
+                          <span className="metric-accent">{formatCurrency(visibleReceipt.discount_amount)}</span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-[color:var(--line)] pt-3 font-semibold text-white">
+                          <span>Total</span>
+                          <span className="metric-accent-strong">{formatCurrency(visibleReceipt.total)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="surface-subtle rounded-3xl p-5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm text-[color:var(--text-faint)]">Pago</p>
+                        <StatusBadge label={formatPaymentMethod(visibleReceipt.payment_method)} tone={getPaymentMethodTone(visibleReceipt.payment_method)} />
+                      </div>
+                      <div className="mt-4 grid gap-3 text-sm">
+                        {detailMetrics.status ? (
+                          <div className="flex items-center justify-between text-slate-300">
+                            <span>Estado</span>
+                            <span>{formatStatus(detailMetrics.status)}</span>
+                          </div>
+                        ) : null}
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span>Monto recibido</span>
+                          <span>{visibleReceipt.amount_received !== null ? formatCurrency(visibleReceipt.amount_received) : 'No informado'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-300">
+                          <span>Cambio entregado</span>
+                          <span>{visibleReceipt.change_given !== null ? formatCurrency(visibleReceipt.change_given) : 'No aplica'}</span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-[color:var(--line)] pt-3 font-semibold text-white">
+                          <span>Total cobrado</span>
+                          <span className="metric-accent-strong">{formatCurrency(visibleReceipt.total)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </Card>
+              )}
+            </Card>
           </section>
 
           <Card aria-labelledby="sales-history-title">
@@ -632,11 +840,11 @@ export function SalesPage() {
                   Historial completo de ventas
                 </h2>
                 <p className="mt-2 text-sm text-[color:var(--text-faint)]">
-                  Consulta de solo lectura con filtros y paginación para auditoría y seguimiento operativo.
+                  Consulta de solo lectura con filtros y paginacion para auditoria y seguimiento operativo.
                 </p>
               </div>
               <div className="soft-pill rounded-full px-4 py-2 text-xs font-medium">
-                Página {historyPage} de {Math.max(historyTotalPages, 1)}
+                Pagina {historyPage} de {Math.max(historyTotalPages, 1)}
               </div>
             </div>
 
@@ -660,7 +868,7 @@ export function SalesPage() {
 
 
                 <Select
-                  label="Método de pago"
+                  label="Metodo de pago"
                   value={filters.payment_method}
                   onChange={(event) =>
                     setFilters((current) => ({
@@ -674,7 +882,7 @@ export function SalesPage() {
                   <option value="TRANSFER">Transferencia</option>
                 </Select>
                 <Select
-                  label="Ubicación"
+                  label="Ubicacion"
                   wrapperClassName="md:col-span-2 xl:col-span-1"
                   value={filters.location_id}
                   onChange={(event) =>
@@ -734,7 +942,7 @@ export function SalesPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin ventas para esos filtros"
-                  description="Prueba ajustando estado, fechas, método de pago o ubicación para ampliar la búsqueda."
+                  description="Prueba ajustando estado, fechas, metodo de pago o ubicacion para ampliar la busqueda."
                 />
               </div>
             ) : (
@@ -751,11 +959,11 @@ export function SalesPage() {
                         <caption className="sr-only">Historial completo de ventas</caption>
                         <colgroup>
                           <col style={{ width: '92px' }} />
-                          <col style={{ width: '150px' }} />
+                          <col style={{ width: '170px' }} />
                           <col style={{ width: '120px' }} />
-                          <col style={{ width: '110px' }} />
-                          <col style={{ width: '140px' }} />
-                          <col style={{ width: '140px' }} />
+                          <col style={{ width: '128px' }} />
+                          <col style={{ width: '144px' }} />
+                          <col style={{ width: '170px' }} />
                           <col />
                           <col style={{ width: '110px' }} />
                         </colgroup>
@@ -774,16 +982,16 @@ export function SalesPage() {
                               Estado
                             </th>
                             <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                              Método
+                              Metodo
                             </th>
                             <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                              Ubicación
+                              Ubicacion
                             </th>
                             <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Cajero
                             </th>
                             <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                              Acción
+                              Accion
                             </th>
                           </tr>
                         </thead>
@@ -816,13 +1024,19 @@ export function SalesPage() {
                                 <td className="px-4 py-4 align-middle whitespace-nowrap text-right">
                                   <span className="font-medium metric-accent">{formatCurrency(sale.total)}</span>
                                 </td>
-                                <td className="px-4 py-4 align-middle whitespace-nowrap">{formatStatus(sale.status)}</td>
-                                <td className="px-4 py-4 align-middle whitespace-nowrap">{formatPaymentMethod(sale.payment_method)}</td>
-                                <td className="px-4 py-4 align-middle">
-                                  <span className="block truncate">{sale.location_name}</span>
+                                <td className="px-4 py-4 align-middle whitespace-nowrap">
+                                  <StatusBadge label={formatStatus(sale.status)} tone={getSaleStatusTone(sale.status)} />
+                                </td>
+                                <td className="px-4 py-4 align-middle whitespace-nowrap">
+                                  <StatusBadge label={formatPaymentMethod(sale.payment_method)} tone={getPaymentMethodTone(sale.payment_method)} />
                                 </td>
                                 <td className="px-4 py-4 align-middle">
-                                  <span className="block truncate">{sale.cashier_name}</span>
+                                  <span className="block truncate text-white">{sale.location_name}</span>
+                                  <span className="mt-1 block truncate text-xs text-[color:var(--text-faint)]">POS #{sale.location_id}</span>
+                                </td>
+                                <td className="px-4 py-4 align-middle">
+                                  <span className="block truncate text-white">{sale.cashier_name}</span>
+                                  <span className="mt-1 block truncate text-xs text-[color:var(--text-faint)]">Usuario #{sale.cashier_id}</span>
                                 </td>
                                 <td className="px-4 py-4 align-middle whitespace-nowrap">
                                   <span className="table-action-chip text-white">
@@ -839,9 +1053,9 @@ export function SalesPage() {
                 </div>
                 <div className="toolbar-shell mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-muted)]">
                   <span>
-                    {historyTotal} ventas encontradas · página {historyPage} de {Math.max(historyTotalPages, 1)}
+                    {historyTotal} ventas encontradas - pagina {historyPage} de {Math.max(historyTotalPages, 1)}
                   </span>
-                  <nav className="flex gap-3" aria-label="Paginación del historial de ventas">
+                  <nav className="flex gap-3" aria-label="Paginacion del historial de ventas">
                     <Button
                       variant="secondary"
                       disabled={historyPage <= 1 || historyLoading}
@@ -875,7 +1089,7 @@ function getRecentSaleButtonLabel(sale: SaleRecentItem, isSelected: boolean) {
     'Total ' + formatCurrency(sale.total) + '.',
     'Estado ' + formatStatus(sale.status) + '.',
     'Pago ' + formatPaymentMethod(sale.payment_method) + '.',
-    'Ubicación ' + sale.location.name + '.',
+    'Ubicacion ' + sale.location.name + '.',
     'Cajero ' + sale.cashier.name + '.',
     'Abrir detalle.',
   ]
@@ -891,12 +1105,48 @@ function getHistorySaleButtonLabel(sale: SalesHistoryItem, isSelected: boolean) 
     'Total ' + formatCurrency(sale.total) + '.',
     'Estado ' + formatStatus(sale.status) + '.',
     'Pago ' + formatPaymentMethod(sale.payment_method) + '.',
-    'Ubicación ' + sale.location_name + '.',
+    'Ubicacion ' + sale.location_name + '.',
     'Cajero ' + sale.cashier_name + '.',
     'Abrir detalle.',
   ]
     .filter(Boolean)
     .join(' ');
+}
+
+function getReceiptStatus(receipt: SelectableReceipt | null) {
+  if (!receipt || !('status' in receipt)) return null;
+  return receipt.status;
+}
+
+function getSaleStatusTone(status: string): StatusBadgeTone {
+  if (status === 'PAID') return 'success';
+  if (status === 'PENDING') return 'warning';
+  if (status === 'VOID') return 'danger';
+  return 'default';
+}
+
+function getPaymentMethodTone(method: PaymentMethod | null): StatusBadgeTone {
+  if (method === 'CASH') return 'success';
+  if (method === 'TRANSFER') return 'info';
+  return 'default';
+}
+
+function formatSaleItemType(type: string) {
+  if (type === 'PRODUCT') return 'Producto';
+  if (type === 'COMBO') return 'Combo';
+  return type;
+}
+
+function formatDiscountType(type: string) {
+  if (type === 'PERCENT') return 'Descuento porcentual';
+  if (type === 'FIXED') return 'Descuento fijo';
+  return 'Sin descuento';
+}
+
+function formatDiscountValue(type: string, value: number) {
+  if (type === 'PERCENT') return `${value}%`;
+  if (type === 'FIXED') return formatCurrency(value);
+  return value > 0 ? formatCurrency(value) : 'No aplica';
 }
 
 function formatPaymentMethod(method: string | null) {
