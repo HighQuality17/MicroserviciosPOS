@@ -4,10 +4,12 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { CartItem } from '@/components/CartItem';
 import { EmptyState } from '@/components/EmptyState';
+import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { Select } from '@/components/Select';
 import { PaymentModal } from '@/components/PaymentModal';
+import { SectionHeader } from '@/components/SectionHeader';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -226,31 +228,32 @@ export function PosPage() {
         </div>
 
         <Card>
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-sm text-slate-400">Catálogo de venta</p>
-              <h2 className="font-display text-2xl font-bold text-white">POS principal</h2>
-            </div>
-            <div className="w-full md:max-w-md">
-              <Input
-                label="Buscar en catalogo"
-                labelClassName="sr-only"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar por nombre, talla o SKU"
-                hint="Filtra por nombre, tamano o SKU sin salir del teclado."
-              />
-            </div>
-          </div>
+          <SectionHeader
+            eyebrow="Catálogo de venta"
+            title="POS principal"
+            description="Explora variantes y combos activos para la caja seleccionada con una experiencia más limpia y veloz."
+            actions={
+              <div className="w-full md:max-w-md">
+                <Input
+                  label="Buscar en catálogo"
+                  labelClassName="sr-only"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Buscar por nombre, talla o SKU"
+                  hint="Filtra por nombre, tamaño o SKU sin salir del teclado."
+                />
+              </div>
+            }
+          />
 
           {!currentLocation ? (
-            <div className="mt-5 rounded-3xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            <FeedbackMessage tone="warning" className="mt-5">
               Crea o selecciona un POS válido en el encabezado para cargar la operación.
-            </div>
+            </FeedbackMessage>
           ) : !currentCashSession ? (
-            <div className="mt-5 rounded-3xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            <FeedbackMessage tone="warning" className="mt-5">
               Abre la caja en la pestaña Caja antes de cobrar.
-            </div>
+            </FeedbackMessage>
           ) : null}
 
           {catalogLoading ? (
@@ -289,7 +292,7 @@ export function PosPage() {
                   onClick={() => addItem(item)}
                   disabled={!currentLocation}
                   aria-label={`Agregar ${item.item_type === 'VARIANT' ? 'variante' : 'combo'} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
-                  className="glass-panel rounded-3xl p-5 text-left transition hover:-translate-y-0.5 hover:border-violet-300/28 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] disabled:cursor-not-allowed disabled:border-[color:var(--disabled-border)] disabled:bg-[linear-gradient(180deg,rgba(33,37,58,0.96),rgba(20,23,38,0.98))] disabled:shadow-none"
+                  className="data-list-card group rounded-[1.65rem] p-5 text-left transition hover:-translate-y-0.5 hover:border-violet-300/28 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] disabled:cursor-not-allowed disabled:border-[color:var(--disabled-border)] disabled:bg-[linear-gradient(180deg,rgba(33,37,58,0.96),rgba(20,23,38,0.98))] disabled:shadow-none"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -314,20 +317,21 @@ export function PosPage() {
       </div>
 
       <Card className="h-fit xl:sticky xl:top-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm text-slate-400">Venta en curso</p>
-            <h2 className="font-display text-2xl font-bold text-white">Carrito</h2>
-          </div>
-          <Button variant="ghost" onClick={clearCart}>
-            Limpiar
-          </Button>
-        </div>
+        <SectionHeader
+          eyebrow="Venta en curso"
+          title="Carrito"
+          description="Ajusta cantidades, aplica descuentos y confirma el cobro sin salir de la operación."
+          actions={
+            <Button variant="ghost" onClick={clearCart}>
+              Limpiar
+            </Button>
+          }
+        />
 
         <div className="mt-5 grid gap-3">
           {items.length === 0 ? (
             <EmptyState
-              title="Sin items cargados"
+              title="Sin ítems cargados"
               description="Agrega variantes o combos desde el catálogo para preparar la venta."
             />
           ) : (
@@ -373,7 +377,7 @@ export function PosPage() {
             />
           </div>
 
-          <div className="surface-subtle rounded-3xl p-4">
+          <div className="surface-subtle-strong rounded-[1.65rem] p-4">
             <div className="flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
               <span>Subtotal</span>
               <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>

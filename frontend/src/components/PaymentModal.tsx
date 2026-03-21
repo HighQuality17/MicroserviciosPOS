@@ -49,7 +49,7 @@ export function PaymentModal({
     if (method === 'CASH') {
       const parsedAmount = parseNumberInput(amountReceivedInput);
       if (parsedAmount === null || parsedAmount < total) {
-        setValidationError('Ingresa un monto recibido valido mayor o igual al total.');
+        setValidationError('Ingresa un monto recibido válido mayor o igual al total.');
         return;
       }
     }
@@ -67,7 +67,7 @@ export function PaymentModal({
       open={open}
       onClose={onClose}
       title="Cobrar venta"
-      subtitle="Confirma el metodo de pago y envia la venta al backend local."
+      subtitle="Confirma el método de pago y envía la venta al backend local."
     >
       <form
         className="grid gap-5"
@@ -85,7 +85,7 @@ export function PaymentModal({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
-            label="Metodo"
+            label="Método"
             value={method}
             onChange={(event) => {
               setMethod(event.target.value as PaymentMethod);
@@ -105,7 +105,7 @@ export function PaymentModal({
             placeholder={method === 'TRANSFER' ? 'Se aplica el total exacto' : 'Ej: 20000'}
             hint={
               method === 'TRANSFER'
-                ? 'En transferencia se aplica automaticamente el total exacto.'
+                ? 'En transferencia se aplica automáticamente el total exacto.'
                 : 'Ingresa el efectivo recibido para calcular el cambio.'
             }
             error={method === 'CASH' ? validationError ?? undefined : undefined}

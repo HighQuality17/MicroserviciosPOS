@@ -54,7 +54,7 @@ export function Sidebar({
           </div>
           <div>
             <p className="font-display text-lg font-bold text-white">Registry POS</p>
-            <p className="text-xs text-[color:var(--text-faint)]">Operacion centralizada</p>
+            <p className="text-xs text-[color:var(--text-faint)]">Operación centralizada</p>
           </div>
         </div>
 

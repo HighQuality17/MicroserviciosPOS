@@ -23,7 +23,7 @@ export function AccessDeniedPage() {
       <Card className="max-w-2xl overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-rose-400/12 via-amber-300/10 to-transparent" />
         <div className="relative">
-          <div className="inline-flex rounded-3xl border border-rose-400/20 bg-rose-400/10 p-4 text-rose-200">
+          <div className="panel-icon-shell inline-flex h-16 w-16 items-center justify-center rounded-3xl text-cyan-100">
             <ShieldAlert size={28} />
           </div>
 
@@ -38,7 +38,7 @@ export function AccessDeniedPage() {
             {state?.from ? ` Ruta solicitada: ${state.from}.` : ''}
           </p>
 
-          <div className="mt-6 surface-subtle rounded-3xl p-5 text-sm text-[color:var(--text-secondary)]">
+          <div className="mt-6 data-list-card rounded-3xl p-5 text-sm text-[color:var(--text-secondary)]">
             <p>
               Usuario: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesión'}</span>
             </p>

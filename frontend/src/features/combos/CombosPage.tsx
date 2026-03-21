@@ -231,7 +231,7 @@ export function CombosPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Agregar items al combo</p>
+            <p className="text-sm text-slate-400">Agregar ítems al combo</p>
             <h2 className="font-display text-2xl font-bold text-white">
               Composición comercial
             </h2>
@@ -289,7 +289,7 @@ export function CombosPage() {
                   disabled={addingItems || combos.length === 0 || variants.length === 0}
                   onClick={handleAddComboItems}
                 >
-                  {addingItems ? 'Guardando...' : 'Agregar item'}
+                  {addingItems ? 'Guardando...' : 'Agregar ítem'}
                 </Button>
                 <Button variant="secondary" disabled>
                   Reordenar próximamente
@@ -315,7 +315,7 @@ export function CombosPage() {
               {Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
-                  className="surface-subtle h-28 animate-pulse rounded-3xl"
+                  className="data-list-card h-28 animate-pulse rounded-3xl"
                 />
               ))}
             </div>
@@ -331,7 +331,7 @@ export function CombosPage() {
               {combos.map((combo) => (
                 <div
                   key={combo.id}
-                  className="surface-subtle rounded-3xl p-5"
+                  className="data-list-card rounded-3xl p-5"
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
@@ -370,14 +370,14 @@ export function CombosPage() {
 
                   <div className="mt-5 grid gap-3">
                     {combo.items.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-[color:var(--line)] bg-white/[0.02] px-4 py-3 text-sm text-[color:var(--text-faint)]">
+                      <div className="toolbar-shell rounded-2xl border-dashed px-4 py-3 text-sm text-[color:var(--text-faint)]">
                         El combo aún no tiene variantes asociadas.
                       </div>
                     ) : (
                       combo.items.map((item) => (
                         <div
                           key={item.id}
-                          className="surface-subtle flex items-center justify-between rounded-2xl px-4 py-3"
+                          className="data-list-card flex items-center justify-between rounded-2xl px-4 py-3"
                         >
                           <div>
                             <p className="text-sm font-medium text-white">
