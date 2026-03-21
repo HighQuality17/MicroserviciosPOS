@@ -58,7 +58,7 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
             <Plus size={14} />
           </Button>
         </div>
-        <p className="font-display text-lg font-bold text-violet-200">
+        <p className="font-display text-lg font-bold metric-accent">
           {formatCurrency(item.unit_price * item.qty)}
         </p>
       </div>

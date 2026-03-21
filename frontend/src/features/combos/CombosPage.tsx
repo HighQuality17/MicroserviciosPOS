@@ -315,7 +315,7 @@ export function CombosPage() {
               {Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-28 animate-pulse rounded-3xl border border-slate-800 bg-slate-950/50"
+                  className="surface-subtle h-28 animate-pulse rounded-3xl"
                 />
               ))}
             </div>
@@ -331,7 +331,7 @@ export function CombosPage() {
               {combos.map((combo) => (
                 <div
                   key={combo.id}
-                  className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5"
+                  className="surface-subtle rounded-3xl p-5"
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
@@ -342,19 +342,19 @@ export function CombosPage() {
                         <span
                           className={`rounded-full px-3 py-1 text-xs ${
                             combo.active
-                              ? 'bg-emerald-500/15 text-emerald-300'
-                              : 'bg-slate-700/60 text-slate-300'
+                              ? 'border border-emerald-400/20 bg-emerald-500/15 text-emerald-200'
+                              : 'border border-white/10 bg-white/[0.04] text-[color:var(--text-secondary)]'
                           }`}
                         >
                           {combo.active ? 'Activo' : 'Inactivo'}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-slate-500">
+                      <p className="mt-2 text-sm text-[color:var(--text-faint)]">
                         ID {combo.id} - {combo.items.length} items configurados
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <p className="font-display text-2xl font-bold text-teal-300">
+                      <p className="metric-accent font-display text-2xl font-bold">
                         {formatCurrency(Number(combo.sale_price))}
                       </p>
                       <div className="flex gap-2">
@@ -370,20 +370,20 @@ export function CombosPage() {
 
                   <div className="mt-5 grid gap-3">
                     {combo.items.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-700 px-4 py-3 text-sm text-slate-500">
+                      <div className="rounded-2xl border border-dashed border-[color:var(--line)] bg-white/[0.02] px-4 py-3 text-sm text-[color:var(--text-faint)]">
                         El combo aún no tiene variantes asociadas.
                       </div>
                     ) : (
                       combo.items.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3"
+                          className="surface-subtle flex items-center justify-between rounded-2xl px-4 py-3"
                         >
                           <div>
                             <p className="text-sm font-medium text-white">
                               {item.variant.product_name}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-[color:var(--text-faint)]">
                               {item.variant.size} - {item.variant.sku} - qty {item.qty}
                             </p>
                           </div>

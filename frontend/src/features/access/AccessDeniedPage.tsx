@@ -27,18 +27,18 @@ export function AccessDeniedPage() {
             <ShieldAlert size={28} />
           </div>
 
-          <p className="mt-6 text-xs uppercase tracking-[0.28em] text-slate-500">
+          <p className="mt-6 text-xs uppercase tracking-[0.28em] text-[color:var(--text-faint)]">
             Control de acceso
           </p>
           <h1 className="font-display mt-3 text-4xl font-bold text-white">
             Acceso denegado
           </h1>
-          <p className="mt-3 max-w-xl text-sm text-slate-400">
+          <p className="mt-3 max-w-xl text-sm text-[color:var(--text-secondary)]">
             Tu perfil actual no tiene permisos para abrir esta vista.
             {state?.from ? ` Ruta solicitada: ${state.from}.` : ''}
           </p>
 
-          <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950/50 p-5 text-sm text-slate-300">
+          <div className="mt-6 surface-subtle rounded-3xl p-5 text-sm text-[color:var(--text-secondary)]">
             <p>
               Usuario: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesión'}</span>
             </p>

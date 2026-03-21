@@ -139,7 +139,7 @@ export function AdminChartCard({
                   />
                   <span className="text-sm text-[color:var(--text-secondary)]">{item.label}</span>
                 </div>
-                <span className="text-sm font-medium text-white">
+                <span className={valueFormat === 'currency' ? 'text-sm font-medium metric-accent' : 'text-sm font-medium text-white'}>
                   {formatValue(item.value)}
                 </span>
               </div>
@@ -179,7 +179,7 @@ function ChartTooltip({
   return (
     <div className="glass-panel-strong rounded-2xl px-3 py-2 shadow-2xl">
       <p className="text-sm font-medium text-white">{item.label}</p>
-      <p className="mt-1 text-xs text-[color:var(--text-secondary)]">{value}</p>
+      <p className={valueFormat === 'currency' ? 'mt-1 text-xs metric-accent' : 'mt-1 text-xs text-[color:var(--text-secondary)]'}>{value}</p>
     </div>
   );
 }

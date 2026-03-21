@@ -432,7 +432,7 @@ export function IngredientsPage() {
                 placeholder="Ej: Ingreso manual"
               />
 
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3 text-sm text-slate-300">
+              <div className="surface-subtle rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)]">
                 Usuario aplicado: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesión'}</span>
               </div>
 
@@ -469,7 +469,7 @@ export function IngredientsPage() {
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="h-20 animate-pulse rounded-3xl border border-slate-800 bg-slate-950/50"
+                    className="surface-subtle h-20 animate-pulse rounded-3xl"
                   />
                 ))}
               </div>
@@ -485,7 +485,7 @@ export function IngredientsPage() {
                 {mergedIngredients.map((ingredient) => (
                   <div
                     key={ingredient.id}
-                    className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4"
+                    className="surface-subtle rounded-3xl p-4"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -496,7 +496,7 @@ export function IngredientsPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-slate-500">ID {ingredient.id}</p>
+                        <p className="text-sm text-[color:var(--text-faint)]">ID {ingredient.id}</p>
                       </div>
                     </div>
                   </div>
@@ -536,7 +536,7 @@ export function IngredientsPage() {
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="h-24 animate-pulse rounded-3xl border border-slate-800 bg-slate-950/50"
+                    className="surface-subtle h-24 animate-pulse rounded-3xl"
                   />
                 ))}
               </div>
@@ -552,7 +552,7 @@ export function IngredientsPage() {
                 {stockItems.map((item) => (
                   <div
                     key={`${item.ingredientId}-${item.locationId}`}
-                    className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4"
+                    className="surface-subtle rounded-3xl p-4"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -563,10 +563,10 @@ export function IngredientsPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-display text-2xl font-bold text-teal-300">
+                        <p className="metric-accent font-display text-2xl font-bold">
                           {Number(item.qtyOnHandBase).toLocaleString('es-CO')}
                         </p>
-                        <p className="text-xs text-slate-500">unidad base</p>
+                        <p className="text-xs text-[color:var(--text-faint)]">unidad base</p>
                       </div>
                     </div>
                   </div>

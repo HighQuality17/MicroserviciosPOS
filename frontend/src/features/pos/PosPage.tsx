@@ -289,19 +289,19 @@ export function PosPage() {
                   onClick={() => addItem(item)}
                   disabled={!currentLocation}
                   aria-label={`Agregar ${item.item_type === 'VARIANT' ? 'variante' : 'combo'} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
-                  className="glass-panel rounded-3xl p-5 text-left transition hover:-translate-y-0.5 hover:border-teal-300/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="glass-panel rounded-3xl p-5 text-left transition hover:-translate-y-0.5 hover:border-violet-300/28 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] disabled:cursor-not-allowed disabled:border-[color:var(--disabled-border)] disabled:bg-[linear-gradient(180deg,rgba(33,37,58,0.96),rgba(20,23,38,0.98))] disabled:shadow-none"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-display text-xl font-bold text-white">{item.name}</p>
                       <p className="mt-1 text-sm text-slate-400">{item.subtitle}</p>
                     </div>
-                    <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400">
+                    <span className="soft-pill rounded-full px-3 py-1 text-xs">
                       {item.item_type === 'VARIANT' ? 'Variante' : 'Combo'}
                     </span>
                   </div>
                   <div className="mt-8 flex items-center justify-between">
-                    <span className="font-display text-2xl font-bold text-teal-300">
+                    <span className="metric-accent font-display text-2xl font-bold">
                       {formatCurrency(item.unit_price)}
                     </span>
                     <span className="text-sm text-slate-300">Agregar</span>
@@ -342,7 +342,7 @@ export function PosPage() {
           )}
         </div>
 
-        <div className="mt-6 grid gap-4 border-t border-slate-800 pt-5">
+        <div className="mt-6 grid gap-4 border-t border-[color:var(--line)] pt-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Descuento"
@@ -373,18 +373,18 @@ export function PosPage() {
             />
           </div>
 
-          <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4">
-            <div className="flex items-center justify-between text-sm text-slate-400">
+          <div className="surface-subtle rounded-3xl p-4">
+            <div className="flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
               <span>Subtotal</span>
-              <span>{formatCurrency(totals.subtotal)}</span>
+              <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm text-slate-400">
+            <div className="mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
               <span>Descuento</span>
-              <span>{formatCurrency(totals.discountAmount)}</span>
+              <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-4">
+            <div className="mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
               <span className="font-display text-xl font-bold text-white">Total</span>
-              <span className="font-display text-3xl font-bold text-teal-300">
+              <span className="metric-accent-strong font-display text-3xl font-bold">
                 {formatCurrency(totals.total)}
               </span>
             </div>

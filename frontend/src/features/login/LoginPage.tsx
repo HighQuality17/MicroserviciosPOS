@@ -121,14 +121,14 @@ export function LoginPage() {
                   <Sparkles size={14} className="text-violet-200" />
                   Registry POS
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-100">
-                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.85)]" />
+                <div className="inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-100">
+                  <span className="h-2 w-2 rounded-full bg-violet-200 shadow-[0_0_14px_rgba(167,139,250,0.75)]" />
                   Operacion lista para punto de venta
                 </div>
               </div>
 
               <div className="mt-8 max-w-3xl">
-                <p className="text-sm font-medium uppercase tracking-[0.28em] text-slate-400">
+                <p className="text-sm font-medium uppercase tracking-[0.28em] text-[color:var(--text-secondary)]">
                   Plataforma POS moderna
                 </p>
                 <h1
@@ -140,7 +140,7 @@ export function LoginPage() {
                     premium, rapida y confiable.
                   </span>
                 </h1>
-                <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+                <p className="mt-6 max-w-2xl text-base leading-7 text-[color:var(--text-secondary)] sm:text-lg">
                   Registry POS centraliza ventas, inventario y control operativo en una pantalla de
                   acceso pensada para equipos que necesitan velocidad, orden y lectura clara del negocio.
                 </p>
@@ -153,7 +153,7 @@ export function LoginPage() {
                   return (
                     <li
                       key={benefit.title}
-                      className="group rounded-[1.6rem] border border-white/10 bg-slate-950/50 p-5 transition duration-300 hover:-translate-y-0.5 hover:border-indigo-300/30 hover:bg-slate-900/70"
+                      className="group surface-subtle rounded-[1.6rem] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-violet-300/28 hover:bg-white/[0.05]"
                     >
                       <div className="flex items-start gap-4">
                         <div className="rounded-2xl border border-indigo-300/20 bg-indigo-400/10 p-3 text-indigo-100 shadow-[0_12px_30px_rgba(99,102,241,0.16)]">
@@ -161,7 +161,7 @@ export function LoginPage() {
                         </div>
                         <div>
                           <h2 className="text-base font-semibold text-white">{benefit.title}</h2>
-                          <p className="mt-2 text-sm leading-6 text-slate-400">{benefit.description}</p>
+                          <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{benefit.description}</p>
                         </div>
                       </div>
                     </li>
@@ -170,15 +170,15 @@ export function LoginPage() {
               </ul>
 
               <div className="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.75fr)] xl:mt-auto">
-                <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+                <div className="surface-subtle rounded-[1.75rem] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--text-secondary)]">
                     Capacidades clave
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {systemSignals.map((signal) => (
                       <span
                         key={signal}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-200"
+                        className="soft-pill rounded-full px-3 py-2 text-xs font-medium"
                       >
                         {signal}
                       </span>
@@ -186,8 +186,8 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-5 shadow-[0_18px_50px_rgba(59,130,246,0.08)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+                <div className="surface-subtle-strong rounded-[1.75rem] p-5 shadow-[0_18px_50px_rgba(79,70,229,0.14)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--text-secondary)]">
                     Roles actuales
                   </p>
                   <ul className="mt-4 grid gap-3">
@@ -221,15 +221,15 @@ export function LoginPage() {
             <div className="relative">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                  <div className="surface-subtle inline-flex items-center gap-3 rounded-2xl px-4 py-3">
                     <div className="rounded-2xl bg-gradient-to-br from-indigo-400 via-violet-500 to-fuchsia-500 p-3 text-white shadow-[0_14px_34px_rgba(99,102,241,0.35)]">
                       <LockKeyhole size={20} />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--text-secondary)]">
                         Acceso seguro
                       </p>
-                      <p className="mt-1 text-sm text-slate-300">
+                      <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
                         Ingreso para equipos operativos y administrativos
                       </p>
                     </div>
@@ -238,7 +238,7 @@ export function LoginPage() {
                   <h2 className="font-display mt-6 text-3xl font-bold text-white sm:text-[2rem]">
                     Entra a Registry POS
                   </h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-400 sm:text-[0.95rem]">
+                  <p className="mt-3 text-sm leading-6 text-[color:var(--text-secondary)] sm:text-[0.95rem]">
                     Usa tu correo o usuario corporativo para continuar con la operacion de tu sucursal.
                   </p>
                 </div>
@@ -274,7 +274,7 @@ export function LoginPage() {
                       aria-controls="login-password"
                       aria-pressed={showPassword}
                       onClick={() => setShowPassword((value) => !value)}
-                      className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium text-indigo-200 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                      className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium text-indigo-200 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16]"
                     >
                       {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                       {showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
@@ -288,15 +288,15 @@ export function LoginPage() {
                   </FeedbackMessage>
                 ) : null}
 
-                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+                <div className="surface-subtle rounded-[1.5rem] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[color:var(--text-faint)]">
                     Perfiles habilitados hoy
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {roles.map((role) => (
                       <span
                         key={role}
-                        className="rounded-full border border-white/10 bg-slate-900/80 px-3 py-2 text-xs font-medium text-slate-200"
+                        className="soft-pill rounded-full px-3 py-2 text-xs font-medium"
                       >
                         {role}
                       </span>

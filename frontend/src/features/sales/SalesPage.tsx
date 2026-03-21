@@ -52,7 +52,7 @@ function BlockError({ message }: { message: string }) {
 function SkeletonCard({ height = 'h-40' }: { height?: string }) {
   return (
     <div
-      className={`animate-pulse rounded-3xl border border-slate-800 bg-slate-950/50 ${height}`}
+      className={`surface-subtle animate-pulse rounded-3xl ${height}`}
     />
   );
 }
@@ -368,7 +368,7 @@ export function SalesPage() {
               <Button disabled={receiptLoading} onClick={handleManualSearch}>
                 {receiptLoading ? 'Consultando...' : 'Buscar comprobante'}
               </Button>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[color:var(--text-faint)]">
                 Puedes consultar cualquier venta puntual por su identificador y abrir el comprobante completo.
               </p>
             </div>
@@ -407,23 +407,23 @@ export function SalesPage() {
                       aria-label={getRecentSaleButtonLabel(sale, isSelected)}
                       onClick={() => void handleSelectReceipt(sale.sale_id)}
                       className={[
-                        'rounded-3xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+                        'rounded-3xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16]',
                         isSelected
-                          ? 'border-teal-300/50 bg-slate-900/80'
-                          : 'border-slate-800 bg-slate-950/50 hover:border-teal-300/40 hover:bg-slate-900/80',
+                          ? 'border-violet-300/40 bg-[linear-gradient(135deg,rgba(99,102,241,0.16),rgba(139,92,246,0.12))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                          : 'border-[color:var(--line)] bg-white/[0.03] hover:border-violet-300/28 hover:bg-white/[0.05]',
                       ].join(' ')}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                           <p className="text-sm text-slate-400">Venta #{sale.sale_id}</p>
                           <p className="mt-2 truncate font-medium text-white">{sale.location.name}</p>
-                          <p className="mt-1 text-sm text-slate-500">{formatDate(sale.created_at)}</p>
-                          <p className="mt-2 text-xs text-slate-500">
+                          <p className="mt-1 text-sm text-[color:var(--text-faint)]">{formatDate(sale.created_at)}</p>
+                          <p className="mt-2 text-xs text-[color:var(--text-faint)]">
                             {sale.cashier.name} / {formatStatus(sale.status)}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-teal-300">{formatCurrency(sale.total)}</p>
+                          <p className="font-semibold metric-accent">{formatCurrency(sale.total)}</p>
                           <p className="mt-1 text-sm text-slate-400">
                             {formatPaymentMethod(sale.payment_method)}
                           </p>
@@ -456,22 +456,22 @@ export function SalesPage() {
                 />
               </div>
             ) : (
-              <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
+              <div className="mt-6 surface-subtle-strong rounded-3xl p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-sm text-slate-400">Venta #{latestSale.sale_id}</p>
                     <p className="mt-2 truncate font-display text-2xl font-bold text-white">
                       {latestSale.location.name}
                     </p>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-[color:var(--text-faint)]">
                       {formatDate(latestSale.created_at)} · {latestSale.cashier.name}
                     </p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">
+                    <p className="mt-2 text-xs uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
                       {formatStatus(latestSale.status)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-display text-3xl font-bold text-teal-300">
+                    <p className="font-display text-3xl font-bold metric-accent-strong">
                       {formatCurrency(latestSale.total)}
                     </p>
                     <p className="text-sm text-slate-400">
@@ -514,21 +514,21 @@ export function SalesPage() {
               </div>
             ) : (
               <div className="mt-6 grid gap-5">
-                <div className="rounded-[2rem] border border-teal-300/15 bg-gradient-to-br from-slate-950/90 to-slate-900/80 p-6">
+                <div className="surface-subtle-strong rounded-[2rem] p-6">
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Comprobante</p>
+                      <p className="text-xs uppercase tracking-[0.25em] text-[color:var(--text-faint)]">Comprobante</p>
                       <h3 className="mt-3 font-display text-4xl font-bold text-white">
                         Venta #{visibleReceipt.sale_id}
                       </h3>
                       <p className="mt-3 text-sm text-slate-400">{formatDate(visibleReceipt.created_at)}</p>
                     </div>
-                    <div className="rounded-3xl border border-slate-800 bg-slate-950/50 px-5 py-4 text-right">
+                    <div className="surface-subtle rounded-3xl px-5 py-4 text-right">
                       <p className="text-sm text-slate-400">Total</p>
-                      <p className="mt-2 font-display text-3xl font-bold text-teal-300">
+                      <p className="mt-2 font-display text-3xl font-bold metric-accent-strong">
                         {formatCurrency(visibleReceipt.total)}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-[color:var(--text-faint)]">
                         {formatPaymentMethod(visibleReceipt.payment_method)}
                       </p>
                     </div>
@@ -536,43 +536,43 @@ export function SalesPage() {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
-                    <p className="text-sm text-slate-500">Ubicación</p>
+                  <div className="surface-subtle rounded-3xl p-5">
+                    <p className="text-sm text-[color:var(--text-faint)]">Ubicación</p>
                     <p className="mt-2 font-medium text-white">{visibleReceipt.location.name}</p>
                   </div>
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
-                    <p className="text-sm text-slate-500">Cajero</p>
+                  <div className="surface-subtle rounded-3xl p-5">
+                    <p className="text-sm text-[color:var(--text-faint)]">Cajero</p>
                     <p className="mt-2 font-medium text-white">{visibleReceipt.cashier.name}</p>
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
+                <div className="surface-subtle rounded-3xl p-5">
                   <p className="text-sm text-slate-400">Ítems</p>
                   <ScrollPanel className="mt-4 grid gap-3" maxHeightClassName="max-h-[18rem]" tabIndex={0} aria-label="Items del comprobante seleccionado">
                     {visibleReceipt.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3"
+                        className="surface-subtle flex items-center justify-between rounded-2xl px-4 py-3"
                       >
                         <div>
                           <p className="font-medium text-white">{item.description}</p>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-[color:var(--text-faint)]">
                             {item.item_type} · x{item.qty} · {formatCurrency(item.unit_price)}
                           </p>
                         </div>
-                        <p className="font-semibold text-slate-200">{formatCurrency(item.line_total)}</p>
+                        <p className="font-semibold metric-accent">{formatCurrency(item.line_total)}</p>
                       </div>
                     ))}
                   </ScrollPanel>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
-                    <p className="text-sm text-slate-500">Resumen</p>
+                  <div className="surface-subtle rounded-3xl p-5">
+                    <p className="text-sm text-[color:var(--text-faint)]">Resumen</p>
                     <div className="mt-4 grid gap-3 text-sm">
                       <div className="flex items-center justify-between text-slate-300">
                         <span>Subtotal</span>
-                        <span>{formatCurrency(visibleReceipt.subtotal)}</span>
+                        <span className="metric-accent">{formatCurrency(visibleReceipt.subtotal)}</span>
                       </div>
                       <div className="flex items-center justify-between text-slate-300">
                         <span>Tipo de descuento</span>
@@ -584,17 +584,17 @@ export function SalesPage() {
                       </div>
                       <div className="flex items-center justify-between text-slate-300">
                         <span>Monto descontado</span>
-                        <span>{formatCurrency(visibleReceipt.discount_amount)}</span>
+                        <span className="metric-accent">{formatCurrency(visibleReceipt.discount_amount)}</span>
                       </div>
-                      <div className="flex items-center justify-between border-t border-slate-800 pt-3 font-semibold text-white">
+                      <div className="flex items-center justify-between border-t border-[color:var(--line)] pt-3 font-semibold text-white">
                         <span>Total</span>
-                        <span>{formatCurrency(visibleReceipt.total)}</span>
+                        <span className="metric-accent-strong">{formatCurrency(visibleReceipt.total)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
-                    <p className="text-sm text-slate-500">Pago</p>
+                  <div className="surface-subtle rounded-3xl p-5">
+                    <p className="text-sm text-[color:var(--text-faint)]">Pago</p>
                     <div className="mt-4 grid gap-3 text-sm">
                       <div className="flex items-center justify-between text-slate-300">
                         <span>Método de pago</span>
@@ -631,16 +631,16 @@ export function SalesPage() {
                 <h2 id="sales-history-title" className="font-display text-2xl font-bold text-white">
                   Historial completo de ventas
                 </h2>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-[color:var(--text-faint)]">
                   Consulta de solo lectura con filtros y paginación para auditoría y seguimiento operativo.
                 </p>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-2 text-xs text-slate-400">
+              <div className="surface-subtle rounded-2xl px-4 py-2 text-xs text-[color:var(--text-muted)]">
                 Página {historyPage} de {Math.max(historyTotalPages, 1)}
               </div>
             </div>
 
-            <div className="mt-5 grid gap-4 rounded-3xl border border-slate-800 bg-slate-950/40 p-4">
+            <div className="mt-5 grid gap-4 surface-subtle rounded-3xl p-4">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <Select
                   label="Estado"
@@ -740,51 +740,104 @@ export function SalesPage() {
             ) : (
               <>
                 <div className="mt-6 overflow-x-auto overscroll-x-contain touch-pan-x pb-1">
-                  <div className="min-w-[1100px] overflow-hidden rounded-3xl border border-slate-800">
-                    <div aria-hidden="true" className="grid grid-cols-[92px_150px_120px_110px_140px_140px_minmax(0,1fr)_110px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
-                      <span>ID</span>
-                      <span>Fecha</span>
-                      <span>Total</span>
-                      <span>Estado</span>
-                      <span>Método</span>
-                      <span>Ubicación</span>
-                      <span>Cajero</span>
-                      <span>Acción</span>
-                    </div>
-                    <ScrollPanel maxHeightClassName="max-h-[30rem]" tabIndex={0} aria-label="Resultados del historial de ventas">
-                      {historyItems.map((sale) => {
-                        const isSelected = selectedSaleId === sale.sale_id;
+                  <div className="min-w-[1100px] overflow-hidden rounded-3xl table-shell">
+                    <ScrollPanel
+                      className="sm:pr-0"
+                      maxHeightClassName="max-h-[30rem]"
+                      tabIndex={0}
+                      aria-label="Resultados del historial de ventas"
+                    >
+                      <table className="w-full table-fixed border-separate border-spacing-0 text-sm text-[color:var(--text-secondary)]">
+                        <caption className="sr-only">Historial completo de ventas</caption>
+                        <colgroup>
+                          <col style={{ width: '92px' }} />
+                          <col style={{ width: '150px' }} />
+                          <col style={{ width: '120px' }} />
+                          <col style={{ width: '110px' }} />
+                          <col style={{ width: '140px' }} />
+                          <col style={{ width: '140px' }} />
+                          <col />
+                          <col style={{ width: '110px' }} />
+                        </colgroup>
+                        <thead className="table-head">
+                          <tr>
+                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                              ID
+                            </th>
+                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                              Fecha
+                            </th>
+                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-right text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                              Total
+                            </th>
+                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                              Estado
+                            </th>
+                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                              M??todo
+                            </th>
+                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                              Ubicaci??n
+                            </th>
+                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                              Cajero
+                            </th>
+                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                              Acci??n
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {historyItems.map((sale, index) => {
+                            const isSelected = selectedSaleId === sale.sale_id;
 
-                        return (
-                          <button
-                            key={sale.sale_id}
-                            type="button"
-                            aria-pressed={isSelected}
-                            aria-label={getHistorySaleButtonLabel(sale, isSelected)}
-                            onClick={() => void handleSelectReceipt(sale.sale_id)}
-                            className={[
-                              'grid w-full grid-cols-[92px_150px_120px_110px_140px_140px_minmax(0,1fr)_110px] gap-3 border-t border-slate-800 px-4 py-4 text-left text-sm text-slate-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
-                              isSelected
-                                ? 'bg-slate-900/90 ring-1 ring-inset ring-teal-300/50'
-                                : 'bg-slate-950/50 hover:bg-slate-900/70',
-                            ].join(' ')}
-                          >
-                            <span className="text-slate-400">#{sale.sale_id}</span>
-                            <span>{formatDate(sale.created_at)}</span>
-                            <span className="font-medium text-teal-300">{formatCurrency(sale.total)}</span>
-                            <span>{formatStatus(sale.status)}</span>
-                            <span>{formatPaymentMethod(sale.payment_method)}</span>
-                            <span className="truncate">{sale.location_name}</span>
-                            <span className="truncate">{sale.cashier_name}</span>
-                            <span className="text-sm font-medium text-slate-100">Ver detalle</span>
-                          </button>
-                        );
-                      })}
+                            return (
+                              <tr
+                                key={sale.sale_id}
+                                tabIndex={0}
+                                aria-label={getHistorySaleButtonLabel(sale, isSelected)}
+                                onClick={() => void handleSelectReceipt(sale.sale_id)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    void handleSelectReceipt(sale.sale_id);
+                                  }
+                                }}
+                                className={[
+                                  'cursor-pointer text-[color:var(--text-secondary)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset focus-visible:ring-offset-0',
+                                  index > 0 ? 'border-t border-white/8' : '',
+                                  isSelected
+                                    ? 'table-row-selected text-white'
+                                    : 'bg-white/[0.03] hover:bg-white/[0.06] hover:text-white',
+                                ].join(' ')}
+                              >
+                                <td className="px-4 py-4 align-middle whitespace-nowrap text-slate-400">#{sale.sale_id}</td>
+                                <td className="px-4 py-4 align-middle whitespace-nowrap">{formatDate(sale.created_at)}</td>
+                                <td className="px-4 py-4 align-middle whitespace-nowrap text-right">
+                                  <span className="font-medium metric-accent">{formatCurrency(sale.total)}</span>
+                                </td>
+                                <td className="px-4 py-4 align-middle whitespace-nowrap">{formatStatus(sale.status)}</td>
+                                <td className="px-4 py-4 align-middle whitespace-nowrap">{formatPaymentMethod(sale.payment_method)}</td>
+                                <td className="px-4 py-4 align-middle">
+                                  <span className="block truncate">{sale.location_name}</span>
+                                </td>
+                                <td className="px-4 py-4 align-middle">
+                                  <span className="block truncate">{sale.cashier_name}</span>
+                                </td>
+                                <td className="px-4 py-4 align-middle whitespace-nowrap">
+                                  <span className="inline-flex min-h-9 items-center rounded-full border border-[color:var(--line)] bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-100">
+                                    Ver detalle
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </ScrollPanel>
                   </div>
                 </div>
-
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm text-slate-400">
+                <div className="mt-4 surface-subtle flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-muted)]">
                   <span>
                     {historyTotal} ventas encontradas · página {historyPage} de {Math.max(historyTotalPages, 1)}
                   </span>

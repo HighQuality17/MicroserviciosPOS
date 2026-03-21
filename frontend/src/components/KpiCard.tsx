@@ -17,6 +17,8 @@ export function KpiCard({
   icon,
   tone = 'default',
 }: KpiCardProps) {
+  const isCurrencyValue = value.includes('$');
+
   return (
     <Card className="overflow-hidden">
       <div
@@ -30,7 +32,14 @@ export function KpiCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-[color:var(--text-secondary)]">{title}</p>
-          <p className="mt-3 font-display text-3xl font-bold text-white">{value}</p>
+          <p
+            className={clsx(
+              'mt-3 font-display text-3xl font-bold',
+              isCurrencyValue ? 'metric-accent-strong' : 'text-white',
+            )}
+          >
+            {value}
+          </p>
           {hint ? <p className="mt-2 text-xs text-[color:var(--text-muted)]">{hint}</p> : null}
         </div>
         {icon ? (
