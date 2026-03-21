@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Boxes, FlaskConical, Warehouse } from 'lucide-react';
+import { Boxes, CircleDot, FlaskConical, Warehouse } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
@@ -8,7 +8,7 @@ import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
-import { SummaryCard } from '@/components/SummaryCard';
+import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
@@ -258,32 +258,154 @@ export function IngredientsPage() {
     }
   }
 
+  const selectedLocation =
+    availableLocations.find((location) => location.id === selectedLocationId) ??
+    currentLocation ??
+    null;
+  const inventoryStatusTone = catalogAccessDenied || stockAccessDenied
+    ? 'danger'
+    : catalogError || stockError
+      ? 'warning'
+      : loadingCatalog || loadingStock
+        ? 'info'
+        : selectedLocation
+          ? 'success'
+          : 'default';
+  const inventoryStatusLabel = catalogAccessDenied || stockAccessDenied
+    ? 'Acceso restringido'
+    : catalogError || stockError
+      ? 'Revision requerida'
+      : loadingCatalog || loadingStock
+        ? 'Sincronizando'
+        : selectedLocation
+          ? 'Inventario operativo'
+          : 'Selecciona ubicacion';
+  const ingredientCatalogTone = loadingCatalog
+    ? 'info'
+    : catalogError
+      ? 'warning'
+      : mergedIngredients.length > 0
+        ? 'success'
+        : 'default';
+  const ingredientCatalogLabel = 'Creados';
+  const stockTone = loadingStock
+    ? 'info'
+    : selectedLocation
+      ? stockItems.length > 0
+        ? 'info'
+        : 'warning'
+      : 'default';
+  const stockQtyByIngredientId = new Map(
+    stockItems.map((item) => [item.ingredientId, Number(item.qtyOnHandBase)]),
+  );
+  const outOfStockCount = selectedLocation
+    ? mergedIngredients.filter((ingredient) => {
+        const qtyOnHand = stockQtyByIngredientId.get(ingredient.id) ?? 0;
+        return qtyOnHand <= 0;
+      }).length
+    : 0;
+  const outOfStockTone = loadingStock
+    ? 'info'
+    : !selectedLocation
+      ? 'default'
+      : outOfStockCount > 0
+        ? 'warning'
+        : 'success';
+  const outOfStockLabel = loadingStock
+    ? 'Calculando'
+    : !selectedLocation
+      ? 'Sin POS'
+      : 'Requieren reposicion';
+  const outOfStockValue = loadingStock
+    ? '...'
+    : String(outOfStockCount);
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <SummaryCard
-          title="Ingredientes"
-          value={String(mergedIngredients.length)}
-          hint={
-            ingredients.length > 0
-              ? 'Leídos desde backend'
-              : 'Usando fallback de sesión o stock'
-          }
-          icon={<FlaskConical size={18} />}
-        />
-        <SummaryCard
-          title="Items con stock"
-          value={String(stockItems.length)}
-          hint={currentLocation?.name ?? 'Sin POS activo'}
-          icon={<Warehouse size={18} />}
-        />
-        <SummaryCard
-          title="Movimientos"
-          value="Sin movimientos recientes"
-          hint="Aquí se mostrarán los últimos ajustes de inventario"
-          icon={<Boxes size={18} />}
-        />
-      </div>
+      <section className="pos-status-bar" aria-label="Estado operativo de ingredientes">
+        <div className="pos-status-shell">
+          <div className="pos-status-intro">
+            <div className="pos-status-beacon" aria-hidden="true">
+              <CircleDot size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="section-kicker">Operacion de inventario</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                  Control de ingredientes
+                </h1>
+                <StatusBadge label={inventoryStatusLabel} tone={inventoryStatusTone} />
+              </div>
+              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
+                Resume catalogo, stock por ubicacion y estado operativo sin quitar
+                protagonismo a la gestion administrativa.
+              </p>
+            </div>
+          </div>
+
+          <div className="pos-status-grid">
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={ingredientCatalogTone}>
+                <FlaskConical size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Ingredientes</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{String(mergedIngredients.length)}</p>
+                  <StatusBadge label={ingredientCatalogLabel} tone={ingredientCatalogTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {catalogError
+                    ? 'Usando datos de sesion o stock para mantener la operacion'
+                    : loadingCatalog
+                      ? 'Leyendo catalogo base desde backend'
+                      : 'Catalogo base disponible para inventario'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={stockTone}>
+                <Warehouse size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Items con stock</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{String(stockItems.length)}</p>
+                  <StatusBadge
+                    label={selectedLocation ? `POS #${selectedLocation.id}` : 'Sin POS'}
+                    tone={selectedLocation ? 'info' : 'default'}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {loadingStock
+                    ? 'Consultando existencias para la ubicacion seleccionada'
+                    : selectedLocation
+                      ? selectedLocation.name
+                      : 'Selecciona una ubicacion para ver stock real'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={outOfStockTone}>
+                <Boxes size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Sin stock</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{outOfStockValue}</p>
+                  <StatusBadge label={outOfStockLabel} tone={outOfStockTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {selectedLocation
+                    ? 'Ingredientes sin existencias disponibles en la ubicacion actual'
+                    : 'Selecciona una ubicacion para detectar ingredientes pendientes de reposicion'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 
@@ -598,6 +720,8 @@ export function IngredientsPage() {
     </div>
   );
 }
+
+
 
 
 
