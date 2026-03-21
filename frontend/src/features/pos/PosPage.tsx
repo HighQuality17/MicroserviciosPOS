@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, PackageSearch, Receipt } from 'lucide-react';
+import { CircleDot, MapPin, Receipt, User } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { CartItem } from '@/components/CartItem';
@@ -7,10 +7,10 @@ import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
-import { Select } from '@/components/Select';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SectionHeader } from '@/components/SectionHeader';
-import { SummaryCard } from '@/components/SummaryCard';
+import { Select } from '@/components/Select';
+import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useCartStore } from '@/store/cartStore';
@@ -22,6 +22,7 @@ import type {
   CatalogVariant,
   DiscountType,
   PaymentMethod,
+  UserRole,
 } from '@/types/api';
 import { computeCartTotals } from '@/utils/cart';
 import { formatCurrency } from '@/utils/format';
@@ -35,6 +36,7 @@ export function PosPage() {
   const currentCashSession = useAppStore((state) => state.currentCashSession);
   const setCurrentCashSession = useAppStore((state) => state.setCurrentCashSession);
   const addRecentReceipt = useAppStore((state) => state.addRecentReceipt);
+  const recentReceipts = useAppStore((state) => state.recentReceipts);
   const items = useCartStore((state) => state.items);
   const discountType = useCartStore((state) => state.discountType);
   const discountValue = useCartStore((state) => state.discountValue);
@@ -85,7 +87,7 @@ export function PosPage() {
         setCatalog(response);
       } catch (error) {
         setCatalogError(
-          error instanceof Error ? error.message : 'No se pudo cargar el catálogo',
+          error instanceof Error ? error.message : 'No se pudo cargar el catalogo',
         );
       } finally {
         setCatalogLoading(false);
@@ -107,7 +109,7 @@ export function PosPage() {
       name: variant.product_name,
       subtitle: [variant.size, variant.sku ? `SKU ${variant.sku}` : null]
         .filter(Boolean)
-        .join(' · '),
+        .join(' - '),
       unit_price: Number(variant.sale_price),
       qty: 1,
     }));
@@ -140,19 +142,39 @@ export function PosPage() {
     for (const variant of catalog.variants) {
       const label = [variant.product_name, variant.size || null]
         .filter(Boolean)
-        .join(' · ');
+        .join(' - ');
       map.set(variant.id, label || `Variante #${variant.id}`);
     }
 
     for (const item of items) {
       if (item.item_type === 'VARIANT' && !map.has(item.ref_id)) {
-        const label = [item.name, item.subtitle || null].filter(Boolean).join(' · ');
+        const label = [item.name, item.subtitle || null].filter(Boolean).join(' - ');
         map.set(item.ref_id, label || `Variante #${item.ref_id}`);
       }
     }
 
     return map;
   }, [catalog.variants, items]);
+
+  const latestReceiptId = lastReceiptId ?? recentReceipts[0]?.sale_id ?? null;
+  const currentUserName = currentUser?.name || currentUser?.username || 'Sin usuario';
+  const currentUserHandle = currentUser?.username ? `@${currentUser.username}` : 'Sin sesion';
+  const currentUserRole = formatUserRole(currentUser?.role);
+  const cashStatusTone = currentCashSession
+    ? 'success'
+    : currentLocation
+      ? 'warning'
+      : 'default';
+  const cashStatusLabel = currentCashSession
+    ? 'Abierta'
+    : currentLocation
+      ? 'Pendiente'
+      : 'Sin POS';
+  const operationStatusLabel = currentCashSession
+    ? 'Caja lista para cobrar'
+    : currentLocation
+      ? 'Caja pendiente'
+      : 'Selecciona un POS';
 
   async function handleConfirmPayment(payload: {
     method: PaymentMethod;
@@ -200,47 +222,142 @@ export function PosPage() {
   }
 
   return (
-    <div className="grid min-w-0 gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="grid min-w-0 gap-4 sm:gap-5">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <SummaryCard
-            title="Caja actual"
-            value={currentCashSession ? `#${currentCashSession.id}` : 'Sin abrir'}
-            hint={
-              currentLocation
-                ? 'Necesaria para confirmar ventas'
-                : 'Selecciona primero un punto de venta real'
-            }
-            icon={<Receipt size={18} />}
-          />
-          <SummaryCard
-            title="Items en carrito"
-            value={String(items.length)}
-            hint="Se agrupan por tipo de ítem e identificador"
-            icon={<PackageSearch size={18} />}
-          />
-          <SummaryCard
-            title="Último comprobante"
-            value={lastReceiptId ? `#${lastReceiptId}` : 'Pendiente'}
-            hint="Disponible también en la pantalla de ventas"
-            icon={<AlertCircle size={18} />}
-          />
-        </div>
+    <div className="grid min-w-0 gap-4 sm:gap-5">
+      <section className="pos-status-bar" aria-label="Estado operativo del POS">
+        <div className="pos-status-shell">
+          <div className="pos-status-intro">
+            <div className="pos-status-beacon" aria-hidden="true">
+              <CircleDot size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="section-kicker">Operacion en curso</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                  Control operativo del POS
+                </h1>
+                <StatusBadge label={operationStatusLabel} tone={cashStatusTone} />
+              </div>
+              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
+                Valida caja, punto de venta, usuario activo y ultimo ticket sin quitar
+                espacio util al catalogo.
+              </p>
+            </div>
+          </div>
 
-        <Card>
+          <div className="pos-status-grid">
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={cashStatusTone}>
+                <CircleDot size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Caja actual</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">
+                    {currentCashSession ? `Caja #${currentCashSession.id}` : 'Caja sin abrir'}
+                  </p>
+                  <StatusBadge label={cashStatusLabel} tone={cashStatusTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {currentLocation
+                    ? 'Lista para cobro solo con caja activa'
+                    : 'Selecciona un POS para cargar la operacion'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span
+                className="pos-status-chip__icon"
+                aria-hidden="true"
+                data-tone={currentLocation ? 'info' : 'default'}
+              >
+                <MapPin size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">POS actual</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">
+                    {currentLocation ? currentLocation.name : 'Sin ubicacion'}
+                  </p>
+                  <StatusBadge
+                    label={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
+                    tone={currentLocation ? 'info' : 'default'}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {currentLocation
+                    ? 'Punto de venta activo en esta sesion'
+                    : 'Se define desde el encabezado principal'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span
+                className="pos-status-chip__icon"
+                aria-hidden="true"
+                data-tone={currentUser ? 'violet' : 'default'}
+              >
+                <User size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Cajero</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{currentUserName}</p>
+                  <StatusBadge
+                    label={currentUserRole}
+                    tone={currentUser ? 'info' : 'default'}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">{currentUserHandle}</p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span
+                className="pos-status-chip__icon"
+                aria-hidden="true"
+                data-tone={latestReceiptId ? 'info' : 'default'}
+              >
+                <Receipt size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Ultimo ticket</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">
+                    {latestReceiptId ? `#${latestReceiptId}` : 'Pendiente'}
+                  </p>
+                  <StatusBadge
+                    label={latestReceiptId ? 'Emitido' : 'Sin venta'}
+                    tone={latestReceiptId ? 'info' : 'default'}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {latestReceiptId
+                    ? 'Disponible tambien en la pantalla de ventas'
+                    : 'Aparecera aqui despues del primer cobro'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid min-w-0 items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="self-start">
           <SectionHeader
-            eyebrow="Catálogo de venta"
+            eyebrow="Catalogo de venta"
             title="POS principal"
-            description="Explora variantes y combos activos para la caja seleccionada con una experiencia más limpia y veloz."
+            description="Explora variantes y combos activos para la caja seleccionada con una experiencia mas limpia y veloz."
             actions={
               <div className="w-full md:max-w-md">
                 <Input
-                  label="Buscar en catálogo"
+                  label="Buscar en catalogo"
                   labelClassName="sr-only"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Buscar por nombre, talla o SKU"
-                  hint="Filtra por nombre, tamaño o SKU sin salir del teclado."
+                  hint="Filtra por nombre, tamano o SKU sin salir del teclado."
                 />
               </div>
             }
@@ -248,18 +365,18 @@ export function PosPage() {
 
           {!currentLocation ? (
             <FeedbackMessage tone="warning" className="mt-5">
-              Crea o selecciona un POS válido en el encabezado para cargar la operación.
+              Crea o selecciona un POS valido en el encabezado para cargar la operacion.
             </FeedbackMessage>
           ) : !currentCashSession ? (
             <FeedbackMessage tone="warning" className="mt-5">
-              Abre la caja en la pestaña Caja antes de cobrar.
+              Abre la caja en la pestana Caja antes de cobrar.
             </FeedbackMessage>
           ) : null}
 
           {catalogLoading ? (
             <div className="mt-6">
               <LoadingState
-                title="Cargando catálogo"
+                title="Cargando catalogo"
                 description="Estamos trayendo variantes y combos activos para esta caja."
                 rows={4}
               />
@@ -267,7 +384,7 @@ export function PosPage() {
           ) : catalogError ? (
             <div className="mt-6">
               <EmptyState
-                title="No fue posible cargar el catálogo"
+                title="No fue posible cargar el catalogo"
                 description={catalogError}
                 action={
                   <Button variant="secondary" onClick={() => window.location.reload()}>
@@ -279,7 +396,7 @@ export function PosPage() {
           ) : catalogItems.length === 0 ? (
             <div className="mt-6">
               <EmptyState
-                title="Catálogo vacío"
+                title="Catalogo vacio"
                 description="No hay variantes ni combos activos disponibles para esta caja."
               />
             </div>
@@ -314,96 +431,96 @@ export function PosPage() {
             </div>
           )}
         </Card>
-      </div>
 
-      <Card className="h-fit xl:sticky xl:top-4">
-        <SectionHeader
-          eyebrow="Venta en curso"
-          title="Carrito"
-          description="Ajusta cantidades, aplica descuentos y confirma el cobro sin salir de la operación."
-          actions={
-            <Button variant="ghost" onClick={clearCart}>
-              Limpiar
-            </Button>
-          }
-        />
+        <Card className="h-fit self-start xl:sticky xl:top-4">
+          <SectionHeader
+            eyebrow="Venta en curso"
+            title="Carrito"
+            description="Ajusta cantidades, aplica descuentos y confirma el cobro sin salir de la operacion."
+            actions={
+              <Button variant="ghost" onClick={clearCart}>
+                Limpiar
+              </Button>
+            }
+          />
 
-        <div className="mt-5 grid gap-3">
-          {items.length === 0 ? (
-            <EmptyState
-              title="Sin ítems cargados"
-              description="Agrega variantes o combos desde el catálogo para preparar la venta."
-            />
-          ) : (
-            items.map((item) => (
-              <CartItem
-                key={item.key}
-                item={item}
-                onChangeQty={(qty) => updateQty(item.key, qty)}
-                onRemove={() => removeItem(item.key)}
+          <div className="mt-5 grid gap-3">
+            {items.length === 0 ? (
+              <EmptyState
+                title="Sin items cargados"
+                description="Agrega variantes o combos desde el catalogo para preparar la venta."
               />
-            ))
-          )}
-        </div>
+            ) : (
+              items.map((item) => (
+                <CartItem
+                  key={item.key}
+                  item={item}
+                  onChangeQty={(qty) => updateQty(item.key, qty)}
+                  onRemove={() => removeItem(item.key)}
+                />
+              ))
+            )}
+          </div>
 
-        <div className="mt-6 grid gap-4 border-t border-[color:var(--line)] pt-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Select
-              label="Descuento"
-              value={discountType}
-              onChange={(event) =>
-                setDiscount(event.target.value as DiscountType, discountValue)
-              }
-            >
-              <option value="NONE">Sin descuento</option>
-              <option value="PERCENT">Porcentaje</option>
-              <option value="FIXED">Valor fijo</option>
-            </Select>
-            <Input
-              type="number"
-              min={0}
-              label="Valor"
-              placeholder="Ej: 10"
-              value={discountInput}
-              onChange={(event) => {
-                const nextValue = normalizeNumberInput(event.target.value, {
-                  allowDecimal: true,
-                });
-                if (nextValue !== null) {
-                  setDiscountInput(nextValue);
-                  setDiscount(discountType, nextValue === '' ? 0 : Number(nextValue));
+          <div className="mt-6 grid gap-4 border-t border-[color:var(--line)] pt-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select
+                label="Descuento"
+                value={discountType}
+                onChange={(event) =>
+                  setDiscount(event.target.value as DiscountType, discountValue)
                 }
-              }}
-            />
-          </div>
+              >
+                <option value="NONE">Sin descuento</option>
+                <option value="PERCENT">Porcentaje</option>
+                <option value="FIXED">Valor fijo</option>
+              </Select>
+              <Input
+                type="number"
+                min={0}
+                label="Valor"
+                placeholder="Ej: 10"
+                value={discountInput}
+                onChange={(event) => {
+                  const nextValue = normalizeNumberInput(event.target.value, {
+                    allowDecimal: true,
+                  });
+                  if (nextValue !== null) {
+                    setDiscountInput(nextValue);
+                    setDiscount(discountType, nextValue === '' ? 0 : Number(nextValue));
+                  }
+                }}
+              />
+            </div>
 
-          <div className="surface-subtle-strong rounded-[1.65rem] p-4">
-            <div className="flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-              <span>Subtotal</span>
-              <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>
+            <div className="surface-subtle-strong rounded-[1.65rem] p-4">
+              <div className="flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
+                <span>Subtotal</span>
+                <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
+                <span>Descuento</span>
+                <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
+              </div>
+              <div className="mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
+                <span className="font-display text-xl font-bold text-white">Total</span>
+                <span className="metric-accent-strong font-display text-3xl font-bold">
+                  {formatCurrency(totals.total)}
+                </span>
+              </div>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-              <span>Descuento</span>
-              <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
-            </div>
-            <div className="mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
-              <span className="font-display text-xl font-bold text-white">Total</span>
-              <span className="metric-accent-strong font-display text-3xl font-bold">
-                {formatCurrency(totals.total)}
-              </span>
-            </div>
-          </div>
 
-          <Button
-            disabled={items.length === 0 || !currentLocation || !currentCashSession}
-            aria-haspopup="dialog"
-            aria-controls="payment-dialog"
-            onClick={() => setPaymentOpen(true)}
-          >
-            Cobrar
-          </Button>
-        </div>
-      </Card>
+            <Button
+              disabled={items.length === 0 || !currentLocation || !currentCashSession}
+              aria-haspopup="dialog"
+              aria-controls="payment-dialog"
+              onClick={() => setPaymentOpen(true)}
+            >
+              Cobrar
+            </Button>
+          </div>
+        </Card>
+      </div>
 
       <PaymentModal
         open={paymentOpen}
@@ -415,6 +532,19 @@ export function PosPage() {
       />
     </div>
   );
+}
+
+function formatUserRole(role: UserRole | undefined) {
+  switch (role) {
+    case 'ADMIN':
+      return 'Administrador';
+    case 'CASHIER':
+      return 'Cajero';
+    case 'AUDITOR':
+      return 'Auditoria';
+    default:
+      return 'Sin rol';
+  }
 }
 
 function formatPosPaymentError(error: unknown, variantNameById: Map<number, string>) {
@@ -429,12 +559,8 @@ function formatPosPaymentError(error: unknown, variantNameById: Map<number, stri
   const variantName = variantNameById.get(variantId);
 
   if (variantName) {
-    return `La variante "${variantName}" no tiene receta configurada. Revísala en administración antes de cobrar esta venta.`;
+    return `La variante "${variantName}" no tiene receta configurada. Revisala en administracion antes de cobrar esta venta.`;
   }
 
-  return 'La variante seleccionada no tiene receta configurada. Revísala en administración antes de cobrar esta venta.';
+  return 'La variante seleccionada no tiene receta configurada. Revisala en administracion antes de cobrar esta venta.';
 }
-
-
-
-

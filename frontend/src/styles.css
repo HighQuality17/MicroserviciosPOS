@@ -416,3 +416,179 @@ select option {
 .skip-link:focus {
   transform: translateY(0);
 }
+
+
+.pos-status-bar {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(129, 140, 248, 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(103, 232, 249, 0.1), transparent 26%),
+    radial-gradient(circle at 84% 16%, rgba(167, 139, 250, 0.16), transparent 28%),
+    linear-gradient(135deg, rgba(13, 15, 31, 0.96) 0%, rgba(8, 10, 22, 0.98) 52%, rgba(13, 17, 36, 0.96) 100%);
+  box-shadow:
+    var(--shadow-panel),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(22px);
+}
+
+.pos-status-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(103, 232, 249, 0.7) 18%, rgba(167, 139, 250, 0.78) 54%, transparent 100%);
+  opacity: 0.96;
+}
+
+.pos-status-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at top right, rgba(103, 232, 249, 0.08), transparent 24%);
+}
+
+.pos-status-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.pos-status-intro {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 19rem;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.pos-status-beacon {
+  display: inline-flex;
+  min-height: 3rem;
+  min-width: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px solid rgba(103, 232, 249, 0.2);
+  background:
+    linear-gradient(180deg, rgba(34, 211, 238, 0.14) 0%, rgba(79, 70, 229, 0.12) 100%),
+    rgba(10, 14, 28, 0.74);
+  color: #cffafe;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 14px 30px rgba(8, 145, 178, 0.12);
+}
+
+.pos-status-grid {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 43rem;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.pos-status-chip {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.8rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(129, 140, 248, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.025) 100%);
+  padding: 0.9rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.pos-status-chip__icon {
+  display: inline-flex;
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(129, 140, 248, 0.18);
+  background:
+    linear-gradient(180deg, rgba(129, 140, 248, 0.18) 0%, rgba(79, 70, 229, 0.08) 100%),
+    rgba(10, 14, 28, 0.72);
+  color: #e2e8f0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.pos-status-chip__icon[data-tone='success'] {
+  border-color: rgba(52, 211, 153, 0.22);
+  background:
+    linear-gradient(180deg, rgba(52, 211, 153, 0.16) 0%, rgba(6, 95, 70, 0.1) 100%),
+    rgba(10, 14, 28, 0.72);
+  color: #bbf7d0;
+}
+
+.pos-status-chip__icon[data-tone='warning'] {
+  border-color: rgba(251, 191, 36, 0.24);
+  background:
+    linear-gradient(180deg, rgba(245, 158, 11, 0.18) 0%, rgba(120, 53, 15, 0.1) 100%),
+    rgba(10, 14, 28, 0.72);
+  color: #fde68a;
+}
+
+.pos-status-chip__icon[data-tone='info'] {
+  border-color: rgba(103, 232, 249, 0.22);
+  background:
+    linear-gradient(180deg, rgba(34, 211, 238, 0.16) 0%, rgba(79, 70, 229, 0.1) 100%),
+    rgba(10, 14, 28, 0.72);
+  color: #cffafe;
+}
+
+.pos-status-chip__icon[data-tone='violet'] {
+  border-color: rgba(196, 181, 253, 0.24);
+  background:
+    linear-gradient(180deg, rgba(139, 92, 246, 0.18) 0%, rgba(79, 70, 229, 0.1) 100%),
+    rgba(10, 14, 28, 0.72);
+  color: #ddd6fe;
+}
+
+.pos-status-chip__label {
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.pos-status-chip__value {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-family: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.pos-status-chip__meta {
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 640px) {
+  .pos-status-shell {
+    gap: 1.15rem;
+    padding: 1.1rem 1.2rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .pos-status-bar {
+    border-radius: 1.5rem;
+  }
+
+  .pos-status-chip__value {
+    font-size: 0.95rem;
+  }
+}
