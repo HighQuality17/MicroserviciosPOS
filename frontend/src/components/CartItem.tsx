@@ -11,7 +11,7 @@ interface CartItemProps {
 
 export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
   return (
-    <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4">
+    <div className="surface-subtle rounded-3xl p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-medium text-white">{item.name}</p>
@@ -58,7 +58,7 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
             <Plus size={14} />
           </Button>
         </div>
-        <p className="font-display text-lg font-bold text-teal-300">
+        <p className="font-display text-lg font-bold text-violet-200">
           {formatCurrency(item.unit_price * item.qty)}
         </p>
       </div>

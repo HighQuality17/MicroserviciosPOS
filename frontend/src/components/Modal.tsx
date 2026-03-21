@@ -122,7 +122,7 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4 py-4 sm:py-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] px-4 py-4 backdrop-blur-md sm:py-8">
       <div
         id={id}
         ref={dialogRef}
@@ -139,7 +139,7 @@ export function Modal({
               {title}
             </h2>
             {subtitle ? (
-              <p id={subtitleId} className="mt-1 text-sm text-slate-300">
+              <p id={subtitleId} className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">
                 {subtitle}
               </p>
             ) : null}
