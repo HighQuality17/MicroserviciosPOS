@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Landmark, Wallet } from 'lucide-react';
+import { CircleDot, Landmark, MapPin, User, Wallet } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
-import { LoadingState } from '@/components/LoadingState';
 import { SectionHeader } from '@/components/SectionHeader';
-import { SummaryCard } from '@/components/SummaryCard';
+import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
+import type { UserRole } from '@/types/api';
 import { formatCurrency, formatDate, toNumber } from '@/utils/format';
 import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
@@ -60,7 +60,7 @@ export function CashPage() {
     if (!currentUser || !currentLocation) return;
     const openingCash = parseNumberInput(openingCashInput);
     if (openingCash === null || openingCash < 0) {
-      setError('Ingresa un efectivo inicial válido.');
+      setError('Ingresa un efectivo inicial valido.');
       return;
     }
 
@@ -91,7 +91,7 @@ export function CashPage() {
 
     const closingCashCounted = Number(closingCashCountedInput);
     if (Number.isNaN(closingCashCounted) || closingCashCounted < 0) {
-      setError('El efectivo contado debe ser un número válido.');
+      setError('El efectivo contado debe ser un numero valido.');
       return;
     }
 
@@ -114,38 +114,157 @@ export function CashPage() {
     }
   }
 
+  const openingCashPreview = parseNumberInput(openingCashInput);
+  const openingValue = currentCashSession
+    ? formatCurrency(toNumber(currentCashSession.openingCash))
+    : openingCashPreview !== null
+      ? formatCurrency(openingCashPreview)
+      : 'Pendiente';
+  const cashStatusTone = currentCashSession
+    ? 'success'
+    : currentLocation
+      ? 'warning'
+      : 'default';
+  const cashStatusLabel = currentCashSession
+    ? 'Abierta'
+    : currentLocation
+      ? 'Pendiente'
+      : 'Sin POS';
+  const operationStatusLabel = currentCashSession
+    ? 'Caja operativa'
+    : currentLocation
+      ? 'Lista para apertura'
+      : 'Selecciona un POS';
+  const openingTone = currentCashSession
+    ? 'info'
+    : openingCashPreview !== null
+      ? 'warning'
+      : 'default';
+  const openingStatusLabel = currentCashSession
+    ? 'Registrada'
+    : openingCashPreview !== null
+      ? 'Lista'
+      : 'Pendiente';
+  const currentUserName = currentUser?.name || currentUser?.username || 'Sin usuario';
+  const currentUserHandle = currentUser?.username ? `@${currentUser.username}` : 'Sesion actual';
+  const currentUserRole = formatUserRole(currentUser?.role);
+
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <SummaryCard
-          title="Caja activa"
-      value={currentCashSession ? `#${currentCashSession.id}` : 'Sin sesión'}
-          hint={
-            currentCashSession
-              ? `Abierta ${formatDate(currentCashSession.openedAt)}`
-              : 'Abre una caja para empezar'
-          }
-          icon={<Wallet size={18} />}
-        />
-        <SummaryCard
-          title="Apertura"
-          value={
-            currentCashSession
-              ? formatCurrency(toNumber(currentCashSession.openingCash))
-              : openingCashInput
-                ? formatCurrency(Number(openingCashInput))
-                : 'Pendiente'
-          }
-          hint="Efectivo base de la sesión"
-          icon={<Landmark size={18} />}
-        />
-        <SummaryCard
-          title="Ubicación"
-          value={currentLocation?.name ?? 'Sin POS activo'}
-          hint={currentLocation ? `ID ${currentLocation.id}` : 'Crea o selecciona un punto de venta'}
-          icon={<Wallet size={18} />}
-        />
-      </div>
+      <section className="pos-status-bar" aria-label="Estado operativo de caja">
+        <div className="pos-status-shell">
+          <div className="pos-status-intro">
+            <div className="pos-status-beacon" aria-hidden="true">
+              <Wallet size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="section-kicker">Operacion de caja</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                  Control de caja
+                </h1>
+                <StatusBadge label={operationStatusLabel} tone={cashStatusTone} />
+              </div>
+              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
+                Supervisa el contexto de apertura, ubicacion y responsable sin quitar
+                foco a las operaciones principales.
+              </p>
+            </div>
+          </div>
+
+          <div className="pos-status-grid">
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={cashStatusTone}>
+                <CircleDot size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Caja activa</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">
+                    {currentCashSession ? `Caja #${currentCashSession.id}` : 'Sin sesion'}
+                  </p>
+                  <StatusBadge label={cashStatusLabel} tone={cashStatusTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {currentCashSession
+                    ? `Abierta ${formatDate(currentCashSession.openedAt)}`
+                    : currentLocation
+                      ? 'Lista para apertura en este POS'
+                      : 'Selecciona un POS para empezar'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={openingTone}>
+                <Landmark size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Apertura</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{openingValue}</p>
+                  <StatusBadge label={openingStatusLabel} tone={openingTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {currentCashSession
+                    ? 'Efectivo base registrado para la sesion actual'
+                    : openingCashPreview !== null
+                      ? 'Valor listo para abrir caja'
+                      : 'Define el efectivo inicial antes de operar'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span
+                className="pos-status-chip__icon"
+                aria-hidden="true"
+                data-tone={currentLocation ? 'info' : 'default'}
+              >
+                <MapPin size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Ubicacion</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">
+                    {currentLocation?.name ?? 'Sin POS activo'}
+                  </p>
+                  <StatusBadge
+                    label={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
+                    tone={currentLocation ? 'info' : 'default'}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {currentLocation
+                    ? 'Punto de venta seleccionado para operar caja'
+                    : 'Crea o selecciona un punto de venta'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span
+                className="pos-status-chip__icon"
+                aria-hidden="true"
+                data-tone={currentUser ? 'violet' : 'default'}
+              >
+                <User size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Responsable</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{currentUserName}</p>
+                  <StatusBadge
+                    label={currentUserRole}
+                    tone={currentUser ? 'info' : 'default'}
+                  />
+                </div>
+                <p className="pos-status-chip__meta">{currentUserHandle}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 
@@ -156,16 +275,16 @@ export function CashPage() {
           <Card className="xl:col-span-2">
             <EmptyState
               title="Sin punto de venta activo"
-              description="Crea una ubicación desde Admin o selecciona un POS válido en el encabezado antes de operar caja."
+              description="Crea una ubicacion desde Admin o selecciona un POS valido en el encabezado antes de operar caja."
             />
           </Card>
         ) : null}
 
         <Card>
           <SectionHeader
-            eyebrow="Operación"
+            eyebrow="Operacion"
             title="Apertura de caja"
-            description="Registra el efectivo inicial y habilita la operación diaria para el POS activo."
+            description="Registra el efectivo inicial y habilita la operacion diaria para el POS activo."
           />
           <div className="mt-5 grid gap-4">
             <Input
@@ -197,15 +316,15 @@ export function CashPage() {
 
         <Card>
           <SectionHeader
-            eyebrow="Operación"
+            eyebrow="Operacion"
             title="Cierre de caja"
-            description="Confirma el efectivo contado y obtén el resumen final de la sesión actual."
+            description="Confirma el efectivo contado y obten el resumen final de la sesion actual."
           />
           {!currentCashSession ? (
             <div className="mt-5">
               <EmptyState
                 title="No hay caja abierta"
-                description="Primero abre una sesión de caja. Más adelante podrás consultar el historial completo desde esta misma vista."
+                description="Primero abre una sesion de caja. Mas adelante podras consultar el historial completo desde esta misma vista."
               />
             </div>
           ) : (
@@ -238,7 +357,7 @@ export function CashPage() {
           <SectionHeader
             eyebrow="Resumen calculado por el backend"
             title="Resultado del cierre"
-            description="Vista final de apertura, ventas, esperado y diferencia para la sesión recién cerrada."
+            description="Vista final de apertura, ventas, esperado y diferencia para la sesion recien cerrada."
           />
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[
@@ -262,5 +381,15 @@ export function CashPage() {
   );
 }
 
-
-
+function formatUserRole(role: UserRole | undefined) {
+  switch (role) {
+    case 'ADMIN':
+      return 'Administrador';
+    case 'CASHIER':
+      return 'Cajero';
+    case 'AUDITOR':
+      return 'Auditoria';
+    default:
+      return 'Sin rol';
+  }
+}
