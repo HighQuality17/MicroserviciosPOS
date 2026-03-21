@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Boxes,
+  CircleDot,
   CreditCard,
   PackageSearch,
   Receipt,
@@ -21,6 +22,7 @@ import { KpiCard } from '@/components/KpiCard';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { SectionHeader } from '@/components/SectionHeader';
+import { StatusBadge } from '@/components/StatusBadge';
 import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -32,7 +34,10 @@ import type {
   AdminSalesByPaymentItem,
   AdminSummary,
   AdminTopItem,
+  PaymentMethod,
 } from '@/types/api';
+
+type BadgeTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
 
 function BlockError({ message }: { message: string }) {
   return <FeedbackMessage tone="error">{message}</FeedbackMessage>;
@@ -164,7 +169,7 @@ export function AdminPage() {
       setSalesByPaymentError(
         error instanceof Error
           ? error.message
-          : 'No fue posible cargar ventas por método de pago',
+          : 'No fue posible cargar ventas por metodo de pago',
       );
     } finally {
       setSalesByPaymentLoading(false);
@@ -242,35 +247,233 @@ export function AdminPage() {
       })),
     [topItems],
   );
-
   const currentCashSessionLabel = summary?.current_cash_session
     ? `Abierta #${summary.current_cash_session.id}`
-    : 'Sin sesión';
+    : 'Sin sesion';
+  const totalLocations = availableLocations.length;
+  const leadingPayment = useMemo(() => {
+    if (salesByPayment.length === 0) return null;
+    return [...salesByPayment].sort((left, right) => right.total - left.total)[0] ?? null;
+  }, [salesByPayment]);
+  const featuredTopItem = topItems[0] ?? null;
+  const latestActivity = recentActivity[0] ?? null;
+
+  const dashboardStatusTone: BadgeTone = summaryAccessDenied
+    ? 'warning'
+    : summaryLoading || salesByPaymentLoading || topItemsLoading || lowStockLoading || recentActivityLoading
+      ? 'info'
+      : summary
+        ? 'success'
+        : 'default';
+  const dashboardStatusLabel = summaryAccessDenied
+    ? 'Acceso parcial'
+    : summaryLoading || salesByPaymentLoading || topItemsLoading || lowStockLoading || recentActivityLoading
+      ? 'Sincronizando'
+      : summary
+        ? 'Centro listo'
+        : 'Sin datos';
+  const salesStatusTone: BadgeTone = summaryLoading
+    ? 'info'
+    : (summary?.sales_count ?? 0) > 0
+      ? 'success'
+      : 'default';
+  const salesStatusLabel = summaryLoading
+    ? 'Actualizando'
+    : (summary?.sales_count ?? 0) > 0
+      ? 'Ritmo activo'
+      : 'Sin ventas';
+  const averageTicketTone: BadgeTone = summaryLoading
+    ? 'info'
+    : leadingPayment
+      ? 'info'
+      : 'default';
+  const averageTicketLabel = summaryLoading
+    ? 'Calculando'
+    : leadingPayment
+      ? 'Mix disponible'
+      : 'Sin pagos';
+  const cashStatusTone: BadgeTone = summaryLoading
+    ? 'info'
+    : summary?.current_cash_session
+      ? 'success'
+      : 'warning';
+  const cashStatusLabel = summaryLoading
+    ? 'Consultando'
+    : summary?.current_cash_session
+      ? 'Caja operativa'
+      : 'Sin apertura';
+  const stockStatusTone: BadgeTone = summaryLoading || lowStockLoading
+    ? 'info'
+    : (summary?.low_stock_count ?? 0) > 0
+      ? 'warning'
+      : 'success';
+  const stockStatusLabel = summaryLoading || lowStockLoading
+    ? 'Verificando'
+    : (summary?.low_stock_count ?? 0) > 0
+      ? 'Requiere atencion'
+      : 'Controlado';
+  const overviewTone: BadgeTone = summaryLoading
+    ? 'info'
+    : isAdmin
+      ? 'success'
+      : 'info';
+  const overviewLabel = summaryLoading
+    ? 'Sincronizando'
+    : isAdmin
+      ? 'Modo administrador'
+      : 'Vista ejecutiva';
+  const pulseTone: BadgeTone = recentActivityLoading
+    ? 'info'
+    : latestActivity || featuredTopItem || leadingPayment
+      ? 'success'
+      : 'default';
+  const pulseLabel = recentActivityLoading
+    ? 'Actualizando'
+    : latestActivity || featuredTopItem || leadingPayment
+      ? 'Panel vivo'
+      : 'Esperando datos';
+  const alertsTone: BadgeTone = summaryLoading || lowStockLoading
+    ? 'info'
+    : (summary?.low_stock_count ?? 0) > 0
+      ? 'warning'
+      : 'success';
+  const alertsLabel = summaryLoading || lowStockLoading
+    ? 'Sincronizando'
+    : (summary?.low_stock_count ?? 0) > 0
+      ? 'Alertas activas'
+      : 'Sin alertas';
+  const activityTone: BadgeTone = recentActivityLoading
+    ? 'info'
+    : recentActivity.length > 0
+      ? 'success'
+      : 'default';
+  const activityLabel = recentActivityLoading
+    ? 'Actualizando'
+    : recentActivity.length > 0
+      ? 'Eventos listos'
+      : 'Sin movimiento';
+  const locationsTone: BadgeTone = locationsLoading
+    ? 'info'
+    : totalLocations > 0
+      ? 'info'
+      : 'default';
+  const locationsLabel = locationsLoading
+    ? 'Actualizando'
+    : totalLocations > 0
+      ? 'Cobertura lista'
+      : 'Sin POS';
 
   return (
     <div className="grid min-w-0 gap-5 sm:gap-6">
       {isAuditor ? (
         <RoleModeBanner
-          title="Panel en modo auditoría"
-          description="Este dashboard es de solo lectura para el rol AUDITOR. Puedes revisar métricas, alertas y actividad reciente sin ejecutar acciones operativas."
+          title="Panel en modo auditoria"
+          description="Este dashboard es de solo lectura para el rol AUDITOR. Puedes revisar metricas, alertas y actividad reciente sin ejecutar acciones operativas."
           tone="warning"
         />
       ) : null}
 
-      <Card className="overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-indigo-400/16 via-violet-400/12 to-transparent" />
-        <div className="relative">
-          <SectionHeader
-            eyebrow="Administración"
-            title="Panel administrativo"
-            description={
-              isAdmin
-                ? 'Dashboard operativo conectado a métricas reales del backend para monitorear ventas, caja, stock y actividad reciente.'
-                : 'Vista de consulta conectada a métricas reales del backend para auditoría, seguimiento y revisión operativa.'
-            }
-          />
+      <section className="pos-status-bar" aria-label="Estado general del dashboard administrativo">
+        <div className="pos-status-shell">
+          <div className="pos-status-intro">
+            <div className="pos-status-beacon" aria-hidden="true">
+              <CircleDot size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="section-kicker">Centro de control</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-3xl font-bold text-white sm:text-[2rem]">
+                  Dashboard administrativo
+                </h1>
+                <StatusBadge label={dashboardStatusLabel} tone={dashboardStatusTone} />
+              </div>
+              <p className="mt-2 max-w-3xl text-sm text-[color:var(--text-secondary)]">
+                Pantalla principal del rol administrador para entender ventas, caja, catalogo, inventario y actividad reciente con una lectura ejecutiva clara.
+              </p>
+            </div>
+          </div>
+
+          <div className="pos-status-grid">
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={(summary?.sales_count ?? 0) > 0 ? 'success' : 'default'}>
+                <ShoppingBag size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Ventas de hoy</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{summaryLoading ? '...' : formatCurrency(summary?.sales_today_total ?? 0)}</p>
+                  <StatusBadge label={salesStatusLabel} tone={salesStatusTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {summaryLoading
+                    ? 'Sincronizando volumen comercial del dia'
+                    : `${summary?.sales_count ?? 0} ventas pagadas registradas en la jornada`}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={leadingPayment ? 'info' : 'default'}>
+                <Sparkles size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Ticket promedio</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{summaryLoading ? '...' : formatCurrency(summary?.average_ticket ?? 0)}</p>
+                  <StatusBadge label={averageTicketLabel} tone={averageTicketTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {summaryLoading
+                    ? 'Preparando lectura de consumo promedio'
+                    : leadingPayment
+                      ? `Metodo dominante: ${formatPaymentMethod(leadingPayment.method)}`
+                      : 'Aun no hay pagos confirmados para esta lectura'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={summary?.current_cash_session ? 'success' : 'warning'}>
+                <CreditCard size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Caja actual</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{summaryLoading ? '...' : currentCashSessionLabel}</p>
+                  <StatusBadge label={cashStatusLabel} tone={cashStatusTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {summaryLoading
+                    ? 'Consultando sesion operativa actual'
+                    : summary?.current_cash_session
+                      ? `${summary.current_cash_session.location_name} - ${summary.current_cash_session.opened_by_name}`
+                      : 'No hay una caja abierta en este momento'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pos-status-chip">
+              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={(summary?.low_stock_count ?? 0) > 0 ? 'warning' : 'success'}>
+                <AlertTriangle size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="pos-status-chip__label">Stock bajo</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="pos-status-chip__value">{summaryLoading ? '...' : String(summary?.low_stock_count ?? 0)}</p>
+                  <StatusBadge label={stockStatusLabel} tone={stockStatusTone} />
+                </div>
+                <p className="pos-status-chip__meta">
+                  {summaryLoading || lowStockLoading
+                    ? 'Verificando umbrales de inventario'
+                    : lowStock.length > 0
+                      ? `${lowStock[0].ingredient_name} en ${lowStock[0].location_name}`
+                      : 'Inventario dentro de umbrales operativos'}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </Card>
+      </section>
 
       {summaryError ? <BlockError message={summaryError} /> : null}
 
@@ -278,58 +481,150 @@ export function AdminPage() {
         <AccessState description="Tu perfil actual no tiene permiso para consultar el dashboard administrativo." />
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <KpiCard
-          title="Ventas del día"
-          value={summaryLoading ? '...' : formatCurrency(summary?.sales_today_total ?? 0)}
-          hint="Total vendido hoy"
-          icon={<ShoppingBag size={18} />}
-          tone="success"
-        />
-        <KpiCard
-          title="Número de ventas"
-          value={summaryLoading ? '...' : String(summary?.sales_count ?? 0)}
-          hint="Ventas pagadas del día"
-          icon={<Receipt size={18} />}
-        />
-        <KpiCard
-          title="Ticket promedio"
-          value={summaryLoading ? '...' : formatCurrency(summary?.average_ticket ?? 0)}
-          hint="Promedio por venta pagada"
-          icon={<Sparkles size={18} />}
-        />
-        <KpiCard
-          title="Caja actual"
-          value={summaryLoading ? '...' : currentCashSessionLabel}
-          hint={
-            summary?.current_cash_session
-              ? summary.current_cash_session.location_name
-              : 'Sin caja abierta'
-          }
-          icon={<CreditCard size={18} />}
-          tone={summary?.current_cash_session ? 'success' : 'warning'}
-        />
-        <KpiCard
-          title="Productos activos"
-          value={summaryLoading ? '...' : String(summary?.active_products_count ?? 0)}
-          hint="Conteo real del catálogo"
-          icon={<Boxes size={18} />}
-        />
-        <KpiCard
-          title="Ingredientes con stock bajo"
-          value={summaryLoading ? '...' : String(summary?.low_stock_count ?? 0)}
-          hint="Calculado desde inventario real"
-          icon={<AlertTriangle size={18} />}
-          tone={(summary?.low_stock_count ?? 0) > 0 ? 'warning' : 'default'}
-        />
-      </div>
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] xl:items-stretch 2xl:gap-6">
+        <Card className="overflow-hidden xl:min-h-[38rem]">
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-cyan-300/10 via-indigo-400/14 to-transparent" />
+          <SectionHeader
+            eyebrow="Resumen ejecutivo"
+            title="Panorama del negocio"
+            description="Lectura principal de ventas, cobertura operativa y capacidad comercial para abrir la jornada con contexto claro."
+            actions={<StatusBadge label={overviewLabel} tone={overviewTone} />}
+          />
 
-      <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+          <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.03fr)_minmax(0,0.97fr)] xl:min-h-[31rem]">
+            <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 [&>*]:h-full">
+              <KpiCard
+                title="Numero de ventas"
+                value={summaryLoading ? '...' : String(summary?.sales_count ?? 0)}
+                hint="Ventas pagadas confirmadas en la jornada actual"
+                icon={<Receipt size={18} />}
+                tone={(summary?.sales_count ?? 0) > 0 ? 'success' : 'default'}
+              />
+              <KpiCard
+                title="Productos activos"
+                value={summaryLoading ? '...' : String(summary?.active_products_count ?? 0)}
+                hint="Catalogo disponible para venta, combos y administracion"
+                icon={<Boxes size={18} />}
+              />
+              <KpiCard
+                title="POS disponibles"
+                value={locationsLoading ? '...' : String(totalLocations)}
+                hint="Puntos de venta listos para operar caja, inventario y ventas"
+                icon={<CreditCard size={18} />}
+                tone={totalLocations > 0 ? 'info' : 'default'}
+              />
+              <KpiCard
+                title="Efectivo base"
+                value={summaryLoading ? '...' : summary?.current_cash_session ? formatCurrency(summary.current_cash_session.opening_cash) : 'Sin caja'}
+                hint={summary?.current_cash_session ? 'Monto de apertura de la caja activa' : 'Abre una caja para definir efectivo inicial'}
+                icon={<Wallet size={18} />}
+                tone={summary?.current_cash_session ? 'info' : 'warning'}
+              />
+            </div>
+
+            <div className="surface-subtle-strong flex h-full flex-col rounded-[1.8rem] p-6">
+              <p className="section-kicker">Lectura central</p>
+              <h3 className="mt-3 font-display text-2xl font-bold text-white">Centro de lectura</h3>
+              <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
+                Resume lo que mas importa para decidir rapido sin perder el contexto operativo del negocio.
+              </p>
+
+              <div className="mt-6 grid flex-1 gap-3.5">
+                <div className="data-list-card flex min-h-[7.5rem] flex-col justify-between rounded-2xl px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Metodo dominante</p>
+                  <p className="mt-2 font-medium text-white">
+                    {leadingPayment ? formatPaymentMethod(leadingPayment.method) : 'Sin pagos confirmados'}
+                  </p>
+                  <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
+                    {leadingPayment ? formatCurrency(leadingPayment.total) : 'Todavia sin distribucion reciente'}
+                  </p>
+                </div>
+                <div className="data-list-card flex min-h-[7.5rem] flex-col justify-between rounded-2xl px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Item lider</p>
+                  <p className="mt-2 font-medium text-white">{featuredTopItem ? featuredTopItem.name : 'Sin ranking comercial'}</p>
+                  <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
+                    {featuredTopItem ? `${featuredTopItem.qty_sold.toLocaleString('es-CO')} unidades vendidas` : 'El ranking aparecera con ventas confirmadas'}
+                  </p>
+                </div>
+                <div className="grid auto-rows-fr gap-3.5 sm:grid-cols-2 [&>*]:h-full">
+                  <div className="surface-subtle flex min-h-[7.5rem] flex-col justify-between rounded-2xl px-4 py-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Ultima actividad</p>
+                    <p className="mt-2 font-medium text-white">{latestActivity ? latestActivity.title : 'Sin eventos recientes'}</p>
+                    <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
+                      {latestActivity ? formatDate(latestActivity.created_at) : 'La actividad aparecera cuando existan movimientos'}
+                    </p>
+                  </div>
+                  <div className="surface-subtle flex min-h-[7.5rem] flex-col justify-between rounded-2xl px-4 py-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Cobertura POS</p>
+                    <p className="mt-2 font-medium text-white">{locationsLoading ? 'Actualizando...' : `${totalLocations} POS listos`}</p>
+                    <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
+                      {totalLocations > 0 ? 'Infraestructura disponible para operar' : 'Crea el primer POS para habilitar cobertura'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="overflow-hidden xl:min-h-[38rem]">
+          <SectionHeader
+            eyebrow="Pulso ejecutivo"
+            title="Radar del negocio"
+            description="Senales directas para entender si la operacion esta lista, si hay fricciones y donde conviene mirar primero."
+            actions={<StatusBadge label={pulseLabel} tone={pulseTone} />}
+          />
+
+          <div className="mt-6 flex flex-col gap-4 xl:min-h-[31rem]">
+            <div className="surface-subtle-strong rounded-[1.8rem] p-6">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge label={locationsLabel} tone={locationsTone} />
+                <StatusBadge label={alertsLabel} tone={alertsTone} />
+                <StatusBadge label={activityLabel} tone={activityTone} />
+              </div>
+              <p className="mt-4 text-sm leading-6 text-[color:var(--text-secondary)]">
+                El panel concentra ventas del dia, situacion de caja, alertas de inventario y senales recientes para que el administrador tenga una primera impresion confiable desde el ingreso.
+              </p>
+            </div>
+
+            <div className="grid auto-rows-fr gap-3.5 sm:grid-cols-2 [&>*]:h-full">
+              <div className="data-list-card rounded-3xl p-4">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Caja</p>
+                <p className="mt-2 font-medium text-white">{summary?.current_cash_session ? summary.current_cash_session.location_name : 'Sin caja abierta'}</p>
+                <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
+                  {summary?.current_cash_session ? `Abierta por ${summary.current_cash_session.opened_by_name}` : 'Abre una caja para iniciar operacion'}
+                </p>
+              </div>
+              <div className="data-list-card rounded-3xl p-4">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Stock</p>
+                <p className="mt-2 font-medium text-white">{(summary?.low_stock_count ?? 0) > 0 ? 'Atencion requerida' : 'Controlado'}</p>
+                <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
+                  {lowStock.length > 0 ? `${lowStock.length} ingredientes por revisar` : 'Sin ingredientes por debajo del umbral'}
+                </p>
+              </div>
+              <div className="data-list-card rounded-3xl p-4">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Catalogo</p>
+                <p className="mt-2 font-medium text-white">{summaryLoading ? 'Sincronizando...' : `${summary?.active_products_count ?? 0} activos`}</p>
+                <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Base comercial disponible para POS, combos y ventas</p>
+              </div>
+              <div className="data-list-card rounded-3xl p-4">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Actividad</p>
+                <p className="mt-2 font-medium text-white">{latestActivity ? formatActivityType(latestActivity.activity_type) : 'Sin eventos'}</p>
+                <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
+                  {latestActivity ? latestActivity.subtitle : 'La trazabilidad aparecera con movimientos reales'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+      <div className="grid min-w-0 gap-5 xl:grid-cols-2 xl:items-stretch">
         {salesByPaymentError ? (
           <Card>
             <SectionHeader
-              title="Ventas por método de pago"
-              description="Distribución operativa reciente"
+              eyebrow="Analitica"
+              title="Ventas por metodo de pago"
+              description="Distribucion operativa reciente del ingreso registrado."
             />
             <div className="mt-6">
               <BlockError message={salesByPaymentError} />
@@ -338,8 +633,9 @@ export function AdminPage() {
         ) : salesByPaymentLoading ? (
           <Card>
             <SectionHeader
-              title="Ventas por método de pago"
-              description="Distribución operativa reciente"
+              eyebrow="Analitica"
+              title="Ventas por metodo de pago"
+              description="Distribucion operativa reciente del ingreso registrado."
             />
             <div className="mt-6">
               <SkeletonRows rows={3} />
@@ -347,13 +643,13 @@ export function AdminPage() {
           </Card>
         ) : (
           <AdminChartCard
-            title="Ventas por método de pago"
-            description="Distribución operativa reciente"
+            title="Ventas por metodo de pago"
+            description="Distribucion operativa reciente del ingreso registrado."
             data={paymentMethodData}
             chartType="pie"
             valueFormat="currency"
-            emptyTitle="Sin ventas por método registradas"
-            emptyDescription="Aparecerá informacion cuando existan pagos confirmados."
+            emptyTitle="Sin ventas por metodo registradas"
+            emptyDescription="Aparecera informacion cuando existan pagos confirmados."
             footer={
               <p className="text-xs text-[color:var(--text-faint)]">
                 Totales reales agregados desde pagos registrados.
@@ -365,8 +661,9 @@ export function AdminPage() {
         {topItemsError ? (
           <Card>
             <SectionHeader
-              title="Productos más vendidos"
-              description="Ranking real de items"
+              eyebrow="Analitica"
+              title="Productos mas vendidos"
+              description="Ranking real de items vendidos en la operacion."
             />
             <div className="mt-6">
               <BlockError message={topItemsError} />
@@ -375,8 +672,9 @@ export function AdminPage() {
         ) : topItemsLoading ? (
           <Card>
             <SectionHeader
-              title="Productos más vendidos"
-              description="Ranking real de items"
+              eyebrow="Analitica"
+              title="Productos mas vendidos"
+              description="Ranking real de items vendidos en la operacion."
             />
             <div className="mt-6">
               <SkeletonRows rows={4} />
@@ -384,8 +682,8 @@ export function AdminPage() {
           </Card>
         ) : (
           <AdminChartCard
-            title="Productos más vendidos"
-            description="Ranking real de items"
+            title="Productos mas vendidos"
+            description="Ranking real de items vendidos en la operacion."
             data={topItemsData}
             chartType="bar"
             valueFormat="number"
@@ -400,12 +698,13 @@ export function AdminPage() {
         )}
       </div>
 
-      <div className="grid min-w-0 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[0.94fr_1.06fr] xl:items-stretch">
         <Card>
           <SectionHeader
             eyebrow="Alertas"
             title="Estado operativo"
-            description="Senales rápidas sobre caja, inventario y ventas."
+            description="Senales rapidas sobre caja, inventario y disponibilidad comercial."
+            actions={<StatusBadge label={alertsLabel} tone={alertsTone} />}
           />
 
           <div className="mt-6 grid gap-3">
@@ -414,15 +713,11 @@ export function AdminPage() {
             ) : (
               <>
                 <AlertCard
-                  title={
-                    summary?.current_cash_session
-                      ? 'Caja abierta'
-                      : 'Caja cerrada'
-                  }
+                  title={summary?.current_cash_session ? 'Caja abierta' : 'Caja cerrada'}
                   description={
                     summary?.current_cash_session
-                      ? `Sesión #${summary.current_cash_session.id} activa en ${summary.current_cash_session.location_name}.`
-                      : 'No hay una sesión de caja activa en este momento.'
+                      ? `Sesion #${summary.current_cash_session.id} activa en ${summary.current_cash_session.location_name}.`
+                      : 'No hay una sesion de caja activa en este momento.'
                   }
                   tone={summary?.current_cash_session ? 'success' : 'warning'}
                   icon={<Wallet size={18} />}
@@ -452,15 +747,11 @@ export function AdminPage() {
                 )}
 
                 <AlertCard
-                  title={
-                    (summary?.sales_count ?? 0) > 0
-                      ? 'Ventas recientes disponibles'
-                      : 'Sin ventas registradas hoy'
-                  }
+                  title={(summary?.sales_count ?? 0) > 0 ? 'Ventas recientes disponibles' : 'Sin ventas registradas hoy'}
                   description={
                     (summary?.sales_count ?? 0) > 0
                       ? `${summary?.sales_count ?? 0} ventas pagadas registradas hoy.`
-                      : 'Todavía no hay ventas pagadas para el día actual.'
+                      : 'Todavia no hay ventas pagadas para el dia actual.'
                   }
                   tone={(summary?.sales_count ?? 0) > 0 ? 'info' : 'warning'}
                   icon={<Receipt size={18} />}
@@ -475,6 +766,7 @@ export function AdminPage() {
             eyebrow="Actividad"
             title="Actividad reciente"
             description="Eventos operativos recientes generados por ventas, caja y ajustes de stock."
+            actions={<StatusBadge label={activityLabel} tone={activityTone} />}
           />
 
           {recentActivityError ? (
@@ -489,22 +781,23 @@ export function AdminPage() {
             <div className="mt-6">
               <EmptyState
                 title="Sin actividad reciente"
-                description="Aparecerá movimiento aqui cuando existan ventas, aperturas de caja o ajustes de inventario."
+                description="Aparecera movimiento aqui cuando existan ventas, aperturas de caja o ajustes de inventario."
               />
             </div>
           ) : (
-            <ScrollPanel className="mt-6 grid gap-3" maxHeightClassName="max-h-[34rem]" tabIndex={0} aria-label="Actividad reciente">
+            <ScrollPanel className="mt-6 grid gap-3.5 pr-1" maxHeightClassName="max-h-[34rem]" tabIndex={0} aria-label="Actividad reciente">
               {recentActivity.map((item) => (
                 <div
                   key={`${item.activity_type}-${item.entity_id}-${item.created_at}`}
                   className="data-list-card rounded-3xl p-4"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
-                        {formatActivityType(item.activity_type)}
-                      </p>
-                      <p className="mt-2 font-medium text-white">{item.title}</p>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusBadge label={formatActivityType(item.activity_type)} tone={getActivityTone(item.activity_type)} />
+                        <p className="text-xs text-[color:var(--text-faint)]">Registro #{item.entity_id}</p>
+                      </div>
+                      <p className="mt-3 font-medium text-white">{item.title}</p>
                       <p className="mt-1 text-sm text-slate-400">{item.subtitle}</p>
                     </div>
                     <p className="text-sm text-[color:var(--text-faint)]">
@@ -517,13 +810,13 @@ export function AdminPage() {
           )}
         </Card>
       </div>
-
       {isAdmin ? (
         <Card>
           <SectionHeader
             eyebrow="Siguiente fase"
             title="Controles administrativos"
-            description="La base visual queda preparada para acciones futuras como exportación, configuración de alertas y reglas de supervisión."
+            description="La base visual queda preparada para acciones futuras como exportacion, configuracion de alertas y reglas de supervision."
+            actions={<StatusBadge label="Roadmap visual" tone="default" />}
           />
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -550,6 +843,7 @@ export function AdminPage() {
             eyebrow="Ubicaciones"
             title="Puntos de venta"
             description="Gestiona los POS reales disponibles para caja, inventario y ventas."
+            actions={<StatusBadge label={locationsLabel} tone={locationsTone} />}
           />
 
           {locationMessage ? (
@@ -571,11 +865,14 @@ export function AdminPage() {
           ) : null}
 
           <div className="mt-6 grid min-w-0 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-            <div className="data-list-card rounded-3xl p-5">
-              <p className="text-sm text-slate-400">Crear ubicación</p>
+            <div className="surface-subtle-strong rounded-[1.8rem] p-5">
+              <p className="text-sm text-slate-400">Crear ubicacion</p>
               <h3 className="mt-2 font-display text-2xl font-bold text-white">
                 Nuevo punto de venta
               </h3>
+              <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
+                Agrega un POS real para operar caja, inventario y ventas desde el dashboard.
+              </p>
 
               <div className="mt-5 grid gap-4">
                 <Input
@@ -593,7 +890,7 @@ export function AdminPage() {
               </div>
             </div>
 
-            <div className="data-list-card rounded-3xl p-5">
+            <div className="surface-subtle rounded-[1.8rem] p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm text-slate-400">Ubicaciones reales</p>
@@ -614,7 +911,7 @@ export function AdminPage() {
                 <div className="mt-6">
                   <EmptyState
                     title="Sin puntos de venta"
-                    description="Crea la primera ubicación para operar caja, inventario y ventas con datos reales."
+                    description="Crea la primera ubicacion para operar caja, inventario y ventas con datos reales."
                   />
                 </div>
               ) : (
@@ -624,7 +921,10 @@ export function AdminPage() {
                       key={location.id}
                       className="data-list-card rounded-3xl p-4"
                     >
-                      <p className="font-medium text-white">{location.name}</p>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-medium text-white">{location.name}</p>
+                        <StatusBadge label="POS activo" tone="info" />
+                      </div>
                       <p className="mt-1 text-sm text-slate-400">ID {location.id}</p>
                     </div>
                   ))}
@@ -644,5 +944,14 @@ function formatActivityType(activityType: AdminRecentActivityItem['activity_type
   return 'Inventario';
 }
 
+function getActivityTone(activityType: AdminRecentActivityItem['activity_type']): BadgeTone {
+  if (activityType === 'SALE') return 'info';
+  if (activityType === 'CASH_SESSION') return 'success';
+  return 'warning';
+}
 
-
+function formatPaymentMethod(method: PaymentMethod | null) {
+  if (method === 'CASH') return 'Efectivo';
+  if (method === 'TRANSFER') return 'Transferencia';
+  return 'Pendiente';
+}

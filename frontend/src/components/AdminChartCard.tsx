@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { SectionHeader } from '@/components/SectionHeader';
+import { StatusBadge } from '@/components/StatusBadge';
 import {
   Bar,
   BarChart,
@@ -51,18 +52,37 @@ export function AdminChartCard({
     ...item,
     shortLabel: truncateLabel(item.label),
   }));
+  const chartStatusLabel = data.length > 0 ? 'Lectura lista' : 'Sin datos';
+  const chartStatusTone = data.length > 0 ? 'success' : 'default';
+  const chartSnapshot =
+    data.length > 0
+      ? `${data.length.toLocaleString('es-CO')} fuentes visibles`
+      : 'Esperando datos reales';
 
   return (
-    <Card>
-      <SectionHeader eyebrow="Analitica" title={title} description={description} />
+    <Card className="overflow-hidden xl:min-h-[34rem]">
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-cyan-300/10 via-violet-400/12 to-transparent" />
+      <SectionHeader
+        eyebrow="Analitica ejecutiva"
+        title={title}
+        description={description}
+        actions={<StatusBadge label={chartStatusLabel} tone={chartStatusTone} />}
+      />
 
       {data.length === 0 ? (
         <div className="mt-6">
           <EmptyState title={emptyTitle} description={emptyDescription} />
         </div>
       ) : (
-        <div className="mt-6 space-y-4">
-          <div className="surface-subtle rounded-[1.7rem] p-4">
+        <div className="mt-6 flex flex-col gap-5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <StatusBadge label={chartSnapshot} tone="default" />
+            <p className="text-xs text-[color:var(--text-faint)]">
+              Lectura respaldada por datos reales del backend.
+            </p>
+          </div>
+
+          <div className="surface-subtle-strong rounded-[1.85rem] p-6">
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === 'pie' ? (
@@ -84,7 +104,9 @@ export function AdminChartCard({
                     <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
                     <Legend
                       wrapperStyle={{ color: '#d5daf8', paddingTop: 12 }}
-                      formatter={(value) => <span style={{ color: '#d5daf8' }}>{String(value)}</span>}
+                      formatter={(value) => (
+                        <span style={{ color: '#d5daf8' }}>{String(value)}</span>
+                      )}
                     />
                   </PieChart>
                 ) : (
@@ -120,17 +142,31 @@ export function AdminChartCard({
             </div>
           </div>
 
-          <div className="grid gap-3">
-            {chartData.map((item) => (
+          <div className="grid gap-2.5">
+            {chartData.map((item, index) => (
               <div
                 key={item.label}
-                className="data-list-card flex items-center justify-between rounded-2xl px-4 py-3"
+                className="data-list-card flex min-h-[4.25rem] items-center justify-between rounded-2xl px-4 py-3.5"
               >
-                <div className="flex items-center gap-3">
-                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color ?? '#67e8f9' }} />
-                  <span className="text-sm text-[color:var(--text-secondary)]">{item.label}</span>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[11px] font-semibold text-white">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: item.color ?? '#67e8f9' }}
+                  />
+                  <span className="truncate text-sm text-[color:var(--text-secondary)]">
+                    {item.label}
+                  </span>
                 </div>
-                <span className={valueFormat === 'currency' ? 'text-sm font-medium metric-accent' : 'text-sm font-medium text-white'}>
+                <span
+                  className={
+                    valueFormat === 'currency'
+                      ? 'text-sm font-medium metric-accent'
+                      : 'text-sm font-medium text-white'
+                  }
+                >
                   {formatValue(item.value)}
                 </span>
               </div>
@@ -139,7 +175,7 @@ export function AdminChartCard({
         </div>
       )}
 
-      {footer ? <div className="mt-6">{footer}</div> : null}
+      {footer ? <div className="mt-5 border-t border-white/8 pt-4">{footer}</div> : null}
     </Card>
   );
 }
@@ -170,7 +206,15 @@ function ChartTooltip({
   return (
     <div className="glass-panel-strong rounded-2xl px-3 py-2 shadow-2xl">
       <p className="text-sm font-medium text-white">{item.label}</p>
-      <p className={valueFormat === 'currency' ? 'mt-1 text-xs metric-accent' : 'mt-1 text-xs text-[color:var(--text-secondary)]'}>{value}</p>
+      <p
+        className={
+          valueFormat === 'currency'
+            ? 'mt-1 text-xs metric-accent'
+            : 'mt-1 text-xs text-[color:var(--text-secondary)]'
+        }
+      >
+        {value}
+      </p>
     </div>
   );
 }
