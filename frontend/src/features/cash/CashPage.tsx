@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
+import { SectionHeader } from '@/components/SectionHeader';
 import { SummaryCard } from '@/components/SummaryCard';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -161,8 +162,11 @@ export function CashPage() {
         ) : null}
 
         <Card>
-          <p className="text-sm text-slate-400">Operación</p>
-          <h2 className="font-display text-2xl font-bold text-white">Apertura de caja</h2>
+          <SectionHeader
+            eyebrow="Operación"
+            title="Apertura de caja"
+            description="Registra el efectivo inicial y habilita la operación diaria para el POS activo."
+          />
           <div className="mt-5 grid gap-4">
             <Input
               type="number"
@@ -192,8 +196,11 @@ export function CashPage() {
         </Card>
 
         <Card>
-          <p className="text-sm text-slate-400">Operación</p>
-          <h2 className="font-display text-2xl font-bold text-white">Cierre de caja</h2>
+          <SectionHeader
+            eyebrow="Operación"
+            title="Cierre de caja"
+            description="Confirma el efectivo contado y obtén el resumen final de la sesión actual."
+          />
           {!currentCashSession ? (
             <div className="mt-5">
               <EmptyState
@@ -228,8 +235,11 @@ export function CashPage() {
 
       {closeSummary ? (
         <Card>
-          <p className="text-sm text-slate-400">Resumen calculado por el backend</p>
-          <h2 className="font-display text-2xl font-bold text-white">Resultado del cierre</h2>
+          <SectionHeader
+            eyebrow="Resumen calculado por el backend"
+            title="Resultado del cierre"
+            description="Vista final de apertura, ventas, esperado y diferencia para la sesión recién cerrada."
+          />
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[
               ['Apertura', formatCurrency(closeSummary.opening_cash)],

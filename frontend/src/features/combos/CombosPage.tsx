@@ -231,7 +231,7 @@ export function CombosPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Agregar items al combo</p>
+            <p className="text-sm text-slate-400">Agregar ítems al combo</p>
             <h2 className="font-display text-2xl font-bold text-white">
               Composición comercial
             </h2>
@@ -289,7 +289,7 @@ export function CombosPage() {
                   disabled={addingItems || combos.length === 0 || variants.length === 0}
                   onClick={handleAddComboItems}
                 >
-                  {addingItems ? 'Guardando...' : 'Agregar item'}
+                  {addingItems ? 'Guardando...' : 'Agregar ítem'}
                 </Button>
                 <Button variant="secondary" disabled>
                   Reordenar próximamente

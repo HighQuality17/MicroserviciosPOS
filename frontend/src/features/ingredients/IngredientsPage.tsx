@@ -280,7 +280,7 @@ export function IngredientsPage() {
         <SummaryCard
           title="Movimientos"
           value="Sin movimientos recientes"
-          hint="Aqui se mostraran los ultimos ajustes de inventario"
+          hint="Aquí se mostrarán los últimos ajustes de inventario"
           icon={<Boxes size={18} />}
         />
       </div>
@@ -319,7 +319,7 @@ export function IngredientsPage() {
               />
 
               <Select
-                label="Dimension"
+                label="Dimensión"
                 value={dimension}
                 onChange={(event) =>
                   setDimension(event.target.value as IngredientDimension)
@@ -361,14 +361,14 @@ export function IngredientsPage() {
 
             <div className="mt-5 grid gap-4">
               <Select
-                label="Ubicacion"
+                label="Ubicación"
                 value={selectedLocationId ?? ""}
                 onChange={(event) => {
                   const value = event.currentTarget.value;
                   setSelectedLocationId(value ? Number(value) : null);
                 }}
               >
-                <option value="">Selecciona una ubicacion</option>
+                <option value="">Selecciona una ubicación</option>
                 {availableLocations.map((location) => (
                   <option key={location.id} value={location.id}>
                     #{location.id} / {location.name}
@@ -481,7 +481,7 @@ export function IngredientsPage() {
                 />
               </div>
             ) : (
-              <ScrollPanel className="mt-6 grid gap-3" tabIndex={0} aria-label="Catalogo de ingredientes">
+              <ScrollPanel className="mt-6 grid gap-3" tabIndex={0} aria-label="Catálogo de ingredientes">
                 {mergedIngredients.map((ingredient) => (
                   <div
                     key={ingredient.id}
@@ -506,7 +506,7 @@ export function IngredientsPage() {
 
             {catalogError ? (
               <FeedbackMessage tone="info" className="mt-4">
-                GET /ingredients no esta disponible o fallo. La vista usa ingredientes de sesion y del stock para no bloquear la operacion.
+                GET /ingredients no está disponible o falló. La vista usa ingredientes de sesión y del stock para no bloquear la operación.
               </FeedbackMessage>
             ) : null}
           </Card>
@@ -516,7 +516,7 @@ export function IngredientsPage() {
               <div>
                 <p className="text-sm text-slate-400">Existencias reales</p>
                 <h2 className="font-display text-2xl font-bold text-white">
-                  Stock por location
+                  Stock por ubicación
                 </h2>
               </div>
               <Button
@@ -548,7 +548,7 @@ export function IngredientsPage() {
                 />
               </div>
             ) : (
-              <ScrollPanel className="mt-6 grid gap-3" tabIndex={0} aria-label="Stock por ubicacion">
+              <ScrollPanel className="mt-6 grid gap-3" tabIndex={0} aria-label="Stock por ubicación">
                 {stockItems.map((item) => (
                   <div
                     key={`${item.ingredientId}-${item.locationId}`}
@@ -584,12 +584,12 @@ export function IngredientsPage() {
           <Card>
             <p className="text-sm text-slate-400">Movimientos</p>
             <h2 className="font-display text-2xl font-bold text-white">
-              Auditoria de inventario
+              Auditoría de inventario
             </h2>
             <div className="mt-6">
               <EmptyState
                 title="Sin movimientos recientes"
-                description="Aqui se mostraran los ultimos ajustes de inventario."
+                description="Aquí se mostrarán los últimos ajustes de inventario."
               />
             </div>
           </Card>

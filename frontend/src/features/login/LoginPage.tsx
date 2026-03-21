@@ -21,7 +21,7 @@ import { useSessionStore } from '@/store/sessionStore';
 const benefits = [
   {
     icon: BarChart3,
-    title: 'Vision operativa en tiempo real',
+    title: 'Visión operativa en tiempo real',
     description: 'Monitorea ventas, caja e indicadores clave desde una sola interfaz.',
   },
   {
@@ -31,13 +31,13 @@ const benefits = [
   },
   {
     icon: Users,
-    title: 'Operacion por roles',
-    description: 'Asigna accesos claros para administracion, caja y auditoria.',
+    title: 'Operación por roles',
+    description: 'Asigna accesos claros para administración, caja y auditoría.',
   },
   {
     icon: ShieldCheck,
     title: 'Trazabilidad confiable',
-    description: 'Cada movimiento queda respaldado para una operacion mas segura.',
+    description: 'Cada movimiento queda respaldado para una operación más segura.',
   },
 ] as const;
 
@@ -45,9 +45,9 @@ const roles = ['Administrador', 'Cajero', 'Auditor'] as const;
 
 const systemSignals = [
   'Control de ventas',
-  'Gestion de inventario',
-  'Operacion por roles',
-  'Vision del negocio en tiempo real',
+  'Gestión de inventario',
+  'Operación por roles',
+  'Visión del negocio en tiempo real',
 ] as const;
 
 export function LoginPage() {
@@ -77,7 +77,7 @@ export function LoginPage() {
 
     const normalizedIdentifier = identifier.trim();
     if (!normalizedIdentifier || !password.trim()) {
-      setError('Ingresa tu usuario y contrasena.');
+      setError('Ingresa tu usuario y contraseña.');
       return;
     }
 
@@ -91,7 +91,7 @@ export function LoginPage() {
       setError(
         loginError instanceof Error
           ? normalizeLoginError(loginError.message)
-          : 'No fue posible iniciar sesion.',
+          : 'No fue posible iniciar sesión.',
       );
     }
   }
@@ -123,7 +123,7 @@ export function LoginPage() {
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-100">
                   <span className="h-2 w-2 rounded-full bg-violet-200 shadow-[0_0_14px_rgba(167,139,250,0.75)]" />
-                  Operacion lista para punto de venta
+                  Operación lista para punto de venta
                 </div>
               </div>
 
@@ -137,7 +137,7 @@ export function LoginPage() {
                 >
                   Opera tu negocio con una experiencia{' '}
                   <span className="bg-gradient-to-r from-indigo-200 via-violet-200 to-fuchsia-200 bg-clip-text text-transparent">
-                    premium, rapida y confiable.
+                    premium, rápida y confiable.
                   </span>
                 </h1>
                 <p className="mt-6 max-w-2xl text-base leading-7 text-[color:var(--text-secondary)] sm:text-lg">
@@ -239,7 +239,7 @@ export function LoginPage() {
                     Entra a Registry POS
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-[color:var(--text-secondary)] sm:text-[0.95rem]">
-                    Usa tu correo o usuario corporativo para continuar con la operacion de tu sucursal.
+                    Usa tu correo o usuario corporativo para continuar con la operación de tu sucursal.
                   </p>
                 </div>
               </div>
@@ -253,18 +253,18 @@ export function LoginPage() {
                   onChange={(event) => setIdentifier(event.target.value)}
                   placeholder="Ej. admin o admin@registrypos.local"
                   autoComplete="username"
-                  hint="Puedes ingresar con usuario o correo, segun tu perfil."
+                  hint="Puedes ingresar con usuario o correo, según tu perfil."
                   className="border-white/10 bg-slate-950/80"
                 />
 
                 <div className="space-y-3">
                   <Input
                     id="login-password"
-                    label="Contrasena"
+                    label="Contraseña"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Tu contrasena"
+                    placeholder="Tu contraseña"
                     autoComplete="current-password"
                     className="border-white/10 bg-slate-950/80"
                   />
@@ -277,7 +277,7 @@ export function LoginPage() {
                       className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium text-indigo-200 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16]"
                     >
                       {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                      {showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                      {showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     </button>
                   </div>
                 </div>
@@ -325,11 +325,11 @@ function normalizeLoginError(message: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (normalizedMessage.includes('credenciales')) {
-    return 'Usuario o contrasena incorrectos.';
+    return 'Usuario o contraseña incorrectos.';
   }
 
   if (normalizedMessage.includes('email o username')) {
-    return 'Ingresa un usuario o correo valido.';
+    return 'Ingresa un usuario o correo válido.';
   }
 
   return message;

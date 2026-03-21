@@ -40,7 +40,7 @@ export function Header({
           </Button>
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
-              Operacion comercial conectada
+              Operación comercial conectada
             </p>
             <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
               Registry POS

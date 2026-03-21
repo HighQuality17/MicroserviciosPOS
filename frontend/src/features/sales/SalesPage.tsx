@@ -635,7 +635,7 @@ export function SalesPage() {
                   Consulta de solo lectura con filtros y paginación para auditoría y seguimiento operativo.
                 </p>
               </div>
-              <div className="surface-subtle rounded-2xl px-4 py-2 text-xs text-[color:var(--text-muted)]">
+              <div className="soft-pill rounded-full px-4 py-2 text-xs font-medium">
                 Página {historyPage} de {Math.max(historyTotalPages, 1)}
               </div>
             </div>
@@ -660,7 +660,7 @@ export function SalesPage() {
 
 
                 <Select
-                  label="Metodo de pago"
+                  label="Método de pago"
                   value={filters.payment_method}
                   onChange={(event) =>
                     setFilters((current) => ({
@@ -674,7 +674,7 @@ export function SalesPage() {
                   <option value="TRANSFER">Transferencia</option>
                 </Select>
                 <Select
-                  label="Ubicacion"
+                  label="Ubicación"
                   wrapperClassName="md:col-span-2 xl:col-span-1"
                   value={filters.location_id}
                   onChange={(event) =>
@@ -774,10 +774,10 @@ export function SalesPage() {
                               Estado
                             </th>
                             <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                              M??todo
+                              Método
                             </th>
                             <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                              Ubicaci??n
+                              Ubicación
                             </th>
                             <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Cajero
@@ -841,7 +841,7 @@ export function SalesPage() {
                   <span>
                     {historyTotal} ventas encontradas · página {historyPage} de {Math.max(historyTotalPages, 1)}
                   </span>
-                  <nav className="flex gap-3" aria-label="Paginacion del historial de ventas">
+                  <nav className="flex gap-3" aria-label="Paginación del historial de ventas">
                     <Button
                       variant="secondary"
                       disabled={historyPage <= 1 || historyLoading}
@@ -875,7 +875,7 @@ function getRecentSaleButtonLabel(sale: SaleRecentItem, isSelected: boolean) {
     'Total ' + formatCurrency(sale.total) + '.',
     'Estado ' + formatStatus(sale.status) + '.',
     'Pago ' + formatPaymentMethod(sale.payment_method) + '.',
-    'Ubicacion ' + sale.location.name + '.',
+    'Ubicación ' + sale.location.name + '.',
     'Cajero ' + sale.cashier.name + '.',
     'Abrir detalle.',
   ]
@@ -891,7 +891,7 @@ function getHistorySaleButtonLabel(sale: SalesHistoryItem, isSelected: boolean) 
     'Total ' + formatCurrency(sale.total) + '.',
     'Estado ' + formatStatus(sale.status) + '.',
     'Pago ' + formatPaymentMethod(sale.payment_method) + '.',
-    'Ubicacion ' + sale.location_name + '.',
+    'Ubicación ' + sale.location_name + '.',
     'Cajero ' + sale.cashier_name + '.',
     'Abrir detalle.',
   ]
