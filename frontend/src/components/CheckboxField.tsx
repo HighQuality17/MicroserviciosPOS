@@ -34,18 +34,18 @@ export function CheckboxField({
   return (
     <div
       className={clsx(
-        'rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3',
+        'surface-subtle rounded-2xl px-4 py-3',
         wrapperClassName,
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <label htmlFor={inputId} className={clsx('text-sm font-medium text-white', className)}>
+          <label htmlFor={inputId} className={clsx('text-sm font-medium text-[color:var(--text)]', className)}>
             <span>{label}</span>
             {required ? <span aria-hidden="true" className="text-rose-300"> *</span> : null}
           </label>
           {description ? (
-            <p id={descriptionId} className="mt-1 text-xs text-slate-400">
+            <p id={descriptionId} className="mt-1 text-xs text-[color:var(--text-muted)]">
               {description}
             </p>
           ) : null}
@@ -62,7 +62,7 @@ export function CheckboxField({
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy || undefined}
           className={clsx(
-            'mt-1 h-5 w-5 shrink-0 rounded border-slate-500 bg-slate-900 text-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-70',
+            'mt-1 h-5 w-5 shrink-0 rounded border-[color:var(--line-strong)] bg-[#090b16] text-violet-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] disabled:cursor-not-allowed disabled:opacity-70',
             isInvalid && 'border-rose-400/70 focus-visible:ring-rose-400/20',
             checkboxClassName,
           )}

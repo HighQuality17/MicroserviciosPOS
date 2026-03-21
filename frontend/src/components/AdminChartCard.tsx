@@ -53,7 +53,7 @@ export function AdminChartCard({
 
   return (
     <Card>
-      <p className="text-sm text-slate-400">{title}</p>
+      <p className="text-sm text-[color:var(--text-secondary)]">{title}</p>
       <h3 className="font-display mt-2 text-2xl font-bold text-white">{description}</h3>
 
       {data.length === 0 ? (
@@ -79,15 +79,15 @@ export function AdminChartCard({
                     {chartData.map((entry) => (
                       <Cell
                         key={entry.label}
-                        fill={entry.color ?? '#5eead4'}
+                        fill={entry.color ?? '#a78bfa'}
                       />
                     ))}
                   </Pie>
                   <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
                   <Legend
-                    wrapperStyle={{ color: '#cbd5e1', paddingTop: 12 }}
+                    wrapperStyle={{ color: '#d5daf8', paddingTop: 12 }}
                     formatter={(value) => (
-                      <span style={{ color: '#cbd5e1' }}>{String(value)}</span>
+                      <span style={{ color: '#d5daf8' }}>{String(value)}</span>
                     )}
                   />
                 </PieChart>
@@ -97,10 +97,10 @@ export function AdminChartCard({
                   layout="vertical"
                   margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
                 >
-                  <CartesianGrid stroke="rgba(148, 163, 184, 0.12)" horizontal={false} />
+                  <CartesianGrid stroke="rgba(129, 140, 248, 0.12)" horizontal={false} />
                   <XAxis
                     type="number"
-                    tick={{ fill: '#94a3b8', fontSize: 12 }}
+                    tick={{ fill: '#9ca6cf', fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -108,7 +108,7 @@ export function AdminChartCard({
                     type="category"
                     dataKey="shortLabel"
                     width={132}
-                    tick={{ fill: '#cbd5e1', fontSize: 12 }}
+                    tick={{ fill: '#d5daf8', fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -117,7 +117,7 @@ export function AdminChartCard({
                     {chartData.map((entry) => (
                       <Cell
                         key={entry.label}
-                        fill={entry.color ?? '#5eead4'}
+                        fill={entry.color ?? '#a78bfa'}
                       />
                     ))}
                   </Bar>
@@ -130,16 +130,16 @@ export function AdminChartCard({
             {chartData.map((item) => (
               <div
                 key={item.label}
-                className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/50 px-4 py-3"
+                className="surface-subtle flex items-center justify-between rounded-2xl px-4 py-3"
               >
                 <div className="flex items-center gap-3">
                   <span
                     className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: item.color ?? '#5eead4' }}
+                    style={{ backgroundColor: item.color ?? '#a78bfa' }}
                   />
-                  <span className="text-sm text-slate-300">{item.label}</span>
+                  <span className="text-sm text-[color:var(--text-secondary)]">{item.label}</span>
                 </div>
-                <span className="text-sm font-medium text-slate-100">
+                <span className={valueFormat === 'currency' ? 'text-sm font-medium metric-accent' : 'text-sm font-medium text-white'}>
                   {formatValue(item.value)}
                 </span>
               </div>
@@ -177,9 +177,9 @@ function ChartTooltip({
       : Number(payload[0].value).toLocaleString('es-CO');
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/95 px-3 py-2 shadow-2xl">
+    <div className="glass-panel-strong rounded-2xl px-3 py-2 shadow-2xl">
       <p className="text-sm font-medium text-white">{item.label}</p>
-      <p className="mt-1 text-xs text-slate-300">{value}</p>
+      <p className={valueFormat === 'currency' ? 'mt-1 text-xs metric-accent' : 'mt-1 text-xs text-[color:var(--text-secondary)]'}>{value}</p>
     </div>
   );
 }

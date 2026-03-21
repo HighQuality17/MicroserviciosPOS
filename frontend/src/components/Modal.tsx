@@ -43,40 +43,27 @@ export function Modal({
   const bodyRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  const initialFocusFrameRef = useRef<number | null>(null);
+  const returnFocusFrameRef = useRef<number | null>(null);
   const titleId = useId();
   const subtitleId = useId();
 
   useEffect(() => {
-    if (!open) {
-      if (wasOpenRef.current) {
-        const previouslyFocusedElement = previouslyFocusedElementRef.current;
-        wasOpenRef.current = false;
-        window.requestAnimationFrame(() => {
-          if (previouslyFocusedElement?.isConnected) {
-            previouslyFocusedElement.focus();
-          }
-        });
-      }
-      return;
-    }
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
-    wasOpenRef.current = true;
-    previouslyFocusedElementRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  useEffect(() => {
+    if (!open) return;
 
+    const isOpening = !wasOpenRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-
-    const frame = window.requestAnimationFrame(() => {
-      const firstFocusable =
-        getFocusableElements(bodyRef.current)[0] ?? closeButtonRef.current ?? dialogRef.current;
-      firstFocusable?.focus();
-    });
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -112,17 +99,67 @@ export function Modal({
 
     document.addEventListener('keydown', handleKeyDown);
 
+    if (isOpening) {
+      wasOpenRef.current = true;
+      previouslyFocusedElementRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+      if (returnFocusFrameRef.current !== null) {
+        window.cancelAnimationFrame(returnFocusFrameRef.current);
+        returnFocusFrameRef.current = null;
+      }
+
+      initialFocusFrameRef.current = window.requestAnimationFrame(() => {
+        initialFocusFrameRef.current = null;
+
+        const activeElement =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        if (activeElement && dialogRef.current?.contains(activeElement)) {
+          return;
+        }
+
+        const firstFocusable =
+          getFocusableElements(bodyRef.current)[0] ?? closeButtonRef.current ?? dialogRef.current;
+        firstFocusable?.focus();
+      });
+    }
+
     return () => {
-      window.cancelAnimationFrame(frame);
+      if (initialFocusFrameRef.current !== null) {
+        window.cancelAnimationFrame(initialFocusFrameRef.current);
+        initialFocusFrameRef.current = null;
+      }
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  useEffect(() => {
+    if (open || !wasOpenRef.current) return;
+
+    wasOpenRef.current = false;
+    const previouslyFocusedElement = previouslyFocusedElementRef.current;
+    previouslyFocusedElementRef.current = null;
+
+    returnFocusFrameRef.current = window.requestAnimationFrame(() => {
+      returnFocusFrameRef.current = null;
+      if (previouslyFocusedElement?.isConnected) {
+        previouslyFocusedElement.focus();
+      }
+    });
+
+    return () => {
+      if (returnFocusFrameRef.current !== null) {
+        window.cancelAnimationFrame(returnFocusFrameRef.current);
+        returnFocusFrameRef.current = null;
+      }
+    };
+  }, [open]);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4 py-4 sm:py-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] px-4 py-4 backdrop-blur-md sm:py-8">
       <div
         id={id}
         ref={dialogRef}
@@ -139,7 +176,7 @@ export function Modal({
               {title}
             </h2>
             {subtitle ? (
-              <p id={subtitleId} className="mt-1 text-sm text-slate-300">
+              <p id={subtitleId} className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">
                 {subtitle}
               </p>
             ) : null}

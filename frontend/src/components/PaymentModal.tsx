@@ -76,9 +76,9 @@ export function PaymentModal({
           void handleConfirm();
         }}
       >
-        <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-          <p className="text-sm text-slate-400">Total a pagar</p>
-          <p className="mt-2 font-display text-4xl font-bold text-teal-300">
+        <div className="surface-subtle-strong rounded-3xl p-5">
+          <p className="text-sm text-[color:var(--text-secondary)]">Total a pagar</p>
+          <p className="mt-2 font-display text-4xl font-bold metric-accent-strong">
             {formatCurrency(total)}
           </p>
         </div>
@@ -122,14 +122,14 @@ export function PaymentModal({
           />
         </div>
 
-        <div className="grid gap-3 rounded-3xl border border-slate-800 bg-slate-950/50 p-4 text-sm text-slate-300 sm:grid-cols-2">
+        <div className="surface-subtle grid gap-3 rounded-3xl p-4 text-sm text-[color:var(--text-secondary)] sm:grid-cols-2">
           <div>
-            <p className="text-slate-500">Aplicado</p>
-            <p className="mt-1 font-semibold text-white">{formatCurrency(total)}</p>
+            <p className="text-[color:var(--text-faint)]">Aplicado</p>
+            <p className="mt-1 font-semibold metric-accent">{formatCurrency(total)}</p>
           </div>
           <div>
-            <p className="text-slate-500">Cambio</p>
-            <p className="mt-1 font-semibold text-white">{formatCurrency(change)}</p>
+            <p className="text-[color:var(--text-faint)]">Cambio</p>
+            <p className="mt-1 font-semibold metric-accent">{formatCurrency(change)}</p>
           </div>
         </div>
 

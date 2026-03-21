@@ -39,18 +39,18 @@ export function Header({
             <span>Menu</span>
           </Button>
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-              POS local offline-first
+            <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
+              Operacion comercial conectada
             </p>
             <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
-              Microservicios POS
+              Registry POS
             </h1>
           </div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-          <div className="flex w-full min-w-0 items-center gap-2 rounded-2xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-300 sm:w-auto sm:max-w-full">
-            <MapPin size={16} className="shrink-0 text-teal-300" />
+          <div className="surface-subtle flex w-full min-w-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto sm:max-w-full">
+            <MapPin size={16} className="shrink-0 text-violet-200" />
             <div className="min-w-0 flex-1">
               {locationsLoading ? (
                 <span>Cargando puntos de venta...</span>
@@ -59,7 +59,7 @@ export function Header({
                   {locationsError ? 'Sin POS disponibles' : 'Sin ubicaciones creadas'}
                 </span>
               ) : availableLocations.length <= 1 ? (
-                <span className="block truncate">{currentLocation.name}</span>
+                <span className="block truncate text-[color:var(--text)]">{currentLocation.name}</span>
               ) : (
                 <select
                   aria-label="Punto de venta activo"
@@ -72,13 +72,13 @@ export function Header({
                       setCurrentLocation(nextLocation);
                     }
                   }}
-                  className="w-full min-w-0 rounded-xl bg-transparent text-sm text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-teal-400/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:min-w-[12rem]"
+                  className="w-full min-w-0 rounded-xl bg-transparent text-sm text-[color:var(--text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] sm:min-w-[12rem]"
                 >
                   {availableLocations.map((item) => (
                     <option
                       key={item.id}
                       value={String(item.id)}
-                      className="bg-slate-950 text-slate-100"
+                      className="bg-[#0d1020] text-[color:var(--text)]"
                     >
                       {item.name}
                     </option>
@@ -88,8 +88,8 @@ export function Header({
             </div>
           </div>
 
-          <div className="w-full rounded-2xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-300 sm:w-auto">
-            <span className="block truncate">
+          <div className="surface-subtle w-full rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto">
+            <span className="block truncate text-[color:var(--text)]">
               {currentUser?.name} / {formatUserRole(currentUser?.role)}
             </span>
           </div>

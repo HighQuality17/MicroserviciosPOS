@@ -15,14 +15,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type={type}
       className={clsx(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-900/80 disabled:text-slate-400 disabled:shadow-none',
+        'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] disabled:cursor-not-allowed disabled:border-[color:var(--disabled-border)] disabled:bg-[linear-gradient(180deg,rgba(33,37,58,0.96),rgba(20,23,38,0.98))] disabled:text-[color:var(--disabled-text)] disabled:opacity-100 disabled:shadow-none',
         variant === 'primary' &&
-          'bg-teal-400 text-slate-950 shadow-[0_10px_30px_rgba(45,212,191,0.18)] hover:bg-teal-300',
+          'bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-[0_18px_40px_rgba(99,102,241,0.34)] hover:from-indigo-400 hover:via-violet-400 hover:to-fuchsia-400 active:from-indigo-500 active:via-violet-500 active:to-purple-500',
         variant === 'secondary' &&
-          'border border-slate-700 bg-slate-900/80 text-slate-100 hover:border-sky-400/50 hover:bg-slate-800',
-        variant === 'ghost' && 'text-slate-200 hover:bg-slate-800/70 hover:text-white',
+          'border border-[color:var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] text-[color:var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-violet-300/30 hover:bg-white/[0.06]',
+        variant === 'ghost' && 'text-[color:var(--text-secondary)] hover:bg-white/[0.05] hover:text-white',
         variant === 'danger' &&
-          'bg-rose-500/90 text-white hover:bg-rose-400 focus-visible:ring-rose-400/30',
+          'bg-rose-500/90 text-white shadow-[0_16px_30px_rgba(244,63,94,0.18)] hover:bg-rose-400 focus-visible:ring-rose-400/30',
         className,
       )}
       {...props}

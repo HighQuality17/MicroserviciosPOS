@@ -44,7 +44,7 @@ function SkeletonRows({ rows = 4 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="h-20 animate-pulse rounded-3xl border border-slate-800 bg-slate-950/50"
+          className="surface-subtle h-20 animate-pulse rounded-3xl"
         />
       ))}
     </div>
@@ -238,7 +238,7 @@ export function AdminPage() {
       topItems.map((item, index) => ({
         label: `${item.name} - ${item.item_type === 'VARIANT' ? 'Variante' : 'Combo'}`,
         value: item.qty_sold,
-        color: index % 2 === 0 ? '#2dd4bf' : '#22d3ee',
+        color: index % 2 === 0 ? '#a78bfa' : '#818cf8',
       })),
     [topItems],
   );
@@ -258,7 +258,7 @@ export function AdminPage() {
       ) : null}
 
       <Card className="overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-teal-300/12 via-sky-300/10 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-indigo-400/16 via-violet-400/12 to-transparent" />
         <div className="relative">
           <SectionHeader
             eyebrow="Administración"
@@ -355,7 +355,7 @@ export function AdminPage() {
             emptyTitle="Sin ventas por método registradas"
             emptyDescription="Aparecerá informacion cuando existan pagos confirmados."
             footer={
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[color:var(--text-faint)]">
                 Totales reales agregados desde pagos registrados.
               </p>
             }
@@ -392,7 +392,7 @@ export function AdminPage() {
             emptyTitle="Sin items vendidos"
             emptyDescription="El ranking aparecera cuando existan ventas pagadas."
             footer={
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[color:var(--text-faint)]">
                 Incluye variantes y combos vendidos segun el backend.
               </p>
             }
@@ -497,17 +497,17 @@ export function AdminPage() {
               {recentActivity.map((item) => (
                 <div
                   key={`${item.activity_type}-${item.entity_id}-${item.created_at}`}
-                  className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4"
+                  className="surface-subtle rounded-3xl p-4"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
                         {formatActivityType(item.activity_type)}
                       </p>
                       <p className="mt-2 font-medium text-white">{item.title}</p>
                       <p className="mt-1 text-sm text-slate-400">{item.subtitle}</p>
                     </div>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-[color:var(--text-faint)]">
                       {formatDate(item.created_at)}
                     </p>
                   </div>
@@ -531,7 +531,7 @@ export function AdminPage() {
               (item) => (
                 <div
                   key={item}
-                  className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5"
+                  className="surface-subtle rounded-3xl p-5"
                 >
                   <p className="font-medium text-white">{item}</p>
                   <p className="mt-2 text-sm text-slate-400">
@@ -571,7 +571,7 @@ export function AdminPage() {
           ) : null}
 
           <div className="mt-6 grid min-w-0 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-            <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
+            <div className="surface-subtle rounded-3xl p-5">
               <p className="text-sm text-slate-400">Crear ubicación</p>
               <h3 className="mt-2 font-display text-2xl font-bold text-white">
                 Nuevo punto de venta
@@ -593,7 +593,7 @@ export function AdminPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5">
+            <div className="surface-subtle rounded-3xl p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm text-slate-400">Ubicaciones reales</p>
@@ -622,7 +622,7 @@ export function AdminPage() {
                   {availableLocations.map((location) => (
                     <div
                       key={location.id}
-                      className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4"
+                      className="surface-subtle rounded-3xl p-4"
                     >
                       <p className="font-medium text-white">{location.name}</p>
                       <p className="mt-1 text-sm text-slate-400">ID {location.id}</p>

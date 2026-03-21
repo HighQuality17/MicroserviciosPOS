@@ -97,7 +97,7 @@ export function AppLayout() {
       {isMobileNavigationOpen ? (
         <div
           aria-hidden="true"
-          className="fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-[var(--overlay)] backdrop-blur-sm lg:hidden"
           onClick={() => setIsMobileNavigationOpen(false)}
         />
       ) : null}

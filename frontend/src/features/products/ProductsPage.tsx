@@ -709,7 +709,7 @@ export function ProductsPage() {
                 {enrichedProducts.map((product) => (
                   <div
                     key={product.id}
-                    className="rounded-3xl border border-slate-800 bg-slate-950/50 p-5"
+                    className="surface-subtle rounded-3xl p-5"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
@@ -720,7 +720,7 @@ export function ProductsPage() {
                             tone={product.active ? 'success' : 'default'}
                           />
                         </div>
-                        <p className="mt-2 text-sm text-slate-500">
+                        <p className="mt-2 text-sm text-[color:var(--text-faint)]">
                           ID {product.id} · {product.relatedVariants.length} variantes asociadas
                         </p>
                       </div>
@@ -741,12 +741,12 @@ export function ProductsPage() {
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       {product.relatedVariants.length === 0 ? (
-                        <span className="text-sm text-slate-500">Sin variantes asociadas aún.</span>
+                        <span className="text-sm text-[color:var(--text-faint)]">Sin variantes asociadas aún.</span>
                       ) : (
                         product.relatedVariants.map((variant) => (
                           <span
                             key={variant.id}
-                            className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300"
+                            className="soft-pill rounded-full px-3 py-1 text-xs"
                           >
                             #{variant.id} · {variant.size} · {variant.sku}
                           </span>
@@ -768,7 +768,7 @@ export function ProductsPage() {
                 {Array.from({ length: 5 }).map((_, index) => (
                   <div
                     key={index}
-                    className="h-20 animate-pulse rounded-3xl border border-slate-800 bg-slate-950/50"
+                    className="surface-subtle h-20 animate-pulse rounded-3xl"
                   />
                 ))}
               </div>
@@ -781,68 +781,141 @@ export function ProductsPage() {
               </div>
             ) : (
               <div className="mt-6 overflow-x-auto overscroll-x-contain touch-pan-x pb-1">
-                <div className="min-w-[860px] overflow-hidden rounded-3xl border border-slate-800">
-                  <div className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 bg-slate-900/80 px-4 py-3 text-xs uppercase tracking-[0.18em] text-slate-500">
-                    <span>ID</span>
-                    <span>Producto</span>
-                    <span>Tamano</span>
-                    <span>SKU</span>
-                    <span>Precio</span>
-                    <span>Estado</span>
-                    <span>Receta</span>
-                  </div>
-                  <ScrollPanel maxHeightClassName="max-h-[34rem]" tabIndex={0} aria-label="Listado de variantes">
-                    {variants.map((variant) => {
-                      const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
-                      return (
-                        <div
-                          key={variant.id}
-                          className="grid grid-cols-[72px_minmax(0,1.2fr)_96px_132px_126px_120px_120px] gap-3 border-t border-slate-800 bg-slate-950/50 px-4 py-4 text-sm text-slate-200"
-                        >
-                          <span className="text-slate-400">#{variant.id}</span>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-white">{variant.product_name}</p>
-                            <p className="truncate text-xs text-slate-500">
-                              product_id {variant.product_id}
-                            </p>
-                          </div>
-                          <span>{variant.size}</span>
-                          <span className="truncate">{variant.sku}</span>
-                          <span>{formatCurrency(Number(variant.sale_price))}</span>
-                          <StatusBadge
-                            label={variant.active ? 'Activa' : 'Inactiva'}
-                            tone={variant.active ? 'success' : 'default'}
-                          />
-                          <StatusBadge
-                            label={hasRecipe ? 'Con receta' : 'Sin receta'}
-                            tone={hasRecipe ? 'info' : 'warning'}
-                          />
-                          {canManageCatalog ? (
-                            <div className="col-span-full flex flex-wrap gap-2 border-t border-slate-800 pt-3">
-                              <Button variant="ghost" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(variant)}>
-                                Editar variante
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() => void handleToggleVariantStatus(variant)}
-                              >
-                                {variant.active ? 'Desactivar' : 'Activar'}
-                              </Button>
-                              <Button variant="secondary" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(variant)}>
-                                Gestionar receta
-                              </Button>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+                <div className="min-w-[1320px] overflow-hidden rounded-3xl table-shell">
+                  <ScrollPanel
+                    className="sm:pr-0"
+                    maxHeightClassName="max-h-[34rem]"
+                    tabIndex={0}
+                    aria-label="Listado de variantes"
+                  >
+                    <table className="w-full table-fixed border-separate border-spacing-0 text-sm text-[color:var(--text-secondary)]">
+                      <caption className="sr-only">Tabla de variantes del catalogo</caption>
+                      <colgroup>
+                        <col style={{ width: '64px' }} />
+                        <col />
+                        <col style={{ width: '84px' }} />
+                        <col style={{ width: '102px' }} />
+                        <col style={{ width: '92px' }} />
+                        <col style={{ width: '108px' }} />
+                        <col style={{ width: '136px' }} />
+                        <col style={{ width: '408px' }} />
+                      </colgroup>
+                      <thead className="table-head">
+                        <tr>
+                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            ID
+                          </th>
+                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            Producto
+                          </th>
+                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            Tamaño
+                          </th>
+                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-2.5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            SKU
+                          </th>
+                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] pl-2.5 pr-3 py-3 text-right text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            Precio
+                          </th>
+                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            Estado
+                          </th>
+                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] pl-3 pr-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            Receta
+                          </th>
+                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] pl-5 pr-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            Acciones
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {variants.map((variant, index) => {
+                          const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
+
+                          return (
+                            <tr
+                              key={variant.id}
+                              className={[
+                                'bg-white/[0.03] text-[color:var(--text-secondary)] transition hover:bg-white/[0.05]',
+                                index > 0 ? 'border-t border-white/8' : '',
+                              ].join(' ')}
+                            >
+                              <td className="px-3 py-3.5 align-middle whitespace-nowrap text-xs text-slate-400">#{variant.id}</td>
+                              <td className="px-3 py-3.5 align-middle">
+                                <div className="min-w-0">
+                                  <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-white">{variant.product_name}</p>
+                                </div>
+                              </td>
+                              <td className="px-3 py-3.5 align-middle whitespace-nowrap text-sm">{variant.size}</td>
+                              <td className="px-2.5 py-3.5 align-middle">
+                                <span className="block truncate whitespace-nowrap font-mono text-[12px] text-[color:var(--text-secondary)]">{variant.sku}</span>
+                              </td>
+                              <td className="pl-2.5 pr-3 py-3.5 align-middle whitespace-nowrap text-right">
+                                <span className="metric-accent text-[15px] font-semibold">{formatCurrency(Number(variant.sale_price))}</span>
+                              </td>
+                              <td className="px-3 py-3.5 align-middle">
+                                <StatusBadge
+                                  label={variant.active ? 'Activa' : 'Inactiva'}
+                                  tone={variant.active ? 'success' : 'default'}
+                                  className="min-w-[92px] justify-center"
+                                />
+                              </td>
+                              <td className="pl-3 pr-5 py-3.5 align-middle">
+                                <StatusBadge
+                                  label={hasRecipe ? 'Con receta' : 'Sin receta'}
+                                  tone={hasRecipe ? 'info' : 'warning'}
+                                  className={hasRecipe
+                                    ? 'min-w-[112px] justify-center shadow-[0_10px_24px_rgba(124,58,237,0.12)]'
+                                    : 'min-w-[112px] justify-center shadow-[0_10px_24px_rgba(245,158,11,0.08)]'}
+                                />
+                              </td>
+                              <td className="pl-5 pr-5 py-3.5 align-middle">
+                                {canManageCatalog ? (
+                                  <div className="flex flex-nowrap items-center gap-3 whitespace-nowrap">
+                                    <Button
+                                      variant="secondary"
+                                      className="min-h-9 rounded-xl border-indigo-300/24 bg-indigo-500/10 px-3 py-2 text-xs font-semibold text-indigo-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-indigo-300/38 hover:bg-indigo-500/16"
+                                      aria-haspopup="dialog"
+                                      aria-controls="variant-editor-dialog"
+                                      onClick={() => openVariantEditor(variant)}
+                                    >
+                                      Editar variante
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      className={variant.active
+                                        ? 'min-h-9 rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-100 hover:border-rose-300/34 hover:bg-rose-500/16'
+                                        : 'min-h-9 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-100 hover:border-emerald-300/34 hover:bg-emerald-500/16'}
+                                      onClick={() => void handleToggleVariantStatus(variant)}
+                                    >
+                                      {variant.active ? 'Desactivar' : 'Activar'}
+                                    </Button>
+                                    <Button
+                                      variant="secondary"
+                                      className="min-h-9 rounded-xl border-violet-300/24 bg-violet-500/12 px-3 py-2 text-xs font-semibold text-violet-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-violet-300/40 hover:bg-violet-500/18"
+                                      aria-haspopup="dialog"
+                                      aria-controls="recipe-manager-dialog"
+                                      onClick={() => void openRecipeManager(variant)}
+                                    >
+                                      Gestionar receta
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </ScrollPanel>
                 </div>
               </div>
             )}
 
             {variants.length > 0 ? (
-              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-xs text-slate-500">
+              <div className="mt-4 surface-subtle rounded-2xl px-4 py-3 text-xs text-[color:var(--text-faint)]">
                 Las variantes activas sin receta seguirán detectándose aquí para que administración complete la configuración antes de vender.
               </div>
             ) : null}
@@ -970,7 +1043,7 @@ export function ProductsPage() {
                 return (
                   <div
                     key={`${item.ingredient_id}-${index}`}
-                    className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4"
+                    className="surface-subtle rounded-3xl p-4"
                   >
                     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_120px_110px_auto] lg:items-end">
                       <Select

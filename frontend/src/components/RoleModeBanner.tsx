@@ -15,16 +15,16 @@ export function RoleModeBanner({
   return (
     <div
       className={clsx(
-        'rounded-3xl border px-4 py-4',
-        tone === 'info' && 'border-sky-400/20 bg-sky-400/10 text-sky-100',
-        tone === 'warning' && 'border-amber-400/20 bg-amber-400/10 text-amber-100',
+        'rounded-3xl border px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]',
+        tone === 'info' && 'border-violet-400/20 bg-violet-500/10 text-violet-100',
+        tone === 'warning' && 'border-amber-400/20 bg-amber-500/10 text-amber-100',
       )}
     >
       <div className="flex items-start gap-3">
         <div
           className={clsx(
             'rounded-2xl p-2',
-            tone === 'info' && 'bg-sky-300/15 text-sky-200',
+            tone === 'info' && 'bg-violet-300/15 text-violet-100',
             tone === 'warning' && 'bg-amber-300/15 text-amber-200',
           )}
         >
@@ -38,4 +38,3 @@ export function RoleModeBanner({
     </div>
   );
 }
-
