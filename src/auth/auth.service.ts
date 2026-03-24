@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Prisma } from '@prisma/client';
 import { compare } from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -74,16 +75,31 @@ export class AuthService {
   }
 
   async updateThemePreference(userId: number, theme: ThemePreference) {
-    await this.findAuthenticatedUser(userId);
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { themePreference: theme },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+          role: true,
+          themePreference: true,
+        },
+      });
 
-    await this.prisma.$executeRaw`
-      UPDATE "User"
-      SET "themePreference" = ${theme}
-      WHERE "id" = ${userId}
-    `;
+      return this.mapAuthenticatedUser(user);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new UnauthorizedException('Usuario autenticado no encontrado');
+      }
 
-    const user = await this.findAuthenticatedUser(userId);
-    return this.mapAuthenticatedUser(user);
+      throw error;
+    }
   }
 
   private async findAuthenticatedUser(userId: number): Promise<AuthUserRecord> {
