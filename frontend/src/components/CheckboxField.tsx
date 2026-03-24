@@ -32,25 +32,20 @@ export function CheckboxField({
     Boolean(error) || props['aria-invalid'] === true || props['aria-invalid'] === 'true';
 
   return (
-    <div
-      className={clsx(
-        'surface-subtle rounded-2xl px-4 py-3',
-        wrapperClassName,
-      )}
-    >
+    <div className={clsx('surface-subtle rounded-2xl px-4 py-3', wrapperClassName)}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <label htmlFor={inputId} className={clsx('text-sm font-medium text-[color:var(--text)]', className)}>
+          <label htmlFor={inputId} className={clsx('text-sm font-medium theme-text-strong', className)}>
             <span>{label}</span>
-            {required ? <span aria-hidden="true" className="text-rose-300"> *</span> : null}
+            {required ? <span aria-hidden="true" className="theme-required-mark"> *</span> : null}
           </label>
           {description ? (
-            <p id={descriptionId} className="mt-1 text-xs text-[color:var(--text-muted)]">
+            <p id={descriptionId} className="mt-1 text-xs theme-text-muted">
               {description}
             </p>
           ) : null}
           {error ? (
-            <p id={errorId} className="mt-2 text-xs text-rose-100">
+            <p id={errorId} className="mt-2 text-xs ui-control-error">
               {error}
             </p>
           ) : null}
@@ -62,7 +57,7 @@ export function CheckboxField({
           aria-invalid={isInvalid || undefined}
           aria-describedby={describedBy || undefined}
           className={clsx(
-            'mt-1 h-5 w-5 shrink-0 rounded border-[color:var(--line-strong)] bg-[#090b16] text-violet-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] disabled:cursor-not-allowed disabled:opacity-70',
+            'ui-checkbox mt-1 h-5 w-5 shrink-0 rounded border focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--checkbox-offset)] disabled:cursor-not-allowed disabled:opacity-70',
             isInvalid && 'border-rose-400/70 focus-visible:ring-rose-400/20',
             checkboxClassName,
           )}

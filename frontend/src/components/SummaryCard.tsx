@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import clsx from 'clsx';
 import { Card } from '@/components/Card';
 
 interface SummaryCardProps {
@@ -16,19 +15,18 @@ export function SummaryCard({ title, value, hint, icon }: SummaryCardProps) {
     <Card className="metric-card">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[color:var(--text-secondary)]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
             {title}
           </p>
           <p
-            className={clsx(
-              'mt-3 font-display text-[2rem] font-bold leading-none sm:text-[2.15rem]',
-              isCurrencyValue ? 'metric-accent-strong' : 'text-white',
-            )}
+            className={isCurrencyValue
+              ? 'metric-accent-strong mt-3 font-display text-[2rem] font-bold leading-none sm:text-[2.15rem]'
+              : 'theme-text-strong mt-3 font-display text-[2rem] font-bold leading-none sm:text-[2.15rem]'}
           >
             {value}
           </p>
           {hint ? (
-            <p className="mt-3 max-w-[22rem] text-xs leading-5 text-[color:var(--text-muted)]">
+            <p className="mt-3 max-w-[22rem] text-xs leading-5 theme-text-muted">
               {hint}
             </p>
           ) : null}

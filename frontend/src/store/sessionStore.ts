@@ -5,6 +5,7 @@ import { clearStoredToken, setStoredToken } from '@/services/api/tokenStorage';
 import { useAppStore } from '@/store/appStore';
 import { useCartStore } from '@/store/cartStore';
 import type { AuthUser } from '@/types/api';
+import type { ThemeName } from '@/theme/theme';
 
 interface LoginPayload {
   email?: string;
@@ -19,6 +20,8 @@ interface SessionState {
   isAuthenticating: boolean;
   login: (payload: LoginPayload) => Promise<AuthUser>;
   hydrateSession: () => Promise<void>;
+  setCurrentUser: (user: AuthUser | null) => void;
+  setCurrentUserThemePreference: (themePreference: ThemeName | null) => void;
   clearSession: () => void;
 }
 
@@ -90,6 +93,16 @@ export const useSessionStore = create<SessionState>()(
             isReady: true,
           });
         }
+      },
+      setCurrentUser: (user) => {
+        set({ currentUser: user });
+      },
+      setCurrentUserThemePreference: (themePreference) => {
+        set((state) => ({
+          currentUser: state.currentUser
+            ? { ...state.currentUser, themePreference }
+            : state.currentUser,
+        }));
       },
       clearSession: () => {
         clearStoredToken();

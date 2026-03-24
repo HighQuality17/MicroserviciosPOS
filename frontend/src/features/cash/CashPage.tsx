@@ -160,7 +160,7 @@ export function CashPage() {
             <div className="min-w-0">
               <p className="section-kicker">Operacion de caja</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
                   Control de caja
                 </h1>
                 <StatusBadge label={operationStatusLabel} tone={cashStatusTone} />

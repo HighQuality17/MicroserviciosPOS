@@ -172,11 +172,11 @@ export function Modal({
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 id={titleId} className="font-display text-2xl font-bold text-white">
+            <h2 id={titleId} className="font-display text-2xl font-bold theme-text-strong">
               {title}
             </h2>
             {subtitle ? (
-              <p id={subtitleId} className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">
+              <p id={subtitleId} className="mt-2 text-sm leading-6 theme-text-secondary">
                 {subtitle}
               </p>
             ) : null}

@@ -1,4 +1,4 @@
-﻿import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -21,29 +21,29 @@ export function AccessDeniedPage() {
   return (
     <div className="grid min-h-[70vh] place-items-center">
       <Card className="max-w-2xl overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-rose-400/12 via-amber-300/10 to-transparent" />
+        <div className="panel-top-glow-danger absolute inset-x-0 top-0 h-28" />
         <div className="relative">
-          <div className="panel-icon-shell inline-flex h-16 w-16 items-center justify-center rounded-3xl text-cyan-100">
+          <div className="panel-icon-shell inline-flex h-16 w-16 items-center justify-center rounded-3xl" data-tone="warning">
             <ShieldAlert size={28} />
           </div>
 
-          <p className="mt-6 text-xs uppercase tracking-[0.28em] text-[color:var(--text-faint)]">
+          <p className="mt-6 text-xs uppercase tracking-[0.28em] theme-text-faint">
             Control de acceso
           </p>
-          <h1 className="font-display mt-3 text-4xl font-bold text-white">
+          <h1 className="font-display mt-3 text-4xl font-bold theme-text-strong">
             Acceso denegado
           </h1>
-          <p className="mt-3 max-w-xl text-sm text-[color:var(--text-secondary)]">
+          <p className="mt-3 max-w-xl text-sm theme-text-secondary">
             Tu perfil actual no tiene permisos para abrir esta vista.
             {state?.from ? ` Ruta solicitada: ${state.from}.` : ''}
           </p>
 
-          <div className="mt-6 data-list-card rounded-3xl p-5 text-sm text-[color:var(--text-secondary)]">
+          <div className="mt-6 data-list-card rounded-3xl p-5 text-sm theme-text-secondary">
             <p>
-              Usuario: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesión'}</span>
+              Usuario: <span className="font-medium theme-text-strong">{currentUser?.name ?? 'Sin sesion'}</span>
             </p>
             <p className="mt-2">
-              Rol: <span className="font-medium text-white">{currentUser?.role ?? 'N/A'}</span>
+              Rol: <span className="font-medium theme-text-strong">{currentUser?.role ?? 'N/A'}</span>
             </p>
           </div>
 
@@ -60,7 +60,3 @@ export function AccessDeniedPage() {
     </div>
   );
 }
-
-
-
-

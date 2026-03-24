@@ -49,12 +49,12 @@ export function Sidebar({
     >
       <div className="flex items-center justify-between gap-3 px-3">
         <div className="flex items-center gap-3">
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-400 via-violet-500 to-fuchsia-500 p-3 text-white shadow-[0_16px_36px_rgba(99,102,241,0.35)]">
+          <div className="app-brand-badge rounded-3xl p-3 text-white">
             <Layers3 size={22} />
           </div>
           <div>
-            <p className="font-display text-lg font-bold text-white">Registry POS</p>
-            <p className="text-xs text-[color:var(--text-faint)]">Operación centralizada</p>
+            <p className="font-display text-lg font-bold text-[color:var(--text)]">Registry POS</p>
+            <p className="text-xs text-[color:var(--text-faint)]">Operacion centralizada</p>
           </div>
         </div>
 
@@ -80,11 +80,11 @@ export function Sidebar({
             onClick={onClose}
             className={({ isActive }) =>
               [
-                'flex min-h-11 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition',
-                isActive
-                  ? 'bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-[0_16px_34px_rgba(99,102,241,0.28)]'
-                  : 'text-[color:var(--text-secondary)] hover:bg-white/[0.05] hover:text-white',
-              ].join(' ')
+                'app-nav-link flex min-h-11 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition',
+                isActive && 'app-nav-link-active',
+              ]
+                .filter(Boolean)
+                .join(' ')
             }
           >
             <Icon size={18} className="shrink-0" />
@@ -110,3 +110,4 @@ export function Sidebar({
     </aside>
   );
 }
+

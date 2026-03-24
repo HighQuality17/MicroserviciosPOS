@@ -396,7 +396,7 @@ export function SalesPage() {
             <div className="min-w-0">
               <p className="section-kicker">Operacion comercial</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-3xl font-bold text-white sm:text-[2rem]">
+                <h1 className="font-display text-3xl font-bold theme-text-strong sm:text-[2rem]">
                   Control de ventas
                 </h1>
                 <StatusBadge label={salesStatusLabel} tone={salesStatusTone} />
@@ -486,8 +486,8 @@ export function SalesPage() {
       <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[380px_minmax(0,1fr)] 2xl:grid-cols-[420px_minmax(0,1fr)]">
         <div className="grid gap-4 xl:sticky xl:top-4">
           <Card>
-            <p className="text-sm text-slate-400">Consultar venta</p>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <p className="text-sm theme-text-muted">Consultar venta</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">
               Buscar comprobante por ID de venta
             </h2>
 
@@ -512,8 +512,8 @@ export function SalesPage() {
           <Card>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm text-slate-400">Ultimos 5 registros</p>
-                <h2 className="font-display text-2xl font-bold text-white">Comprobantes recientes</h2>
+                <p className="text-sm theme-text-muted">Ultimos 5 registros</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">Comprobantes recientes</h2>
               </div>
               <StatusBadge
                 label={recentLoading ? 'Actualizando' : recentSales.length > 0 ? 'Listos' : 'Sin ventas'}
@@ -550,16 +550,16 @@ export function SalesPage() {
                       aria-label={getRecentSaleButtonLabel(sale, isSelected)}
                       onClick={() => void handleSelectReceipt(sale.sale_id)}
                       className={[
-                        'data-list-card rounded-3xl p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16]',
+                        'data-list-card rounded-3xl p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]',
                         isSelected
-                          ? 'border-violet-300/40 bg-[linear-gradient(135deg,rgba(99,102,241,0.16),rgba(139,92,246,0.12))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                          ? 'surface-selected theme-text-strong shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
                           : 'hover:-translate-y-0.5',
                       ].join(' ')}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm text-slate-400">Venta #{sale.sale_id}</p>
+                            <p className="text-sm theme-text-muted">Venta #{sale.sale_id}</p>
                             <StatusBadge label={formatStatus(sale.status)} tone={getSaleStatusTone(sale.status)} />
                           </div>
                           <p className="mt-2 text-sm text-[color:var(--text-faint)]">{formatDate(sale.created_at)}</p>
@@ -573,11 +573,11 @@ export function SalesPage() {
                       <div className="mt-4 grid gap-2 sm:grid-cols-2">
                         <div className="surface-subtle rounded-2xl px-3 py-2">
                           <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Ubicacion / POS</p>
-                          <p className="mt-1 truncate text-sm font-medium text-white">{sale.location.name}</p>
+                          <p className="mt-1 truncate text-sm font-medium theme-text-strong">{sale.location.name}</p>
                         </div>
                         <div className="surface-subtle rounded-2xl px-3 py-2">
                           <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Cajero</p>
-                          <p className="mt-1 truncate text-sm font-medium text-white">{sale.cashier.name}</p>
+                          <p className="mt-1 truncate text-sm font-medium theme-text-strong">{sale.cashier.name}</p>
                         </div>
                       </div>
 
@@ -600,8 +600,8 @@ export function SalesPage() {
           <Card>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm text-slate-400">Ultima venta disponible</p>
-                <h2 className="font-display text-2xl font-bold text-white">Ultimo comprobante persistido</h2>
+                <p className="text-sm theme-text-muted">Ultima venta disponible</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">Ultimo comprobante persistido</h2>
               </div>
               <StatusBadge
                 label={latestLoading ? 'Consultando' : latestSale ? 'Disponible' : 'Sin ventas'}
@@ -629,16 +629,16 @@ export function SalesPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm text-slate-400">Venta #{latestSale.sale_id}</p>
+                      <p className="text-sm theme-text-muted">Venta #{latestSale.sale_id}</p>
                       <StatusBadge label={formatStatus(latestSale.status)} tone={getSaleStatusTone(latestSale.status)} />
                       <StatusBadge label={formatPaymentMethod(latestSale.payment_method)} tone={getPaymentMethodTone(latestSale.payment_method)} />
                     </div>
-                    <p className="mt-3 truncate font-display text-2xl font-bold text-white">{latestSale.location.name}</p>
+                    <p className="mt-3 truncate font-display text-2xl font-bold theme-text-strong">{latestSale.location.name}</p>
                     <p className="mt-2 text-sm text-[color:var(--text-faint)]">{formatDate(latestSale.created_at)}</p>
                     <p className="mt-1 text-sm text-[color:var(--text-faint)]">Cajero: {latestSale.cashier.name}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-slate-400">Total registrado</p>
+                    <p className="text-sm theme-text-muted">Total registrado</p>
                     <p className="mt-2 font-display text-3xl font-bold metric-accent-strong">{formatCurrency(latestSale.total)}</p>
                     <p className="mt-1 text-xs text-[color:var(--text-faint)]">{latestSale.items.length} lineas - {latestSale.items.reduce((total, item) => total + item.qty, 0)} items</p>
                   </div>
@@ -647,11 +647,11 @@ export function SalesPage() {
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <div className="surface-subtle rounded-2xl px-4 py-3">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Cobro recibido</p>
-                    <p className="mt-1 text-sm font-medium text-white">{latestSale.amount_received !== null ? formatCurrency(latestSale.amount_received) : 'No informado'}</p>
+                    <p className="mt-1 text-sm font-medium theme-text-strong">{latestSale.amount_received !== null ? formatCurrency(latestSale.amount_received) : 'No informado'}</p>
                   </div>
                   <div className="surface-subtle rounded-2xl px-4 py-3">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Cambio entregado</p>
-                    <p className="mt-1 text-sm font-medium text-white">{latestSale.change_given !== null ? formatCurrency(latestSale.change_given) : 'No aplica'}</p>
+                    <p className="mt-1 text-sm font-medium theme-text-strong">{latestSale.change_given !== null ? formatCurrency(latestSale.change_given) : 'No aplica'}</p>
                   </div>
                 </div>
 
@@ -668,8 +668,8 @@ export function SalesPage() {
         <div className="grid min-w-0 gap-4">
           <section ref={detailSectionRef} aria-labelledby="sales-detail-title" aria-busy={isDetailPending} className="min-w-0 scroll-mt-4 lg:scroll-mt-6">
             <Card aria-labelledby="sales-detail-title">
-              <p className="text-sm text-slate-400">Detalle de venta</p>
-              <h2 id="sales-detail-title" className="font-display text-2xl font-bold text-white">
+              <p className="text-sm theme-text-muted">Detalle de venta</p>
+              <h2 id="sales-detail-title" className="font-display text-2xl font-bold theme-text-strong">
                 Comprobante de consulta
               </h2>
 
@@ -695,17 +695,17 @@ export function SalesPage() {
                       <div className="min-w-0">
                         <p className="text-xs uppercase tracking-[0.25em] text-[color:var(--text-faint)]">Comprobante</p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <h3 className="font-display text-4xl font-bold text-white">Venta #{visibleReceipt.sale_id}</h3>
+                          <h3 className="font-display text-4xl font-bold theme-text-strong">Venta #{visibleReceipt.sale_id}</h3>
                           {detailMetrics.status ? (
                             <StatusBadge label={formatStatus(detailMetrics.status)} tone={getSaleStatusTone(detailMetrics.status)} />
                           ) : null}
                           <StatusBadge label={formatPaymentMethod(visibleReceipt.payment_method)} tone={getPaymentMethodTone(visibleReceipt.payment_method)} />
                         </div>
-                        <p className="mt-3 text-sm text-slate-400">{formatDate(visibleReceipt.created_at)}</p>
+                        <p className="mt-3 text-sm theme-text-muted">{formatDate(visibleReceipt.created_at)}</p>
                         <p className="mt-1 text-sm text-[color:var(--text-faint)]">Ticket listo para auditoria, caja y validacion comercial.</p>
                       </div>
                       <div className="surface-subtle rounded-3xl px-5 py-4 text-right">
-                        <p className="text-sm text-slate-400">Total</p>
+                        <p className="text-sm theme-text-muted">Total</p>
                         <p className="mt-2 font-display text-3xl font-bold metric-accent-strong">{formatCurrency(visibleReceipt.total)}</p>
                         <p className="mt-1 text-xs text-[color:var(--text-faint)]">{detailMetrics.lines} lineas - {detailMetrics.units} items</p>
                       </div>
@@ -715,15 +715,15 @@ export function SalesPage() {
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <div className="surface-subtle rounded-3xl p-5">
                       <p className="text-sm text-[color:var(--text-faint)]">Fecha y hora</p>
-                      <p className="mt-2 font-medium text-white">{formatDate(visibleReceipt.created_at)}</p>
+                      <p className="mt-2 font-medium theme-text-strong">{formatDate(visibleReceipt.created_at)}</p>
                     </div>
                     <div className="surface-subtle rounded-3xl p-5">
                       <p className="text-sm text-[color:var(--text-faint)]">Ubicacion</p>
-                      <p className="mt-2 font-medium text-white">{visibleReceipt.location.name}</p>
+                      <p className="mt-2 font-medium theme-text-strong">{visibleReceipt.location.name}</p>
                     </div>
                     <div className="surface-subtle rounded-3xl p-5">
                       <p className="text-sm text-[color:var(--text-faint)]">Cajero</p>
-                      <p className="mt-2 font-medium text-white">{visibleReceipt.cashier.name}</p>
+                      <p className="mt-2 font-medium theme-text-strong">{visibleReceipt.cashier.name}</p>
                     </div>
                     <div className="surface-subtle rounded-3xl p-5">
                       <p className="text-sm text-[color:var(--text-faint)]">Estado comercial</p>
@@ -732,7 +732,7 @@ export function SalesPage() {
                           <StatusBadge label={formatStatus(detailMetrics.status)} tone={getSaleStatusTone(detailMetrics.status)} />
                         </div>
                       ) : (
-                        <p className="mt-2 font-medium text-white">No informado</p>
+                        <p className="mt-2 font-medium theme-text-strong">No informado</p>
                       )}
                     </div>
                   </div>
@@ -740,8 +740,8 @@ export function SalesPage() {
                   <div className="surface-subtle rounded-3xl p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm text-slate-400">Items</p>
-                        <h3 className="mt-2 font-display text-2xl font-bold text-white">Detalle de compra</h3>
+                        <p className="text-sm theme-text-muted">Items</p>
+                        <h3 className="mt-2 font-display text-2xl font-bold theme-text-strong">Detalle de compra</h3>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <StatusBadge label={`${detailMetrics.lines} lineas`} tone="default" />
@@ -754,7 +754,7 @@ export function SalesPage() {
                         <div key={item.id} className="data-list-card rounded-2xl px-4 py-3">
                           <div className="flex flex-wrap items-start justify-between gap-4">
                             <div className="min-w-0">
-                              <p className="font-medium text-white">{item.description}</p>
+                              <p className="font-medium theme-text-strong">{item.description}</p>
                               <div className="mt-2 flex flex-wrap items-center gap-2">
                                 <StatusBadge label={formatSaleItemType(item.item_type)} tone="default" className="min-w-[88px] justify-center" />
                                 <span className="text-xs text-[color:var(--text-faint)]">x{item.qty} - {formatCurrency(item.unit_price)} c/u</span>
@@ -777,23 +777,23 @@ export function SalesPage() {
                         <StatusBadge label={formatDiscountType(visibleReceipt.discount_type)} tone={visibleReceipt.discount_amount > 0 ? 'warning' : 'default'} />
                       </div>
                       <div className="mt-4 grid gap-3 text-sm">
-                        <div className="flex items-center justify-between text-slate-300">
+                        <div className="flex items-center justify-between theme-text-secondary">
                           <span>Subtotal</span>
                           <span className="metric-accent">{formatCurrency(visibleReceipt.subtotal)}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-300">
+                        <div className="flex items-center justify-between theme-text-secondary">
                           <span>Tipo de descuento</span>
                           <span>{formatDiscountType(visibleReceipt.discount_type)}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-300">
+                        <div className="flex items-center justify-between theme-text-secondary">
                           <span>Valor de regla</span>
                           <span>{formatDiscountValue(visibleReceipt.discount_type, visibleReceipt.discount_value)}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-300">
+                        <div className="flex items-center justify-between theme-text-secondary">
                           <span>Monto descontado</span>
                           <span className="metric-accent">{formatCurrency(visibleReceipt.discount_amount)}</span>
                         </div>
-                        <div className="flex items-center justify-between border-t border-[color:var(--line)] pt-3 font-semibold text-white">
+                        <div className="flex items-center justify-between border-t border-[color:var(--line)] pt-3 font-semibold theme-text-strong">
                           <span>Total</span>
                           <span className="metric-accent-strong">{formatCurrency(visibleReceipt.total)}</span>
                         </div>
@@ -807,20 +807,20 @@ export function SalesPage() {
                       </div>
                       <div className="mt-4 grid gap-3 text-sm">
                         {detailMetrics.status ? (
-                          <div className="flex items-center justify-between text-slate-300">
+                          <div className="flex items-center justify-between theme-text-secondary">
                             <span>Estado</span>
                             <span>{formatStatus(detailMetrics.status)}</span>
                           </div>
                         ) : null}
-                        <div className="flex items-center justify-between text-slate-300">
+                        <div className="flex items-center justify-between theme-text-secondary">
                           <span>Monto recibido</span>
                           <span>{visibleReceipt.amount_received !== null ? formatCurrency(visibleReceipt.amount_received) : 'No informado'}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-300">
+                        <div className="flex items-center justify-between theme-text-secondary">
                           <span>Cambio entregado</span>
                           <span>{visibleReceipt.change_given !== null ? formatCurrency(visibleReceipt.change_given) : 'No aplica'}</span>
                         </div>
-                        <div className="flex items-center justify-between border-t border-[color:var(--line)] pt-3 font-semibold text-white">
+                        <div className="flex items-center justify-between border-t border-[color:var(--line)] pt-3 font-semibold theme-text-strong">
                           <span>Total cobrado</span>
                           <span className="metric-accent-strong">{formatCurrency(visibleReceipt.total)}</span>
                         </div>
@@ -835,8 +835,8 @@ export function SalesPage() {
           <Card aria-labelledby="sales-history-title">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm text-slate-400">Historial real</p>
-                <h2 id="sales-history-title" className="font-display text-2xl font-bold text-white">
+                <p className="text-sm theme-text-muted">Historial real</p>
+                <h2 id="sales-history-title" className="font-display text-2xl font-bold theme-text-strong">
                   Historial completo de ventas
                 </h2>
                 <p className="mt-2 text-sm text-[color:var(--text-faint)]">
@@ -969,28 +969,28 @@ export function SalesPage() {
                         </colgroup>
                         <thead className="table-head">
                           <tr>
-                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            <th scope="col" className="table-head-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               ID
                             </th>
-                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            <th scope="col" className="table-head-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Fecha
                             </th>
-                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-right text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            <th scope="col" className="table-head-cell px-4 py-3 text-right text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Total
                             </th>
-                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            <th scope="col" className="table-head-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Estado
                             </th>
-                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            <th scope="col" className="table-head-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Metodo
                             </th>
-                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            <th scope="col" className="table-head-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Ubicacion
                             </th>
-                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            <th scope="col" className="table-head-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Cajero
                             </th>
-                            <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                            <th scope="col" className="table-head-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                               Accion
                             </th>
                           </tr>
@@ -1013,13 +1013,13 @@ export function SalesPage() {
                                 }}
                                 className={[
                                   'cursor-pointer text-[color:var(--text-secondary)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset focus-visible:ring-offset-0',
-                                  index > 0 ? 'border-t border-white/8' : '',
+                                  index > 0 ? 'border-t theme-border-soft' : '',
                                   isSelected
-                                    ? 'table-row-selected text-white'
-                                    : 'bg-white/[0.03] hover:bg-white/[0.06] hover:text-white',
+                                    ? 'table-row table-row-selected theme-text-strong'
+                                    : 'table-row table-row-interactive',
                                 ].join(' ')}
                               >
-                                <td className="px-4 py-4 align-middle whitespace-nowrap text-slate-400">#{sale.sale_id}</td>
+                                <td className="px-4 py-4 align-middle whitespace-nowrap theme-text-muted">#{sale.sale_id}</td>
                                 <td className="px-4 py-4 align-middle whitespace-nowrap">{formatDate(sale.created_at)}</td>
                                 <td className="px-4 py-4 align-middle whitespace-nowrap text-right">
                                   <span className="font-medium metric-accent">{formatCurrency(sale.total)}</span>
@@ -1031,15 +1031,15 @@ export function SalesPage() {
                                   <StatusBadge label={formatPaymentMethod(sale.payment_method)} tone={getPaymentMethodTone(sale.payment_method)} />
                                 </td>
                                 <td className="px-4 py-4 align-middle">
-                                  <span className="block truncate text-white">{sale.location_name}</span>
+                                  <span className="block truncate theme-text-strong">{sale.location_name}</span>
                                   <span className="mt-1 block truncate text-xs text-[color:var(--text-faint)]">POS #{sale.location_id}</span>
                                 </td>
                                 <td className="px-4 py-4 align-middle">
-                                  <span className="block truncate text-white">{sale.cashier_name}</span>
+                                  <span className="block truncate theme-text-strong">{sale.cashier_name}</span>
                                   <span className="mt-1 block truncate text-xs text-[color:var(--text-faint)]">Usuario #{sale.cashier_id}</span>
                                 </td>
                                 <td className="px-4 py-4 align-middle whitespace-nowrap">
-                                  <span className="table-action-chip text-white">
+                                  <span className="table-action-chip theme-text-strong">
                                     Ver detalle
                                   </span>
                                 </td>
