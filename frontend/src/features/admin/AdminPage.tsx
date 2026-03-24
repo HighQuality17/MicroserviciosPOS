@@ -233,7 +233,7 @@ export function AdminPage() {
         .map((item) => ({
           label: item.method === 'CASH' ? 'Efectivo' : 'Transferencia',
           value: item.total,
-          color: item.method === 'CASH' ? '#34d399' : '#38bdf8',
+          color: item.method === 'CASH' ? 'var(--success)' : 'var(--info)',
         })),
     [salesByPayment],
   );
@@ -243,7 +243,7 @@ export function AdminPage() {
       topItems.map((item, index) => ({
         label: `${item.name} - ${item.item_type === 'VARIANT' ? 'Variante' : 'Combo'}`,
         value: item.qty_sold,
-        color: index % 2 === 0 ? '#a78bfa' : '#818cf8',
+        color: index % 2 === 0 ? 'var(--chart-series-default)' : 'var(--chart-series-alt)',
       })),
     [topItems],
   );
@@ -382,7 +382,7 @@ export function AdminPage() {
             <div className="min-w-0">
               <p className="section-kicker">Centro de control</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-3xl font-bold text-white sm:text-[2rem]">
+                <h1 className="font-display text-3xl font-bold theme-text-strong sm:text-[2rem]">
                   Dashboard administrativo
                 </h1>
                 <StatusBadge label={dashboardStatusLabel} tone={dashboardStatusTone} />
@@ -483,7 +483,7 @@ export function AdminPage() {
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] xl:items-stretch 2xl:gap-6">
         <Card className="overflow-hidden xl:min-h-[38rem]">
-          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-cyan-300/10 via-indigo-400/14 to-transparent" />
+          <div className="panel-top-glow absolute inset-x-0 top-0 h-24" />
           <SectionHeader
             eyebrow="Resumen ejecutivo"
             title="Panorama del negocio"
@@ -524,7 +524,7 @@ export function AdminPage() {
 
             <div className="surface-subtle-strong flex h-full flex-col rounded-[1.8rem] p-6">
               <p className="section-kicker">Lectura central</p>
-              <h3 className="mt-3 font-display text-2xl font-bold text-white">Centro de lectura</h3>
+              <h3 className="mt-3 font-display text-2xl font-bold theme-text-strong">Centro de lectura</h3>
               <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
                 Resume lo que mas importa para decidir rapido sin perder el contexto operativo del negocio.
               </p>
@@ -532,7 +532,7 @@ export function AdminPage() {
               <div className="mt-6 grid flex-1 gap-3.5">
                 <div className="data-list-card flex min-h-[7.5rem] flex-col justify-between rounded-2xl px-4 py-4">
                   <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Metodo dominante</p>
-                  <p className="mt-2 font-medium text-white">
+                  <p className="mt-2 font-medium theme-text-strong">
                     {leadingPayment ? formatPaymentMethod(leadingPayment.method) : 'Sin pagos confirmados'}
                   </p>
                   <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
@@ -541,7 +541,7 @@ export function AdminPage() {
                 </div>
                 <div className="data-list-card flex min-h-[7.5rem] flex-col justify-between rounded-2xl px-4 py-4">
                   <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Item lider</p>
-                  <p className="mt-2 font-medium text-white">{featuredTopItem ? featuredTopItem.name : 'Sin ranking comercial'}</p>
+                  <p className="mt-2 font-medium theme-text-strong">{featuredTopItem ? featuredTopItem.name : 'Sin ranking comercial'}</p>
                   <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
                     {featuredTopItem ? `${featuredTopItem.qty_sold.toLocaleString('es-CO')} unidades vendidas` : 'El ranking aparecera con ventas confirmadas'}
                   </p>
@@ -549,14 +549,14 @@ export function AdminPage() {
                 <div className="grid auto-rows-fr gap-3.5 sm:grid-cols-2 [&>*]:h-full">
                   <div className="surface-subtle flex min-h-[7.5rem] flex-col justify-between rounded-2xl px-4 py-4">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Ultima actividad</p>
-                    <p className="mt-2 font-medium text-white">{latestActivity ? latestActivity.title : 'Sin eventos recientes'}</p>
+                    <p className="mt-2 font-medium theme-text-strong">{latestActivity ? latestActivity.title : 'Sin eventos recientes'}</p>
                     <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
                       {latestActivity ? formatDate(latestActivity.created_at) : 'La actividad aparecera cuando existan movimientos'}
                     </p>
                   </div>
                   <div className="surface-subtle flex min-h-[7.5rem] flex-col justify-between rounded-2xl px-4 py-4">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">Cobertura POS</p>
-                    <p className="mt-2 font-medium text-white">{locationsLoading ? 'Actualizando...' : `${totalLocations} POS listos`}</p>
+                    <p className="mt-2 font-medium theme-text-strong">{locationsLoading ? 'Actualizando...' : `${totalLocations} POS listos`}</p>
                     <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
                       {totalLocations > 0 ? 'Infraestructura disponible para operar' : 'Crea el primer POS para habilitar cobertura'}
                     </p>
@@ -590,26 +590,26 @@ export function AdminPage() {
             <div className="grid auto-rows-fr gap-3.5 sm:grid-cols-2 [&>*]:h-full">
               <div className="data-list-card rounded-3xl p-4">
                 <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Caja</p>
-                <p className="mt-2 font-medium text-white">{summary?.current_cash_session ? summary.current_cash_session.location_name : 'Sin caja abierta'}</p>
+                <p className="mt-2 font-medium theme-text-strong">{summary?.current_cash_session ? summary.current_cash_session.location_name : 'Sin caja abierta'}</p>
                 <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
                   {summary?.current_cash_session ? `Abierta por ${summary.current_cash_session.opened_by_name}` : 'Abre una caja para iniciar operacion'}
                 </p>
               </div>
               <div className="data-list-card rounded-3xl p-4">
                 <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Stock</p>
-                <p className="mt-2 font-medium text-white">{(summary?.low_stock_count ?? 0) > 0 ? 'Atencion requerida' : 'Controlado'}</p>
+                <p className="mt-2 font-medium theme-text-strong">{(summary?.low_stock_count ?? 0) > 0 ? 'Atencion requerida' : 'Controlado'}</p>
                 <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
                   {lowStock.length > 0 ? `${lowStock.length} ingredientes por revisar` : 'Sin ingredientes por debajo del umbral'}
                 </p>
               </div>
               <div className="data-list-card rounded-3xl p-4">
                 <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Catalogo</p>
-                <p className="mt-2 font-medium text-white">{summaryLoading ? 'Sincronizando...' : `${summary?.active_products_count ?? 0} activos`}</p>
+                <p className="mt-2 font-medium theme-text-strong">{summaryLoading ? 'Sincronizando...' : `${summary?.active_products_count ?? 0} activos`}</p>
                 <p className="mt-1 text-sm text-[color:var(--text-secondary)]">Base comercial disponible para POS, combos y ventas</p>
               </div>
               <div className="data-list-card rounded-3xl p-4">
                 <p className="text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">Actividad</p>
-                <p className="mt-2 font-medium text-white">{latestActivity ? formatActivityType(latestActivity.activity_type) : 'Sin eventos'}</p>
+                <p className="mt-2 font-medium theme-text-strong">{latestActivity ? formatActivityType(latestActivity.activity_type) : 'Sin eventos'}</p>
                 <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
                   {latestActivity ? latestActivity.subtitle : 'La trazabilidad aparecera con movimientos reales'}
                 </p>
@@ -797,8 +797,8 @@ export function AdminPage() {
                         <StatusBadge label={formatActivityType(item.activity_type)} tone={getActivityTone(item.activity_type)} />
                         <p className="text-xs text-[color:var(--text-faint)]">Registro #{item.entity_id}</p>
                       </div>
-                      <p className="mt-3 font-medium text-white">{item.title}</p>
-                      <p className="mt-1 text-sm text-slate-400">{item.subtitle}</p>
+                      <p className="mt-3 font-medium theme-text-strong">{item.title}</p>
+                      <p className="mt-1 text-sm theme-text-muted">{item.subtitle}</p>
                     </div>
                     <p className="text-sm text-[color:var(--text-faint)]">
                       {formatDate(item.created_at)}
@@ -826,8 +826,8 @@ export function AdminPage() {
                   key={item}
                   className="data-list-card rounded-3xl p-5"
                 >
-                  <p className="font-medium text-white">{item}</p>
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className="font-medium theme-text-strong">{item}</p>
+                  <p className="mt-2 text-sm theme-text-muted">
                     Disponible cuando la siguiente fase habilite acciones administrativas.
                   </p>
                 </div>
@@ -866,8 +866,8 @@ export function AdminPage() {
 
           <div className="mt-6 grid min-w-0 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
             <div className="surface-subtle-strong rounded-[1.8rem] p-5">
-              <p className="text-sm text-slate-400">Crear ubicacion</p>
-              <h3 className="mt-2 font-display text-2xl font-bold text-white">
+              <p className="text-sm theme-text-muted">Crear ubicacion</p>
+              <h3 className="mt-2 font-display text-2xl font-bold theme-text-strong">
                 Nuevo punto de venta
               </h3>
               <p className="mt-2 text-sm text-[color:var(--text-secondary)]">
@@ -893,8 +893,8 @@ export function AdminPage() {
             <div className="surface-subtle rounded-[1.8rem] p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-slate-400">Ubicaciones reales</p>
-                  <h3 className="mt-2 font-display text-2xl font-bold text-white">
+                  <p className="text-sm theme-text-muted">Ubicaciones reales</p>
+                  <h3 className="mt-2 font-display text-2xl font-bold theme-text-strong">
                     POS disponibles
                   </h3>
                 </div>
@@ -922,10 +922,10 @@ export function AdminPage() {
                       className="data-list-card rounded-3xl p-4"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-medium text-white">{location.name}</p>
+                        <p className="font-medium theme-text-strong">{location.name}</p>
                         <StatusBadge label="POS activo" tone="info" />
                       </div>
-                      <p className="mt-1 text-sm text-slate-400">ID {location.id}</p>
+                      <p className="mt-1 text-sm theme-text-muted">ID {location.id}</p>
                     </div>
                   ))}
                 </ScrollPanel>

@@ -1,5 +1,6 @@
 import { Menu, MapPin } from 'lucide-react';
 import { Button } from '@/components/Button';
+import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatUserRole } from '@/utils/copy';
@@ -40,22 +41,24 @@ export function Header({
           </Button>
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
-              Operación comercial conectada
+              Operacion comercial conectada
             </p>
-            <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
+            <h1 className="font-display text-2xl font-bold text-[color:var(--text)] sm:text-3xl">
               Registry POS
             </h1>
           </div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <ThemeSelector />
+
           <div className="surface-subtle flex w-full min-w-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto sm:max-w-full">
-            <MapPin size={16} className="shrink-0 text-violet-200" />
+            <MapPin size={16} className="theme-accent-icon shrink-0" />
             <div className="min-w-0 flex-1">
               {locationsLoading ? (
                 <span>Cargando puntos de venta...</span>
               ) : availableLocations.length === 0 || !currentLocation ? (
-                <span className="text-amber-100">
+                <span className="text-[color:var(--warning)]">
                   {locationsError ? 'Sin POS disponibles' : 'Sin ubicaciones creadas'}
                 </span>
               ) : availableLocations.length <= 1 ? (
@@ -72,14 +75,10 @@ export function Header({
                       setCurrentLocation(nextLocation);
                     }
                   }}
-                  className="w-full min-w-0 rounded-xl bg-transparent text-sm text-[color:var(--text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] sm:min-w-[12rem]"
+                  className="surface-inline-select w-full min-w-0 rounded-xl text-sm sm:min-w-[12rem]"
                 >
                   {availableLocations.map((item) => (
-                    <option
-                      key={item.id}
-                      value={String(item.id)}
-                      className="bg-[#0d1020] text-[color:var(--text)]"
-                    >
+                    <option key={item.id} value={String(item.id)}>
                       {item.name}
                     </option>
                   ))}
@@ -98,3 +97,4 @@ export function Header({
     </header>
   );
 }
+

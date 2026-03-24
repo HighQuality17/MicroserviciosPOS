@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CurrentUser } from './decorators/current-user.decorator';
+import { CurrentUser, type AuthenticatedUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
+import { UpdateThemePreferenceDto } from './dto/update-theme-preference.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Public } from './public.decorator';
 
@@ -17,7 +18,16 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@CurrentUser() user: { sub: number }) {
+  me(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.me(user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/theme')
+  updateThemePreference(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateThemePreferenceDto,
+  ) {
+    return this.authService.updateThemePreference(user.sub, dto.theme);
   }
 }

@@ -330,7 +330,7 @@ export function IngredientsPage() {
             <div className="min-w-0">
               <p className="section-kicker">Operacion de inventario</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
                   Control de ingredientes
                 </h1>
                 <StatusBadge label={inventoryStatusLabel} tone={inventoryStatusTone} />
@@ -427,8 +427,8 @@ export function IngredientsPage() {
       <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
-            <p className="text-sm text-slate-400">Crear ingrediente</p>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <p className="text-sm theme-text-muted">Crear ingrediente</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">
               Gestión base del inventario
             </h2>
 
@@ -476,8 +476,8 @@ export function IngredientsPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Ajuste de stock</p>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <p className="text-sm theme-text-muted">Ajuste de stock</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">
               Operación administrativa
             </h2>
 
@@ -555,7 +555,7 @@ export function IngredientsPage() {
               />
 
               <div className="toolbar-shell rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)]">
-                Usuario aplicado: <span className="font-medium text-white">{currentUser?.name ?? 'Sin sesión'}</span>
+                Usuario aplicado: <span className="font-medium theme-text-strong">{currentUser?.name ?? 'Sin sesión'}</span>
               </div>
 
               <Button
@@ -576,8 +576,8 @@ export function IngredientsPage() {
           <Card>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm text-slate-400">Listado de ingredientes</p>
-                <h2 className="font-display text-2xl font-bold text-white">
+                <p className="text-sm theme-text-muted">Listado de ingredientes</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">
                   Catálogo base
                 </h2>
               </div>
@@ -611,8 +611,8 @@ export function IngredientsPage() {
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="font-medium text-white">{ingredient.name}</p>
-                        <p className="mt-1 text-sm text-slate-400">
+                        <p className="font-medium theme-text-strong">{ingredient.name}</p>
+                        <p className="mt-1 text-sm theme-text-muted">
                           {getDimensionLabel(ingredient.dimension)} -{' '}
                           {getUnitLabel(ingredient.defaultUnitCode)}
                         </p>
@@ -636,8 +636,8 @@ export function IngredientsPage() {
           <Card>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm text-slate-400">Existencias reales</p>
-                <h2 className="font-display text-2xl font-bold text-white">
+                <p className="text-sm theme-text-muted">Existencias reales</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">
                   Stock por ubicación
                 </h2>
               </div>
@@ -678,8 +678,8 @@ export function IngredientsPage() {
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="font-medium text-white">{item.ingredient.name}</p>
-                        <p className="mt-1 text-sm text-slate-400">
+                        <p className="font-medium theme-text-strong">{item.ingredient.name}</p>
+                        <p className="mt-1 text-sm theme-text-muted">
                           {item.location.name} -{' '}
                           {getDimensionLabel(item.ingredient.dimension)}
                         </p>
@@ -704,8 +704,8 @@ export function IngredientsPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Movimientos</p>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <p className="text-sm theme-text-muted">Movimientos</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">
               Auditoría de inventario
             </h2>
             <div className="mt-6">

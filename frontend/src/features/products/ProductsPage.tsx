@@ -572,7 +572,7 @@ export function ProductsPage() {
             <div className="min-w-0">
               <p className="section-kicker">Operacion de catalogo</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
                   Control de productos
                 </h1>
                 <StatusBadge label={catalogStatusLabel} tone={catalogStatusTone} />
@@ -672,8 +672,8 @@ export function ProductsPage() {
       <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
-            <p className="text-sm text-slate-400">Gestión de productos</p>
-            <h2 className="font-display text-2xl font-bold text-white">Crear producto</h2>
+            <p className="text-sm theme-text-muted">Gestión de productos</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">Crear producto</h2>
             <div className="mt-5 grid gap-4">
               <Input
                 label="Nombre"
@@ -724,8 +724,8 @@ export function ProductsPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Gestión de variantes</p>
-            <h2 className="font-display text-2xl font-bold text-white">Crear variante</h2>
+            <p className="text-sm theme-text-muted">Gestión de variantes</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">Crear variante</h2>
             <div className="mt-5 grid gap-4">
               <Select
                 label="Producto"
@@ -798,8 +798,8 @@ export function ProductsPage() {
           <Card>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm text-slate-400">Listado real</p>
-                <h2 className="font-display text-2xl font-bold text-white">Productos</h2>
+                <p className="text-sm theme-text-muted">Listado real</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">Productos</h2>
               </div>
               <Button variant="secondary" onClick={() => void refreshCatalog()}>
                 Refrescar
@@ -831,7 +831,7 @@ export function ProductsPage() {
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <div className="flex items-center gap-3">
-                          <p className="font-display text-xl font-bold text-white">{product.name}</p>
+                          <p className="font-display text-xl font-bold theme-text-strong">{product.name}</p>
                           <StatusBadge
                             label={product.active ? 'Activo' : 'Inactivo'}
                             tone={product.active ? 'success' : 'default'}
@@ -877,8 +877,8 @@ export function ProductsPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Listado real</p>
-            <h2 className="font-display text-2xl font-bold text-white">Variantes</h2>
+            <p className="text-sm theme-text-muted">Listado real</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">Variantes</h2>
 
             {loadingCatalog ? (
               <div className="mt-6 grid gap-3">
@@ -919,28 +919,28 @@ export function ProductsPage() {
                       </colgroup>
                       <thead className="table-head">
                         <tr>
-                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                          <th scope="col" className="table-head-cell px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                             ID
                           </th>
-                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                          <th scope="col" className="table-head-cell px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                             Producto
                           </th>
-                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                          <th scope="col" className="table-head-cell px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                             Tamaño
                           </th>
-                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-2.5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                          <th scope="col" className="table-head-cell px-2.5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                             SKU
                           </th>
-                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] pl-2.5 pr-3 py-3 text-right text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                          <th scope="col" className="table-head-cell pl-2.5 pr-3 py-3 text-right text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                             Precio
                           </th>
-                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                          <th scope="col" className="table-head-cell px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                             Estado
                           </th>
-                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] pl-3 pr-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                          <th scope="col" className="table-head-cell pl-3 pr-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                             Receta
                           </th>
-                          <th scope="col" className="sticky top-0 z-10 bg-[rgba(255,255,255,0.04)] pl-5 pr-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
+                          <th scope="col" className="table-head-cell pl-5 pr-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
                             Acciones
                           </th>
                         </tr>
@@ -953,14 +953,14 @@ export function ProductsPage() {
                             <tr
                               key={variant.id}
                               className={[
-                                'bg-white/[0.03] text-[color:var(--text-secondary)] transition hover:bg-white/[0.05]',
-                                index > 0 ? 'border-t border-white/8' : '',
+                                'table-row table-row-interactive text-[color:var(--text-secondary)]',
+                                index > 0 ? 'border-t theme-border-soft' : '',
                               ].join(' ')}
                             >
-                              <td className="px-3 py-3.5 align-middle whitespace-nowrap text-xs text-slate-400">#{variant.id}</td>
+                              <td className="px-3 py-3.5 align-middle whitespace-nowrap text-xs theme-text-muted">#{variant.id}</td>
                               <td className="px-3 py-3.5 align-middle">
                                 <div className="min-w-0">
-                                  <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-white">{variant.product_name}</p>
+                                  <p className="truncate text-[15px] font-semibold tracking-[-0.01em] theme-text-strong">{variant.product_name}</p>
                                 </div>
                               </td>
                               <td className="px-3 py-3.5 align-middle whitespace-nowrap text-sm">{variant.size}</td>
@@ -991,7 +991,7 @@ export function ProductsPage() {
                                   <div className="flex flex-nowrap items-center gap-3 whitespace-nowrap">
                                     <Button
                                       variant="secondary"
-                                      className="min-h-9 rounded-xl border-indigo-300/24 bg-indigo-500/10 px-3 py-2 text-xs font-semibold text-indigo-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-indigo-300/38 hover:bg-indigo-500/16"
+                                      className="action-soft-brand"
                                       aria-haspopup="dialog"
                                       aria-controls="variant-editor-dialog"
                                       onClick={() => openVariantEditor(variant)}
@@ -1001,15 +1001,15 @@ export function ProductsPage() {
                                     <Button
                                       variant="ghost"
                                       className={variant.active
-                                        ? 'min-h-9 rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-100 hover:border-rose-300/34 hover:bg-rose-500/16'
-                                        : 'min-h-9 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-100 hover:border-emerald-300/34 hover:bg-emerald-500/16'}
+                                        ? 'action-soft-danger'
+                                        : 'action-soft-success'}
                                       onClick={() => void handleToggleVariantStatus(variant)}
                                     >
                                       {variant.active ? 'Desactivar' : 'Activar'}
                                     </Button>
                                     <Button
                                       variant="secondary"
-                                      className="min-h-9 rounded-xl border-violet-300/24 bg-violet-500/12 px-3 py-2 text-xs font-semibold text-violet-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-violet-300/40 hover:bg-violet-500/18"
+                                      className="action-soft-brand"
                                       aria-haspopup="dialog"
                                       aria-controls="recipe-manager-dialog"
                                       onClick={() => void openRecipeManager(variant)}
@@ -1145,7 +1145,7 @@ export function ProductsPage() {
                 label={loadedRecipe?.has_recipe ? 'Con receta' : 'Sin receta'}
                 tone={loadedRecipe?.has_recipe ? 'info' : 'warning'}
               />
-              <p className="text-sm text-slate-400">
+              <p className="text-sm theme-text-muted">
                 Todas las cantidades se guardan en unidad base según el ingrediente.
               </p>
             </div>

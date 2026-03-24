@@ -4,6 +4,7 @@ import { router } from '@/app/router';
 import { LoadingState } from '@/components/LoadingState';
 import { setUnauthorizedHandler } from '@/services/api/authEvents';
 import { useSessionStore } from '@/store/sessionStore';
+import { ThemeProvider } from '@/theme/ThemeProvider';
 
 export function AppBootstrap() {
   const hydrateSession = useSessionStore((state) => state.hydrateSession);
@@ -27,19 +28,22 @@ export function AppBootstrap() {
     };
   }, [clearSession]);
 
-  if (!isReady) {
-    return (
-      <div className="min-h-screen px-4 py-8">
-        <div className="mx-auto max-w-3xl">
-          <LoadingState
-            title="Restaurando sesión"
-            description="Estamos validando tu acceso con el backend local."
-            rows={3}
-          />
+  return (
+    <ThemeProvider>
+      {!isReady ? (
+        <div className="min-h-screen px-4 py-8">
+          <div className="mx-auto max-w-3xl">
+            <LoadingState
+              title="Restaurando sesion"
+              description="Estamos validando tu acceso con el backend local."
+              rows={3}
+            />
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  return <RouterProvider router={router} />;
+      ) : (
+        <RouterProvider router={router} />
+      )}
+    </ThemeProvider>
+  );
 }
+

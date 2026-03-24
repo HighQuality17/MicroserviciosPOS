@@ -14,11 +14,9 @@ export function Card({ children, className, ...props }: CardProps) {
       )}
       {...props}
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(129,140,248,0.08),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(103,232,249,0.04),transparent_24%)]"
-      />
+      <div aria-hidden="true" className="card-theme-glow pointer-events-none absolute inset-0" />
       <div className="relative z-10 min-w-0">{children}</div>
     </section>
   );
 }
+

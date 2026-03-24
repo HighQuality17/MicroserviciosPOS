@@ -35,7 +35,7 @@ export function Textarea({
       {label ? (
         <label htmlFor={textareaId} className={clsx('ui-control-label', labelClassName)}>
           <span>{label}</span>
-          {required ? <span aria-hidden="true" className="text-rose-300"> *</span> : null}
+          {required ? <span aria-hidden="true" className="theme-required-mark"> *</span> : null}
         </label>
       ) : null}
       <textarea

@@ -207,7 +207,7 @@ export function CombosPage() {
             <div className="min-w-0">
               <p className="section-kicker">Operacion comercial</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
                   Control de combos
                 </h1>
                 <StatusBadge label={comboStatusLabel} tone={comboStatusTone} />
@@ -301,8 +301,8 @@ export function CombosPage() {
       <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
-            <p className="text-sm text-slate-400">Crear combo</p>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <p className="text-sm theme-text-muted">Crear combo</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">
               Alta comercial
             </h2>
 
@@ -348,8 +348,8 @@ export function CombosPage() {
           </Card>
 
           <Card>
-            <p className="text-sm text-slate-400">Agregar items al combo</p>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <p className="text-sm theme-text-muted">Agregar items al combo</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">
               Composicion comercial
             </h2>
 
@@ -418,8 +418,8 @@ export function CombosPage() {
         <Card>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-slate-400">Listado real</p>
-              <h2 className="font-display text-2xl font-bold text-white">Combos comerciales</h2>
+              <p className="text-sm theme-text-muted">Listado real</p>
+              <h2 className="font-display text-2xl font-bold theme-text-strong">Combos comerciales</h2>
             </div>
             <Button variant="secondary" onClick={() => void refreshCatalog()}>
               Refrescar
@@ -452,15 +452,12 @@ export function CombosPage() {
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                       <div className="flex items-center gap-3">
-                        <p className="font-display text-xl font-bold text-white">
+                        <p className="font-display text-xl font-bold theme-text-strong">
                           {combo.name}
                         </p>
                         <span
-                          className={`rounded-full px-3 py-1 text-xs ${
-                            combo.active
-                              ? 'border border-emerald-400/20 bg-emerald-500/15 text-emerald-200'
-                              : 'border border-white/10 bg-white/[0.04] text-[color:var(--text-secondary)]'
-                          }`}
+                          className="app-status-chip rounded-full px-3 py-1 text-xs"
+                          data-tone={combo.active ? 'success' : 'default'}
                         >
                           {combo.active ? 'Activo' : 'Inactivo'}
                         </span>
@@ -496,14 +493,14 @@ export function CombosPage() {
                           className="data-list-card flex items-center justify-between rounded-2xl px-4 py-3"
                         >
                           <div>
-                            <p className="text-sm font-medium text-white">
+                            <p className="text-sm font-medium theme-text-strong">
                               {item.variant.product_name}
                             </p>
                             <p className="text-xs text-[color:var(--text-faint)]">
                               {item.variant.size} - {item.variant.sku} - qty {item.qty}
                             </p>
                           </div>
-                          <p className="text-sm font-semibold text-slate-300">
+                          <p className="text-sm font-semibold theme-text-secondary">
                             {formatCurrency(Number(item.variant.sale_price))}
                           </p>
                         </div>

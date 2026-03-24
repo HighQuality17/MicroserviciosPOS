@@ -232,7 +232,7 @@ export function PosPage() {
             <div className="min-w-0">
               <p className="section-kicker">Operacion en curso</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold text-white sm:text-[1.35rem]">
+                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
                   Control operativo del POS
                 </h1>
                 <StatusBadge label={operationStatusLabel} tone={cashStatusTone} />
@@ -409,12 +409,12 @@ export function PosPage() {
                   onClick={() => addItem(item)}
                   disabled={!currentLocation}
                   aria-label={`Agregar ${item.item_type === 'VARIANT' ? 'variante' : 'combo'} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
-                  className="data-list-card group rounded-[1.65rem] p-5 text-left transition hover:-translate-y-0.5 hover:border-violet-300/28 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16] disabled:cursor-not-allowed disabled:border-[color:var(--disabled-border)] disabled:bg-[linear-gradient(180deg,rgba(33,37,58,0.96),rgba(20,23,38,0.98))] disabled:shadow-none"
+                  className="surface-interactive data-list-card group rounded-[1.65rem] p-5 text-left focus-visible:outline-none"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-display text-xl font-bold text-white">{item.name}</p>
-                      <p className="mt-1 text-sm text-slate-400">{item.subtitle}</p>
+                      <p className="font-display text-xl font-bold theme-text-strong">{item.name}</p>
+                      <p className="mt-1 text-sm theme-text-muted">{item.subtitle}</p>
                     </div>
                     <span className="soft-pill rounded-full px-3 py-1 text-xs">
                       {item.item_type === 'VARIANT' ? 'Variante' : 'Combo'}
@@ -424,7 +424,7 @@ export function PosPage() {
                     <span className="metric-accent font-display text-2xl font-bold">
                       {formatCurrency(item.unit_price)}
                     </span>
-                    <span className="text-sm text-slate-300">Agregar</span>
+                    <span className="text-sm theme-text-secondary">Agregar</span>
                   </div>
                 </button>
               ))}
@@ -503,7 +503,7 @@ export function PosPage() {
                 <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
               </div>
               <div className="mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
-                <span className="font-display text-xl font-bold text-white">Total</span>
+                <span className="font-display text-xl font-bold theme-text-strong">Total</span>
                 <span className="metric-accent-strong font-display text-3xl font-bold">
                   {formatCurrency(totals.total)}
                 </span>

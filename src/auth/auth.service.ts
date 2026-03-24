@@ -7,6 +7,20 @@ import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import {
+  ThemePreference,
+  defaultThemePreference,
+  resolveThemePreference,
+} from './theme-preference.constants';
+
+interface AuthUserRecord {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  role: 'ADMIN' | 'CASHIER' | 'AUDITOR';
+  themePreference: string | null;
+}
 
 @Injectable()
 export class AuthService {
@@ -55,20 +69,53 @@ export class AuthService {
   }
 
   async me(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
+    const user = await this.findAuthenticatedUser(userId);
+    return this.mapAuthenticatedUser(user);
+  }
 
+  async updateThemePreference(userId: number, theme: ThemePreference) {
+    await this.findAuthenticatedUser(userId);
+
+    await this.prisma.$executeRaw`
+      UPDATE "User"
+      SET "themePreference" = ${theme}
+      WHERE "id" = ${userId}
+    `;
+
+    const user = await this.findAuthenticatedUser(userId);
+    return this.mapAuthenticatedUser(user);
+  }
+
+  private async findAuthenticatedUser(userId: number): Promise<AuthUserRecord> {
+    const users = await this.prisma.$queryRaw<AuthUserRecord[]>`
+      SELECT
+        "id",
+        "name",
+        "username",
+        "email",
+        "role",
+        COALESCE("themePreference", ${defaultThemePreference}) AS "themePreference"
+      FROM "User"
+      WHERE "id" = ${userId}
+      LIMIT 1
+    `;
+
+    const user = users[0];
     if (!user) {
       throw new UnauthorizedException('Usuario autenticado no encontrado');
     }
 
+    return user;
+  }
+
+  private mapAuthenticatedUser(user: AuthUserRecord) {
     return {
       id: user.id,
       name: user.name,
       username: user.username,
       email: user.email,
       role: user.role,
+      themePreference: resolveThemePreference(user.themePreference),
     };
   }
 

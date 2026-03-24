@@ -1,3 +1,5 @@
+import type { ThemeName } from '@/theme/theme';
+
 export interface ApiResponse<T> {
   success: true;
   data: T;
@@ -29,6 +31,7 @@ export interface User {
 export interface AuthUser extends User {
   username: string;
   email: string;
+  themePreference: ThemeName | null;
 }
 
 export interface AuthLoginResponse {

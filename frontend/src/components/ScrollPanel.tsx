@@ -15,7 +15,7 @@ export function ScrollPanel({
   return (
     <div
       className={clsx(
-        'min-w-0 overflow-y-auto pr-0 [scrollbar-gutter:stable] sm:pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16]',
+        'min-w-0 overflow-y-auto pr-0 [scrollbar-gutter:stable] sm:pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]',
         maxHeightClassName,
         className,
       )}

@@ -61,7 +61,7 @@ export function AdminChartCard({
 
   return (
     <Card className="overflow-hidden xl:min-h-[34rem]">
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-cyan-300/10 via-violet-400/12 to-transparent" />
+      <div className="chart-top-glow absolute inset-x-0 top-0 h-24" />
       <SectionHeader
         eyebrow="Analitica ejecutiva"
         title={title}
@@ -77,7 +77,7 @@ export function AdminChartCard({
         <div className="mt-6 flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <StatusBadge label={chartSnapshot} tone="default" />
-            <p className="text-xs text-[color:var(--text-faint)]">
+            <p className="text-xs theme-text-faint">
               Lectura respaldada por datos reales del backend.
             </p>
           </div>
@@ -94,18 +94,18 @@ export function AdminChartCard({
                       innerRadius={56}
                       outerRadius={86}
                       paddingAngle={2}
-                      stroke="rgba(15, 23, 42, 0.9)"
+                      stroke="var(--chart-pie-stroke)"
                       strokeWidth={2}
                     >
                       {chartData.map((entry) => (
-                        <Cell key={entry.label} fill={entry.color ?? '#67e8f9'} />
+                        <Cell key={entry.label} fill={entry.color ?? 'var(--chart-series-default)'} />
                       ))}
                     </Pie>
                     <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
                     <Legend
-                      wrapperStyle={{ color: '#d5daf8', paddingTop: 12 }}
+                      wrapperStyle={{ color: 'var(--text-secondary)', paddingTop: 12 }}
                       formatter={(value) => (
-                        <span style={{ color: '#d5daf8' }}>{String(value)}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{String(value)}</span>
                       )}
                     />
                   </PieChart>
@@ -115,10 +115,10 @@ export function AdminChartCard({
                     layout="vertical"
                     margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
                   >
-                    <CartesianGrid stroke="rgba(129, 140, 248, 0.12)" horizontal={false} />
+                    <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
                     <XAxis
                       type="number"
-                      tick={{ fill: '#9ca6cf', fontSize: 12 }}
+                      tick={{ fill: 'var(--chart-axis)', fontSize: 12 }}
                       axisLine={false}
                       tickLine={false}
                     />
@@ -126,14 +126,14 @@ export function AdminChartCard({
                       type="category"
                       dataKey="shortLabel"
                       width={132}
-                      tick={{ fill: '#d5daf8', fontSize: 12 }}
+                      tick={{ fill: 'var(--chart-axis-strong)', fontSize: 12 }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
                     <Bar dataKey="value" radius={[0, 10, 10, 0]} maxBarSize={28}>
                       {chartData.map((entry) => (
-                        <Cell key={entry.label} fill={entry.color ?? '#67e8f9'} />
+                        <Cell key={entry.label} fill={entry.color ?? 'var(--chart-series-default)'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -149,14 +149,14 @@ export function AdminChartCard({
                 className="data-list-card flex min-h-[4.25rem] items-center justify-between rounded-2xl px-4 py-3.5"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[11px] font-semibold text-white">
+                  <span className="chart-rank-badge inline-flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold">
                     {String(index + 1).padStart(2, '0')}
                   </span>
                   <span
                     className="h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.color ?? '#67e8f9' }}
+                    style={{ backgroundColor: item.color ?? 'var(--chart-series-default)' }}
                   />
-                  <span className="truncate text-sm text-[color:var(--text-secondary)]">
+                  <span className="truncate text-sm theme-text-secondary">
                     {item.label}
                   </span>
                 </div>
@@ -164,7 +164,7 @@ export function AdminChartCard({
                   className={
                     valueFormat === 'currency'
                       ? 'text-sm font-medium metric-accent'
-                      : 'text-sm font-medium text-white'
+                      : 'text-sm font-medium theme-text-strong'
                   }
                 >
                   {formatValue(item.value)}
@@ -175,7 +175,7 @@ export function AdminChartCard({
         </div>
       )}
 
-      {footer ? <div className="mt-5 border-t border-white/8 pt-4">{footer}</div> : null}
+      {footer ? <div className="theme-border-soft mt-5 border-t pt-4">{footer}</div> : null}
     </Card>
   );
 }
@@ -204,13 +204,13 @@ function ChartTooltip({
       : Number(payload[0].value).toLocaleString('es-CO');
 
   return (
-    <div className="glass-panel-strong rounded-2xl px-3 py-2 shadow-2xl">
-      <p className="text-sm font-medium text-white">{item.label}</p>
+    <div className="chart-tooltip-surface rounded-2xl px-3 py-2 shadow-2xl">
+      <p className="text-sm font-medium theme-text-strong">{item.label}</p>
       <p
         className={
           valueFormat === 'currency'
-            ? 'mt-1 text-xs metric-accent'
-            : 'mt-1 text-xs text-[color:var(--text-secondary)]'
+            ? 'metric-accent mt-1 text-xs'
+            : 'theme-text-secondary mt-1 text-xs'
         }
       >
         {value}

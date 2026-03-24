@@ -2,6 +2,24 @@
 
 Registro de cambios relevantes del proyecto. Las entradas historicas previas se conservan y los cierres recientes por sprint se documentan adicionalmente en `docs/sprints/`.
 
+## [Sprint 9] - 2026-03-24
+
+### Added
+- Se incorporo un sistema de temas visuales predefinidos con soporte para `midnight-indigo`, `graphite-cyan`, `arctic-blue`, `emerald-ops` y `slate-amber`.
+- La preferencia de tema paso a persistirse por usuario en backend, manteniendo sincronizacion con el frontend autenticado.
+- Se agrego documentacion especifica del sistema de temas y del cierre de Sprint 9 en `docs/`.
+
+### Changed
+- La UI premium del frontend amplio su cobertura de tematizacion sobre vistas, cards KPI, barras compactas, tablas, badges, modales y paneles administrativos.
+- El dashboard Admin quedo mejor integrado al lenguaje visual premium y al sistema de temas.
+- El flujo visual no autenticado se fijo en `midnight-indigo`, incluyendo login, carga previa a sesion y logout.
+- `arctic-blue` recibio ajustes finos de contraste, profundidad y jerarquia visual para mejorar legibilidad.
+
+### Fixed
+- Se corrigio el comportamiento del sidebar para que la opcion activa conserve su estado al pasar el cursor.
+- Se redujo el hover invasivo de opciones no activas en `arctic-blue`.
+- Se reforzo la separacion visual entre superficies claras, chips internos y paneles premium del tema claro.
+
 ## [Sprint 8] - 2026-03-21
 
 ### Changed

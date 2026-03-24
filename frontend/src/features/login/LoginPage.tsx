@@ -97,50 +97,47 @@ export function LoginPage() {
   }
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-[#05060d]" aria-labelledby="login-title">
+    <main className="login-screen relative isolate min-h-screen overflow-hidden" aria-labelledby="login-title">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#070916] via-[#060711] to-[#04050b]" />
-        <div className="absolute -left-24 top-[-7rem] h-[24rem] w-[24rem] rounded-full bg-indigo-500/20 blur-3xl" />
-        <div className="absolute right-[-7rem] top-1/3 h-[26rem] w-[26rem] rounded-full bg-violet-500/20 blur-3xl" />
-        <div className="absolute bottom-[-9rem] left-1/3 h-[18rem] w-[18rem] rounded-full bg-fuchsia-400/10 blur-3xl" />
-        <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:72px_72px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(129,140,248,0.16),transparent_32%),radial-gradient(circle_at_80%_18%,rgba(167,139,250,0.12),transparent_24%)]" />
+        <div className="login-ambient absolute inset-0" />
+        <div className="absolute inset-0 login-grid opacity-40" />
+        <div className="absolute -left-24 top-[-7rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-primary-rgb)/0.28),transparent_68%)] blur-3xl" />
+        <div className="absolute right-[-7rem] top-1/3 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-secondary-rgb)/0.24),transparent_70%)] blur-3xl" />
+        <div className="absolute bottom-[-9rem] left-1/3 h-[18rem] w-[18rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-accent-rgb)/0.18),transparent_72%)] blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgb(var(--theme-primary-rgb)/0.12),transparent_32%),radial-gradient(circle_at_80%_18%,rgb(var(--theme-secondary-rgb)/0.1),transparent_24%)]" />
       </div>
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <div className="grid w-full gap-6 xl:grid-cols-[minmax(0,1.08fr)_440px] xl:items-center">
-          <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/55 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:p-8 lg:p-10 xl:min-h-[680px] xl:p-12">
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(129,140,248,0.18),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.16),transparent_28%)]"
-            />
+          <section className="login-shell relative overflow-hidden rounded-[2rem] p-6 backdrop-blur-2xl sm:p-8 lg:p-10 xl:min-h-[680px] xl:p-12">
+            <div aria-hidden="true" className="login-hero-glow absolute inset-0" />
 
             <div className="relative flex h-full flex-col">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-300/25 bg-indigo-400/12 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-indigo-100">
-                  <Sparkles size={14} className="text-violet-200" />
+                <div className="login-accent-pill inline-flex items-center gap-2 rounded-full px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.32em]">
+                  <Sparkles size={14} />
                   Registry POS
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-100">
-                  <span className="h-2 w-2 rounded-full bg-violet-200 shadow-[0_0_14px_rgba(167,139,250,0.75)]" />
+                <div className="login-state-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium">
+                  <span className="h-2 w-2 rounded-full bg-[rgb(var(--theme-accent-rgb))] shadow-[0_0_14px_rgb(var(--theme-accent-rgb)/0.45)]" />
                   Operación lista para punto de venta
                 </div>
               </div>
 
               <div className="mt-8 max-w-3xl">
-                <p className="text-sm font-medium uppercase tracking-[0.28em] text-[color:var(--text-secondary)]">
+                <p className="theme-text-secondary text-sm font-medium uppercase tracking-[0.28em]">
                   Plataforma POS moderna
                 </p>
                 <h1
                   id="login-title"
-                  className="font-display mt-4 text-4xl font-bold leading-tight text-white sm:text-5xl xl:text-6xl"
+                  className="font-display theme-text-strong mt-4 text-4xl font-bold leading-tight sm:text-5xl xl:text-6xl"
                 >
                   Opera tu negocio con una experiencia{' '}
-                  <span className="bg-gradient-to-r from-indigo-200 via-violet-200 to-fuchsia-200 bg-clip-text text-transparent">
+                  <span className="login-highlight-text">
                     premium, rápida y confiable.
                   </span>
                 </h1>
-                <p className="mt-6 max-w-2xl text-base leading-7 text-[color:var(--text-secondary)] sm:text-lg">
+                <p className="theme-text-secondary mt-6 max-w-2xl text-base leading-7 sm:text-lg">
                   Registry POS centraliza ventas, inventario y control operativo en una pantalla de
                   acceso pensada para equipos que necesitan velocidad, orden y lectura clara del negocio.
                 </p>
@@ -153,15 +150,15 @@ export function LoginPage() {
                   return (
                     <li
                       key={benefit.title}
-                      className="group surface-subtle rounded-[1.6rem] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-violet-300/28 hover:bg-white/[0.05]"
+                      className="login-benefit-card group surface-subtle rounded-[1.6rem] p-5 transition duration-300 hover:-translate-y-0.5"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="rounded-2xl border border-indigo-300/20 bg-indigo-400/10 p-3 text-indigo-100 shadow-[0_12px_30px_rgba(99,102,241,0.16)]">
+                        <div className="login-benefit-icon rounded-2xl p-3">
                           <Icon size={20} />
                         </div>
                         <div>
-                          <h2 className="text-base font-semibold text-white">{benefit.title}</h2>
-                          <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{benefit.description}</p>
+                          <h2 className="theme-text-strong text-base font-semibold">{benefit.title}</h2>
+                          <p className="theme-text-secondary mt-2 text-sm leading-6">{benefit.description}</p>
                         </div>
                       </div>
                     </li>
@@ -171,7 +168,7 @@ export function LoginPage() {
 
               <div className="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.75fr)] xl:mt-auto">
                 <div className="surface-subtle rounded-[1.75rem] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--text-secondary)]">
+                  <p className="theme-text-secondary text-xs font-semibold uppercase tracking-[0.28em]">
                     Capacidades clave
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -186,18 +183,18 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                <div className="surface-subtle-strong rounded-[1.75rem] p-5 shadow-[0_18px_50px_rgba(79,70,229,0.14)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--text-secondary)]">
+                <div className="surface-subtle-strong rounded-[1.75rem] p-5">
+                  <p className="theme-text-secondary text-xs font-semibold uppercase tracking-[0.28em]">
                     Roles actuales
                   </p>
                   <ul className="mt-4 grid gap-3">
                     {roles.map((role) => (
                       <li
                         key={role}
-                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-200"
+                        className="login-role-row flex items-center justify-between rounded-2xl px-4 py-3 text-sm"
                       >
                         <span>{role}</span>
-                        <span className="rounded-full border border-indigo-300/20 bg-indigo-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-100">
+                        <span className="login-role-badge rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]">
                           Activo
                         </span>
                       </li>
@@ -208,37 +205,34 @@ export function LoginPage() {
             </div>
           </section>
 
-          <Card className="relative overflow-hidden border border-white/10 bg-slate-950/82 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.52)] ring-1 ring-indigo-300/10 sm:p-8 lg:p-9">
+          <Card className="login-shell relative overflow-hidden p-6 sm:p-8 lg:p-9">
+            <div aria-hidden="true" className="login-form-glow absolute inset-x-0 top-0 h-40" />
             <div
               aria-hidden="true"
-              className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-indigo-500/18 via-violet-500/10 to-transparent"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute right-[-3rem] top-[-3rem] h-36 w-36 rounded-full bg-indigo-400/15 blur-3xl"
+              className="absolute right-[-3rem] top-[-3rem] h-36 w-36 rounded-full bg-[radial-gradient(circle,rgb(var(--theme-primary-rgb)/0.2),transparent_70%)] blur-3xl"
             />
 
             <div className="relative">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="surface-subtle inline-flex items-center gap-3 rounded-2xl px-4 py-3">
-                    <div className="rounded-2xl bg-gradient-to-br from-indigo-400 via-violet-500 to-fuchsia-500 p-3 text-white shadow-[0_14px_34px_rgba(99,102,241,0.35)]">
+                    <div className="login-lock-shell rounded-2xl p-3">
                       <LockKeyhole size={20} />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--text-secondary)]">
+                      <p className="theme-text-secondary text-xs font-semibold uppercase tracking-[0.28em]">
                         Acceso seguro
                       </p>
-                      <p className="mt-1 text-sm text-[color:var(--text-secondary)]">
+                      <p className="theme-text-secondary mt-1 text-sm">
                         Ingreso para equipos operativos y administrativos
                       </p>
                     </div>
                   </div>
 
-                  <h2 className="font-display mt-6 text-3xl font-bold text-white sm:text-[2rem]">
+                  <h2 className="font-display theme-text-strong mt-6 text-3xl font-bold sm:text-[2rem]">
                     Entra a Registry POS
                   </h2>
-                  <p className="mt-3 text-sm leading-6 text-[color:var(--text-secondary)] sm:text-[0.95rem]">
+                  <p className="theme-text-secondary mt-3 text-sm leading-6 sm:text-[0.95rem]">
                     Usa tu correo o usuario corporativo para continuar con la operación de tu sucursal.
                   </p>
                 </div>
@@ -254,7 +248,6 @@ export function LoginPage() {
                   placeholder="Ej. admin o admin@registrypos.local"
                   autoComplete="username"
                   hint="Puedes ingresar con usuario o correo, según tu perfil."
-                  className="border-white/10 bg-slate-950/80"
                 />
 
                 <div className="space-y-3">
@@ -266,7 +259,6 @@ export function LoginPage() {
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Tu contraseña"
                     autoComplete="current-password"
-                    className="border-white/10 bg-slate-950/80"
                   />
                   <div className="flex justify-end">
                     <button
@@ -274,7 +266,7 @@ export function LoginPage() {
                       aria-controls="login-password"
                       aria-pressed={showPassword}
                       onClick={() => setShowPassword((value) => !value)}
-                      className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium text-indigo-200 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b16]"
+                      className="login-password-toggle inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]"
                     >
                       {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                       {showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
@@ -282,14 +274,10 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                {error ? (
-                  <FeedbackMessage tone="error" className="border-rose-400/35 bg-rose-500/12">
-                    {error}
-                  </FeedbackMessage>
-                ) : null}
+                {error ? <FeedbackMessage tone="error">{error}</FeedbackMessage> : null}
 
                 <div className="surface-subtle rounded-[1.5rem] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[color:var(--text-faint)]">
+                  <p className="theme-text-faint text-[11px] font-semibold uppercase tracking-[0.28em]">
                     Perfiles habilitados hoy
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -306,7 +294,7 @@ export function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="mt-1 w-full justify-between rounded-[1.25rem] bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 px-5 py-3 text-white shadow-[0_18px_45px_rgba(124,58,237,0.35)] hover:from-indigo-400 hover:via-violet-400 hover:to-fuchsia-400"
+                  className="login-submit-button mt-1 w-full justify-between rounded-[1.25rem] px-5 py-3"
                   disabled={isAuthenticating}
                 >
                   <span>{isAuthenticating ? 'Ingresando...' : 'Ingresar al sistema'}</span>
