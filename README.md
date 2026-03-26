@@ -301,9 +301,11 @@ Estado verificado a nivel de repositorio:
   - edición/reordenación completa de combos;
   - historial visual de movimientos recientes en inventario.
 
-## Autoría y uso del software
+## Licencia
 
-Licencia: Software propietario / Todos los derechos reservados
+Software propietario. Todos los derechos reservados.
+
+Consulta el archivo `LICENSE.md` para más información.
 
 ## Historial de cambios
 
