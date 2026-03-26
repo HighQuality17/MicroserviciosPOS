@@ -2,7 +2,7 @@
 
 Repositorio principal de un sistema POS local con frontend y backend separados dentro del mismo proyecto. La interfaz autenticada se presenta como `Registry POS`, mientras que la API expone el backend local `MicroserviciosPOS API`.
 
-La documentación de este repositorio fue actualizada sobre el estado real del código inspeccionado el 26 de marzo de 2026. No describe una versión idealizada: resume únicamente la arquitectura, módulos, scripts y flujos que hoy están presentes en el repositorio.
+La documentación de este repositorio fue actualizada sobre el estado real del código inspeccionado el 26 de marzo de 2026. Resume únicamente la arquitectura, módulos, scripts y flujos que hoy están presentes en el repositorio.
 
 ## Contenido
 
@@ -303,14 +303,7 @@ Estado verificado a nivel de repositorio:
 
 ## Autoría y uso del software
 
-Este repositorio documenta el diseño, implementación y evolución de un software POS desarrollado dentro del proyecto `MicroserviciosPOS`. La documentación puede utilizarse como respaldo técnico de autoría, alcance funcional y madurez del sistema en su estado actual.
-
-Notas importantes:
-
-- el `package.json` del backend declara `UNLICENSED`;
-- el repositorio no incluye un archivo `LICENSE`;
-- cualquier definición formal de uso, distribución, cesión o licenciamiento debe establecerse explícitamente por la persona propietaria del proyecto;
-- esta nota es informativa y no sustituye asesoría legal.
+Licencia: Software propietario / Todos los derechos reservados
 
 ## Historial de cambios
 
