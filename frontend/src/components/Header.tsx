@@ -1,21 +1,10 @@
-import { Menu, MapPin } from 'lucide-react';
-import { Button } from '@/components/Button';
+import { MapPin } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatUserRole } from '@/utils/copy';
 
-interface HeaderProps {
-  navigationId: string;
-  isNavigationOpen: boolean;
-  onOpenNavigation: () => void;
-}
-
-export function Header({
-  navigationId,
-  isNavigationOpen,
-  onOpenNavigation,
-}: HeaderProps) {
+export function Header() {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
   const availableLocations = useAppStore((state) => state.availableLocations);
@@ -26,27 +15,13 @@ export function Header({
   return (
     <header className="glass-panel rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            className="shrink-0 lg:hidden"
-            aria-label="Abrir menu de navegacion"
-            aria-controls={navigationId}
-            aria-expanded={isNavigationOpen}
-            onClick={onOpenNavigation}
-          >
-            <Menu size={18} />
-            <span>Menu</span>
-          </Button>
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
-              Operacion comercial conectada
-            </p>
-            <h1 className="font-display text-2xl font-bold text-[color:var(--text)] sm:text-3xl">
-              Registry POS
-            </h1>
-          </div>
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
+            Operacion comercial conectada
+          </p>
+          <h1 className="font-display text-2xl font-bold text-[color:var(--text)] sm:text-3xl">
+            Registry POS
+          </h1>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
@@ -97,4 +72,3 @@ export function Header({
     </header>
   );
 }
-
