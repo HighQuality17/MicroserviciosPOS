@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Boxes,
-  CircleDot,
   CreditCard,
   PackageSearch,
   Receipt,
@@ -19,6 +18,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { KpiCard } from '@/components/KpiCard';
+import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { SectionHeader } from '@/components/SectionHeader';
@@ -373,107 +373,71 @@ export function AdminPage() {
         />
       ) : null}
 
-      <section className="pos-status-bar" aria-label="Estado general del dashboard administrativo">
-        <div className="pos-status-shell">
-          <div className="pos-status-intro">
-            <div className="pos-status-beacon" aria-hidden="true">
-              <CircleDot size={18} />
-            </div>
-            <div className="min-w-0">
-              <p className="section-kicker">Centro de control</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-3xl font-bold theme-text-strong sm:text-[2rem]">
-                  Dashboard administrativo
-                </h1>
-                <StatusBadge label={dashboardStatusLabel} tone={dashboardStatusTone} />
-              </div>
-              <p className="mt-2 max-w-3xl text-sm text-[color:var(--text-secondary)]">
-                Pantalla principal del rol administrador para entender ventas, caja, catalogo, inventario y actividad reciente con una lectura ejecutiva clara.
-              </p>
-            </div>
-          </div>
-
-          <div className="pos-status-grid">
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={(summary?.sales_count ?? 0) > 0 ? 'success' : 'default'}>
-                <ShoppingBag size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Ventas de hoy</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{summaryLoading ? '...' : formatCurrency(summary?.sales_today_total ?? 0)}</p>
-                  <StatusBadge label={salesStatusLabel} tone={salesStatusTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {summaryLoading
-                    ? 'Sincronizando volumen comercial del dia'
-                    : `${summary?.sales_count ?? 0} ventas pagadas registradas en la jornada`}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={leadingPayment ? 'info' : 'default'}>
-                <Sparkles size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Ticket promedio</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{summaryLoading ? '...' : formatCurrency(summary?.average_ticket ?? 0)}</p>
-                  <StatusBadge label={averageTicketLabel} tone={averageTicketTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {summaryLoading
-                    ? 'Preparando lectura de consumo promedio'
-                    : leadingPayment
-                      ? `Metodo dominante: ${formatPaymentMethod(leadingPayment.method)}`
-                      : 'Aun no hay pagos confirmados para esta lectura'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={summary?.current_cash_session ? 'success' : 'warning'}>
-                <CreditCard size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Caja actual</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{summaryLoading ? '...' : currentCashSessionLabel}</p>
-                  <StatusBadge label={cashStatusLabel} tone={cashStatusTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {summaryLoading
-                    ? 'Consultando sesion operativa actual'
-                    : summary?.current_cash_session
-                      ? `${summary.current_cash_session.location_name} - ${summary.current_cash_session.opened_by_name}`
-                      : 'No hay una caja abierta en este momento'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={(summary?.low_stock_count ?? 0) > 0 ? 'warning' : 'success'}>
-                <AlertTriangle size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Stock bajo</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{summaryLoading ? '...' : String(summary?.low_stock_count ?? 0)}</p>
-                  <StatusBadge label={stockStatusLabel} tone={stockStatusTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {summaryLoading || lowStockLoading
-                    ? 'Verificando umbrales de inventario'
-                    : lowStock.length > 0
-                      ? `${lowStock[0].ingredient_name} en ${lowStock[0].location_name}`
-                      : 'Inventario dentro de umbrales operativos'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ModuleStatusHeader
+        ariaLabel="Estado general del dashboard administrativo"
+        eyebrow="Centro de control"
+        title="Dashboard administrativo"
+        statusLabel={dashboardStatusLabel}
+        statusTone={dashboardStatusTone}
+        description="Ventas, caja, inventario y actividad clave del dia."
+        helpText="Entrega una lectura ejecutiva rapida de ventas, caja, stock bajo y actividad reciente desde el primer vistazo."
+        icon={<Sparkles size={18} />}
+      >
+        <ModuleStatusCard
+          label="Ventas de hoy"
+          value={summaryLoading ? '...' : formatCurrency(summary?.sales_today_total ?? 0)}
+          icon={<ShoppingBag size={16} />}
+          iconTone={(summary?.sales_count ?? 0) > 0 ? 'success' : 'default'}
+          badgeLabel={salesStatusLabel}
+          badgeTone={salesStatusTone}
+          meta={summaryLoading ? 'Sincronizando jornada' : `${summary?.sales_count ?? 0} ventas pagadas`}
+        />
+        <ModuleStatusCard
+          label="Ticket promedio"
+          value={summaryLoading ? '...' : formatCurrency(summary?.average_ticket ?? 0)}
+          icon={<Sparkles size={16} />}
+          iconTone={leadingPayment ? 'info' : 'default'}
+          badgeLabel={averageTicketLabel}
+          badgeTone={averageTicketTone}
+          meta={
+            summaryLoading
+              ? 'Calculando promedio'
+              : leadingPayment
+                ? `Dominante: ${formatPaymentMethod(leadingPayment.method)}`
+                : 'Sin pagos confirmados'
+          }
+        />
+        <ModuleStatusCard
+          label="Caja actual"
+          value={summaryLoading ? '...' : currentCashSessionLabel}
+          icon={<CreditCard size={16} />}
+          iconTone={summary?.current_cash_session ? 'success' : 'warning'}
+          badgeLabel={cashStatusLabel}
+          badgeTone={cashStatusTone}
+          meta={
+            summaryLoading
+              ? 'Consultando caja actual'
+              : summary?.current_cash_session
+                ? `${summary.current_cash_session.location_name} - ${summary.current_cash_session.opened_by_name}`
+                : 'Sin caja abierta'
+          }
+        />
+        <ModuleStatusCard
+          label="Stock bajo"
+          value={summaryLoading ? '...' : String(summary?.low_stock_count ?? 0)}
+          icon={<AlertTriangle size={16} />}
+          iconTone={(summary?.low_stock_count ?? 0) > 0 ? 'warning' : 'success'}
+          badgeLabel={stockStatusLabel}
+          badgeTone={stockStatusTone}
+          meta={
+            summaryLoading || lowStockLoading
+              ? 'Verificando alertas'
+              : lowStock.length > 0
+                ? `${lowStock[0].ingredient_name} en ${lowStock[0].location_name}`
+                : 'Sin alertas de inventario'
+          }
+        />
+      </ModuleStatusHeader>
 
       {summaryError ? <BlockError message={summaryError} /> : null}
 

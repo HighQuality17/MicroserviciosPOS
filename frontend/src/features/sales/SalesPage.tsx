@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CircleDot, Filter, History, ReceiptText, Search } from 'lucide-react';
+import { Filter, History, ReceiptText, Search } from 'lucide-react';
 import { AccessState } from '@/components/AccessState';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
+import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
@@ -387,89 +388,62 @@ export function SalesPage() {
         />
       ) : null}
 
-      <section className="pos-status-bar" aria-label="Estado operativo de ventas">
-        <div className="pos-status-shell">
-          <div className="pos-status-intro">
-            <div className="pos-status-beacon" aria-hidden="true">
-              <CircleDot size={18} />
-            </div>
-            <div className="min-w-0">
-              <p className="section-kicker">Operacion comercial</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-3xl font-bold theme-text-strong sm:text-[2rem]">
-                  Control de ventas
-                </h1>
-                <StatusBadge label={salesStatusLabel} tone={salesStatusTone} />
-              </div>
-              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
-                Resume el pulso del modulo, deja mas espacio util al historial y mejora la lectura del comprobante sin tocar la operacion.
-              </p>
-            </div>
-          </div>
-
-          <div className="pos-status-grid">
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={recentSales.length > 0 ? 'success' : 'default'}>
-                <ReceiptText size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Comprobantes recientes</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{recentLoading ? '...' : String(stats.totalReceipts)}</p>
-                  <StatusBadge label={recentStatusLabel} tone={recentStatusTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {recentLoading
-                    ? 'Actualizando los ultimos comprobantes persistidos'
-                    : recentSales.length > 0
-                      ? 'Ultimos 5 tickets listos para consulta operativa'
-                      : 'Las ventas pagadas apareceran aqui en cuanto existan registros'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={latestReference ? 'info' : 'default'}>
-                <Search size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Ultimo total</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{latestLoading ? '...' : stats.latestTotal}</p>
-                  <StatusBadge label={latestStatusLabel} tone={latestStatusTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {latestLoading
-                    ? 'Consultando la ultima venta disponible'
-                    : latestReference
-                      ? `Venta #${latestReference.sale_id} - ${formatPaymentMethod(latestReference.payment_method)}`
-                      : 'Todavia no hay un comprobante de referencia para mostrar'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={historyTotal > 0 ? 'warning' : 'default'}>
-                <History size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Ventas filtradas</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{stats.filteredSales}</p>
-                  <StatusBadge label={filteredStatusLabel} tone={filteredStatusTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {historyLoading
-                    ? 'Cargando resultados del historial real'
-                    : activeFilterCount > 0
-                      ? `${activeFilterCount} filtros activos - pagina ${historyPage} de ${Math.max(historyTotalPages, 1)}`
-                      : `Pagina ${historyPage} de ${Math.max(historyTotalPages, 1)} con lectura operativa completa`}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ModuleStatusHeader
+        ariaLabel="Estado operativo de ventas"
+        eyebrow="Operacion comercial"
+        title="Ventas"
+        statusLabel={salesStatusLabel}
+        statusTone={salesStatusTone}
+        description="Recientes, ultima referencia e historial filtrado."
+        helpText="Concentra el pulso del modulo de ventas, la ultima referencia disponible y el estado general del historial."
+        icon={<ReceiptText size={18} />}
+      >
+        <ModuleStatusCard
+          label="Comprobantes recientes"
+          value={recentLoading ? '...' : String(stats.totalReceipts)}
+          icon={<ReceiptText size={16} />}
+          iconTone={recentSales.length > 0 ? 'success' : 'default'}
+          badgeLabel={recentStatusLabel}
+          badgeTone={recentStatusTone}
+          meta={
+            recentLoading
+              ? 'Actualizando tickets'
+              : recentSales.length > 0
+                ? 'Ultimos 5 disponibles'
+                : 'Sin actividad reciente'
+          }
+        />
+        <ModuleStatusCard
+          label="Ultimo total"
+          value={latestLoading ? '...' : stats.latestTotal}
+          icon={<Search size={16} />}
+          iconTone={latestReference ? 'info' : 'default'}
+          badgeLabel={latestStatusLabel}
+          badgeTone={latestStatusTone}
+          meta={
+            latestLoading
+              ? 'Consultando ultima venta'
+              : latestReference
+                ? `Venta #${latestReference.sale_id} - ${formatPaymentMethod(latestReference.payment_method)}`
+                : 'Sin referencia reciente'
+          }
+        />
+        <ModuleStatusCard
+          label="Ventas filtradas"
+          value={stats.filteredSales}
+          icon={<History size={16} />}
+          iconTone={historyTotal > 0 ? 'warning' : 'default'}
+          badgeLabel={filteredStatusLabel}
+          badgeTone={filteredStatusTone}
+          meta={
+            historyLoading
+              ? 'Cargando historial'
+              : activeFilterCount > 0
+                ? `${activeFilterCount} filtros - pag. ${historyPage}/${Math.max(historyTotalPages, 1)}`
+                : `Pag. ${historyPage}/${Math.max(historyTotalPages, 1)}`
+          }
+        />
+      </ModuleStatusHeader>
 
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {detailAnnouncement}

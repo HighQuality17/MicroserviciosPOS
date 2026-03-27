@@ -5,6 +5,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
+import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
@@ -151,120 +152,65 @@ export function CashPage() {
 
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
-      <section className="pos-status-bar" aria-label="Estado operativo de caja">
-        <div className="pos-status-shell">
-          <div className="pos-status-intro">
-            <div className="pos-status-beacon" aria-hidden="true">
-              <Wallet size={18} />
-            </div>
-            <div className="min-w-0">
-              <p className="section-kicker">Operacion de caja</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
-                  Control de caja
-                </h1>
-                <StatusBadge label={operationStatusLabel} tone={cashStatusTone} />
-              </div>
-              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
-                Supervisa el contexto de apertura, ubicacion y responsable sin quitar
-                foco a las operaciones principales.
-              </p>
-            </div>
-          </div>
-
-          <div className="pos-status-grid">
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={cashStatusTone}>
-                <CircleDot size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Caja activa</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">
-                    {currentCashSession ? `Caja #${currentCashSession.id}` : 'Sin sesion'}
-                  </p>
-                  <StatusBadge label={cashStatusLabel} tone={cashStatusTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {currentCashSession
-                    ? `Abierta ${formatDate(currentCashSession.openedAt)}`
-                    : currentLocation
-                      ? 'Lista para apertura en este POS'
-                      : 'Selecciona un POS para empezar'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={openingTone}>
-                <Landmark size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Apertura</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{openingValue}</p>
-                  <StatusBadge label={openingStatusLabel} tone={openingTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {currentCashSession
-                    ? 'Efectivo base registrado para la sesion actual'
-                    : openingCashPreview !== null
-                      ? 'Valor listo para abrir caja'
-                      : 'Define el efectivo inicial antes de operar'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span
-                className="pos-status-chip__icon"
-                aria-hidden="true"
-                data-tone={currentLocation ? 'info' : 'default'}
-              >
-                <MapPin size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Ubicacion</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">
-                    {currentLocation?.name ?? 'Sin POS activo'}
-                  </p>
-                  <StatusBadge
-                    label={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
-                    tone={currentLocation ? 'info' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {currentLocation
-                    ? 'Punto de venta seleccionado para operar caja'
-                    : 'Crea o selecciona un punto de venta'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span
-                className="pos-status-chip__icon"
-                aria-hidden="true"
-                data-tone={currentUser ? 'violet' : 'default'}
-              >
-                <User size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Responsable</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{currentUserName}</p>
-                  <StatusBadge
-                    label={currentUserRole}
-                    tone={currentUser ? 'info' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">{currentUserHandle}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ModuleStatusHeader
+        ariaLabel="Estado operativo de caja"
+        eyebrow="Operacion de caja"
+        title="Caja"
+        statusLabel={operationStatusLabel}
+        statusTone={cashStatusTone}
+        description="Sesion actual, fondo inicial, POS activo y responsable."
+        helpText="Concentra el estado de la sesion de caja, el fondo de apertura y el responsable de la operacion."
+        icon={<Wallet size={18} />}
+      >
+        <ModuleStatusCard
+          label="Caja activa"
+          value={currentCashSession ? `Caja #${currentCashSession.id}` : 'Sin sesion'}
+          icon={<CircleDot size={16} />}
+          iconTone={cashStatusTone}
+          badgeLabel={cashStatusLabel}
+          badgeTone={cashStatusTone}
+          meta={
+            currentCashSession
+              ? `Abierta ${formatDate(currentCashSession.openedAt)}`
+              : currentLocation
+                ? 'Lista para apertura'
+                : 'Selecciona un POS'
+          }
+        />
+        <ModuleStatusCard
+          label="Apertura"
+          value={openingValue}
+          icon={<Landmark size={16} />}
+          iconTone={openingTone}
+          badgeLabel={openingStatusLabel}
+          badgeTone={openingTone}
+          meta={
+            currentCashSession
+              ? 'Fondo inicial registrado'
+              : openingCashPreview !== null
+                ? 'Listo para abrir'
+                : 'Define el efectivo inicial'
+          }
+        />
+        <ModuleStatusCard
+          label="Ubicacion"
+          value={currentLocation?.name ?? 'Sin POS activo'}
+          icon={<MapPin size={16} />}
+          iconTone={currentLocation ? 'info' : 'default'}
+          badgeLabel={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
+          badgeTone={currentLocation ? 'info' : 'default'}
+          meta={currentLocation ? 'POS activo para la sesion' : 'Selecciona un POS'}
+        />
+        <ModuleStatusCard
+          label="Responsable"
+          value={currentUserName}
+          icon={<User size={16} />}
+          iconTone={currentUser ? 'violet' : 'default'}
+          badgeLabel={currentUserRole}
+          badgeTone={currentUser ? 'info' : 'default'}
+          meta={currentUserHandle}
+        />
+      </ModuleStatusHeader>
 
       {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 

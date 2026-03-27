@@ -321,6 +321,15 @@ Actualizacion breve de navegacion, layout y sidebar en la interfaz autenticada:
 - refinamiento visual del estado activo del sidebar para eliminar el recorte lateral y alinear mejor el halo premium.
 
 Detalle tecnico breve: [docs/navigation-and-layout-updates.md](docs/navigation-and-layout-updates.md)
+
+Actualizacion breve de barras superiores y resumenes de modulos:
+
+- refinamiento visual de las barras de estado superiores en POS, Caja, Productos, Ingredientes, Combos, Ventas y Admin;
+- reduccion de texto redundante para priorizar lectura rapida y contexto operativo;
+- unificacion de jerarquia entre titulo, estado y metricas;
+- uso de una base reusable para estandarizar composicion y ayudas contextuales sin recargar la UI.
+
+Detalle tecnico breve: [docs/module-status-header-updates.md](docs/module-status-header-updates.md)
 ## Historial de cambios
 
 - Historial principal: [`CHANGELOG.md`](CHANGELOG.md)

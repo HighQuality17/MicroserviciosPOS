@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Boxes, CircleDot, PackagePlus, Shapes } from 'lucide-react';
+import { Boxes, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { CheckboxField } from '@/components/CheckboxField';
 import { Input } from '@/components/Input';
+import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -198,95 +199,56 @@ export function CombosPage() {
 
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
-      <section className="pos-status-bar" aria-label="Estado operativo de combos">
-        <div className="pos-status-shell">
-          <div className="pos-status-intro">
-            <div className="pos-status-beacon" aria-hidden="true">
-              <CircleDot size={18} />
-            </div>
-            <div className="min-w-0">
-              <p className="section-kicker">Operacion comercial</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
-                  Control de combos
-                </h1>
-                <StatusBadge label={comboStatusLabel} tone={comboStatusTone} />
-              </div>
-              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
-                Resume altas comerciales, variantes disponibles y cobertura real sin
-                quitar protagonismo a la composicion del combo.
-              </p>
-            </div>
-          </div>
-
-          <div className="pos-status-grid">
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={activeCombosCount > 0 ? 'success' : 'default'}>
-                <Boxes size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Combos activos</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{String(activeCombosCount)}</p>
-                  <StatusBadge
-                    label={comboBadgeLabel}
-                    tone={combos.length > 0 ? 'success' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {loadingCatalog
-                    ? 'Leyendo combos comerciales desde backend'
-                    : `${combos.length} creados en total para operar y administrar`}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={variants.length > 0 ? 'info' : 'default'}>
-                <Shapes size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Variantes disponibles</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{String(variants.length)}</p>
-                  <StatusBadge
-                    label={comboVariantBadgeLabel}
-                    tone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {loadingCatalog
-                    ? 'Preparando variantes para composicion comercial'
-                    : `${activeVariantsCount} activas para composicion comercial`}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={comboCoverageTone}>
-                <PackagePlus size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Listos para vender</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{String(readyCombosCount)}</p>
-                  <StatusBadge
-                    label={comboReadyBadgeLabel}
-                    tone={comboCoverageTone}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {loadingCatalog
-                    ? 'Verificando composicion comercial de cada combo'
-                    : activeCombosCount > 0
-                      ? `${readyCombosCount}/${activeCombosCount} combos activos con items configurados`
-                      : 'Activa combos para medir cobertura comercial'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ModuleStatusHeader
+        ariaLabel="Estado operativo de combos"
+        eyebrow="Operacion comercial"
+        title="Combos"
+        statusLabel={comboStatusLabel}
+        statusTone={comboStatusTone}
+        description="Combos activos, base de variantes y cobertura comercial."
+        helpText="Resume la base de combos, las variantes disponibles y cuantos combos ya estan listos para vender."
+        icon={<Boxes size={18} />}
+      >
+        <ModuleStatusCard
+          label="Combos activos"
+          value={String(activeCombosCount)}
+          icon={<Boxes size={16} />}
+          iconTone={activeCombosCount > 0 ? 'success' : 'default'}
+          badgeLabel={comboBadgeLabel}
+          badgeTone={loadingCatalog ? 'info' : activeCombosCount > 0 ? 'success' : 'default'}
+          meta={
+            loadingCatalog
+              ? 'Leyendo combos'
+              : combos.length > 0
+                ? `${activeCombosCount}/${combos.length} activos`
+                : 'Sin base comercial'
+          }
+        />
+        <ModuleStatusCard
+          label="Variantes disponibles"
+          value={String(variants.length)}
+          icon={<Shapes size={16} />}
+          iconTone={variants.length > 0 ? 'info' : 'default'}
+          badgeLabel={comboVariantBadgeLabel}
+          badgeTone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
+          meta={loadingCatalog ? 'Preparando variantes' : `${activeVariantsCount} activas`}
+        />
+        <ModuleStatusCard
+          label="Listos para vender"
+          value={String(readyCombosCount)}
+          icon={<PackagePlus size={16} />}
+          iconTone={comboCoverageTone}
+          badgeLabel={comboReadyBadgeLabel}
+          badgeTone={comboCoverageTone}
+          meta={
+            loadingCatalog
+              ? 'Validando composicion'
+              : activeCombosCount > 0
+                ? `${readyCombosCount}/${activeCombosCount} con items`
+                : 'Activa combos para medir cobertura'
+          }
+        />
+      </ModuleStatusHeader>
 
       {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 

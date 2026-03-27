@@ -8,6 +8,7 @@ import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { PaymentModal } from '@/components/PaymentModal';
+import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -223,124 +224,59 @@ export function PosPage() {
 
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
-      <section className="pos-status-bar" aria-label="Estado operativo del POS">
-        <div className="pos-status-shell">
-          <div className="pos-status-intro">
-            <div className="pos-status-beacon" aria-hidden="true">
-              <CircleDot size={18} />
-            </div>
-            <div className="min-w-0">
-              <p className="section-kicker">Operacion en curso</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
-                  Control operativo del POS
-                </h1>
-                <StatusBadge label={operationStatusLabel} tone={cashStatusTone} />
-              </div>
-              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
-                Valida caja, punto de venta, usuario activo y ultimo ticket.
-              </p>
-            </div>
-          </div>
-
-          <div className="pos-status-grid">
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={cashStatusTone}>
-                <CircleDot size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Caja actual</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">
-                    {currentCashSession ? `Caja #${currentCashSession.id}` : 'Caja sin abrir'}
-                  </p>
-                  <StatusBadge label={cashStatusLabel} tone={cashStatusTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {currentLocation
-                    ? 'Lista para cobro solo con caja activa'
-                    : 'Selecciona un POS para cargar la operacion'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span
-                className="pos-status-chip__icon"
-                aria-hidden="true"
-                data-tone={currentLocation ? 'info' : 'default'}
-              >
-                <MapPin size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">POS actual</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">
-                    {currentLocation ? currentLocation.name : 'Sin ubicacion'}
-                  </p>
-                  <StatusBadge
-                    label={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
-                    tone={currentLocation ? 'info' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {currentLocation
-                    ? 'Punto de venta activo en esta sesion'
-                    : 'Se define desde el encabezado principal'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span
-                className="pos-status-chip__icon"
-                aria-hidden="true"
-                data-tone={currentUser ? 'violet' : 'default'}
-              >
-                <User size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Cajero</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{currentUserName}</p>
-                  <StatusBadge
-                    label={currentUserRole}
-                    tone={currentUser ? 'info' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">{currentUserHandle}</p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span
-                className="pos-status-chip__icon"
-                aria-hidden="true"
-                data-tone={latestReceiptId ? 'info' : 'default'}
-              >
-                <Receipt size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Ultimo ticket</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">
-                    {latestReceiptId ? `#${latestReceiptId}` : 'Pendiente'}
-                  </p>
-                  <StatusBadge
-                    label={latestReceiptId ? 'Emitido' : 'Sin venta'}
-                    tone={latestReceiptId ? 'info' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {latestReceiptId
-                    ? 'Disponible tambien en la pantalla de ventas'
-                    : 'Aparecera aqui despues del primer cobro'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ModuleStatusHeader
+        ariaLabel="Estado operativo del POS"
+        eyebrow="Operacion en curso"
+        title="POS"
+        statusLabel={operationStatusLabel}
+        statusTone={cashStatusTone}
+        description="Caja, POS activo, operador y ultimo ticket."
+        helpText="Supervisa si el POS esta listo para cobrar, quien opera la sesion y cual fue el ultimo ticket emitido."
+        icon={<CircleDot size={18} />}
+      >
+        <ModuleStatusCard
+          label="Caja actual"
+          value={currentCashSession ? `Caja #${currentCashSession.id}` : 'Caja sin abrir'}
+          icon={<CircleDot size={16} />}
+          iconTone={cashStatusTone}
+          badgeLabel={cashStatusLabel}
+          badgeTone={cashStatusTone}
+          meta={
+            currentCashSession
+              ? 'Lista para cobrar'
+              : currentLocation
+                ? 'Abre caja para cobrar'
+                : 'Selecciona un POS'
+          }
+        />
+        <ModuleStatusCard
+          label="POS actual"
+          value={currentLocation ? currentLocation.name : 'Sin ubicacion'}
+          icon={<MapPin size={16} />}
+          iconTone={currentLocation ? 'info' : 'default'}
+          badgeLabel={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
+          badgeTone={currentLocation ? 'info' : 'default'}
+          meta={currentLocation ? 'Activo en la sesion' : 'Se define en el encabezado'}
+        />
+        <ModuleStatusCard
+          label="Cajero"
+          value={currentUserName}
+          icon={<User size={16} />}
+          iconTone={currentUser ? 'violet' : 'default'}
+          badgeLabel={currentUserRole}
+          badgeTone={currentUser ? 'info' : 'default'}
+          meta={currentUserHandle}
+        />
+        <ModuleStatusCard
+          label="Ultimo ticket"
+          value={latestReceiptId ? `#${latestReceiptId}` : 'Pendiente'}
+          icon={<Receipt size={16} />}
+          iconTone={latestReceiptId ? 'info' : 'default'}
+          badgeLabel={latestReceiptId ? 'Emitido' : 'Sin venta'}
+          badgeTone={latestReceiptId ? 'info' : 'default'}
+          meta={latestReceiptId ? 'Tambien visible en Ventas' : 'Aparece tras el primer cobro'}
+        />
+      </ModuleStatusHeader>
 
       <div className="grid min-w-0 items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card className="self-start">
