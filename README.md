@@ -19,6 +19,7 @@ La documentación de este repositorio fue actualizada sobre el estado real del c
 - [Usuarios de prueba](#usuarios-de-prueba)
 - [Sistema de temas](#sistema-de-temas)
 - [Build y despliegue](#build-y-despliegue)
+- [Mejoras recientes de frontend](#mejoras-recientes-de-frontend)
 - [Documentación complementaria](#documentación-complementaria)
 - [Capturas y material visual](#capturas-y-material-visual)
 - [Estado actual del proyecto](#estado-actual-del-proyecto)
@@ -271,6 +272,7 @@ La documentación detallada quedó organizada en `docs/`:
 - [`docs/architecture.md`](docs/architecture.md): arquitectura y flujos entre capas
 - [`docs/backend.md`](docs/backend.md): backend, módulos, seguridad y API
 - [`docs/frontend.md`](docs/frontend.md): frontend, rutas, stores y UX
+- [`docs/navigation-and-layout-updates.md`](docs/navigation-and-layout-updates.md): nota breve sobre navegación responsive, scroll-to-top y colapso del sidebar
 - [`docs/database.md`](docs/database.md): Prisma, modelos y reglas de datos
 - [`docs/modules.md`](docs/modules.md): mapa funcional del sistema
 - [`docs/deployment.md`](docs/deployment.md): puesta en marcha y despliegue manual
@@ -306,6 +308,17 @@ Estado verificado a nivel de repositorio:
 Software propietario. Todos los derechos reservados.
 
 Consulta el archivo `LICENSE.md` para más información.
+
+## Mejoras recientes de frontend
+
+Actualización breve de la navegación y el layout autenticado del frontend:
+
+- botón hamburguesa persistente en móvil, ahora controlado desde el layout principal y no desde el header;
+- scroll automático al inicio en cada cambio de ruta mediante ScrollToTop;
+- cierre automático del sidebar móvil al navegar entre rutas;
+- nuevo control desktop para colapsar o expandir el sidebar sin perder iconografía ni estados activos.
+
+Detalle técnico breve: [docs/navigation-and-layout-updates.md](docs/navigation-and-layout-updates.md)
 
 ## Historial de cambios
 

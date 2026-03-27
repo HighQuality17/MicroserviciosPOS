@@ -238,8 +238,7 @@ export function PosPage() {
                 <StatusBadge label={operationStatusLabel} tone={cashStatusTone} />
               </div>
               <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
-                Valida caja, punto de venta, usuario activo y ultimo ticket sin quitar
-                espacio util al catalogo.
+                Valida caja, punto de venta, usuario activo y ultimo ticket.
               </p>
             </div>
           </div>
