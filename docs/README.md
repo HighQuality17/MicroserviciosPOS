@@ -8,7 +8,7 @@ Centro documental del repositorio `MicroserviciosPOS`. Esta carpeta quedó reorg
 - [`architecture.md`](architecture.md): arquitectura del monorepo y relación entre frontend, backend y base de datos.
 - [`backend.md`](backend.md): módulos NestJS, seguridad, contratos y scripts del backend.
 - [`frontend.md`](frontend.md): estructura React/Vite, rutas, stores y comportamiento de la interfaz.
-- [`navigation-and-layout-updates.md`](navigation-and-layout-updates.md): nota técnica breve de la mejora reciente de navegación responsive y colapso del sidebar.
+- [`navigation-and-layout-updates.md`](navigation-and-layout-updates.md): nota tecnica breve de la mejora reciente de navegacion responsive, layout autenticado y refinamiento visual del sidebar.
 - [`database.md`](database.md): esquema Prisma, entidades principales y reglas de persistencia.
 - [`modules.md`](modules.md): mapa funcional y matriz resumida por dominio y roles.
 - [`deployment.md`](deployment.md): instalación, build y despliegue manual con el material realmente presente en el repositorio.

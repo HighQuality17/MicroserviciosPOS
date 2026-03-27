@@ -145,21 +145,25 @@ export function AppLayout() {
           navigationId={navigationId}
           onClose={() => setIsMobileNavigationOpen(false)}
         />
-        <Button
-          type="button"
-          variant="secondary"
-          className="surface-subtle-strong absolute z-20 hidden h-11 w-11 -translate-x-1/2 px-0 shadow-[0_18px_38px_rgba(10,14,28,0.18)] transition-all duration-300 hover:-translate-x-1/2 lg:inline-flex"
+        <div
+          className="absolute z-20 hidden -translate-x-1/2 lg:block"
           style={desktopSidebarToggleStyle}
-          aria-label={
-            isDesktopSidebarCollapsed
-              ? 'Expandir navegacion lateral'
-              : 'Colapsar navegacion lateral'
-          }
-          aria-expanded={!isDesktopSidebarCollapsed}
-          onClick={() => setIsDesktopSidebarCollapsed((collapsed) => !collapsed)}
         >
-          {isDesktopSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="surface-subtle-strong h-11 w-11 px-0 shadow-[0_18px_38px_rgba(10,14,28,0.18)] transition-all duration-300 hover:-translate-y-px"
+            aria-label={
+              isDesktopSidebarCollapsed
+                ? 'Expandir navegacion lateral'
+                : 'Colapsar navegacion lateral'
+            }
+            aria-expanded={!isDesktopSidebarCollapsed}
+            onClick={() => setIsDesktopSidebarCollapsed((collapsed) => !collapsed)}
+          >
+            {isDesktopSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </Button>
+        </div>
 
         <div className="min-w-0">
           <div className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col px-3 pb-3 pt-[calc(env(safe-area-inset-top,0px)+4.5rem)] sm:px-4 sm:pb-4 sm:pt-[calc(env(safe-area-inset-top,0px)+4.75rem)] md:px-6 lg:px-8 lg:py-4">

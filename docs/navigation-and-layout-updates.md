@@ -1,27 +1,37 @@
-# Actualizaciones de Navegación y Layout
+# Navigation and Layout Updates
 
-## Alcance
+## Scope
 
-Nota técnica breve sobre los ajustes recientes de navegación y layout en la interfaz autenticada de `Registry POS`.
+Short technical note for the latest authenticated-shell improvements in `Registry POS`.
 
-## Cambios implementados
+## Implemented changes
 
-- El disparador hamburguesa de móvil ahora se renderiza desde `frontend/src/layouts/AppLayout.tsx`, fuera de `Header.tsx`, para permanecer visible durante el scroll.
-- Los cambios de ruta reinician la posición principal mediante `frontend/src/app/router/ScrollToTop.tsx` usando `window.scrollTo(...)`.
-- La navegación móvil cierra automáticamente el sidebar al cambiar de ruta y al seleccionar una opción del menú.
-- En desktop se añadió un control compacto en la unión entre sidebar y contenido para colapsar o expandir la navegación lateral.
-- El sidebar colapsado de desktop conserva iconos, estados activos y navegación directa mientras reduce el espacio ocupado por los textos.
+- The mobile hamburger trigger is rendered from `frontend/src/layouts/AppLayout.tsx`, outside `Header.tsx`, so it remains visible while the user scrolls.
+- Route changes reset the main scroll position through `frontend/src/app/router/ScrollToTop.tsx` using `window.scrollTo(...)`.
+- Mobile navigation closes the sidebar automatically after route changes and after selecting a menu option.
+- Desktop includes a compact sidebar collapse/expand control placed between the navigation rail and the main content area.
+- The desktop-only collapse control is explicitly hidden on mobile according to the real layout breakpoint.
+- The active sidebar item was visually refined to remove the clipped left seam and keep the premium glow aligned inside the button surface.
 
-## Archivos principales involucrados
+## Main files involved
 
 - `frontend/src/layouts/AppLayout.tsx`
 - `frontend/src/components/Header.tsx`
 - `frontend/src/components/Sidebar.tsx`
 - `frontend/src/app/router/ScrollToTop.tsx`
+- `frontend/src/styles.css`
 
-## Impacto en usabilidad
+## Visual and UX criteria applied
 
-- La navegación móvil sigue accesible durante sesiones largas de scroll vertical.
-- Cada nueva vista comienza arriba, evitando transiciones entre rutas con scroll intermedio.
-- Las transiciones en móvil se sienten más limpias porque el menú lateral se cierra de inmediato al navegar.
-- Desktop gana un modo de navegación más compacto sin alterar la identidad visual del sistema.
+- Keep the premium dark language intact while reducing visual friction.
+- Prefer one clear interaction per viewport instead of mixed mobile and desktop controls.
+- Keep sidebar active states compact, centered and visually self-contained.
+- Avoid decorative effects that extend outside clipped containers when they create seams or misaligned glow.
+
+## Operational impact
+
+- Mobile navigation remains reachable during long vertical scroll sessions.
+- New views start from the top instead of preserving stale scroll positions.
+- Mobile transitions feel cleaner because the sidebar closes immediately after navigation.
+- Desktop keeps a compact navigation mode without losing icon-based usability.
+- Active sidebar states look cleaner and more stable in both desktop and mobile shells.
