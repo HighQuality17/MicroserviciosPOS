@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Boxes, CircleDot, FlaskConical, Warehouse } from 'lucide-react';
+import { Boxes, FlaskConical, Warehouse } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
+import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -321,91 +322,56 @@ export function IngredientsPage() {
     : String(outOfStockCount);
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
-      <section className="pos-status-bar" aria-label="Estado operativo de ingredientes">
-        <div className="pos-status-shell">
-          <div className="pos-status-intro">
-            <div className="pos-status-beacon" aria-hidden="true">
-              <CircleDot size={18} />
-            </div>
-            <div className="min-w-0">
-              <p className="section-kicker">Operacion de inventario</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
-                  Control de ingredientes
-                </h1>
-                <StatusBadge label={inventoryStatusLabel} tone={inventoryStatusTone} />
-              </div>
-              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
-                Resume catalogo, stock por ubicacion y estado operativo sin quitar
-                protagonismo a la gestion administrativa.
-              </p>
-            </div>
-          </div>
-
-          <div className="pos-status-grid">
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={ingredientCatalogTone}>
-                <FlaskConical size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Ingredientes</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{String(mergedIngredients.length)}</p>
-                  <StatusBadge label={ingredientCatalogLabel} tone={ingredientCatalogTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {catalogError
-                    ? 'Usando datos de sesion o stock para mantener la operacion'
-                    : loadingCatalog
-                      ? 'Leyendo catalogo base desde backend'
-                      : 'Catalogo base disponible para inventario'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={stockTone}>
-                <Warehouse size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Items con stock</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{String(stockItems.length)}</p>
-                  <StatusBadge
-                    label={selectedLocation ? `POS #${selectedLocation.id}` : 'Sin POS'}
-                    tone={selectedLocation ? 'info' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {loadingStock
-                    ? 'Consultando existencias para la ubicacion seleccionada'
-                    : selectedLocation
-                      ? selectedLocation.name
-                      : 'Selecciona una ubicacion para ver stock real'}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={outOfStockTone}>
-                <Boxes size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Sin stock</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{outOfStockValue}</p>
-                  <StatusBadge label={outOfStockLabel} tone={outOfStockTone} />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {selectedLocation
-                    ? 'Ingredientes sin existencias disponibles en la ubicacion actual'
-                    : 'Selecciona una ubicacion para detectar ingredientes pendientes de reposicion'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ModuleStatusHeader
+        ariaLabel="Estado operativo de ingredientes"
+        eyebrow="Operacion de inventario"
+        title="Ingredientes"
+        statusLabel={inventoryStatusLabel}
+        statusTone={inventoryStatusTone}
+        description="Catalogo base, stock por POS y faltantes."
+        helpText="Resume el catalogo base de ingredientes, el stock por ubicacion y los faltantes que requieren reposicion."
+        icon={<FlaskConical size={18} />}
+      >
+        <ModuleStatusCard
+          label="Ingredientes"
+          value={String(mergedIngredients.length)}
+          icon={<FlaskConical size={16} />}
+          iconTone={ingredientCatalogTone}
+          badgeLabel={ingredientCatalogLabel}
+          badgeTone={ingredientCatalogTone}
+          meta={
+            catalogError
+              ? 'Usando datos disponibles'
+              : loadingCatalog
+                ? 'Leyendo catalogo'
+                : 'Base lista para inventario'
+          }
+        />
+        <ModuleStatusCard
+          label="Items con stock"
+          value={String(stockItems.length)}
+          icon={<Warehouse size={16} />}
+          iconTone={stockTone}
+          badgeLabel={selectedLocation ? `POS #${selectedLocation.id}` : 'Sin POS'}
+          badgeTone={selectedLocation ? 'info' : 'default'}
+          meta={
+            loadingStock
+              ? 'Consultando existencias'
+              : selectedLocation
+                ? selectedLocation.name
+                : 'Selecciona una ubicacion'
+          }
+        />
+        <ModuleStatusCard
+          label="Sin stock"
+          value={outOfStockValue}
+          icon={<Boxes size={16} />}
+          iconTone={outOfStockTone}
+          badgeLabel={outOfStockLabel}
+          badgeTone={outOfStockTone}
+          meta={selectedLocation ? 'Pendientes de reposicion' : 'Selecciona una ubicacion'}
+        />
+      </ModuleStatusHeader>
 
       {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, CircleDot, PackagePlus, Shapes } from 'lucide-react';
+import { BookOpenCheck, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { Modal } from '@/components/Modal';
+import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -563,101 +564,64 @@ export function ProductsPage() {
           : 'Sin cobertura';
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
-      <section className="pos-status-bar" aria-label="Estado operativo de productos">
-        <div className="pos-status-shell">
-          <div className="pos-status-intro">
-            <div className="pos-status-beacon" aria-hidden="true">
-              <CircleDot size={18} />
-            </div>
-            <div className="min-w-0">
-              <p className="section-kicker">Operacion de catalogo</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-lg font-bold theme-text-strong sm:text-[1.35rem]">
-                  Control de productos
-                </h1>
-                <StatusBadge label={catalogStatusLabel} tone={catalogStatusTone} />
-              </div>
-              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-secondary)]">
-                Resume el estado del catalogo, las variantes listas y la cobertura de
-                recetas sin quitar protagonismo al trabajo administrativo.
-              </p>
-            </div>
-          </div>
-
-          <div className="pos-status-grid">
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={products.length > 0 ? 'success' : 'default'}>
-                <PackagePlus size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Productos</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{String(products.length)}</p>
-                  <StatusBadge
-                    label={productBadgeLabel}
-                    tone={loadingCatalog ? 'info' : products.length > 0 ? 'success' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {catalogAccessDenied
-                    ? 'Sin permisos para consultar el catalogo'
-                    : loadingCatalog
-                      ? 'Sincronizando productos desde backend'
-                      : `${activeProductsCount} activos en el catalogo comercial`}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={variants.length > 0 ? 'info' : 'default'}>
-                <Shapes size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Variantes</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{String(variants.length)}</p>
-                  <StatusBadge
-                    label={variantBadgeLabel}
-                    tone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {catalogAccessDenied
-                    ? 'Sin visibilidad de variantes operativas'
-                    : loadingCatalog
-                      ? 'Preparando datos para POS y combos'
-                      : `${activeVariantsCount} activas para POS, combos y recetas`}
-                </p>
-              </div>
-            </div>
-
-            <div className="pos-status-chip">
-              <span className="pos-status-chip__icon" aria-hidden="true" data-tone={recipeCoverageTone}>
-                <BookOpenCheck size={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="pos-status-chip__label">Recetas configuradas</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="pos-status-chip__value">{String(configuredRecipesCount)}</p>
-                  <StatusBadge
-                    label={recipeBadgeLabel}
-                    tone={recipeCoverageTone}
-                  />
-                </div>
-                <p className="pos-status-chip__meta">
-                  {catalogAccessDenied
-                    ? 'El estado de recetas requiere permisos administrativos'
-                    : loadingCatalog
-                      ? 'Verificando cobertura operativa de recetas'
-                      : variants.length > 0
-                        ? `Cobertura actual: ${configuredRecipesCount}/${variants.length} variantes con receta`
-                        : 'Agrega variantes para medir cobertura'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ModuleStatusHeader
+        ariaLabel="Estado operativo de productos"
+        eyebrow="Operacion de catalogo"
+        title="Productos"
+        statusLabel={catalogStatusLabel}
+        statusTone={catalogStatusTone}
+        description="Catalogo, variantes activas y cobertura de recetas."
+        helpText="Resume el estado del catalogo comercial, las variantes disponibles y la cobertura real de recetas."
+        icon={<PackagePlus size={18} />}
+      >
+        <ModuleStatusCard
+          label="Productos"
+          value={String(products.length)}
+          icon={<PackagePlus size={16} />}
+          iconTone={products.length > 0 ? 'success' : 'default'}
+          badgeLabel={productBadgeLabel}
+          badgeTone={loadingCatalog ? 'info' : products.length > 0 ? 'success' : 'default'}
+          meta={
+            catalogAccessDenied
+              ? 'Sin acceso al catalogo'
+              : loadingCatalog
+                ? 'Sincronizando catalogo'
+                : `${activeProductsCount} activos`
+          }
+        />
+        <ModuleStatusCard
+          label="Variantes"
+          value={String(variants.length)}
+          icon={<Shapes size={16} />}
+          iconTone={variants.length > 0 ? 'info' : 'default'}
+          badgeLabel={variantBadgeLabel}
+          badgeTone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
+          meta={
+            catalogAccessDenied
+              ? 'Sin acceso a variantes'
+              : loadingCatalog
+                ? 'Preparando datos'
+                : `${activeVariantsCount} activas`
+          }
+        />
+        <ModuleStatusCard
+          label="Recetas configuradas"
+          value={String(configuredRecipesCount)}
+          icon={<BookOpenCheck size={16} />}
+          iconTone={recipeCoverageTone}
+          badgeLabel={recipeBadgeLabel}
+          badgeTone={recipeCoverageTone}
+          meta={
+            catalogAccessDenied
+              ? 'Requiere acceso admin'
+              : loadingCatalog
+                ? 'Verificando cobertura'
+                : variants.length > 0
+                  ? `${configuredRecipesCount}/${variants.length} con receta`
+                  : 'Crea variantes para medir cobertura'
+          }
+        />
+      </ModuleStatusHeader>
 
       {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
 

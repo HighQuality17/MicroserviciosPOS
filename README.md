@@ -311,15 +311,25 @@ Consulta el archivo `LICENSE.md` para más información.
 
 ## Mejoras recientes de frontend
 
-Actualización breve de la navegación y el layout autenticado del frontend:
+Actualizacion breve de navegacion, layout y sidebar en la interfaz autenticada:
 
-- botón hamburguesa persistente en móvil, ahora controlado desde el layout principal y no desde el header;
-- scroll automático al inicio en cada cambio de ruta mediante ScrollToTop;
-- cierre automático del sidebar móvil al navegar entre rutas;
-- nuevo control desktop para colapsar o expandir el sidebar sin perder iconografía ni estados activos.
+- boton hamburguesa persistente en movil, ahora controlado desde el layout principal y no desde el header;
+- scroll automatico al inicio en cada cambio de ruta mediante `ScrollToTop`;
+- cierre automatico del sidebar movil al navegar entre rutas;
+- control desktop para colapsar o expandir el sidebar sin perder iconografia ni estados activos;
+- ocultamiento explicito del control desktop en movil segun el breakpoint real del layout;
+- refinamiento visual del estado activo del sidebar para eliminar el recorte lateral y alinear mejor el halo premium.
 
-Detalle técnico breve: [docs/navigation-and-layout-updates.md](docs/navigation-and-layout-updates.md)
+Detalle tecnico breve: [docs/navigation-and-layout-updates.md](docs/navigation-and-layout-updates.md)
 
+Actualizacion breve de barras superiores y resumenes de modulos:
+
+- refinamiento visual de las barras de estado superiores en POS, Caja, Productos, Ingredientes, Combos, Ventas y Admin;
+- reduccion de texto redundante para priorizar lectura rapida y contexto operativo;
+- unificacion de jerarquia entre titulo, estado y metricas;
+- uso de una base reusable para estandarizar composicion y ayudas contextuales sin recargar la UI.
+
+Detalle tecnico breve: [docs/module-status-header-updates.md](docs/module-status-header-updates.md)
 ## Historial de cambios
 
 - Historial principal: [`CHANGELOG.md`](CHANGELOG.md)
