@@ -46,6 +46,7 @@ export type TaxCategory =
   | "EXEMPT"
   | "EXCLUDED"
   | "NOT_SUBJECT";
+export type ProductType = "SIMPLE" | "VARIANT";
 export interface User {
   id: number;
   name: string;
@@ -71,6 +72,12 @@ export interface Location {
 export interface Product {
   id: number;
   name: string;
+  internalCode: string | null;
+  barcode: string | null;
+  supplierReference: string | null;
+  description: string | null;
+  brand: string | null;
+  productType: ProductType;
   unspscCode: string | null;
   vatType: VatType | null;
   taxCategory: TaxCategory | null;
@@ -80,7 +87,6 @@ export interface Product {
   active: boolean;
   variants?: CatalogVariant[];
 }
-
 export interface Variant {
   id: number;
   productId: number;
@@ -329,6 +335,12 @@ export interface CatalogCombo {
 export interface CatalogProduct {
   id: number;
   name: string;
+  internalCode: string | null;
+  barcode: string | null;
+  supplierReference: string | null;
+  description: string | null;
+  brand: string | null;
+  productType: ProductType;
   unspscCode: string | null;
   vatType: VatType | null;
   taxCategory: TaxCategory | null;
@@ -345,7 +357,6 @@ export interface CatalogProduct {
     active: boolean;
   }>;
 }
-
 export interface CatalogResponse {
   products: CatalogProduct[];
   variants: CatalogVariant[];
@@ -410,4 +421,6 @@ export interface AdminRecentActivityItem {
 export interface AdminRecentActivityResponse {
   items: AdminRecentActivityItem[];
 }
+
+
 

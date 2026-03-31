@@ -1,4 +1,4 @@
-import { TaxCategory, VatType } from '@prisma/client';
+import { ProductType, TaxCategory, VatType } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
@@ -14,6 +14,35 @@ export class CreateProductDto {
   @IsNotEmpty()
   @MaxLength(120)
   name!: string;
+
+  @IsString()
+  @MaxLength(80)
+  @IsOptional()
+  internalCode?: string | null;
+
+  @IsString()
+  @MaxLength(80)
+  @IsOptional()
+  barcode?: string | null;
+
+  @IsString()
+  @MaxLength(120)
+  @IsOptional()
+  supplierReference?: string | null;
+
+  @IsString()
+  @MaxLength(1000)
+  @IsOptional()
+  description?: string | null;
+
+  @IsString()
+  @MaxLength(80)
+  @IsOptional()
+  brand?: string | null;
+
+  @IsEnum(ProductType)
+  @IsOptional()
+  productType?: ProductType;
 
   @IsString()
   @Matches(/^\d{8}$/, {

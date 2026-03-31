@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
@@ -14,6 +15,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreateVariantDto } from './dto/create-variant.dto';
+import { GetVariantsQueryDto, VariantListStatus } from './dto/get-variants-query.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
 import { UpdateVariantStatusDto } from './dto/update-variant-status.dto';
 import { VariantsService } from './variants.service';
@@ -31,8 +33,8 @@ export class VariantsController {
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.AUDITOR)
-  findActive() {
-    return this.variantsService.findActive();
+  findAll(@Query() query: GetVariantsQueryDto) {
+    return this.variantsService.findAll(query.status ?? VariantListStatus.ACTIVE);
   }
 
   @Patch(':id')

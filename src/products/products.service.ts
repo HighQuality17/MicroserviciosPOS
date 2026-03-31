@@ -1,10 +1,10 @@
-﻿import {
+import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SaleItemType, TaxCategory, VatType } from '@prisma/client';
+import { Prisma, ProductType, SaleItemType, TaxCategory, VatType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -19,14 +19,16 @@ export class ProductsService {
       const product = await this.prisma.product.create({
         data: {
           name: dto.name.trim(),
+          productType: dto.productType ?? ProductType.SIMPLE,
+          ...this.mapCommercialProductData(dto),
           ...this.mapFiscalProductData(dto),
           active: dto.active ?? true,
         },
       });
 
       return this.mapProduct(product);
-    } catch {
-      throw new ConflictException('Product name already exists');
+    } catch (error) {
+      this.handleProductWriteError(error);
     }
   }
 
@@ -66,14 +68,16 @@ export class ProductsService {
         where: { id },
         data: {
           ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+          ...(dto.productType !== undefined ? { productType: dto.productType } : {}),
+          ...this.mapCommercialProductData(dto),
           ...this.mapFiscalProductData(dto),
           ...(dto.active !== undefined ? { active: dto.active } : {}),
         },
       });
 
       return this.mapProduct(product);
-    } catch {
-      throw new ConflictException('Product name already exists');
+    } catch (error) {
+      this.handleProductWriteError(error);
     }
   }
 
@@ -159,6 +163,30 @@ export class ProductsService {
     return normalized ? normalized : null;
   }
 
+  private mapCommercialProductData(dto: {
+    internalCode?: string | null;
+    barcode?: string | null;
+    supplierReference?: string | null;
+    description?: string | null;
+    brand?: string | null;
+  }) {
+    return {
+      ...(dto.internalCode !== undefined
+        ? { internalCode: this.normalizeOptionalText(dto.internalCode) }
+        : {}),
+      ...(dto.barcode !== undefined
+        ? { barcode: this.normalizeOptionalText(dto.barcode) }
+        : {}),
+      ...(dto.supplierReference !== undefined
+        ? { supplierReference: this.normalizeOptionalText(dto.supplierReference) }
+        : {}),
+      ...(dto.description !== undefined
+        ? { description: this.normalizeOptionalText(dto.description) }
+        : {}),
+      ...(dto.brand !== undefined ? { brand: this.normalizeOptionalText(dto.brand) } : {}),
+    };
+  }
+
   private mapFiscalProductData(dto: {
     unspscCode?: string | null;
     vatType?: VatType | null;
@@ -183,9 +211,50 @@ export class ProductsService {
     };
   }
 
+  private handleProductWriteError(error: unknown): never {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      const target = this.getUniqueTarget(error);
+
+      if (target.includes('name')) {
+        throw new ConflictException('Product name already exists');
+      }
+
+      if (target.includes('internalCode')) {
+        throw new ConflictException('Product internal code already exists');
+      }
+
+      if (target.includes('barcode')) {
+        throw new ConflictException('Product barcode already exists');
+      }
+
+      throw new ConflictException('Product unique field already exists');
+    }
+
+    throw error;
+  }
+
+  private getUniqueTarget(error: Prisma.PrismaClientKnownRequestError) {
+    const target = error.meta?.target;
+
+    if (Array.isArray(target)) {
+      return target.map(String).join(',');
+    }
+
+    return typeof target === 'string' ? target : '';
+  }
+
   private mapProduct(product: {
     id: number;
     name: string;
+    internalCode: string | null;
+    barcode: string | null;
+    supplierReference: string | null;
+    description: string | null;
+    brand: string | null;
+    productType: ProductType;
     unspscCode: string | null;
     vatType: VatType | null;
     taxCategory: TaxCategory | null;
@@ -205,6 +274,12 @@ export class ProductsService {
     return {
       id: product.id,
       name: product.name,
+      internalCode: product.internalCode,
+      barcode: product.barcode,
+      supplierReference: product.supplierReference,
+      description: product.description,
+      brand: product.brand,
+      productType: product.productType,
       unspscCode: product.unspscCode,
       vatType: product.vatType,
       taxCategory: product.taxCategory,
@@ -224,4 +299,3 @@ export class ProductsService {
     };
   }
 }
-

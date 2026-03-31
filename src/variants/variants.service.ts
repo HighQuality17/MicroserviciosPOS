@@ -4,9 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SaleItemType } from '@prisma/client';
+import { ProductType, SaleItemType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVariantDto } from './dto/create-variant.dto';
+import { VariantListStatus } from './dto/get-variants-query.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
 import { UpdateVariantStatusDto } from './dto/update-variant-status.dto';
 
@@ -19,6 +20,9 @@ export class VariantsService {
       where: { id: dto.product_id },
     });
     if (!product) throw new NotFoundException('Product not found');
+    if (product.productType !== ProductType.VARIANT) {
+      throw new BadRequestException('Product type does not support variants');
+    }
     if (dto.sale_price < 0) {
       throw new BadRequestException('sale_price must be >= 0');
     }
@@ -55,18 +59,36 @@ export class VariantsService {
     return variants.map((variant) => this.mapVariant(variant));
   }
 
+  async findAll(status: VariantListStatus = VariantListStatus.ACTIVE) {
+    const variants = await this.prisma.productVariant.findMany({
+      where: this.resolveVariantListWhere(status),
+      include: {
+        product: true,
+      },
+      orderBy: [{ active: 'desc' }, { product: { name: 'asc' } }, { size: 'asc' }, { id: 'asc' }],
+    });
+
+    return variants.map((variant) => this.mapVariant(variant));
+  }
+
   async update(id: number, dto: UpdateVariantDto) {
     const variant = await this.prisma.productVariant.findUnique({
       where: { id },
+      include: {
+        product: true,
+      },
     });
 
     if (!variant) throw new NotFoundException('Variant not found');
     if (dto.sale_price !== undefined && dto.sale_price < 0) {
       throw new BadRequestException('sale_price must be >= 0');
     }
+    if (variant.product.productType !== ProductType.VARIANT) {
+      throw new BadRequestException('Product type does not support variants');
+    }
 
     try {
-      const variant = await this.prisma.productVariant.update({
+      const updatedVariant = await this.prisma.productVariant.update({
         where: { id },
         data: {
           ...(dto.size !== undefined ? { size: dto.size.trim() } : {}),
@@ -79,7 +101,7 @@ export class VariantsService {
         },
       });
 
-      return this.mapVariant(variant);
+      return this.mapVariant(updatedVariant);
     } catch {
       throw new ConflictException('Variant sku already exists');
     }
@@ -151,6 +173,25 @@ export class VariantsService {
       id,
       deleted: true,
       message: 'Variant deleted successfully',
+    };
+  }
+
+  private resolveVariantListWhere(status: VariantListStatus) {
+    if (status === VariantListStatus.ALL) {
+      return undefined;
+    }
+
+    if (status === VariantListStatus.INACTIVE) {
+      return {
+        active: false,
+      };
+    }
+
+    return {
+      active: true,
+      product: {
+        active: true,
+      },
     };
   }
 

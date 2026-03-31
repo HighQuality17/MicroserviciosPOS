@@ -15,6 +15,11 @@ import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
+  ProductCatalogFieldsSection,
+  type ProductCatalogDraft,
+  productTypeLabels,
+} from './ProductCatalogFieldsSection';
+import {
   ProductFiscalFieldsSection,
   type ProductFiscalDraft,
   taxCategoryLabels,
@@ -30,6 +35,7 @@ import type {
   CatalogVariant,
   Ingredient,
   IngredientDimension,
+  ProductType,
   TaxCategory,
   VariantRecipe,
   VatType,
@@ -43,6 +49,14 @@ type RecipeDraftItem = {
 };
 
 type ProductListFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
+type VariantListFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
+
+type DeleteConfirmationTarget = {
+  kind: 'PRODUCT' | 'VARIANT';
+  id: number;
+  label: string;
+  detail: string;
+};
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
   WEIGHT: ['g', 'kg'],
@@ -73,12 +87,16 @@ export function ProductsPage() {
   const [loadingRecipe, setLoadingRecipe] = useState(false);
 
   const [productName, setProductName] = useState('');
+  const [productCatalogDraft, setProductCatalogDraft] = useState<ProductCatalogDraft>(
+    createEmptyProductCatalogDraft(),
+  );
   const [productFiscalDraft, setProductFiscalDraft] = useState<ProductFiscalDraft>(
     createEmptyProductFiscalDraft(),
   );
   const [productActive, setProductActive] = useState(true);
   const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
   const [productListFilter, setProductListFilter] = useState<ProductListFilter>('ALL');
+  const [variantListFilter, setVariantListFilter] = useState<VariantListFilter>('ALL');
 
   const [variantProductId, setVariantProductId] = useState('');
   const [variantSize, setVariantSize] = useState('');
@@ -89,12 +107,17 @@ export function ProductsPage() {
   const [productEditorOpen, setProductEditorOpen] = useState(false);
   const [variantEditorOpen, setVariantEditorOpen] = useState(false);
   const [recipeModalOpen, setRecipeModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteConfirmationTarget | null>(null);
+  const [deletingRecord, setDeletingRecord] = useState(false);
 
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<CatalogVariant | null>(null);
   const [loadedRecipe, setLoadedRecipe] = useState<VariantRecipe | null>(null);
 
   const [editProductName, setEditProductName] = useState('');
+  const [editProductCatalogDraft, setEditProductCatalogDraft] = useState<ProductCatalogDraft>(
+    createEmptyProductCatalogDraft(),
+  );
   const [editProductFiscalDraft, setEditProductFiscalDraft] = useState<ProductFiscalDraft>(
     createEmptyProductFiscalDraft(),
   );
@@ -116,6 +139,11 @@ export function ProductsPage() {
     [products],
   );
 
+  const variantReadyProducts = useMemo(
+    () => activeProducts.filter((product) => product.productType === 'VARIANT'),
+    [activeProducts],
+  );
+
   const visibleProducts = useMemo(() => {
     if (productListFilter === 'ACTIVE') return activeProducts;
     if (productListFilter === 'INACTIVE') {
@@ -123,6 +151,16 @@ export function ProductsPage() {
     }
     return products;
   }, [activeProducts, productListFilter, products]);
+
+  const visibleVariants = useMemo(() => {
+    if (variantListFilter === 'ACTIVE') {
+      return variants.filter((variant) => variant.active);
+    }
+    if (variantListFilter === 'INACTIVE') {
+      return variants.filter((variant) => !variant.active);
+    }
+    return variants;
+  }, [variantListFilter, variants]);
 
   const enrichedProducts = useMemo(
     () =>
@@ -140,6 +178,18 @@ export function ProductsPage() {
     void refreshCatalog();
   }, []);
 
+  useEffect(() => {
+    if (!variantProductId) return;
+
+    const currentProductStillAvailable = variantReadyProducts.some(
+      (product) => String(product.id) === variantProductId,
+    );
+
+    if (!currentProductStillAvailable) {
+      setVariantProductId('');
+    }
+  }, [variantProductId, variantReadyProducts]);
+
   async function refreshCatalog() {
     try {
       setLoadingCatalog(true);
@@ -148,7 +198,7 @@ export function ProductsPage() {
 
       const [productsResponse, variantsResponse, ingredientsResponse] = await Promise.all([
         posApi.getProducts(),
-        posApi.getVariants(),
+        posApi.getVariants({ status: 'ALL' }),
         posApi.getIngredients(),
       ]);
 
@@ -201,12 +251,14 @@ export function ProductsPage() {
 
       const product = await posApi.createProduct({
         name: productName.trim(),
+        ...serializeProductCatalogDraft(productCatalogDraft),
         ...serializeProductFiscalDraft(productFiscalDraft),
         active: productActive,
       });
 
       addSessionProduct(product);
       setProductName('');
+      setProductCatalogDraft(createEmptyProductCatalogDraft());
       setProductFiscalDraft(createEmptyProductFiscalDraft());
       setProductActive(true);
       setProductFiscalSectionOpen(false);
@@ -226,9 +278,18 @@ export function ProductsPage() {
   async function handleCreateVariant() {
     const productId = Number(variantProductId);
     const variantPrice = parseNumberInput(variantPriceInput);
+    const selectedProductForVariant = variantReadyProducts.find(
+      (product) => product.id === productId,
+    );
 
     if (!variantProductId || productId <= 0) {
       setSubmitError('Selecciona un producto para la variante.');
+      return;
+    }
+    if (!selectedProductForVariant) {
+      setSubmitError(
+        'Selecciona un producto activo configurado para trabajar con variantes.',
+      );
       return;
     }
     if (!variantSize.trim() || !variantSku.trim()) {
@@ -275,6 +336,7 @@ export function ProductsPage() {
   function openProductEditor(product: CatalogProduct) {
     setSelectedProduct(product);
     setEditProductName(product.name);
+    setEditProductCatalogDraft(getProductCatalogDraft(product));
     setEditProductFiscalDraft(getProductFiscalDraft(product));
     setEditProductActive(product.active);
     setEditProductFiscalSectionOpen(hasConfiguredFiscalData(product));
@@ -294,6 +356,7 @@ export function ProductsPage() {
       setSubmitError(null);
       await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
+        ...serializeProductCatalogDraft(editProductCatalogDraft),
         ...serializeProductFiscalDraft(editProductFiscalDraft),
         active: editProductActive,
       });
@@ -390,6 +453,66 @@ export function ProductsPage() {
           ? translateCatalogError(error.message)
           : 'No se pudo cambiar el estado de la variante.',
       );
+    }
+  }
+
+  function requestProductDelete(product: CatalogProduct) {
+    setDeleteTarget({
+      kind: 'PRODUCT',
+      id: product.id,
+      label: product.name,
+      detail: `Producto #${product.id}`,
+    });
+    setSubmitError(null);
+  }
+
+  function requestVariantDelete(variant: CatalogVariant) {
+    setDeleteTarget({
+      kind: 'VARIANT',
+      id: variant.id,
+      label: `${variant.product_name} | ${variant.size}`,
+      detail: `Variante #${variant.id} | ${variant.sku}`,
+    });
+    setSubmitError(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+
+    try {
+      setDeletingRecord(true);
+      setSubmitError(null);
+      setMessage(null);
+
+      if (deleteTarget.kind === 'PRODUCT') {
+        await posApi.deleteProduct(deleteTarget.id);
+        if (selectedProduct?.id === deleteTarget.id) {
+          setProductEditorOpen(false);
+          setSelectedProduct(null);
+        }
+        setMessage(`Producto #${deleteTarget.id} eliminado correctamente.`);
+      } else {
+        await posApi.deleteVariant(deleteTarget.id);
+        if (selectedVariant?.id === deleteTarget.id) {
+          setVariantEditorOpen(false);
+          setRecipeModalOpen(false);
+          setSelectedVariant(null);
+          setLoadedRecipe(null);
+        }
+        setMessage(`Variante #${deleteTarget.id} eliminada correctamente.`);
+      }
+
+      setDeleteTarget(null);
+      await refreshCatalog();
+    } catch (error) {
+      setDeleteTarget(null);
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo eliminar el registro seleccionado.',
+      );
+    } finally {
+      setDeletingRecord(false);
     }
   }
 
@@ -552,10 +675,14 @@ export function ProductsPage() {
     }
   }
 
-  const configuredRecipesCount = Object.values(recipeStatusByVariant).filter(Boolean).length;
   const activeProductsCount = activeProducts.length;
   const inactiveProductsCount = products.length - activeProductsCount;
-  const activeVariantsCount = variants.filter((variant) => variant.active).length;
+  const activeVariants = variants.filter((variant) => variant.active);
+  const activeVariantsCount = activeVariants.length;
+  const inactiveVariantsCount = variants.length - activeVariantsCount;
+  const configuredRecipesCount = activeVariants.filter(
+    (variant) => recipeStatusByVariant[variant.id],
+  ).length;
   const catalogStatusTone = catalogAccessDenied
     ? 'danger'
     : catalogError
@@ -571,10 +698,10 @@ export function ProductsPage() {
         ? 'Sincronizando'
         : 'Catalogo operativo';
   const recipeCoverageTone = configuredRecipesCount === 0
-    ? variants.length > 0
+    ? activeVariantsCount > 0
       ? 'warning'
       : 'default'
-    : configuredRecipesCount === variants.length
+    : configuredRecipesCount === activeVariantsCount
       ? 'success'
       : 'info';
   const productBadgeLabel = loadingCatalog
@@ -587,13 +714,15 @@ export function ProductsPage() {
   const variantBadgeLabel = loadingCatalog
     ? 'Sincronizando'
     : variants.length > 0
-      ? 'Listas para venta'
+      ? inactiveVariantsCount > 0
+        ? 'Mixto'
+        : 'Solo activas'
       : 'Sin variantes';
   const recipeBadgeLabel = loadingCatalog
     ? 'Verificando'
-    : variants.length === 0
+    : activeVariantsCount === 0
       ? 'Sin variantes'
-      : configuredRecipesCount === variants.length
+      : configuredRecipesCount === activeVariantsCount
         ? 'Cobertura completa'
         : configuredRecipesCount > 0
           ? 'Cobertura parcial'
@@ -603,6 +732,11 @@ export function ProductsPage() {
     : productListFilter === 'ACTIVE'
       ? `${activeProductsCount} activos visibles`
       : `${inactiveProductsCount} inactivos visibles`;
+  const visibleVariantsLabel = variantListFilter === 'ALL'
+    ? `${variants.length} variantes en total`
+    : variantListFilter === 'ACTIVE'
+      ? `${activeVariantsCount} activas visibles`
+      : `${inactiveVariantsCount} inactivas visibles`;
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
       <ModuleStatusHeader
@@ -611,7 +745,7 @@ export function ProductsPage() {
         title="Productos"
         statusLabel={catalogStatusLabel}
         statusTone={catalogStatusTone}
-        description="Catalogo, variantes activas y cobertura de recetas."
+        description="Catalogo, variantes y cobertura de recetas."
         helpText="Resume el estado del catalogo comercial, las variantes disponibles y la cobertura real de recetas."
         icon={<PackagePlus size={18} />}
       >
@@ -644,7 +778,9 @@ export function ProductsPage() {
               ? 'Sin acceso a variantes'
               : loadingCatalog
                 ? 'Preparando datos'
-                : `${activeVariantsCount} activas`
+                : inactiveVariantsCount > 0
+                  ? `${activeVariantsCount} activas | ${inactiveVariantsCount} inactivas`
+                  : `${activeVariantsCount} activas`
           }
         />
         <ModuleStatusCard
@@ -659,8 +795,8 @@ export function ProductsPage() {
               ? 'Requiere acceso admin'
               : loadingCatalog
                 ? 'Verificando cobertura'
-                : variants.length > 0
-                  ? `${configuredRecipesCount}/${variants.length} con receta`
+                : activeVariantsCount > 0
+                  ? `${configuredRecipesCount}/${activeVariantsCount} activas con receta`
                   : 'Crea variantes para medir cobertura'
           }
         />
@@ -676,7 +812,7 @@ export function ProductsPage() {
         <AccessState description="Tu perfil actual no puede consultar productos, variantes ni recetas administrativas." />
       ) : null}
 
-      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
             <p className="text-sm theme-text-muted">Gestión de productos</p>
@@ -687,6 +823,45 @@ export function ProductsPage() {
                 value={productName}
                 onChange={(event) => setProductName(event.target.value)}
                 placeholder="Latte avellana"
+              />
+              <ProductCatalogFieldsSection
+                draft={productCatalogDraft}
+                onInternalCodeChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    internalCode: value,
+                  }))
+                }
+                onBarcodeChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    barcode: value,
+                  }))
+                }
+                onSupplierReferenceChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    supplierReference: value,
+                  }))
+                }
+                onDescriptionChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    description: value,
+                  }))
+                }
+                onBrandChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    brand: value,
+                  }))
+                }
+                onProductTypeChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    productType: value,
+                  }))
+                }
               />
 
               <ProductFiscalFieldsSection
@@ -764,16 +939,19 @@ export function ProductsPage() {
                 onChange={(event) => setVariantProductId(event.target.value)}
               >
                 <option value="">
-                  {activeProducts.length === 0
-                    ? 'No hay productos activos disponibles'
+                  {variantReadyProducts.length === 0
+                    ? 'No hay productos tipo variante activos'
                     : 'Selecciona un producto'}
                 </option>
-                {activeProducts.map((product) => (
+                {variantReadyProducts.map((product) => (
                   <option key={product.id} value={String(product.id)}>
                     #{product.id} / {product.name}
                   </option>
                 ))}
               </Select>
+              <p className="text-xs text-[color:var(--text-faint)]">
+                Solo se listan productos activos configurados como tipo variante.
+              </p>
 
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -812,7 +990,7 @@ export function ProductsPage() {
 
               <div className="flex gap-3">
                 <Button
-                  disabled={!canManageCatalog || creatingVariant || products.length === 0}
+                  disabled={!canManageCatalog || creatingVariant || variantReadyProducts.length === 0}
                   onClick={handleCreateVariant}
                 >
                   {creatingVariant ? 'Guardando...' : 'Crear variante'}
@@ -898,17 +1076,46 @@ export function ProductsPage() {
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                           <p className="font-display text-xl font-bold theme-text-strong">{product.name}</p>
                           <StatusBadge
                             label={product.active ? 'Activo' : 'Inactivo'}
                             tone={product.active ? 'success' : 'default'}
                           />
+                          <StatusBadge
+                            label={productTypeLabels[product.productType]}
+                            tone={product.productType === 'VARIANT' ? 'info' : 'default'}
+                          />
                         </div>
                         <p className="mt-2 text-sm text-[color:var(--text-faint)]">
                           ID {product.id} | {product.relatedVariants.length} variantes asociadas
                         </p>
+                        {product.description ? (
+                          <p className="mt-3 max-w-3xl text-sm leading-6 theme-text-secondary">
+                            {summarizeProductDescription(product.description)}
+                          </p>
+                        ) : null}
                         <div className="mt-3 flex flex-wrap gap-2">
+                          {product.internalCode ? (
+                            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                              Interno {product.internalCode}
+                            </span>
+                          ) : null}
+                          {product.barcode ? (
+                            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                              Barras {product.barcode}
+                            </span>
+                          ) : null}
+                          {product.brand ? (
+                            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                              Marca {product.brand}
+                            </span>
+                          ) : null}
+                          {product.supplierReference ? (
+                            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                              Ref. proveedor {product.supplierReference}
+                            </span>
+                          ) : null}
                           {product.unspscCode ? (
                             <span className="soft-pill rounded-full px-3 py-1 text-xs">
                               UNSPSC {product.unspscCode}
@@ -960,6 +1167,13 @@ export function ProductsPage() {
                           >
                             {product.active ? 'Desactivar' : 'Activar'}
                           </Button>
+                          <Button
+                            variant="ghost"
+                            className="action-soft-danger"
+                            onClick={() => requestProductDelete(product)}
+                          >
+                            Eliminar
+                          </Button>
                         </div>
                       ) : null}
                     </div>
@@ -991,6 +1205,27 @@ export function ProductsPage() {
           <Card>
             <p className="text-sm theme-text-muted">Listado real</p>
             <h2 className="font-display text-2xl font-bold theme-text-strong">Variantes</h2>
+            <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <p className="text-sm text-[color:var(--text-faint)]">{visibleVariantsLabel}</p>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { value: 'ALL', label: 'Todas' },
+                    { value: 'ACTIVE', label: 'Activas' },
+                    { value: 'INACTIVE', label: 'Inactivas' },
+                  ] as const
+                ).map((filterOption) => (
+                  <Button
+                    key={filterOption.value}
+                    variant={variantListFilter === filterOption.value ? 'primary' : 'ghost'}
+                    className="min-h-9 rounded-xl px-3 py-2 text-xs"
+                    onClick={() => setVariantListFilter(filterOption.value)}
+                  >
+                    {filterOption.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
             {loadingCatalog ? (
               <div className="mt-6 grid gap-3">
@@ -1006,6 +1241,17 @@ export function ProductsPage() {
                 <EmptyState
                   title="Sin variantes cargadas"
                   description="Crea la primera variante para alimentar el POS y los combos."
+                />
+              </div>
+            ) : visibleVariants.length === 0 ? (
+              <div className="mt-6">
+                <EmptyState
+                  title="No hay variantes para este filtro"
+                  description={
+                    variantListFilter === 'ACTIVE'
+                      ? 'No hay variantes activas para mostrar en este momento.'
+                      : 'No hay variantes inactivas para revisar en este momento.'
+                  }
                 />
               </div>
             ) : (
@@ -1058,7 +1304,7 @@ export function ProductsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {variants.map((variant, index) => {
+                        {visibleVariants.map((variant, index) => {
                           const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
 
                           return (
@@ -1066,13 +1312,19 @@ export function ProductsPage() {
                               key={variant.id}
                               className={[
                                 'table-row table-row-interactive text-[color:var(--text-secondary)]',
+                                !variant.active ? 'opacity-80' : '',
                                 index > 0 ? 'border-t theme-border-soft' : '',
                               ].join(' ')}
                             >
                               <td className="px-3 py-3.5 align-middle whitespace-nowrap text-xs theme-text-muted">#{variant.id}</td>
                               <td className="px-3 py-3.5 align-middle">
                                 <div className="min-w-0">
-                                  <p className="truncate text-[15px] font-semibold tracking-[-0.01em] theme-text-strong">{variant.product_name}</p>
+                                  <p className="truncate text-[15px] font-semibold tracking-[-0.01em] theme-text-strong">{variant.product_name}</p>
+                                  {!variant.active ? (
+                                    <p className="mt-1 text-xs text-[color:var(--text-faint)]">
+                                      Variante inactiva. Sigue disponible aquí para revisión o reactivación.
+                                    </p>
+                                  ) : null}
                                 </div>
                               </td>
                               <td className="px-3 py-3.5 align-middle whitespace-nowrap text-sm">{variant.size}</td>
@@ -1128,6 +1380,13 @@ export function ProductsPage() {
                                     >
                                       Gestionar receta
                                     </Button>
+                                    <Button
+                                      variant="ghost"
+                                      className="action-soft-danger"
+                                      onClick={() => requestVariantDelete(variant)}
+                                    >
+                                      Eliminar
+                                    </Button>
                                   </div>
                                 ) : (
                                   <span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>
@@ -1143,7 +1402,7 @@ export function ProductsPage() {
               </div>
             )}
 
-            {variants.length > 0 ? (
+            {activeVariantsCount > 0 ? (
               <div className="toolbar-shell mt-4 rounded-2xl px-4 py-3 text-xs text-[color:var(--text-faint)]">
                 Las variantes activas sin receta seguirán detectándose aquí para que administración complete la configuración antes de vender.
               </div>
@@ -1157,7 +1416,7 @@ export function ProductsPage() {
         open={productEditorOpen}
         onClose={() => setProductEditorOpen(false)}
         title="Editar producto"
-        subtitle="Actualiza el nombre, el estado y la preparacion fiscal opcional del producto."
+        subtitle="Actualiza la ficha comercial, el estado y la preparacion fiscal opcional del producto."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Input
@@ -1165,6 +1424,45 @@ export function ProductsPage() {
             value={editProductName}
             onChange={(event) => setEditProductName(event.target.value)}
             placeholder="Nombre del producto"
+          />
+          <ProductCatalogFieldsSection
+            draft={editProductCatalogDraft}
+            onInternalCodeChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                internalCode: value,
+              }))
+            }
+            onBarcodeChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                barcode: value,
+              }))
+            }
+            onSupplierReferenceChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                supplierReference: value,
+              }))
+            }
+            onDescriptionChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                description: value,
+              }))
+            }
+            onBrandChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                brand: value,
+              }))
+            }
+            onProductTypeChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                productType: value,
+              }))
+            }
           />
           <ProductFiscalFieldsSection
             open={editProductFiscalSectionOpen}
@@ -1269,6 +1567,50 @@ export function ProductsPage() {
             </Button>
             <Button disabled={editingVariant} onClick={handleSaveVariant}>
               {editingVariant ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        id="catalog-delete-dialog"
+        open={deleteTarget !== null}
+        onClose={() => {
+          if (!deletingRecord) {
+            setDeleteTarget(null);
+          }
+        }}
+        title={deleteTarget?.kind === 'PRODUCT' ? 'Eliminar producto' : 'Eliminar variante'}
+        subtitle="Esta acción solo debe usarse cuando el registro ya no deba existir en el catálogo."
+      >
+        <div className="grid min-w-0 gap-4 sm:gap-5">
+          <div className="rounded-3xl border border-[color:var(--border-soft)] bg-[color:var(--surface-subtle)] px-4 py-4">
+            <p className="text-sm font-semibold theme-text-strong">
+              {deleteTarget?.label ?? 'Registro seleccionado'}
+            </p>
+            {deleteTarget ? (
+              <p className="mt-2 text-sm text-[color:var(--text-faint)]">
+                {deleteTarget.detail}
+              </p>
+            ) : null}
+          </div>
+          <p className="text-sm text-[color:var(--text-secondary)]">
+            ¿Deseas continuar con la eliminación? Si el registro tiene ventas históricas o relaciones activas, el sistema bloqueará la operación y te pedirá desactivarlo o limpiar dependencias primero.
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="ghost"
+              disabled={deletingRecord}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={deletingRecord || !deleteTarget}
+              className="action-soft-danger"
+              onClick={() => void handleConfirmDelete()}
+            >
+              {deletingRecord ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </div>
         </div>
@@ -1391,6 +1733,53 @@ export function ProductsPage() {
   );
 }
 
+function createEmptyProductCatalogDraft(): ProductCatalogDraft {
+  return {
+    internalCode: '',
+    barcode: '',
+    supplierReference: '',
+    description: '',
+    brand: '',
+    productType: 'SIMPLE',
+  };
+}
+
+function getProductCatalogDraft(product: {
+  internalCode: string | null;
+  barcode: string | null;
+  supplierReference: string | null;
+  description: string | null;
+  brand: string | null;
+  productType: ProductType;
+}): ProductCatalogDraft {
+  return {
+    internalCode: product.internalCode ?? '',
+    barcode: product.barcode ?? '',
+    supplierReference: product.supplierReference ?? '',
+    description: product.description ?? '',
+    brand: product.brand ?? '',
+    productType: product.productType,
+  };
+}
+
+function serializeProductCatalogDraft(draft: ProductCatalogDraft) {
+  return {
+    internalCode: draft.internalCode.trim() || null,
+    barcode: draft.barcode.trim() || null,
+    supplierReference: draft.supplierReference.trim() || null,
+    description: draft.description.trim() || null,
+    brand: draft.brand.trim() || null,
+    productType: draft.productType,
+  };
+}
+
+function summarizeProductDescription(description: string) {
+  const normalized = description.trim().replace(/\s+/g, ' ');
+  return normalized.length > 180
+    ? `${normalized.slice(0, 177).trimEnd()}...`
+    : normalized;
+}
+
 function createEmptyProductFiscalDraft(): ProductFiscalDraft {
   return {
     unspscCode: '',
@@ -1448,7 +1837,6 @@ function hasConfiguredFiscalData(product: {
       product.applyInc,
   );
 }
-
 function createEmptyRecipeDraft(): RecipeDraftItem {
   return {
     ingredient_id: '',
@@ -1460,14 +1848,22 @@ function createEmptyRecipeDraft(): RecipeDraftItem {
 
 function translateCatalogError(message: string) {
   if (message === 'Product name already exists') return 'Ya existe un producto con ese nombre.';
+  if (message === 'Product internal code already exists') return 'Ya existe un producto con ese codigo interno.';
+  if (message === 'Product barcode already exists') return 'Ya existe un producto con ese codigo de barras.';
   if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
   if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
   if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';
+  if (message === 'Product type does not support variants') {
+    return 'Solo los productos configurados como tipo variante pueden recibir variantes.';
+  }
   if (message.includes('historical sales')) {
     return 'No se puede eliminar porque ya tiene ventas históricas. Desactívalo en su lugar.';
   }
-  if (message.includes('assigned to one or more combos')) {
-    return 'No se puede eliminar porque la variante está asociada a combos. Quita esas relaciones primero.';
+  if (
+    message.includes('assigned to one or more combos') ||
+    message.includes('assigned to combos')
+  ) {
+    return 'No se puede eliminar porque hay relaciones activas con combos. Quita esas relaciones primero.';
   }
   if (message.includes('variants configured')) {
     return 'No se puede eliminar el producto mientras tenga variantes configuradas.';
@@ -1487,12 +1883,3 @@ function translateCatalogError(message: string) {
 
   return message;
 }
-
-
-
-
-
-
-
-
-
