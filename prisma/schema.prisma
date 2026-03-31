@@ -58,6 +58,11 @@ enum TaxCategory {
   EXCLUDED
   NOT_SUBJECT
 }
+
+enum ProductType {
+  SIMPLE
+  VARIANT
+}
 enum SaleItemType {
   VARIANT
   COMBO
@@ -161,16 +166,22 @@ model IngredientMovement {
 }
 
 model Product {
-  id           Int              @id @default(autoincrement())
-  name         String           @unique
-  unspscCode   String?
-  vatType      VatType?
-  taxCategory  TaxCategory?
-  unitMeasure  String?
-  isService    Boolean          @default(false)
-  applyInc     Boolean          @default(false)
-  active       Boolean          @default(true)
-  variants     ProductVariant[]
+  id                Int              @id @default(autoincrement())
+  name              String           @unique
+  internalCode      String?          @unique
+  barcode           String?          @unique
+  supplierReference String?
+  description       String?
+  brand             String?
+  productType       ProductType      @default(SIMPLE)
+  unspscCode        String?
+  vatType           VatType?
+  taxCategory       TaxCategory?
+  unitMeasure       String?
+  isService         Boolean          @default(false)
+  applyInc          Boolean          @default(false)
+  active            Boolean          @default(true)
+  variants          ProductVariant[]
 }
 
 model ProductVariant {
@@ -277,5 +288,6 @@ model AuditLog {
   metadataJson String
   user         User      @relation(fields: [userId], references: [id])
 }
+
 
 
