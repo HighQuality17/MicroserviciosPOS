@@ -1,10 +1,10 @@
-import {
+﻿import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SaleItemType } from '@prisma/client';
+import { SaleItemType, TaxCategory, VatType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -16,15 +16,31 @@ export class ProductsService {
 
   async create(dto: CreateProductDto) {
     try {
-      return await this.prisma.product.create({
+      const product = await this.prisma.product.create({
         data: {
           name: dto.name.trim(),
+          ...this.mapFiscalProductData(dto),
           active: dto.active ?? true,
         },
       });
+
+      return this.mapProduct(product);
     } catch {
       throw new ConflictException('Product name already exists');
     }
+  }
+
+  async findAll() {
+    const products = await this.prisma.product.findMany({
+      include: {
+        variants: {
+          orderBy: [{ size: 'asc' }, { id: 'asc' }],
+        },
+      },
+      orderBy: [{ active: 'desc' }, { name: 'asc' }],
+    });
+
+    return products.map((product) => this.mapProduct(product));
   }
 
   async findActive() {
@@ -50,6 +66,7 @@ export class ProductsService {
         where: { id },
         data: {
           ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+          ...this.mapFiscalProductData(dto),
           ...(dto.active !== undefined ? { active: dto.active } : {}),
         },
       });
@@ -137,9 +154,44 @@ export class ProductsService {
     }
   }
 
+  private normalizeOptionalText(value?: string | null) {
+    const normalized = value?.trim();
+    return normalized ? normalized : null;
+  }
+
+  private mapFiscalProductData(dto: {
+    unspscCode?: string | null;
+    vatType?: VatType | null;
+    taxCategory?: TaxCategory | null;
+    unitMeasure?: string | null;
+    isService?: boolean;
+    applyInc?: boolean;
+  }) {
+    return {
+      ...(dto.unspscCode !== undefined
+        ? { unspscCode: this.normalizeOptionalText(dto.unspscCode) }
+        : {}),
+      ...(dto.vatType !== undefined ? { vatType: dto.vatType ?? null } : {}),
+      ...(dto.taxCategory !== undefined
+        ? { taxCategory: dto.taxCategory ?? null }
+        : {}),
+      ...(dto.unitMeasure !== undefined
+        ? { unitMeasure: this.normalizeOptionalText(dto.unitMeasure) }
+        : {}),
+      ...(dto.isService !== undefined ? { isService: dto.isService } : {}),
+      ...(dto.applyInc !== undefined ? { applyInc: dto.applyInc } : {}),
+    };
+  }
+
   private mapProduct(product: {
     id: number;
     name: string;
+    unspscCode: string | null;
+    vatType: VatType | null;
+    taxCategory: TaxCategory | null;
+    unitMeasure: string | null;
+    isService: boolean;
+    applyInc: boolean;
     active: boolean;
     variants?: Array<{
       id: number;
@@ -153,6 +205,12 @@ export class ProductsService {
     return {
       id: product.id,
       name: product.name,
+      unspscCode: product.unspscCode,
+      vatType: product.vatType,
+      taxCategory: product.taxCategory,
+      unitMeasure: product.unitMeasure,
+      isService: product.isService,
+      applyInc: product.applyInc,
       active: product.active,
       variants:
         product.variants?.map((variant) => ({
@@ -166,3 +224,4 @@ export class ProductsService {
     };
   }
 }
+

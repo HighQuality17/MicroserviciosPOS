@@ -13,8 +13,13 @@ import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusH
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Textarea } from '@/components/Textarea';
 import { usePermissions } from '@/hooks/usePermissions';
+import {
+  ProductFiscalFieldsSection,
+  type ProductFiscalDraft,
+  taxCategoryLabels,
+  vatTypeLabels,
+} from './ProductFiscalFieldsSection';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { formatCurrency } from '@/utils/format';
@@ -25,7 +30,9 @@ import type {
   CatalogVariant,
   Ingredient,
   IngredientDimension,
+  TaxCategory,
   VariantRecipe,
+  VatType,
 } from '@/types/api';
 
 type RecipeDraftItem = {
@@ -34,6 +41,8 @@ type RecipeDraftItem = {
   unit_code: string;
   persisted: boolean;
 };
+
+type ProductListFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
   WEIGHT: ['g', 'kg'],
@@ -64,9 +73,12 @@ export function ProductsPage() {
   const [loadingRecipe, setLoadingRecipe] = useState(false);
 
   const [productName, setProductName] = useState('');
-  const [productDescription, setProductDescription] = useState('');
-  const [productCategory, setProductCategory] = useState('');
+  const [productFiscalDraft, setProductFiscalDraft] = useState<ProductFiscalDraft>(
+    createEmptyProductFiscalDraft(),
+  );
   const [productActive, setProductActive] = useState(true);
+  const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
+  const [productListFilter, setProductListFilter] = useState<ProductListFilter>('ALL');
 
   const [variantProductId, setVariantProductId] = useState('');
   const [variantSize, setVariantSize] = useState('');
@@ -83,7 +95,11 @@ export function ProductsPage() {
   const [loadedRecipe, setLoadedRecipe] = useState<VariantRecipe | null>(null);
 
   const [editProductName, setEditProductName] = useState('');
+  const [editProductFiscalDraft, setEditProductFiscalDraft] = useState<ProductFiscalDraft>(
+    createEmptyProductFiscalDraft(),
+  );
   const [editProductActive, setEditProductActive] = useState(true);
+  const [editProductFiscalSectionOpen, setEditProductFiscalSectionOpen] = useState(false);
   const [editVariantSize, setEditVariantSize] = useState('');
   const [editVariantSku, setEditVariantSku] = useState('');
   const [editVariantPriceInput, setEditVariantPriceInput] = useState('');
@@ -95,16 +111,29 @@ export function ProductsPage() {
     [ingredients],
   );
 
+  const activeProducts = useMemo(
+    () => products.filter((product) => product.active),
+    [products],
+  );
+
+  const visibleProducts = useMemo(() => {
+    if (productListFilter === 'ACTIVE') return activeProducts;
+    if (productListFilter === 'INACTIVE') {
+      return products.filter((product) => !product.active);
+    }
+    return products;
+  }, [activeProducts, productListFilter, products]);
+
   const enrichedProducts = useMemo(
     () =>
-      products.map((product) => ({
+      visibleProducts.map((product) => ({
         ...product,
         relatedVariants:
           product.variants.length > 0
             ? product.variants
             : variants.filter((variant) => variant.product_id === product.id),
       })),
-    [products, variants],
+    [variants, visibleProducts],
   );
 
   useEffect(() => {
@@ -172,14 +201,15 @@ export function ProductsPage() {
 
       const product = await posApi.createProduct({
         name: productName.trim(),
+        ...serializeProductFiscalDraft(productFiscalDraft),
         active: productActive,
       });
 
       addSessionProduct(product);
       setProductName('');
-      setProductDescription('');
-      setProductCategory('');
+      setProductFiscalDraft(createEmptyProductFiscalDraft());
       setProductActive(true);
+      setProductFiscalSectionOpen(false);
       setMessage(`Producto #${product.id} creado correctamente.`);
       await refreshCatalog();
     } catch (error) {
@@ -245,7 +275,9 @@ export function ProductsPage() {
   function openProductEditor(product: CatalogProduct) {
     setSelectedProduct(product);
     setEditProductName(product.name);
+    setEditProductFiscalDraft(getProductFiscalDraft(product));
     setEditProductActive(product.active);
+    setEditProductFiscalSectionOpen(hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
     setSubmitError(null);
   }
@@ -262,6 +294,7 @@ export function ProductsPage() {
       setSubmitError(null);
       await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
+        ...serializeProductFiscalDraft(editProductFiscalDraft),
         active: editProductActive,
       });
       setProductEditorOpen(false);
@@ -520,7 +553,8 @@ export function ProductsPage() {
   }
 
   const configuredRecipesCount = Object.values(recipeStatusByVariant).filter(Boolean).length;
-  const activeProductsCount = products.filter((product) => product.active).length;
+  const activeProductsCount = activeProducts.length;
+  const inactiveProductsCount = products.length - activeProductsCount;
   const activeVariantsCount = variants.filter((variant) => variant.active).length;
   const catalogStatusTone = catalogAccessDenied
     ? 'danger'
@@ -545,9 +579,11 @@ export function ProductsPage() {
       : 'info';
   const productBadgeLabel = loadingCatalog
     ? 'Sincronizando'
-    : products.length > 0
-      ? 'Catalogo activo'
-      : 'Sin catalogo';
+    : products.length === 0
+      ? 'Sin catalogo'
+      : inactiveProductsCount > 0
+        ? 'Mixto'
+        : 'Catalogo activo';
   const variantBadgeLabel = loadingCatalog
     ? 'Sincronizando'
     : variants.length > 0
@@ -562,6 +598,11 @@ export function ProductsPage() {
         : configuredRecipesCount > 0
           ? 'Cobertura parcial'
           : 'Sin cobertura';
+  const visibleProductsLabel = productListFilter === 'ALL'
+    ? `${products.length} productos en total`
+    : productListFilter === 'ACTIVE'
+      ? `${activeProductsCount} activos visibles`
+      : `${inactiveProductsCount} inactivos visibles`;
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
       <ModuleStatusHeader
@@ -586,7 +627,9 @@ export function ProductsPage() {
               ? 'Sin acceso al catalogo'
               : loadingCatalog
                 ? 'Sincronizando catalogo'
-                : `${activeProductsCount} activos`
+                : inactiveProductsCount > 0
+                  ? `${activeProductsCount} activos | ${inactiveProductsCount} inactivos`
+                  : `${activeProductsCount} activos`
           }
         />
         <ModuleStatusCard
@@ -646,26 +689,50 @@ export function ProductsPage() {
                 placeholder="Latte avellana"
               />
 
-              <Textarea
-                label="Descripción"
-                value={productDescription}
-                onChange={(event) => setProductDescription(event.target.value)}
-                placeholder="Campo visual preparado para la siguiente fase de backend."
-                hint="Aún no se envía al backend. Por ahora solo se persisten nombre y estado."
+              <ProductFiscalFieldsSection
+                open={productFiscalSectionOpen}
+                onOpenChange={(nextOpen) => setProductFiscalSectionOpen(nextOpen)}
+                draft={productFiscalDraft}
+                onUnspscCodeChange={(value) =>
+                  setProductFiscalDraft((current) => ({
+                    ...current,
+                    unspscCode: value,
+                  }))
+                }
+                onVatTypeChange={(value) =>
+                  setProductFiscalDraft((current) => ({
+                    ...current,
+                    vatType: value,
+                  }))
+                }
+                onTaxCategoryChange={(value) =>
+                  setProductFiscalDraft((current) => ({
+                    ...current,
+                    taxCategory: value,
+                  }))
+                }
+                onUnitMeasureChange={(value) =>
+                  setProductFiscalDraft((current) => ({
+                    ...current,
+                    unitMeasure: value,
+                  }))
+                }
+                onIsServiceChange={(value) =>
+                  setProductFiscalDraft((current) => ({
+                    ...current,
+                    isService: value,
+                  }))
+                }
+                onApplyIncChange={(value) =>
+                  setProductFiscalDraft((current) => ({
+                    ...current,
+                    applyInc: value,
+                  }))
+                }
               />
-
-
-              <Input
-                label="Categoría"
-                value={productCategory}
-                onChange={(event) => setProductCategory(event.target.value)}
-                placeholder="Ej: Bebidas"
-                hint="Preparado visualmente para una futura fase de catalogación."
-              />
-
               <CheckboxField
                 label="Activo"
-                description="Se envia al backend en el alta actual."
+                description="Define si el producto estara disponible en el catalogo operativo."
                 checked={productActive}
                 onChange={(event) => setProductActive(event.target.checked)}
               />
@@ -697,9 +764,11 @@ export function ProductsPage() {
                 onChange={(event) => setVariantProductId(event.target.value)}
               >
                 <option value="">
-                  {products.length === 0 ? 'Sin productos cargados' : 'Selecciona un producto'}
+                  {activeProducts.length === 0
+                    ? 'No hay productos activos disponibles'
+                    : 'Selecciona un producto'}
                 </option>
-                {products.map((product) => (
+                {activeProducts.map((product) => (
                   <option key={product.id} value={String(product.id)}>
                     #{product.id} / {product.name}
                   </option>
@@ -760,14 +829,34 @@ export function ProductsPage() {
 
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm theme-text-muted">Listado real</p>
+                <p className="text-sm theme-text-muted">Vista operativa</p>
                 <h2 className="font-display text-2xl font-bold theme-text-strong">Productos</h2>
               </div>
               <Button variant="secondary" onClick={() => void refreshCatalog()}>
                 Refrescar
               </Button>
+            </div>
+
+            <div className="toolbar-shell mt-5 flex flex-col gap-3 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { value: 'ALL', label: 'Todos' },
+                  { value: 'ACTIVE', label: 'Activos' },
+                  { value: 'INACTIVE', label: 'Inactivos' },
+                ] as const).map((filterOption) => (
+                  <Button
+                    key={filterOption.value}
+                    variant={productListFilter === filterOption.value ? 'secondary' : 'ghost'}
+                    className="min-w-[104px]"
+                    onClick={() => setProductListFilter(filterOption.value)}
+                  >
+                    {filterOption.label}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-[color:var(--text-faint)]">{visibleProductsLabel}</p>
             </div>
 
             {loadingCatalog ? (
@@ -781,8 +870,20 @@ export function ProductsPage() {
             ) : enrichedProducts.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
-                  title="Sin productos cargados"
-                  description="Usa el formulario de la izquierda para crear el primer producto del catálogo."
+                  title={
+                    productListFilter === 'INACTIVE'
+                      ? 'Sin productos inactivos'
+                      : productListFilter === 'ACTIVE'
+                        ? 'Sin productos activos'
+                        : 'Sin productos cargados'
+                  }
+                  description={
+                    productListFilter === 'INACTIVE'
+                      ? 'Cuando desactives productos, podras revisarlos y reactivarlos desde aqui.'
+                      : productListFilter === 'ACTIVE'
+                        ? 'Activa un producto existente o crea uno nuevo para verlo en este listado.'
+                        : 'Usa el formulario de la izquierda para crear el primer producto del catalogo.'
+                  }
                 />
               </div>
             ) : (
@@ -790,7 +891,10 @@ export function ProductsPage() {
                 {enrichedProducts.map((product) => (
                   <div
                     key={product.id}
-                    className="data-list-card rounded-3xl p-5"
+                    className={[
+                      'data-list-card rounded-3xl p-5',
+                      product.active ? '' : 'border border-dashed theme-border-soft opacity-90',
+                    ].join(' ')}
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
@@ -802,8 +906,48 @@ export function ProductsPage() {
                           />
                         </div>
                         <p className="mt-2 text-sm text-[color:var(--text-faint)]">
-                          ID {product.id} · {product.relatedVariants.length} variantes asociadas
+                          ID {product.id} | {product.relatedVariants.length} variantes asociadas
                         </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {product.unspscCode ? (
+                            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                              UNSPSC {product.unspscCode}
+                            </span>
+                          ) : null}
+                          {product.vatType ? (
+                            <StatusBadge
+                              label={`IVA ${vatTypeLabels[product.vatType]}`}
+                              tone="info"
+                            />
+                          ) : null}
+                          {product.taxCategory ? (
+                            <StatusBadge
+                              label={taxCategoryLabels[product.taxCategory]}
+                              tone="default"
+                            />
+                          ) : null}
+                          {product.unitMeasure ? (
+                            <span className="soft-pill rounded-full px-3 py-1 text-xs">
+                              UM {product.unitMeasure}
+                            </span>
+                          ) : null}
+                          {product.isService ? (
+                            <StatusBadge label="Servicio" tone="info" />
+                          ) : null}
+                          {product.applyInc ? (
+                            <StatusBadge label="Aplica INC" tone="warning" />
+                          ) : null}
+                          {!hasConfiguredFiscalData(product) ? (
+                            <span className="text-xs text-[color:var(--text-faint)]">
+                              Datos fiscales opcionales sin configurar.
+                            </span>
+                          ) : null}
+                        </div>
+                        {!product.active ? (
+                          <p className="mt-3 text-sm text-[color:var(--text-faint)]">
+                            Producto inactivo. Sigue visible aqui para revisarlo o reactivarlo cuando lo necesites.
+                          </p>
+                        ) : null}
                       </div>
                       {canManageCatalog ? (
                         <div className="flex flex-wrap gap-2">
@@ -827,9 +971,13 @@ export function ProductsPage() {
                         product.relatedVariants.map((variant) => (
                           <span
                             key={variant.id}
-                            className="soft-pill rounded-full px-3 py-1 text-xs"
+                            className={[
+                              'soft-pill rounded-full px-3 py-1 text-xs',
+                              variant.active ? '' : 'opacity-70',
+                            ].join(' ')}
                           >
-                            #{variant.id} · {variant.size} · {variant.sku}
+                            #{variant.id} | {variant.size} | {variant.sku}
+                            {!variant.active ? ' | Inactiva' : ''}
                           </span>
                         ))
                       )}
@@ -1009,7 +1157,7 @@ export function ProductsPage() {
         open={productEditorOpen}
         onClose={() => setProductEditorOpen(false)}
         title="Editar producto"
-        subtitle="Actualiza el nombre visible y el estado comercial del producto."
+        subtitle="Actualiza el nombre, el estado y la preparacion fiscal opcional del producto."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Input
@@ -1018,9 +1166,50 @@ export function ProductsPage() {
             onChange={(event) => setEditProductName(event.target.value)}
             placeholder="Nombre del producto"
           />
+          <ProductFiscalFieldsSection
+            open={editProductFiscalSectionOpen}
+            onOpenChange={(nextOpen) => setEditProductFiscalSectionOpen(nextOpen)}
+            draft={editProductFiscalDraft}
+            onUnspscCodeChange={(value) =>
+              setEditProductFiscalDraft((current) => ({
+                ...current,
+                unspscCode: value,
+              }))
+            }
+            onVatTypeChange={(value) =>
+              setEditProductFiscalDraft((current) => ({
+                ...current,
+                vatType: value,
+              }))
+            }
+            onTaxCategoryChange={(value) =>
+              setEditProductFiscalDraft((current) => ({
+                ...current,
+                taxCategory: value,
+              }))
+            }
+            onUnitMeasureChange={(value) =>
+              setEditProductFiscalDraft((current) => ({
+                ...current,
+                unitMeasure: value,
+              }))
+            }
+            onIsServiceChange={(value) =>
+              setEditProductFiscalDraft((current) => ({
+                ...current,
+                isService: value,
+              }))
+            }
+            onApplyIncChange={(value) =>
+              setEditProductFiscalDraft((current) => ({
+                ...current,
+                applyInc: value,
+              }))
+            }
+          />
           <CheckboxField
             label="Activo"
-            description="Si lo desactivas, dejará de mostrarse en los listados operativos."
+            description="Define si el producto estara disponible en el catalogo operativo."
             checked={editProductActive}
             onChange={(event) => setEditProductActive(event.target.checked)}
           />
@@ -1092,7 +1281,7 @@ export function ProductsPage() {
         title="Gestionar receta"
         subtitle={
           selectedVariant
-            ? `${selectedVariant.product_name} · ${selectedVariant.size} · ${selectedVariant.sku}`
+            ? `${selectedVariant.product_name} | ${selectedVariant.size} | ${selectedVariant.sku}`
             : 'Configura los ingredientes de la variante'
         }
       >
@@ -1202,6 +1391,64 @@ export function ProductsPage() {
   );
 }
 
+function createEmptyProductFiscalDraft(): ProductFiscalDraft {
+  return {
+    unspscCode: '',
+    vatType: '',
+    taxCategory: '',
+    unitMeasure: '',
+    isService: false,
+    applyInc: false,
+  };
+}
+
+function getProductFiscalDraft(product: {
+  unspscCode: string | null;
+  vatType: VatType | null;
+  taxCategory: TaxCategory | null;
+  unitMeasure: string | null;
+  isService: boolean;
+  applyInc: boolean;
+}): ProductFiscalDraft {
+  return {
+    unspscCode: product.unspscCode ?? '',
+    vatType: product.vatType ?? '',
+    taxCategory: product.taxCategory ?? '',
+    unitMeasure: product.unitMeasure ?? '',
+    isService: product.isService,
+    applyInc: product.applyInc,
+  };
+}
+
+function serializeProductFiscalDraft(draft: ProductFiscalDraft) {
+  return {
+    unspscCode: draft.unspscCode.trim() || null,
+    vatType: draft.vatType || null,
+    taxCategory: draft.taxCategory || null,
+    unitMeasure: draft.unitMeasure.trim() || null,
+    isService: draft.isService,
+    applyInc: draft.applyInc,
+  };
+}
+
+function hasConfiguredFiscalData(product: {
+  unspscCode: string | null;
+  vatType: VatType | null;
+  taxCategory: TaxCategory | null;
+  unitMeasure: string | null;
+  isService: boolean;
+  applyInc: boolean;
+}) {
+  return Boolean(
+    product.unspscCode ||
+      product.vatType ||
+      product.taxCategory ||
+      product.unitMeasure ||
+      product.isService ||
+      product.applyInc,
+  );
+}
+
 function createEmptyRecipeDraft(): RecipeDraftItem {
   return {
     ingredient_id: '',
@@ -1234,8 +1481,18 @@ function translateCatalogError(message: string) {
   if (message.includes('qty must be > 0')) {
     return 'Todas las cantidades de la receta deben ser mayores a 0.';
   }
+  if (message === 'unspscCode must be an 8-digit UNSPSC code') {
+    return 'El codigo UNSPSC debe tener exactamente 8 digitos.';
+  }
 
   return message;
 }
+
+
+
+
+
+
+
 
 

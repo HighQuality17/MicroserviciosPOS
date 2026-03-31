@@ -278,6 +278,7 @@ La documentaciÃƒÆ’Ã‚Â³n detallada quedÃƒÆ’Ã‚Â³ organizada en
 - [`docs/deployment.md`](docs/deployment.md): puesta en marcha y despliegue manual
 - [`docs/theme-system.md`](docs/theme-system.md): sistema visual y temas
 - [`docs/stock-adjustment-enhancement.md`](docs/stock-adjustment-enhancement.md): nota tecnica breve de la Fase 3 de movimientos auditados de stock
+- [`docs/dian-fields-preparation.md`](docs/dian-fields-preparation.md): nota tecnica breve de la Fase 2 de preparacion fiscal opcional en productos
 - [`docs/user-flows.md`](docs/user-flows.md): flujos funcionales principales
 - [`docs/changelog-summary.md`](docs/changelog-summary.md): sÃƒÆ’Ã‚Â­ntesis evolutiva del proyecto
 - [`docs/MANUAL_USUARIO.md`](docs/MANUAL_USUARIO.md): manual de operaciÃƒÆ’Ã‚Â³n para usuario final
@@ -339,3 +340,4 @@ Detalle tecnico breve: [docs/module-status-header-updates.md](docs/module-status
   - [`docs/sprints/sprint-7.md`](docs/sprints/sprint-7.md)
   - [`docs/sprints/sprint-8.md`](docs/sprints/sprint-8.md)
   - [`docs/sprints/sprint-9.md`](docs/sprints/sprint-9.md)
+
