@@ -1,14 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
 import {
   Dimension,
+  IngredientMovementReferenceType,
+  IngredientMovementType,
   PaymentMethod,
   SaleItemType,
   SaleStatus,
-} from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+} from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
 
 interface ActivityItem {
-  activity_type: 'SALE' | 'CASH_SESSION' | 'STOCK_ADJUSTMENT';
+  activity_type: "SALE" | "CASH_SESSION" | "STOCK_ADJUSTMENT";
   action: string;
   created_at: Date;
   entity_id: number;
@@ -41,7 +43,7 @@ export class AdminService {
             location: true,
             opener: true,
           },
-          orderBy: { openedAt: 'desc' },
+          orderBy: { openedAt: "desc" },
         }),
         this.prisma.product.count({
           where: { active: true },
@@ -117,7 +119,10 @@ export class AdminService {
       },
     });
 
-    const grouped = new Map<string, { item_type: SaleItemType; ref_id: number; qty_sold: number }>();
+    const grouped = new Map<
+      string,
+      { item_type: SaleItemType; ref_id: number; qty_sold: number }
+    >();
 
     for (const item of saleItems) {
       const key = `${item.itemType}-${item.refId}`;
@@ -146,7 +151,9 @@ export class AdminService {
       }),
     ]);
 
-    const variantById = new Map(variants.map((variant) => [variant.id, variant]));
+    const variantById = new Map(
+      variants.map((variant) => [variant.id, variant]),
+    );
     const comboById = new Map(combos.map((combo) => [combo.id, combo]));
 
     return {
@@ -155,7 +162,7 @@ export class AdminService {
           name:
             item.item_type === SaleItemType.VARIANT
               ? this.formatVariantName(item.ref_id, variantById)
-              : comboById.get(item.ref_id)?.name ?? `Combo ${item.ref_id}`,
+              : (comboById.get(item.ref_id)?.name ?? `Combo ${item.ref_id}`),
           item_type: item.item_type,
           qty_sold: item.qty_sold,
         }))
@@ -170,7 +177,7 @@ export class AdminService {
         ingredient: true,
         location: true,
       },
-      orderBy: [{ ingredient: { name: 'asc' } }],
+      orderBy: [{ ingredient: { name: "asc" } }],
     });
 
     return stocks
@@ -191,10 +198,10 @@ export class AdminService {
   }
 
   async getRecentActivity() {
-    const [recentSales, recentSessions, recentAdjustments] = await Promise.all([
+    const [recentSales, recentSessions, recentMovements] = await Promise.all([
       this.prisma.sale.findMany({
         take: 10,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           location: true,
           cashier: true,
@@ -202,7 +209,7 @@ export class AdminService {
       }),
       this.prisma.cashSession.findMany({
         take: 10,
-        orderBy: { openedAt: 'desc' },
+        orderBy: { openedAt: "desc" },
         include: {
           location: true,
           opener: true,
@@ -211,59 +218,71 @@ export class AdminService {
       this.prisma.ingredientMovement.findMany({
         take: 10,
         where: {
-          type: 'ADJUST',
+          OR: [
+            { referenceType: IngredientMovementReferenceType.MANUAL },
+            { referenceType: null },
+          ],
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           ingredient: true,
           location: true,
-          user: true,
+          adjustedByUser: {
+            select: {
+              name: true,
+            },
+          },
         },
       }),
     ]);
 
     const salesActivity: ActivityItem[] = recentSales.map((sale) => ({
-      activity_type: 'SALE',
-      action: sale.status === SaleStatus.PAID ? 'SALE_PAID' : 'SALE_CREATED',
+      activity_type: "SALE",
+      action: sale.status === SaleStatus.PAID ? "SALE_PAID" : "SALE_CREATED",
       created_at: sale.createdAt,
       entity_id: sale.id,
       title: `Venta #${sale.id}`,
       subtitle: `${sale.location.name} · ${sale.cashier.name} · ${Number(sale.total)}`,
     }));
 
-    const sessionActivity: ActivityItem[] = recentSessions.flatMap((session) => {
-      const items: ActivityItem[] = [
-        {
-          activity_type: 'CASH_SESSION',
-          action: 'CASH_OPENED',
-          created_at: session.openedAt,
-          entity_id: session.id,
-          title: `Caja #${session.id} abierta`,
-          subtitle: `${session.location.name} · ${session.opener.name}`,
-        },
-      ];
+    const sessionActivity: ActivityItem[] = recentSessions.flatMap(
+      (session) => {
+        const items: ActivityItem[] = [
+          {
+            activity_type: "CASH_SESSION",
+            action: "CASH_OPENED",
+            created_at: session.openedAt,
+            entity_id: session.id,
+            title: `Caja #${session.id} abierta`,
+            subtitle: `${session.location.name} · ${session.opener.name}`,
+          },
+        ];
 
-      if (session.closedAt) {
-        items.push({
-          activity_type: 'CASH_SESSION',
-          action: 'CASH_CLOSED',
-          created_at: session.closedAt,
-          entity_id: session.id,
-          title: `Caja #${session.id} cerrada`,
-          subtitle: `${session.location.name} · esperado ${Number(session.closingCashExpected ?? 0)}`,
-        });
-      }
+        if (session.closedAt) {
+          items.push({
+            activity_type: "CASH_SESSION",
+            action: "CASH_CLOSED",
+            created_at: session.closedAt,
+            entity_id: session.id,
+            title: `Caja #${session.id} cerrada`,
+            subtitle: `${session.location.name} · esperado ${Number(session.closingCashExpected ?? 0)}`,
+          });
+        }
 
-      return items;
-    });
+        return items;
+      },
+    );
 
-    const stockActivity: ActivityItem[] = recentAdjustments.map((movement) => ({
-      activity_type: 'STOCK_ADJUSTMENT',
-      action: 'STOCK_ADJUSTED',
+    const stockActivity: ActivityItem[] = recentMovements.map((movement) => ({
+      activity_type: "STOCK_ADJUSTMENT",
+      action: this.resolveMovementAction(movement.movementType),
       created_at: movement.createdAt,
       entity_id: movement.id,
-      title: `Ajuste de ${movement.ingredient.name}`,
-      subtitle: `${movement.location.name} · ${movement.user.name} · ${Number(movement.qtyBase)}`,
+      title: this.resolveMovementTitle(
+        movement.movementType,
+        movement.ingredient.name,
+      ),
+      subtitle: `${movement.location.name} · ${movement.adjustedByUser.name} · ${this.formatMovementDelta(movement.movementType, Number(movement.qtyBase))}`,
     }));
 
     return {
@@ -299,6 +318,46 @@ export class AdminService {
     variants: Map<number, { product: { name: string }; size: string }>,
   ) {
     const variant = variants.get(variantId);
-    return variant ? `${variant.product.name} ${variant.size}` : `Variant ${variantId}`;
+    return variant
+      ? `${variant.product.name} ${variant.size}`
+      : `Variant ${variantId}`;
+  }
+
+  private resolveMovementAction(movementType: IngredientMovementType) {
+    if (movementType === IngredientMovementType.ENTRY) {
+      return "STOCK_ENTRY_CREATED";
+    }
+
+    if (movementType === IngredientMovementType.EXIT) {
+      return "STOCK_EXIT_CREATED";
+    }
+
+    return "STOCK_ADJUSTED";
+  }
+
+  private resolveMovementTitle(
+    movementType: IngredientMovementType,
+    ingredientName: string,
+  ) {
+    if (movementType === IngredientMovementType.ENTRY) {
+      return `Entrada de ${ingredientName}`;
+    }
+
+    if (movementType === IngredientMovementType.EXIT) {
+      return `Salida de ${ingredientName}`;
+    }
+
+    return `Ajuste de ${ingredientName}`;
+  }
+
+  private formatMovementDelta(
+    movementType: IngredientMovementType,
+    qtyBase: number,
+  ) {
+    if (movementType === IngredientMovementType.ADJUSTMENT) {
+      return `${qtyBase >= 0 ? "+" : ""}${qtyBase}`;
+    }
+
+    return `${movementType === IngredientMovementType.EXIT ? "-" : "+"}${qtyBase}`;
   }
 }
