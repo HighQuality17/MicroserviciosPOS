@@ -35,7 +35,17 @@ export type IngredientMovementReasonCode =
   | "PHYSICAL_COUNT"
   | "ADMIN_CORRECTION";
 export type IngredientMovementReferenceType = "MANUAL" | "SALE";
-
+export type VatType =
+  | "ZERO"
+  | "EXEMPT"
+  | "FIVE"
+  | "NINETEEN"
+  | "NOT_APPLICABLE";
+export type TaxCategory =
+  | "TAXED"
+  | "EXEMPT"
+  | "EXCLUDED"
+  | "NOT_SUBJECT";
 export interface User {
   id: number;
   name: string;
@@ -61,6 +71,12 @@ export interface Location {
 export interface Product {
   id: number;
   name: string;
+  unspscCode: string | null;
+  vatType: VatType | null;
+  taxCategory: TaxCategory | null;
+  unitMeasure: string | null;
+  isService: boolean;
+  applyInc: boolean;
   active: boolean;
   variants?: CatalogVariant[];
 }
@@ -313,6 +329,12 @@ export interface CatalogCombo {
 export interface CatalogProduct {
   id: number;
   name: string;
+  unspscCode: string | null;
+  vatType: VatType | null;
+  taxCategory: TaxCategory | null;
+  unitMeasure: string | null;
+  isService: boolean;
+  applyInc: boolean;
   active: boolean;
   variants: Array<{
     id: number;
@@ -388,3 +410,4 @@ export interface AdminRecentActivityItem {
 export interface AdminRecentActivityResponse {
   items: AdminRecentActivityItem[];
 }
+

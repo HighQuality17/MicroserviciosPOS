@@ -140,11 +140,50 @@ export const posApi = {
     unwrap<CashCurrentResponse>(
       api.get("/cash/current", { params: { location_id: locationId } }),
     ),
-  createProduct: (payload: { name: string; active?: boolean }) =>
-    unwrap<Product>(api.post("/products", payload)),
+  createProduct: (payload: {
+    name: string;
+    unspscCode?: string | null;
+    vatType?:
+      | "ZERO"
+      | "EXEMPT"
+      | "FIVE"
+      | "NINETEEN"
+      | "NOT_APPLICABLE"
+      | null;
+    taxCategory?:
+      | "TAXED"
+      | "EXEMPT"
+      | "EXCLUDED"
+      | "NOT_SUBJECT"
+      | null;
+    unitMeasure?: string | null;
+    isService?: boolean;
+    applyInc?: boolean;
+    active?: boolean;
+  }) => unwrap<Product>(api.post("/products", payload)),
   updateProduct: (
     productId: number,
-    payload: { name?: string; active?: boolean },
+    payload: {
+      name?: string;
+      unspscCode?: string | null;
+      vatType?:
+        | "ZERO"
+        | "EXEMPT"
+        | "FIVE"
+        | "NINETEEN"
+        | "NOT_APPLICABLE"
+        | null;
+      taxCategory?:
+        | "TAXED"
+        | "EXEMPT"
+        | "EXCLUDED"
+        | "NOT_SUBJECT"
+        | null;
+      unitMeasure?: string | null;
+      isService?: boolean;
+      applyInc?: boolean;
+      active?: boolean;
+    },
   ) => unwrap<Product>(api.patch(`/products/${productId}`, payload)),
   updateProductStatus: (productId: number, payload: { active: boolean }) =>
     unwrap<Product>(api.patch(`/products/${productId}/status`, payload)),
@@ -291,4 +330,5 @@ export const posApi = {
   getSaleReceipt: (saleId: number) =>
     unwrap<SaleReceipt>(api.get(`/sales/${saleId}/receipt`)),
 };
+
 
