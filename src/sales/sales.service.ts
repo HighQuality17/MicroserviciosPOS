@@ -2,22 +2,22 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   Combo,
   DiscountType,
-  IngredientMovementType,
   PaymentMethod,
   Prisma,
   ProductVariant,
   SaleItemType,
   SaleStatus,
-} from '@prisma/client';
-import { round } from '../common/utils/number.util';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateSaleDto } from './dto/create-sale.dto';
-import { GetSalesQueryDto } from './dto/get-sales-query.dto';
-import { PaySaleDto } from './dto/pay-sale.dto';
+} from "@prisma/client";
+import { round } from "../common/utils/number.util";
+import { StockService } from "../stock/stock.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateSaleDto } from "./dto/create-sale.dto";
+import { GetSalesQueryDto } from "./dto/get-sales-query.dto";
+import { PaySaleDto } from "./dto/pay-sale.dto";
 
 interface ExpandedVariantNeed {
   variantId: number;
@@ -104,7 +104,7 @@ type SaleWithSummaryRelations = Prisma.SaleGetPayload<{
   include: {
     payments: {
       orderBy: {
-        id: 'desc';
+        id: "desc";
       };
       take: 1;
     };
@@ -115,24 +115,29 @@ type SaleWithSummaryRelations = Prisma.SaleGetPayload<{
 
 @Injectable()
 export class SalesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stockService: StockService,
+  ) {}
 
   async create(dto: CreateSaleDto) {
     const [location, cashier, cashSession] = await Promise.all([
       this.prisma.location.findUnique({ where: { id: dto.location_id } }),
       this.prisma.user.findUnique({ where: { id: dto.cashier_id } }),
-      this.prisma.cashSession.findUnique({ where: { id: dto.cash_session_id } }),
+      this.prisma.cashSession.findUnique({
+        where: { id: dto.cash_session_id },
+      }),
     ]);
 
-    if (!location) throw new NotFoundException('Location not found');
-    if (!cashier) throw new NotFoundException('Cashier user not found');
-    if (!cashSession) throw new NotFoundException('Cash session not found');
+    if (!location) throw new NotFoundException("Location not found");
+    if (!cashier) throw new NotFoundException("Cashier user not found");
+    if (!cashSession) throw new NotFoundException("Cash session not found");
     if (cashSession.closedAt) {
-      throw new BadRequestException('Cash session is closed');
+      throw new BadRequestException("Cash session is closed");
     }
     if (cashSession.locationId !== dto.location_id) {
       throw new BadRequestException(
-        'cash_session_id does not belong to location_id',
+        "cash_session_id does not belong to location_id",
       );
     }
 
@@ -195,13 +200,13 @@ export class SalesService {
       }),
     ]);
 
-    if (!user) throw new NotFoundException('User not found');
-    if (!sale) throw new NotFoundException('Sale not found');
+    if (!user) throw new NotFoundException("User not found");
+    if (!sale) throw new NotFoundException("Sale not found");
     if (sale.status !== SaleStatus.PENDING) {
-      throw new BadRequestException('Sale is not pending');
+      throw new BadRequestException("Sale is not pending");
     }
     if (sale.cashSession.closedAt) {
-      throw new BadRequestException('Cannot pay sale in a closed cash session');
+      throw new BadRequestException("Cannot pay sale in a closed cash session");
     }
 
     const total = Number(sale.total);
@@ -228,41 +233,12 @@ export class SalesService {
       });
 
       for (const need of ingredientNeeds) {
-        const current = await tx.ingredientStock.findUnique({
-          where: {
-            ingredientId_locationId: {
-              ingredientId: need.ingredientId,
-              locationId: sale.locationId,
-            },
-          },
-        });
-        const nextQty = round(Number(current?.qtyOnHandBase ?? 0) - need.qtyBase, 3);
-
-        await tx.ingredientStock.upsert({
-          where: {
-            ingredientId_locationId: {
-              ingredientId: need.ingredientId,
-              locationId: sale.locationId,
-            },
-          },
-          update: { qtyOnHandBase: nextQty },
-          create: {
-            ingredientId: need.ingredientId,
-            locationId: sale.locationId,
-            qtyOnHandBase: nextQty,
-          },
-        });
-
-        await tx.ingredientMovement.create({
-          data: {
-            ingredientId: need.ingredientId,
-            locationId: sale.locationId,
-            type: IngredientMovementType.OUT,
-            qtyBase: need.qtyBase,
-            reason: 'SALE_PAYMENT',
-            refSaleId: sale.id,
-            userId: dto.user_id,
-          },
+        await this.stockService.createSaleExit(tx, {
+          ingredientId: need.ingredientId,
+          locationId: sale.locationId,
+          adjustedByUserId: dto.user_id,
+          qtyBase: need.qtyBase,
+          referenceId: sale.id,
         });
       }
 
@@ -274,8 +250,8 @@ export class SalesService {
       await tx.auditLog.create({
         data: {
           userId: dto.user_id,
-          action: 'SALE_PAID',
-          entity: 'sale',
+          action: "SALE_PAID",
+          entity: "sale",
           entityId: sale.id,
           metadataJson: JSON.stringify({
             sale_id: sale.id,
@@ -298,7 +274,7 @@ export class SalesService {
 
   async receipt(id: number) {
     const sale = await this.findSaleForReceipt(id);
-    if (!sale) throw new NotFoundException('Sale not found');
+    if (!sale) throw new NotFoundException("Sale not found");
 
     return this.buildReceiptResponse(sale);
   }
@@ -311,12 +287,12 @@ export class SalesService {
       this.prisma.sale.count({ where }),
       this.prisma.sale.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip,
         take: query.limit,
         include: {
           payments: {
-            orderBy: { id: 'desc' },
+            orderBy: { id: "desc" },
             take: 1,
           },
           location: true,
@@ -336,11 +312,11 @@ export class SalesService {
 
   async recent(limit = 5): Promise<RecentSalesResponse> {
     const sales = await this.prisma.sale.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: limit,
       include: {
         payments: {
-          orderBy: { id: 'desc' },
+          orderBy: { id: "desc" },
           take: 1,
         },
         location: true,
@@ -355,7 +331,7 @@ export class SalesService {
 
   async latest() {
     const sale = await this.prisma.sale.findFirst({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         items: true,
         payments: true,
@@ -376,7 +352,7 @@ export class SalesService {
     };
   }
 
-  private async priceSaleItems(items: CreateSaleDto['items']) {
+  private async priceSaleItems(items: CreateSaleDto["items"]) {
     const variantIds = items
       .filter((item) => item.item_type === SaleItemType.VARIANT)
       .map((item) => item.ref_id);
@@ -393,7 +369,9 @@ export class SalesService {
       }),
     ]);
 
-    const variantById = new Map(variants.map((variant) => [variant.id, variant]));
+    const variantById = new Map(
+      variants.map((variant) => [variant.id, variant]),
+    );
     const comboById = new Map(combos.map((combo) => [combo.id, combo]));
 
     return items.map((item) => {
@@ -442,7 +420,9 @@ export class SalesService {
     throw new BadRequestException(`Unsupported item_type ${itemType}`);
   }
 
-  private async buildReceiptItems(items: SaleItemRecord[]): Promise<SaleReceiptItem[]> {
+  private async buildReceiptItems(
+    items: SaleItemRecord[],
+  ): Promise<SaleReceiptItem[]> {
     const variantIds = items
       .filter((item) => item.itemType === SaleItemType.VARIANT)
       .map((item) => item.refId);
@@ -460,7 +440,9 @@ export class SalesService {
       }),
     ]);
 
-    const variantById = new Map(variants.map((variant) => [variant.id, variant]));
+    const variantById = new Map(
+      variants.map((variant) => [variant.id, variant]),
+    );
     const comboById = new Map(combos.map((combo) => [combo.id, combo]));
 
     return items.map((item) => ({
@@ -470,7 +452,7 @@ export class SalesService {
       description:
         item.itemType === SaleItemType.VARIANT
           ? this.getVariantDescription(item.refId, variantById)
-          : comboById.get(item.refId)?.name ?? `Combo ${item.refId}`,
+          : (comboById.get(item.refId)?.name ?? `Combo ${item.refId}`),
       qty: Number(item.qty),
       unit_price: Number(item.unitPrice),
       line_total: Number(item.lineTotal),
@@ -482,7 +464,9 @@ export class SalesService {
     variantById: Map<number, ProductVariant & { product: { name: string } }>,
   ) {
     const variant = variantById.get(refId);
-    return variant ? `${variant.product.name} ${variant.size}` : `Variant ${refId}`;
+    return variant
+      ? `${variant.product.name} ${variant.size}`
+      : `Variant ${refId}`;
   }
 
   private async findSaleForReceipt(id: number) {
@@ -524,7 +508,9 @@ export class SalesService {
     };
   }
 
-  private buildRecentSaleSummary(sale: SaleWithSummaryRelations): SaleRecentItem {
+  private buildRecentSaleSummary(
+    sale: SaleWithSummaryRelations,
+  ): SaleRecentItem {
     const payment = sale.payments[0] ?? null;
 
     return {
@@ -599,7 +585,9 @@ export class SalesService {
         createdAt.lte instanceof Date &&
         createdAt.gte > createdAt.lte
       ) {
-        throw new BadRequestException('date_from cannot be greater than date_to');
+        throw new BadRequestException(
+          "date_from cannot be greater than date_to",
+        );
       }
 
       where.createdAt = createdAt;
@@ -614,14 +602,14 @@ export class SalesService {
     discountValue: number,
   ): number {
     if (discountValue < 0) {
-      throw new BadRequestException('discount_value must be >= 0');
+      throw new BadRequestException("discount_value must be >= 0");
     }
 
     if (discountType === DiscountType.NONE) return 0;
 
     if (discountType === DiscountType.PERCENT) {
       if (discountValue > 100) {
-        throw new BadRequestException('PERCENT discount cannot exceed 100');
+        throw new BadRequestException("PERCENT discount cannot exceed 100");
       }
       return round(subtotal * (discountValue / 100), 2);
     }
@@ -630,7 +618,7 @@ export class SalesService {
       return round(Math.min(discountValue, subtotal), 2);
     }
 
-    throw new BadRequestException('Unsupported discount_type');
+    throw new BadRequestException("Unsupported discount_type");
   }
 
   private computePaymentFields(
@@ -640,7 +628,7 @@ export class SalesService {
   ) {
     if (method === PaymentMethod.CASH) {
       if (amountReceived < total) {
-        throw new BadRequestException('CASH amount_received must be >= total');
+        throw new BadRequestException("CASH amount_received must be >= total");
       }
       return {
         amountApplied: total,
@@ -651,7 +639,7 @@ export class SalesService {
     if (method === PaymentMethod.TRANSFER) {
       if (amountReceived < total) {
         throw new BadRequestException(
-          'TRANSFER amount_received must be >= total',
+          "TRANSFER amount_received must be >= total",
         );
       }
       return {
@@ -660,7 +648,7 @@ export class SalesService {
       };
     }
 
-    throw new BadRequestException('Unsupported payment method');
+    throw new BadRequestException("Unsupported payment method");
   }
 
   private async computeIngredientNeedsFromSaleItems(items: SaleItemRecord[]) {
@@ -712,8 +700,12 @@ export class SalesService {
 
   private async expandSaleItemsToVariants(items: SaleItemRecord[]) {
     const variantNeeds: ExpandedVariantNeed[] = [];
-    const comboItems = items.filter((item) => item.itemType === SaleItemType.COMBO);
-    const variantItems = items.filter((item) => item.itemType === SaleItemType.VARIANT);
+    const comboItems = items.filter(
+      (item) => item.itemType === SaleItemType.COMBO,
+    );
+    const variantItems = items.filter(
+      (item) => item.itemType === SaleItemType.VARIANT,
+    );
 
     for (const item of variantItems) {
       variantNeeds.push({
@@ -738,7 +730,9 @@ export class SalesService {
     for (const comboSaleItem of comboItems) {
       const combo = comboById.get(comboSaleItem.refId);
       if (!combo || !combo.active) {
-        throw new BadRequestException(`Combo ${comboSaleItem.refId} is invalid/inactive`);
+        throw new BadRequestException(
+          `Combo ${comboSaleItem.refId} is invalid/inactive`,
+        );
       }
       if (combo.items.length === 0) {
         throw new BadRequestException(
@@ -797,5 +791,3 @@ export class SalesService {
     }
   }
 }
-
-

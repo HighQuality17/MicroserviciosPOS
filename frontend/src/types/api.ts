@@ -1,4 +1,4 @@
-import type { ThemeName } from '@/theme/theme';
+import type { ThemeName } from "@/theme/theme";
 
 export interface ApiResponse<T> {
   success: true;
@@ -16,11 +16,25 @@ export interface ApiErrorResponse {
   };
 }
 
-export type UserRole = 'ADMIN' | 'CASHIER' | 'AUDITOR';
-export type DiscountType = 'NONE' | 'PERCENT' | 'FIXED';
-export type PaymentMethod = 'CASH' | 'TRANSFER';
-export type SaleItemType = 'VARIANT' | 'COMBO';
-export type IngredientDimension = 'WEIGHT' | 'VOLUME' | 'COUNT';
+export type UserRole = "ADMIN" | "CASHIER" | "AUDITOR";
+export type DiscountType = "NONE" | "PERCENT" | "FIXED";
+export type PaymentMethod = "CASH" | "TRANSFER";
+export type SaleItemType = "VARIANT" | "COMBO";
+export type IngredientDimension = "WEIGHT" | "VOLUME" | "COUNT";
+export type IngredientMovementType = "ENTRY" | "EXIT" | "ADJUSTMENT";
+export type IngredientMovementReasonCode =
+  | "PURCHASE"
+  | "INITIAL_LOAD"
+  | "SUPPLIER_RETURN"
+  | "POSITIVE_ADJUSTMENT"
+  | "WASTE"
+  | "DAMAGE"
+  | "INTERNAL_USE"
+  | "EXPIRATION"
+  | "NEGATIVE_ADJUSTMENT"
+  | "PHYSICAL_COUNT"
+  | "ADMIN_CORRECTION";
+export type IngredientMovementReferenceType = "MANUAL" | "SALE";
 
 export interface User {
   id: number;
@@ -113,6 +127,58 @@ export interface StockListResponse {
   items: StockListItem[];
 }
 
+export interface StockAdjustmentUser {
+  id: number;
+  name: string;
+  role: UserRole;
+}
+
+export interface StockAdjustmentSale {
+  id: number;
+  status: string;
+  total: number | string;
+  createdAt: string;
+}
+
+export interface StockAdjustmentItem {
+  id: number;
+  ingredientId: number;
+  locationId: number;
+  movementType: IngredientMovementType;
+  qtyBase: number | string;
+  notes: string | null;
+  referenceType: IngredientMovementReferenceType | null;
+  referenceId: number | null;
+  createdAt: string;
+  adjustedByUserId: number;
+  reasonCode: IngredientMovementReasonCode | null;
+  supportDocument: string | null;
+  unitCostAtTime: number | string | null;
+  batchNumber: string | null;
+  previousStock: number | string | null;
+  newStock: number | string | null;
+  countedStock: number | string | null;
+  ingredient: Ingredient;
+  location: Location;
+  adjustedByUser: StockAdjustmentUser;
+  sale: StockAdjustmentSale | null;
+}
+
+export interface StockAdjustmentMutationResponse {
+  stock: {
+    ingredientId: number;
+    locationId: number;
+    qtyOnHandBase: number | string;
+  };
+  movement: StockAdjustmentItem;
+}
+
+export interface StockAdjustmentsResponse {
+  items: StockAdjustmentItem[];
+  total: number;
+  limit: number;
+}
+
 export interface Sale {
   id: number;
   subtotal: number | string;
@@ -138,7 +204,7 @@ export interface SaleReceipt {
   sale_id: number;
   created_at: string;
   location: Location;
-  cashier: Pick<User, 'id' | 'name'>;
+  cashier: Pick<User, "id" | "name">;
   items: SaleReceiptItem[];
   subtotal: number;
   discount_type: DiscountType;
@@ -159,7 +225,7 @@ export interface SaleRecentItem {
   amount_received: number | null;
   change_given: number | null;
   location: Location;
-  cashier: Pick<User, 'id' | 'name'>;
+  cashier: Pick<User, "id" | "name">;
 }
 
 export interface RecentSalesResponse {
@@ -311,7 +377,7 @@ export interface AdminLowStockItem {
 }
 
 export interface AdminRecentActivityItem {
-  activity_type: 'SALE' | 'CASH_SESSION' | 'STOCK_ADJUSTMENT';
+  activity_type: "SALE" | "CASH_SESSION" | "STOCK_ADJUSTMENT";
   action: string;
   created_at: string;
   entity_id: number;
@@ -322,5 +388,3 @@ export interface AdminRecentActivityItem {
 export interface AdminRecentActivityResponse {
   items: AdminRecentActivityItem[];
 }
-
-
