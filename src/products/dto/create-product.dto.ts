@@ -1,10 +1,47 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { TaxCategory, VatType } from '@prisma/client';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
   name!: string;
+
+  @IsString()
+  @Matches(/^\d{8}$/, {
+    message: 'unspscCode must be an 8-digit UNSPSC code',
+  })
+  @IsOptional()
+  unspscCode?: string | null;
+
+  @IsEnum(VatType)
+  @IsOptional()
+  vatType?: VatType | null;
+
+  @IsEnum(TaxCategory)
+  @IsOptional()
+  taxCategory?: TaxCategory | null;
+
+  @IsString()
+  @MaxLength(20)
+  @IsOptional()
+  unitMeasure?: string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  isService?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  applyInc?: boolean;
 
   @IsBoolean()
   @IsOptional()

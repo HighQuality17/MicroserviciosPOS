@@ -20,11 +20,44 @@ enum Dimension {
 }
 
 enum IngredientMovementType {
-  IN
-  OUT
-  ADJUST
+  ENTRY
+  EXIT
+  ADJUSTMENT
 }
 
+enum IngredientMovementReasonCode {
+  PURCHASE
+  INITIAL_LOAD
+  SUPPLIER_RETURN
+  POSITIVE_ADJUSTMENT
+  WASTE
+  DAMAGE
+  INTERNAL_USE
+  EXPIRATION
+  NEGATIVE_ADJUSTMENT
+  PHYSICAL_COUNT
+  ADMIN_CORRECTION
+}
+
+enum IngredientMovementReferenceType {
+  MANUAL
+  SALE
+}
+
+enum VatType {
+  ZERO
+  EXEMPT
+  FIVE
+  NINETEEN
+  NOT_APPLICABLE
+}
+
+enum TaxCategory {
+  TAXED
+  EXEMPT
+  EXCLUDED
+  NOT_SUBJECT
+}
 enum SaleItemType {
   VARIANT
   COMBO
@@ -100,26 +133,44 @@ model IngredientStock {
 }
 
 model IngredientMovement {
-  id            Int                    @id @default(autoincrement())
-  ingredientId  Int
-  locationId    Int
-  type          IngredientMovementType
-  qtyBase       Decimal
-  reason        String?
-  refSaleId     Int?
-  createdAt     DateTime               @default(now())
-  userId        Int
-  ingredient    Ingredient             @relation(fields: [ingredientId], references: [id])
-  location      Location               @relation(fields: [locationId], references: [id])
-  user          User                   @relation(fields: [userId], references: [id])
-  sale          Sale?                  @relation(fields: [refSaleId], references: [id])
+  id               Int                             @id @default(autoincrement())
+  ingredientId     Int
+  locationId       Int
+  movementType     IngredientMovementType          @map("type")
+  qtyBase          Decimal
+  notes            String?                         @map("reason")
+  referenceType    IngredientMovementReferenceType?
+  referenceId      Int?                            @map("refSaleId")
+  createdAt        DateTime                        @default(now())
+  adjustedByUserId Int                             @map("userId")
+  reasonCode       IngredientMovementReasonCode?
+  supportDocument  String?
+  unitCostAtTime   Decimal?
+  batchNumber      String?
+  previousStock    Decimal?
+  newStock         Decimal?
+  countedStock     Decimal?
+  ingredient       Ingredient                      @relation(fields: [ingredientId], references: [id])
+  location         Location                        @relation(fields: [locationId], references: [id])
+  adjustedByUser   User                            @relation(fields: [adjustedByUserId], references: [id])
+  sale             Sale?                           @relation(fields: [referenceId], references: [id])
+
+  @@index([locationId, createdAt])
+  @@index([ingredientId, createdAt])
+  @@index([referenceType, referenceId])
 }
 
 model Product {
-  id        Int              @id @default(autoincrement())
-  name      String           @unique
-  active    Boolean          @default(true)
-  variants  ProductVariant[]
+  id           Int              @id @default(autoincrement())
+  name         String           @unique
+  unspscCode   String?
+  vatType      VatType?
+  taxCategory  TaxCategory?
+  unitMeasure  String?
+  isService    Boolean          @default(false)
+  applyInc     Boolean          @default(false)
+  active       Boolean          @default(true)
+  variants     ProductVariant[]
 }
 
 model ProductVariant {
@@ -226,3 +277,5 @@ model AuditLog {
   metadataJson String
   user         User      @relation(fields: [userId], references: [id])
 }
+
+

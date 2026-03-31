@@ -31,8 +31,8 @@ export class ProductsController {
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.AUDITOR)
-  findActive() {
-    return this.productsService.findActive();
+  findAll() {
+    return this.productsService.findAll();
   }
 
   @Patch(':id')
