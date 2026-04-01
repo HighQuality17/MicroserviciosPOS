@@ -1,11 +1,16 @@
-﻿import {
+import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SaleItemType, TaxCategory, VatType } from '@prisma/client';
+import { Prisma, ProductType, SaleItemType, TaxCategory, VatType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  ensureOperationalVariantForSimpleProduct,
+  ensureOperationalVariantsForSimpleProducts,
+  isOperationalVariantProduct,
+} from './operational-variant.util';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductStatusDto } from './dto/update-product-status.dto';
@@ -16,21 +21,40 @@ export class ProductsService {
 
   async create(dto: CreateProductDto) {
     try {
-      const product = await this.prisma.product.create({
-        data: {
-          name: dto.name.trim(),
-          ...this.mapFiscalProductData(dto),
-          active: dto.active ?? true,
-        },
+      const product = await this.prisma.$transaction(async (tx) => {
+        const createdProduct = await tx.product.create({
+          data: {
+            name: dto.name.trim(),
+            productType: dto.productType ?? ProductType.SIMPLE,
+            ...this.mapCommercialProductData(dto),
+            ...this.mapFiscalProductData(dto),
+            active: dto.active ?? true,
+          },
+        });
+
+        if (createdProduct.productType === ProductType.SIMPLE) {
+          await ensureOperationalVariantForSimpleProduct(tx, createdProduct.id);
+        }
+
+        return tx.product.findUniqueOrThrow({
+          where: { id: createdProduct.id },
+          include: {
+            variants: {
+              orderBy: [{ size: 'asc' }, { id: 'asc' }],
+            },
+          },
+        });
       });
 
       return this.mapProduct(product);
-    } catch {
-      throw new ConflictException('Product name already exists');
+    } catch (error) {
+      this.handleProductWriteError(error);
     }
   }
 
   async findAll() {
+    await ensureOperationalVariantsForSimpleProducts(this.prisma);
+
     const products = await this.prisma.product.findMany({
       include: {
         variants: {
@@ -44,6 +68,8 @@ export class ProductsService {
   }
 
   async findActive() {
+    await ensureOperationalVariantsForSimpleProducts(this.prisma);
+
     const products = await this.prisma.product.findMany({
       where: { active: true },
       include: {
@@ -59,30 +85,85 @@ export class ProductsService {
   }
 
   async update(id: number, dto: UpdateProductDto) {
-    await this.ensureProductExists(id);
+    const currentProduct = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: {
+          select: { id: true },
+          take: 2,
+        },
+      },
+    });
+
+    if (!currentProduct) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const nextProductType = dto.productType ?? currentProduct.productType;
+    if (
+      currentProduct.productType !== nextProductType &&
+      nextProductType === ProductType.SIMPLE &&
+      currentProduct.variants.length > 1
+    ) {
+      throw new BadRequestException(
+        'Product with multiple variants cannot be converted to SIMPLE',
+      );
+    }
 
     try {
-      const product = await this.prisma.product.update({
-        where: { id },
-        data: {
-          ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
-          ...this.mapFiscalProductData(dto),
-          ...(dto.active !== undefined ? { active: dto.active } : {}),
-        },
+      const product = await this.prisma.$transaction(async (tx) => {
+        await tx.product.update({
+          where: { id },
+          data: {
+            ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+            ...(dto.productType !== undefined ? { productType: dto.productType } : {}),
+            ...this.mapCommercialProductData(dto),
+            ...this.mapFiscalProductData(dto),
+            ...(dto.active !== undefined ? { active: dto.active } : {}),
+          },
+        });
+
+        if (nextProductType === ProductType.SIMPLE) {
+          await ensureOperationalVariantForSimpleProduct(tx, id);
+        }
+
+        return tx.product.findUniqueOrThrow({
+          where: { id },
+          include: {
+            variants: {
+              orderBy: [{ size: 'asc' }, { id: 'asc' }],
+            },
+          },
+        });
       });
 
       return this.mapProduct(product);
-    } catch {
-      throw new ConflictException('Product name already exists');
+    } catch (error) {
+      this.handleProductWriteError(error);
     }
   }
 
   async updateStatus(id: number, dto: UpdateProductStatusDto) {
     await this.ensureProductExists(id);
 
-    const product = await this.prisma.product.update({
-      where: { id },
-      data: { active: dto.active },
+    const product = await this.prisma.$transaction(async (tx) => {
+      const updatedProduct = await tx.product.update({
+        where: { id },
+        data: { active: dto.active },
+      });
+
+      if (updatedProduct.productType === ProductType.SIMPLE) {
+        await ensureOperationalVariantForSimpleProduct(tx, id);
+      }
+
+      return tx.product.findUniqueOrThrow({
+        where: { id },
+        include: {
+          variants: {
+            orderBy: [{ size: 'asc' }, { id: 'asc' }],
+          },
+        },
+      });
     });
 
     return this.mapProduct(product);
@@ -128,6 +209,34 @@ export class ProductsService {
         );
       }
 
+      if (isOperationalVariantProduct(product.productType) && product.variants.length === 1) {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.variantRecipeItem.deleteMany({
+            where: { variantId: product.variants[0].id },
+          });
+
+          await tx.productVariant.delete({
+            where: { id: product.variants[0].id },
+          });
+
+          await tx.product.delete({
+            where: { id },
+          });
+        });
+
+        return {
+          id,
+          deleted: true,
+          message: 'Product deleted successfully',
+        };
+      }
+
+      if (isOperationalVariantProduct(product.productType)) {
+        throw new BadRequestException(
+          'Simple product has multiple operational variants configured. Resolve them before deleting the product.',
+        );
+      }
+
       throw new BadRequestException(
         'Product has variants configured. Delete or deactivate its variants before deleting the product.',
       );
@@ -159,6 +268,30 @@ export class ProductsService {
     return normalized ? normalized : null;
   }
 
+  private mapCommercialProductData(dto: {
+    internalCode?: string | null;
+    barcode?: string | null;
+    supplierReference?: string | null;
+    description?: string | null;
+    brand?: string | null;
+  }) {
+    return {
+      ...(dto.internalCode !== undefined
+        ? { internalCode: this.normalizeOptionalText(dto.internalCode) }
+        : {}),
+      ...(dto.barcode !== undefined
+        ? { barcode: this.normalizeOptionalText(dto.barcode) }
+        : {}),
+      ...(dto.supplierReference !== undefined
+        ? { supplierReference: this.normalizeOptionalText(dto.supplierReference) }
+        : {}),
+      ...(dto.description !== undefined
+        ? { description: this.normalizeOptionalText(dto.description) }
+        : {}),
+      ...(dto.brand !== undefined ? { brand: this.normalizeOptionalText(dto.brand) } : {}),
+    };
+  }
+
   private mapFiscalProductData(dto: {
     unspscCode?: string | null;
     vatType?: VatType | null;
@@ -183,9 +316,50 @@ export class ProductsService {
     };
   }
 
+  private handleProductWriteError(error: unknown): never {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      const target = this.getUniqueTarget(error);
+
+      if (target.includes('name')) {
+        throw new ConflictException('Product name already exists');
+      }
+
+      if (target.includes('internalCode')) {
+        throw new ConflictException('Product internal code already exists');
+      }
+
+      if (target.includes('barcode')) {
+        throw new ConflictException('Product barcode already exists');
+      }
+
+      throw new ConflictException('Product unique field already exists');
+    }
+
+    throw error;
+  }
+
+  private getUniqueTarget(error: Prisma.PrismaClientKnownRequestError) {
+    const target = error.meta?.target;
+
+    if (Array.isArray(target)) {
+      return target.map(String).join(',');
+    }
+
+    return typeof target === 'string' ? target : '';
+  }
+
   private mapProduct(product: {
     id: number;
     name: string;
+    internalCode: string | null;
+    barcode: string | null;
+    supplierReference: string | null;
+    description: string | null;
+    brand: string | null;
+    productType: ProductType;
     unspscCode: string | null;
     vatType: VatType | null;
     taxCategory: TaxCategory | null;
@@ -205,6 +379,12 @@ export class ProductsService {
     return {
       id: product.id,
       name: product.name,
+      internalCode: product.internalCode,
+      barcode: product.barcode,
+      supplierReference: product.supplierReference,
+      description: product.description,
+      brand: product.brand,
+      productType: product.productType,
       unspscCode: product.unspscCode,
       vatType: product.vatType,
       taxCategory: product.taxCategory,
@@ -216,6 +396,9 @@ export class ProductsService {
         product.variants?.map((variant) => ({
           id: variant.id,
           product_id: variant.productId,
+          product_name: product.name,
+          product_type: product.productType,
+          is_operational: isOperationalVariantProduct(product.productType),
           size: variant.size,
           sku: variant.sku,
           sale_price: Number(variant.salePrice),
@@ -224,4 +407,3 @@ export class ProductsService {
     };
   }
 }
-

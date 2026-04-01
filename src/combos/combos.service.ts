@@ -4,8 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, ProductType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { isOperationalVariantProduct } from '../products/operational-variant.util';
 import { CreateComboDto } from './dto/create-combo.dto';
 import { UpsertComboItemsDto } from './dto/upsert-combo-items.dto';
 
@@ -111,6 +112,8 @@ export class CombosService {
           id: item.variant.id,
           product_id: item.variant.productId,
           product_name: item.variant.product.name,
+          product_type: item.variant.product.productType,
+          is_operational: isOperationalVariantProduct(item.variant.product.productType),
           size: item.variant.size,
           sku: item.variant.sku,
           sale_price: Number(item.variant.salePrice),

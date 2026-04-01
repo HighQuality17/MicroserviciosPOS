@@ -319,7 +319,7 @@ export class AdminService {
   ) {
     const variant = variants.get(variantId);
     return variant
-      ? `${variant.product.name} ${variant.size}`
+      ? [variant.product.name, variant.size].filter(Boolean).join(' ').trim()
       : `Variant ${variantId}`;
   }
 

@@ -15,6 +15,7 @@ Centro documental del repositorio `MicroserviciosPOS`. Esta carpeta quedó reorg
 - [`deployment.md`](deployment.md): instalación, build y despliegue manual con el material realmente presente en el repositorio.
 - [`theme-system.md`](theme-system.md): catálogo de temas, persistencia y piezas técnicas involucradas.
 - [`dian-fields-preparation.md`](dian-fields-preparation.md): nota breve sobre la preparacion fiscal opcional del catalogo de productos.
+- [`product-catalog-enrichment.md`](product-catalog-enrichment.md): nota breve sobre el enriquecimiento comercial y operativo incremental de `Product`.
 - [`user-flows.md`](user-flows.md): flujos operativos principales del sistema.
 - [`changelog-summary.md`](changelog-summary.md): síntesis evolutiva del proyecto a partir del changelog y los cierres de sprint.
 
@@ -30,4 +31,5 @@ Centro documental del repositorio `MicroserviciosPOS`. Esta carpeta quedó reorg
 - Se documenta únicamente lo verificado en el código, scripts, migraciones y documentación existente.
 - No se describen integraciones, despliegues o funcionalidades que no estén sustentados en el repositorio.
 - Cuando una observación es inferida a partir de la ausencia de archivos o configuración, se señala como tal.
+
 

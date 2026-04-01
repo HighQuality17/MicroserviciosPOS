@@ -123,7 +123,8 @@ export const posApi = {
     unwrap<Location>(api.post("/locations", payload)),
   getCatalog: () => unwrap<CatalogResponse>(api.get("/catalog")),
   getProducts: () => unwrap<CatalogProduct[]>(api.get("/products")),
-  getVariants: () => unwrap<CatalogVariant[]>(api.get("/variants")),
+  getVariants: (params?: { status?: "ALL" | "ACTIVE" | "INACTIVE" }) =>
+    unwrap<CatalogVariant[]>(api.get("/variants", { params })),
   getCombos: () => unwrap<CatalogCombo[]>(api.get("/combos")),
   getIngredients: () => unwrap<Ingredient[]>(api.get("/ingredients")),
   openCash: (payload: {
@@ -142,6 +143,12 @@ export const posApi = {
     ),
   createProduct: (payload: {
     name: string;
+    internalCode?: string | null;
+    barcode?: string | null;
+    supplierReference?: string | null;
+    description?: string | null;
+    brand?: string | null;
+    productType?: "SIMPLE" | "VARIANT";
     unspscCode?: string | null;
     vatType?:
       | "ZERO"
@@ -165,6 +172,12 @@ export const posApi = {
     productId: number,
     payload: {
       name?: string;
+      internalCode?: string | null;
+      barcode?: string | null;
+      supplierReference?: string | null;
+      description?: string | null;
+      brand?: string | null;
+      productType?: "SIMPLE" | "VARIANT";
       unspscCode?: string | null;
       vatType?:
         | "ZERO"
@@ -187,6 +200,10 @@ export const posApi = {
   ) => unwrap<Product>(api.patch(`/products/${productId}`, payload)),
   updateProductStatus: (productId: number, payload: { active: boolean }) =>
     unwrap<Product>(api.patch(`/products/${productId}/status`, payload)),
+  deleteProduct: (productId: number) =>
+    unwrap<{ id: number; deleted: boolean; message: string }>(
+      api.delete(`/products/${productId}`),
+    ),
   createVariant: (payload: {
     product_id: number;
     size: string;
@@ -205,6 +222,10 @@ export const posApi = {
   ) => unwrap<Variant>(api.patch(`/variants/${variantId}`, payload)),
   updateVariantStatus: (variantId: number, payload: { active: boolean }) =>
     unwrap<Variant>(api.patch(`/variants/${variantId}/status`, payload)),
+  deleteVariant: (variantId: number) =>
+    unwrap<{ id: number; deleted: boolean; message: string }>(
+      api.delete(`/variants/${variantId}`),
+    ),
   getVariantRecipe: (variantId: number) =>
     unwrap<VariantRecipe>(api.get(`/recipes/variant/${variantId}`)),
   updateVariantRecipe: (
@@ -330,5 +351,4 @@ export const posApi = {
   getSaleReceipt: (saleId: number) =>
     unwrap<SaleReceipt>(api.get(`/sales/${saleId}/receipt`)),
 };
-
 

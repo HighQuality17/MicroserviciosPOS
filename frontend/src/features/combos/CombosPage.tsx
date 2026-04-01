@@ -10,11 +10,15 @@ import { Input } from '@/components/Input';
 import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
-import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import type { CatalogCombo, CatalogVariant } from '@/types/api';
 import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
+import {
+  formatVariantDisplayName,
+  formatVariantOptionLabel,
+  formatVariantSubtitle,
+} from '@/utils/catalog';
 import { formatCurrency } from '@/utils/format';
 import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 
@@ -115,7 +119,7 @@ export function CombosPage() {
     const qty = parseNumberInput(qtyInput);
 
     if (!selectedComboId || !selectedVariantId || comboId <= 0 || variantId <= 0) {
-      setSubmitError('Selecciona un combo y una variante.');
+      setSubmitError('Selecciona un combo y un item operativo.');
       return;
     }
     if (qty === null || qty <= 0) {
@@ -134,7 +138,7 @@ export function CombosPage() {
 
       const selectedVariant = variantsById.get(variantId);
       setMessage(
-        `Variante ${selectedVariant?.product_name ?? variantId} agregada al combo #${comboId}.`,
+        `Item ${selectedVariant ? formatVariantDisplayName(selectedVariant) : variantId} agregado al combo #${comboId}.`,
       );
       setQtyInput('');
       await refreshCatalog();
@@ -186,7 +190,7 @@ export function CombosPage() {
     ? 'Sincronizando'
     : variants.length > 0
       ? 'Base para combos'
-      : 'Sin variantes';
+      : 'Sin items';
   const comboReadyBadgeLabel = loadingCatalog
     ? 'Verificando'
     : activeCombosCount === 0
@@ -205,8 +209,8 @@ export function CombosPage() {
         title="Combos"
         statusLabel={comboStatusLabel}
         statusTone={comboStatusTone}
-        description="Combos activos, base de variantes y cobertura comercial."
-        helpText="Resume la base de combos, las variantes disponibles y cuantos combos ya estan listos para vender."
+        description="Combos activos, base operativa y cobertura comercial."
+        helpText="Resume la base de combos, los items operativos disponibles y cuantos combos ya estan listos para vender."
         icon={<Boxes size={18} />}
       >
         <ModuleStatusCard
@@ -225,13 +229,13 @@ export function CombosPage() {
           }
         />
         <ModuleStatusCard
-          label="Variantes disponibles"
+          label="Items operativos"
           value={String(variants.length)}
           icon={<Shapes size={16} />}
           iconTone={variants.length > 0 ? 'info' : 'default'}
           badgeLabel={comboVariantBadgeLabel}
           badgeTone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
-          meta={loadingCatalog ? 'Preparando variantes' : `${activeVariantsCount} activas`}
+          meta={loadingCatalog ? 'Preparando catalogo' : `${activeVariantsCount} activos`}
         />
         <ModuleStatusCard
           label="Listos para vender"
@@ -332,18 +336,18 @@ export function CombosPage() {
               </Select>
 
               <Select
-                label="Variante"
+                label="Item operativo"
                 value={selectedVariantId}
                 onChange={(event) => setSelectedVariantId(event.target.value)}
               >
                 <option value="">
                   {variants.length === 0
-                    ? 'Sin variantes cargadas'
-                    : 'Selecciona una variante'}
+                    ? 'Sin items cargados'
+                    : 'Selecciona un item'}
                 </option>
                 {variants.map((variant) => (
                   <option key={variant.id} value={String(variant.id)}>
-                    #{variant.id} - {variant.product_name} - {variant.size} - {variant.sku}
+                    {formatVariantOptionLabel(variant)}
                   </option>
                 ))}
               </Select>
@@ -401,7 +405,7 @@ export function CombosPage() {
             <div className="mt-6">
               <EmptyState
                 title="Sin combos cargados"
-                description="Crea el primer combo y usa variantes existentes para definir su contenido."
+                description="Crea el primer combo y usa items operativos existentes para definir su contenido."
               />
             </div>
           ) : (
@@ -446,7 +450,7 @@ export function CombosPage() {
                   <div className="mt-5 grid gap-3">
                     {combo.items.length === 0 ? (
                       <div className="toolbar-shell rounded-2xl border-dashed px-4 py-3 text-sm text-[color:var(--text-faint)]">
-                        El combo aun no tiene variantes asociadas.
+                        El combo aun no tiene items asociados.
                       </div>
                     ) : (
                       combo.items.map((item) => (
@@ -456,10 +460,12 @@ export function CombosPage() {
                         >
                           <div>
                             <p className="text-sm font-medium theme-text-strong">
-                              {item.variant.product_name}
+                              {formatVariantDisplayName(item.variant)}
                             </p>
                             <p className="text-xs text-[color:var(--text-faint)]">
-                              {item.variant.size} - {item.variant.sku} - qty {item.qty}
+                              {[formatVariantSubtitle(item.variant), `qty ${item.qty}`]
+                                .filter(Boolean)
+                                .join(' - ')}
                             </p>
                           </div>
                           <p className="text-sm font-semibold theme-text-secondary">
@@ -478,4 +484,3 @@ export function CombosPage() {
     </div>
   );
 }
-

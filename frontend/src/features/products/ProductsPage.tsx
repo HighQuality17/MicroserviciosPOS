@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpenCheck, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
@@ -14,26 +15,35 @@ import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
 import { usePermissions } from '@/hooks/usePermissions';
-import {
-  ProductFiscalFieldsSection,
-  type ProductFiscalDraft,
-  taxCategoryLabels,
-  vatTypeLabels,
-} from './ProductFiscalFieldsSection';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
-import { formatCurrency } from '@/utils/format';
 import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
+import {
+  formatVariantDisplayName,
+  formatVariantSubtitle,
+} from '@/utils/catalog';
+import { formatCurrency } from '@/utils/format';
 import { normalizeNumberInput, parseNumberInput } from '@/utils/numberInput';
 import type {
   CatalogProduct,
   CatalogVariant,
   Ingredient,
   IngredientDimension,
+  ProductType,
   TaxCategory,
   VariantRecipe,
   VatType,
 } from '@/types/api';
+import { CatalogItemsTable } from './CatalogItemsTable';
+import {
+  ProductCatalogFieldsSection,
+  type ProductCatalogDraft,
+} from './ProductCatalogFieldsSection';
+import {
+  ProductFiscalFieldsSection,
+  type ProductFiscalDraft,
+} from './ProductFiscalFieldsSection';
+
 
 type RecipeDraftItem = {
   ingredient_id: string;
@@ -42,13 +52,35 @@ type RecipeDraftItem = {
   persisted: boolean;
 };
 
-type ProductListFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
+type StatusOnlyFilter = 'ACTIVE' | 'INACTIVE';
+
+type DeleteConfirmationTarget = {
+  kind: 'PRODUCT' | 'VARIANT';
+  id: number;
+  label: string;
+  detail: string;
+};
+
+type EnrichedCatalogProduct = CatalogProduct & {
+  operationalVariant: CatalogVariant | null;
+  relatedVariants: CatalogVariant[];
+};
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
   WEIGHT: ['g', 'kg'],
   VOLUME: ['ml', 'L'],
   COUNT: ['unit'],
 };
+
+const productStatusFilterOptions = [
+  { value: 'ACTIVE', label: 'Activos' },
+  { value: 'INACTIVE', label: 'Inactivos' },
+] as const;
+
+const variantStatusFilterOptions = [
+  { value: 'ACTIVE', label: 'Activas' },
+  { value: 'INACTIVE', label: 'Inactivas' },
+] as const;
 
 export function ProductsPage() {
   const { can } = usePermissions();
@@ -73,12 +105,20 @@ export function ProductsPage() {
   const [loadingRecipe, setLoadingRecipe] = useState(false);
 
   const [productName, setProductName] = useState('');
+  const [productCatalogDraft, setProductCatalogDraft] = useState<ProductCatalogDraft>(
+    createEmptyProductCatalogDraft(),
+  );
   const [productFiscalDraft, setProductFiscalDraft] = useState<ProductFiscalDraft>(
     createEmptyProductFiscalDraft(),
   );
   const [productActive, setProductActive] = useState(true);
   const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
-  const [productListFilter, setProductListFilter] = useState<ProductListFilter>('ALL');
+  const [productListFilter, setProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [variantListFilter, setVariantListFilter] = useState<StatusOnlyFilter>('ACTIVE');
+  const [variantSearchTerm, setVariantSearchTerm] = useState('');
+  const [simpleProductListFilter, setSimpleProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
+  const [simpleProductSearchTerm, setSimpleProductSearchTerm] = useState('');
 
   const [variantProductId, setVariantProductId] = useState('');
   const [variantSize, setVariantSize] = useState('');
@@ -89,12 +129,17 @@ export function ProductsPage() {
   const [productEditorOpen, setProductEditorOpen] = useState(false);
   const [variantEditorOpen, setVariantEditorOpen] = useState(false);
   const [recipeModalOpen, setRecipeModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteConfirmationTarget | null>(null);
+  const [deletingRecord, setDeletingRecord] = useState(false);
 
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<CatalogVariant | null>(null);
   const [loadedRecipe, setLoadedRecipe] = useState<VariantRecipe | null>(null);
 
   const [editProductName, setEditProductName] = useState('');
+  const [editProductCatalogDraft, setEditProductCatalogDraft] = useState<ProductCatalogDraft>(
+    createEmptyProductCatalogDraft(),
+  );
   const [editProductFiscalDraft, setEditProductFiscalDraft] = useState<ProductFiscalDraft>(
     createEmptyProductFiscalDraft(),
   );
@@ -116,29 +161,100 @@ export function ProductsPage() {
     [products],
   );
 
-  const visibleProducts = useMemo(() => {
-    if (productListFilter === 'ACTIVE') return activeProducts;
-    if (productListFilter === 'INACTIVE') {
-      return products.filter((product) => !product.active);
-    }
-    return products;
-  }, [activeProducts, productListFilter, products]);
-
-  const enrichedProducts = useMemo(
-    () =>
-      visibleProducts.map((product) => ({
-        ...product,
-        relatedVariants:
-          product.variants.length > 0
-            ? product.variants
-            : variants.filter((variant) => variant.product_id === product.id),
-      })),
-    [variants, visibleProducts],
+  const realVariants = useMemo(
+    () => variants.filter((variant) => !variant.is_operational),
+    [variants],
   );
 
+  const simpleOperationalVariants = useMemo(
+    () => variants.filter((variant) => variant.is_operational),
+    [variants],
+  );
+
+  const variantReadyProducts = useMemo(
+    () => activeProducts.filter((product) => product.productType === 'VARIANT'),
+    [activeProducts],
+  );
+
+  const allEnrichedProducts = useMemo<EnrichedCatalogProduct[]>(
+    () =>
+      products.map((product) => {
+        const productVariants =
+          product.variants.length > 0
+            ? product.variants
+            : variants.filter((variant) => variant.product_id === product.id);
+
+        return {
+          ...product,
+          operationalVariant: productVariants.find((variant) => variant.is_operational) ?? null,
+          relatedVariants: productVariants.filter((variant) => !variant.is_operational),
+        };
+      }),
+    [products, variants],
+  );
+
+  const visibleProducts = useMemo(() => {
+    if (productListFilter === 'ACTIVE') {
+      return allEnrichedProducts.filter((product) => product.active);
+    }
+
+    return allEnrichedProducts.filter((product) => !product.active);
+  }, [allEnrichedProducts, productListFilter]);
+
+  const visibleRealVariants = useMemo(
+    () =>
+      realVariants.filter((variant) =>
+        variantListFilter === 'ACTIVE' ? variant.active : !variant.active,
+      ),
+    [realVariants, variantListFilter],
+  );
+
+  const simpleProducts = useMemo(
+    () => allEnrichedProducts.filter((product) => product.productType === 'SIMPLE'),
+    [allEnrichedProducts],
+  );
+
+  const visibleSimpleProducts = useMemo(
+    () =>
+      simpleProducts.filter((product) =>
+        simpleProductListFilter === 'ACTIVE' ? product.active : !product.active,
+      ),
+    [simpleProductListFilter, simpleProducts],
+  );
+
+  const filteredProducts = useMemo(
+    () => visibleProducts.filter((product) => matchesProductSearch(product, productSearchTerm)),
+    [productSearchTerm, visibleProducts],
+  );
+
+  const filteredRealVariants = useMemo(
+    () =>
+      visibleRealVariants.filter((variant) => matchesVariantSearch(variant, variantSearchTerm)),
+    [variantSearchTerm, visibleRealVariants],
+  );
+
+  const filteredSimpleProducts = useMemo(
+    () =>
+      visibleSimpleProducts.filter((product) =>
+        matchesSimpleProductSearch(product, simpleProductSearchTerm),
+      ),
+    [simpleProductSearchTerm, visibleSimpleProducts],
+  );
   useEffect(() => {
     void refreshCatalog();
   }, []);
+
+  useEffect(() => {
+    if (!variantProductId) return;
+
+    const currentProductStillAvailable = variantReadyProducts.some(
+      (product) => String(product.id) === variantProductId,
+    );
+
+    if (!currentProductStillAvailable) {
+      setVariantProductId('');
+    }
+  }, [variantProductId, variantReadyProducts]);
 
   async function refreshCatalog() {
     try {
@@ -148,7 +264,7 @@ export function ProductsPage() {
 
       const [productsResponse, variantsResponse, ingredientsResponse] = await Promise.all([
         posApi.getProducts(),
-        posApi.getVariants(),
+        posApi.getVariants({ status: 'ALL' }),
         posApi.getIngredients(),
       ]);
 
@@ -201,12 +317,14 @@ export function ProductsPage() {
 
       const product = await posApi.createProduct({
         name: productName.trim(),
+        ...serializeProductCatalogDraft(productCatalogDraft),
         ...serializeProductFiscalDraft(productFiscalDraft),
         active: productActive,
       });
 
       addSessionProduct(product);
       setProductName('');
+      setProductCatalogDraft(createEmptyProductCatalogDraft());
       setProductFiscalDraft(createEmptyProductFiscalDraft());
       setProductActive(true);
       setProductFiscalSectionOpen(false);
@@ -226,9 +344,18 @@ export function ProductsPage() {
   async function handleCreateVariant() {
     const productId = Number(variantProductId);
     const variantPrice = parseNumberInput(variantPriceInput);
+    const selectedProductForVariant = variantReadyProducts.find(
+      (product) => product.id === productId,
+    );
 
     if (!variantProductId || productId <= 0) {
       setSubmitError('Selecciona un producto para la variante.');
+      return;
+    }
+    if (!selectedProductForVariant) {
+      setSubmitError(
+        'Selecciona un producto activo configurado para trabajar con variantes.',
+      );
       return;
     }
     if (!variantSize.trim() || !variantSku.trim()) {
@@ -275,6 +402,7 @@ export function ProductsPage() {
   function openProductEditor(product: CatalogProduct) {
     setSelectedProduct(product);
     setEditProductName(product.name);
+    setEditProductCatalogDraft(getProductCatalogDraft(product));
     setEditProductFiscalDraft(getProductFiscalDraft(product));
     setEditProductActive(product.active);
     setEditProductFiscalSectionOpen(hasConfiguredFiscalData(product));
@@ -294,6 +422,7 @@ export function ProductsPage() {
       setSubmitError(null);
       await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
+        ...serializeProductCatalogDraft(editProductCatalogDraft),
         ...serializeProductFiscalDraft(editProductFiscalDraft),
         active: editProductActive,
       });
@@ -343,12 +472,16 @@ export function ProductsPage() {
     if (!selectedVariant) return;
     const salePrice = parseNumberInput(editVariantPriceInput);
 
-    if (!editVariantSize.trim() || !editVariantSku.trim()) {
-      setSubmitError('Tamaño y SKU son obligatorios.');
+    if ((!selectedVariant.is_operational && !editVariantSize.trim()) || !editVariantSku.trim()) {
+      setSubmitError(
+        selectedVariant.is_operational
+          ? 'SKU obligatorio para la operacion simple.'
+          : 'Tamano y SKU son obligatorios.',
+      );
       return;
     }
     if (salePrice === null || salePrice < 0) {
-      setSubmitError('El precio de venta debe ser válido.');
+      setSubmitError('El precio de venta debe ser valido.');
       return;
     }
 
@@ -356,19 +489,23 @@ export function ProductsPage() {
       setEditingVariant(true);
       setSubmitError(null);
       await posApi.updateVariant(selectedVariant.id, {
-        size: editVariantSize.trim(),
+        ...(selectedVariant.is_operational ? {} : { size: editVariantSize.trim() }),
         sku: editVariantSku.trim(),
         sale_price: salePrice,
         active: editVariantActive,
       });
       setVariantEditorOpen(false);
-      setMessage(`Variante #${selectedVariant.id} actualizada correctamente.`);
+      setMessage(
+        selectedVariant.is_operational
+          ? `Operacion simple #${selectedVariant.id} actualizada correctamente.`
+          : `Variante #${selectedVariant.id} actualizada correctamente.`,
+      );
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
         error instanceof Error
           ? translateCatalogError(error.message)
-          : 'No se pudo actualizar la variante.',
+          : 'No se pudo actualizar la configuracion seleccionada.',
       );
     } finally {
       setEditingVariant(false);
@@ -381,15 +518,77 @@ export function ProductsPage() {
       setMessage(null);
       await posApi.updateVariantStatus(variant.id, { active: !variant.active });
       setMessage(
-        `Variante #${variant.id} ${variant.active ? 'desactivada' : 'activada'} correctamente.`,
+        variant.is_operational
+          ? `Operacion simple #${variant.id} ${variant.active ? 'desactivada' : 'activada'} correctamente.`
+          : `Variante #${variant.id} ${variant.active ? 'desactivada' : 'activada'} correctamente.`,
       );
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
         error instanceof Error
           ? translateCatalogError(error.message)
-          : 'No se pudo cambiar el estado de la variante.',
+          : 'No se pudo cambiar el estado de la configuracion seleccionada.',
       );
+    }
+  }
+
+  function requestProductDelete(product: CatalogProduct) {
+    setDeleteTarget({
+      kind: 'PRODUCT',
+      id: product.id,
+      label: product.name,
+      detail: `Producto #${product.id}`,
+    });
+    setSubmitError(null);
+  }
+
+  function requestVariantDelete(variant: CatalogVariant) {
+    setDeleteTarget({
+      kind: 'VARIANT',
+      id: variant.id,
+      label: formatVariantDisplayName(variant),
+      detail: `${variant.is_operational ? 'Operacion simple' : 'Variante'} #${variant.id} - ${variant.sku}`,
+    });
+    setSubmitError(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+
+    try {
+      setDeletingRecord(true);
+      setSubmitError(null);
+      setMessage(null);
+
+      if (deleteTarget.kind === 'PRODUCT') {
+        await posApi.deleteProduct(deleteTarget.id);
+        if (selectedProduct?.id === deleteTarget.id) {
+          setProductEditorOpen(false);
+          setSelectedProduct(null);
+        }
+        setMessage(`Producto #${deleteTarget.id} eliminado correctamente.`);
+      } else {
+        await posApi.deleteVariant(deleteTarget.id);
+        if (selectedVariant?.id === deleteTarget.id) {
+          setVariantEditorOpen(false);
+          setRecipeModalOpen(false);
+          setSelectedVariant(null);
+          setLoadedRecipe(null);
+        }
+        setMessage(`Variante #${deleteTarget.id} eliminada correctamente.`);
+      }
+
+      setDeleteTarget(null);
+      await refreshCatalog();
+    } catch (error) {
+      setDeleteTarget(null);
+      setSubmitError(
+        error instanceof Error
+          ? translateCatalogError(error.message)
+          : 'No se pudo eliminar el registro seleccionado.',
+      );
+    } finally {
+      setDeletingRecord(false);
     }
   }
 
@@ -416,7 +615,7 @@ export function ProductsPage() {
       setSubmitError(
         error instanceof Error
           ? translateCatalogError(error.message)
-          : 'No se pudo cargar la receta de la variante.',
+          : 'No se pudo cargar la receta del item seleccionado.',
       );
     } finally {
       setLoadingRecipe(false);
@@ -475,7 +674,7 @@ export function ProductsPage() {
         ...current,
         [selectedVariant.id]: recipe.has_recipe,
       }));
-      setMessage(`Ingrediente eliminado de la receta de la variante #${selectedVariant.id}.`);
+      setMessage(selectedVariant.is_operational ? `Ingrediente eliminado de la receta de la operacion simple #${selectedVariant.id}.` : `Ingrediente eliminado de la receta de la variante #${selectedVariant.id}.`);
     } catch (error) {
       setSubmitError(
         error instanceof Error
@@ -538,7 +737,7 @@ export function ProductsPage() {
         ...current,
         [selectedVariant.id]: recipe.has_recipe,
       }));
-      setMessage(`Receta de la variante #${selectedVariant.id} guardada correctamente.`);
+      setMessage(selectedVariant.is_operational ? `Receta de la operacion simple #${selectedVariant.id} guardada correctamente.` : `Receta de la variante #${selectedVariant.id} guardada correctamente.`);
       setRecipeModalOpen(false);
       await refreshCatalog();
     } catch (error) {
@@ -552,10 +751,24 @@ export function ProductsPage() {
     }
   }
 
-  const configuredRecipesCount = Object.values(recipeStatusByVariant).filter(Boolean).length;
   const activeProductsCount = activeProducts.length;
   const inactiveProductsCount = products.length - activeProductsCount;
-  const activeVariantsCount = variants.filter((variant) => variant.active).length;
+  const activeVariants = variants.filter((variant) => variant.active);
+  const activeVariantsCount = activeVariants.length;
+  const inactiveVariantsCount = variants.length - activeVariantsCount;
+  const activeRealVariantsCount = realVariants.filter((variant) => variant.active).length;
+  const inactiveRealVariantsCount = realVariants.length - activeRealVariantsCount;
+  const activeSimpleOperationalCount = simpleOperationalVariants.filter(
+    (variant) => variant.active,
+  ).length;
+  const activeSimpleProductsCount = simpleProducts.filter((product) => product.active).length;
+  const inactiveSimpleProductsCount = simpleProducts.length - activeSimpleProductsCount;
+  const configuredRecipesCount = activeVariants.filter(
+    (variant) => recipeStatusByVariant[variant.id],
+  ).length;
+  const visibleSimpleProductsWithOperation = filteredSimpleProducts.filter(
+    (product) => product.operationalVariant !== null,
+  );
   const catalogStatusTone = catalogAccessDenied
     ? 'danger'
     : catalogError
@@ -571,10 +784,10 @@ export function ProductsPage() {
         ? 'Sincronizando'
         : 'Catalogo operativo';
   const recipeCoverageTone = configuredRecipesCount === 0
-    ? variants.length > 0
+    ? activeVariantsCount > 0
       ? 'warning'
       : 'default'
-    : configuredRecipesCount === variants.length
+    : configuredRecipesCount === activeVariantsCount
       ? 'success'
       : 'info';
   const productBadgeLabel = loadingCatalog
@@ -584,25 +797,37 @@ export function ProductsPage() {
       : inactiveProductsCount > 0
         ? 'Mixto'
         : 'Catalogo activo';
-  const variantBadgeLabel = loadingCatalog
+  const operationalBadgeLabel = loadingCatalog
     ? 'Sincronizando'
     : variants.length > 0
-      ? 'Listas para venta'
-      : 'Sin variantes';
+      ? inactiveVariantsCount > 0
+        ? 'Mixto'
+        : 'Solo activas'
+      : 'Sin operacion';
   const recipeBadgeLabel = loadingCatalog
     ? 'Verificando'
-    : variants.length === 0
-      ? 'Sin variantes'
-      : configuredRecipesCount === variants.length
+    : activeVariantsCount === 0
+      ? 'Sin operaciones'
+      : configuredRecipesCount === activeVariantsCount
         ? 'Cobertura completa'
         : configuredRecipesCount > 0
           ? 'Cobertura parcial'
           : 'Sin cobertura';
-  const visibleProductsLabel = productListFilter === 'ALL'
-    ? `${products.length} productos en total`
+  const visibleProductsLabel = productSearchTerm.trim()
+    ? `${filteredProducts.length} coincidencias`
     : productListFilter === 'ACTIVE'
       ? `${activeProductsCount} activos visibles`
       : `${inactiveProductsCount} inactivos visibles`;
+  const visibleVariantsLabel = variantSearchTerm.trim()
+    ? `${filteredRealVariants.length} coincidencias`
+    : variantListFilter === 'ACTIVE'
+      ? `${activeRealVariantsCount} activas visibles`
+      : `${inactiveRealVariantsCount} inactivas visibles`;
+  const visibleSimpleProductsLabel = simpleProductSearchTerm.trim()
+    ? `${filteredSimpleProducts.length} coincidencias`
+    : simpleProductListFilter === 'ACTIVE'
+      ? `${activeSimpleProductsCount} activos visibles`
+      : `${inactiveSimpleProductsCount} inactivos visibles`;
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
       <ModuleStatusHeader
@@ -611,8 +836,8 @@ export function ProductsPage() {
         title="Productos"
         statusLabel={catalogStatusLabel}
         statusTone={catalogStatusTone}
-        description="Catalogo, variantes activas y cobertura de recetas."
-        helpText="Resume el estado del catalogo comercial, las variantes disponibles y la cobertura real de recetas."
+        description="Catalogo, operaciones de venta y cobertura de recetas."
+        helpText="Resume el estado del catalogo comercial, las operaciones disponibles para POS y la cobertura real de recetas."
         icon={<PackagePlus size={18} />}
       >
         <ModuleStatusCard
@@ -628,23 +853,23 @@ export function ProductsPage() {
               : loadingCatalog
                 ? 'Sincronizando catalogo'
                 : inactiveProductsCount > 0
-                  ? `${activeProductsCount} activos | ${inactiveProductsCount} inactivos`
+                  ? `${activeProductsCount} activos - ${inactiveProductsCount} inactivos`
                   : `${activeProductsCount} activos`
           }
         />
         <ModuleStatusCard
-          label="Variantes"
+          label="Operaciones POS"
           value={String(variants.length)}
           icon={<Shapes size={16} />}
           iconTone={variants.length > 0 ? 'info' : 'default'}
-          badgeLabel={variantBadgeLabel}
+          badgeLabel={operationalBadgeLabel}
           badgeTone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
           meta={
             catalogAccessDenied
-              ? 'Sin acceso a variantes'
+              ? 'Sin acceso operativo'
               : loadingCatalog
                 ? 'Preparando datos'
-                : `${activeVariantsCount} activas`
+                : `${activeSimpleOperationalCount} simples - ${activeRealVariantsCount} variantes reales`
           }
         />
         <ModuleStatusCard
@@ -659,9 +884,9 @@ export function ProductsPage() {
               ? 'Requiere acceso admin'
               : loadingCatalog
                 ? 'Verificando cobertura'
-                : variants.length > 0
-                  ? `${configuredRecipesCount}/${variants.length} con receta`
-                  : 'Crea variantes para medir cobertura'
+                : activeVariantsCount > 0
+                  ? `${configuredRecipesCount}/${activeVariantsCount} operaciones activas con receta`
+                  : 'Crea items operativos para medir cobertura'
           }
         />
       </ModuleStatusHeader>
@@ -673,10 +898,10 @@ export function ProductsPage() {
       {catalogError ? <FeedbackMessage tone="error">{catalogError}</FeedbackMessage> : null}
 
       {catalogAccessDenied ? (
-        <AccessState description="Tu perfil actual no puede consultar productos, variantes ni recetas administrativas." />
+        <AccessState description="Tu perfil actual no puede consultar productos, operaciones de venta ni recetas administrativas." />
       ) : null}
 
-      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,480px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,500px)_minmax(0,1fr)]">
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Card>
             <p className="text-sm theme-text-muted">Gestión de productos</p>
@@ -687,6 +912,45 @@ export function ProductsPage() {
                 value={productName}
                 onChange={(event) => setProductName(event.target.value)}
                 placeholder="Latte avellana"
+              />
+              <ProductCatalogFieldsSection
+                draft={productCatalogDraft}
+                onInternalCodeChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    internalCode: value,
+                  }))
+                }
+                onBarcodeChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    barcode: value,
+                  }))
+                }
+                onSupplierReferenceChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    supplierReference: value,
+                  }))
+                }
+                onDescriptionChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    description: value,
+                  }))
+                }
+                onBrandChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    brand: value,
+                  }))
+                }
+                onProductTypeChange={(value) =>
+                  setProductCatalogDraft((current) => ({
+                    ...current,
+                    productType: value,
+                  }))
+                }
               />
 
               <ProductFiscalFieldsSection
@@ -764,16 +1028,19 @@ export function ProductsPage() {
                 onChange={(event) => setVariantProductId(event.target.value)}
               >
                 <option value="">
-                  {activeProducts.length === 0
-                    ? 'No hay productos activos disponibles'
+                  {variantReadyProducts.length === 0
+                    ? 'No hay productos tipo variante activos'
                     : 'Selecciona un producto'}
                 </option>
-                {activeProducts.map((product) => (
+                {variantReadyProducts.map((product) => (
                   <option key={product.id} value={String(product.id)}>
                     #{product.id} / {product.name}
                   </option>
                 ))}
               </Select>
+              <p className="text-xs text-[color:var(--text-faint)]">
+                Solo se listan productos activos configurados como tipo variante.
+              </p>
 
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -812,7 +1079,7 @@ export function ProductsPage() {
 
               <div className="flex gap-3">
                 <Button
-                  disabled={!canManageCatalog || creatingVariant || products.length === 0}
+                  disabled={!canManageCatalog || creatingVariant || variantReadyProducts.length === 0}
                   onClick={handleCreateVariant}
                 >
                   {creatingVariant ? 'Guardando...' : 'Crear variante'}
@@ -839,325 +1106,367 @@ export function ProductsPage() {
               </Button>
             </div>
 
-            <div className="toolbar-shell mt-5 flex flex-col gap-3 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap gap-2">
-                {([
-                  { value: 'ALL', label: 'Todos' },
-                  { value: 'ACTIVE', label: 'Activos' },
-                  { value: 'INACTIVE', label: 'Inactivos' },
-                ] as const).map((filterOption) => (
-                  <Button
-                    key={filterOption.value}
-                    variant={productListFilter === filterOption.value ? 'secondary' : 'ghost'}
-                    className="min-w-[104px]"
-                    onClick={() => setProductListFilter(filterOption.value)}
-                  >
-                    {filterOption.label}
-                  </Button>
-                ))}
-              </div>
-              <p className="text-xs text-[color:var(--text-faint)]">{visibleProductsLabel}</p>
-            </div>
+            <CatalogListToolbar
+              countLabel={visibleProductsLabel}
+              searchValue={productSearchTerm}
+              onSearchChange={setProductSearchTerm}
+              searchAriaLabel="Buscar productos por nombre o SKU"
+              activeFilter={productListFilter}
+              filters={productStatusFilterOptions}
+              onFilterChange={setProductListFilter}
+            />
 
             {loadingCatalog ? (
               <div className="mt-6">
                 <LoadingState
                   title="Cargando productos"
-                  description="Estamos preparando el catálogo y sus variantes activas."
+                  description="Estamos preparando el catalogo y sus operaciones activas."
                   rows={4}
                 />
               </div>
-            ) : enrichedProducts.length === 0 ? (
+            ) : filteredProducts.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
                   title={
-                    productListFilter === 'INACTIVE'
-                      ? 'Sin productos inactivos'
+                    productSearchTerm.trim()
+                      ? 'Sin coincidencias para esta busqueda'
                       : productListFilter === 'ACTIVE'
                         ? 'Sin productos activos'
-                        : 'Sin productos cargados'
+                        : 'Sin productos inactivos'
                   }
                   description={
-                    productListFilter === 'INACTIVE'
-                      ? 'Cuando desactives productos, podras revisarlos y reactivarlos desde aqui.'
+                    productSearchTerm.trim()
+                      ? 'No encontramos productos que coincidan con el nombre o SKU ingresado.'
                       : productListFilter === 'ACTIVE'
                         ? 'Activa un producto existente o crea uno nuevo para verlo en este listado.'
-                        : 'Usa el formulario de la izquierda para crear el primer producto del catalogo.'
+                        : 'Cuando desactives productos, podras revisarlos y reactivarlos desde aqui.'
                   }
                 />
               </div>
             ) : (
               <ScrollPanel className="mt-6 grid gap-4" tabIndex={0} aria-label="Listado de productos">
-                {enrichedProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className={[
-                      'data-list-card rounded-3xl p-5',
-                      product.active ? '' : 'border border-dashed theme-border-soft opacity-90',
-                    ].join(' ')}
-                  >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <p className="font-display text-xl font-bold theme-text-strong">{product.name}</p>
-                          <StatusBadge
-                            label={product.active ? 'Activo' : 'Inactivo'}
-                            tone={product.active ? 'success' : 'default'}
-                          />
-                        </div>
-                        <p className="mt-2 text-sm text-[color:var(--text-faint)]">
-                          ID {product.id} | {product.relatedVariants.length} variantes asociadas
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {product.unspscCode ? (
-                            <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                              UNSPSC {product.unspscCode}
-                            </span>
-                          ) : null}
-                          {product.vatType ? (
-                            <StatusBadge
-                              label={`IVA ${vatTypeLabels[product.vatType]}`}
-                              tone="info"
-                            />
-                          ) : null}
-                          {product.taxCategory ? (
-                            <StatusBadge
-                              label={taxCategoryLabels[product.taxCategory]}
-                              tone="default"
-                            />
-                          ) : null}
-                          {product.unitMeasure ? (
-                            <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                              UM {product.unitMeasure}
-                            </span>
-                          ) : null}
-                          {product.isService ? (
-                            <StatusBadge label="Servicio" tone="info" />
-                          ) : null}
-                          {product.applyInc ? (
-                            <StatusBadge label="Aplica INC" tone="warning" />
-                          ) : null}
-                          {!hasConfiguredFiscalData(product) ? (
-                            <span className="text-xs text-[color:var(--text-faint)]">
-                              Datos fiscales opcionales sin configurar.
-                            </span>
-                          ) : null}
-                        </div>
-                        {!product.active ? (
-                          <p className="mt-3 text-sm text-[color:var(--text-faint)]">
-                            Producto inactivo. Sigue visible aqui para revisarlo o reactivarlo cuando lo necesites.
-                          </p>
-                        ) : null}
-                      </div>
-                      {canManageCatalog ? (
-                        <div className="flex flex-wrap gap-2">
-                          <Button variant="ghost" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
-                            Editar
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => void handleToggleProductStatus(product)}
-                          >
-                            {product.active ? 'Desactivar' : 'Activar'}
-                          </Button>
-                        </div>
-                      ) : null}
-                    </div>
+                {filteredProducts.map((product) => {
+                  const displayVariant = getProductCardVariant(product);
+                  const recipeState = getProductCardRecipeState(product, recipeStatusByVariant);
+                  const priceLabel = getProductCardPriceLabel(product, displayVariant);
+                  const metaItems = getProductCardMetaItems(product, displayVariant);
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {product.relatedVariants.length === 0 ? (
-                        <span className="text-sm text-[color:var(--text-faint)]">Sin variantes asociadas aún.</span>
-                      ) : (
-                        product.relatedVariants.map((variant) => (
-                          <span
-                            key={variant.id}
-                            className={[
-                              'soft-pill rounded-full px-3 py-1 text-xs',
-                              variant.active ? '' : 'opacity-70',
-                            ].join(' ')}
-                          >
-                            #{variant.id} | {variant.size} | {variant.sku}
-                            {!variant.active ? ' | Inactiva' : ''}
-                          </span>
-                        ))
-                      )}
+                  return (
+                    <div
+                      key={product.id}
+                      className={[
+                        'data-list-card rounded-3xl p-5',
+                        product.active ? '' : 'border border-dashed theme-border-soft opacity-90',
+                      ].join(' ')}
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <p className="font-display text-xl font-bold theme-text-strong">{product.name}</p>
+                              <StatusBadge
+                                label={product.active ? 'Activo' : 'Inactivo'}
+                                tone={product.active ? 'success' : 'default'}
+                              />
+                              <StatusBadge
+                                label={product.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
+                                tone={product.productType === 'VARIANT' ? 'info' : 'default'}
+                              />
+                            </div>
+                          </div>
+                          {canManageCatalog ? (
+                            <div className="flex flex-wrap gap-2 xl:justify-end">
+                              <Button variant="ghost" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
+                                Editar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => void handleToggleProductStatus(product)}
+                              >
+                                {product.active ? 'Desactivar' : 'Activar'}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                className="action-soft-danger"
+                                onClick={() => requestProductDelete(product)}
+                              >
+                                Eliminar
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                        {metaItems.length > 0 ? (
+                          <div className="flex flex-wrap gap-2.5">
+                            {metaItems.map((item) => (
+                              <span
+                                key={item.label}
+                                className="soft-pill rounded-full px-3 py-1.5 text-xs"
+                              >
+                                <span className="text-[color:var(--text-faint)]">{item.label}</span>
+                                <span
+                                  className={clsx(
+                                    'ml-2 font-medium theme-text-strong',
+                                    item.mono && 'font-mono text-[11px]',
+                                  )}
+                                >
+                                  {item.value}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">
+                              Precio
+                            </p>
+                            <p className="mt-2 metric-accent text-2xl font-semibold tracking-[-0.02em]">
+                              {priceLabel}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <StatusBadge
+                              label={recipeState.label}
+                              tone={recipeState.tone}
+                            />
+                            {product.productType === 'VARIANT' && product.relatedVariants.length > 1 ? (
+                              <span className="text-xs text-[color:var(--text-faint)]">
+                                {product.relatedVariants.length} variantes configuradas
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </ScrollPanel>
+            )}
+          </Card>
+
+          <Card>
+            <p className="text-sm theme-text-muted">Operacion unificada</p>
+            <h2 className="font-display text-2xl font-bold theme-text-strong">Productos simples</h2>
+            <CatalogListToolbar
+              countLabel={visibleSimpleProductsLabel}
+              searchValue={simpleProductSearchTerm}
+              onSearchChange={setSimpleProductSearchTerm}
+              searchAriaLabel="Buscar productos simples por nombre o SKU"
+              activeFilter={simpleProductListFilter}
+              filters={productStatusFilterOptions}
+              onFilterChange={setSimpleProductListFilter}
+            />
+
+            {loadingCatalog ? (
+              <div className="mt-6 grid gap-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="data-list-card h-20 animate-pulse rounded-3xl" />
+                ))}
+              </div>
+            ) : filteredSimpleProducts.length === 0 ? (
+              <div className="mt-6">
+                <EmptyState
+                  title={
+                    simpleProductSearchTerm.trim()
+                      ? 'Sin coincidencias para esta busqueda'
+                      : simpleProductListFilter === 'ACTIVE'
+                      ? 'Sin productos simples activos'
+                      : 'Sin productos simples inactivos'
+                  }
+                  description={
+                    simpleProductSearchTerm.trim()
+                      ? 'No encontramos productos simples que coincidan con el nombre o SKU ingresado.'
+                      : simpleProductListFilter === 'ACTIVE'
+                      ? 'Activa un producto simple existente o crea uno nuevo para verlo en este listado.'
+                      : 'Cuando desactives productos simples, podras revisarlos y reactivarlos desde aqui.'
+                  }
+                />
+              </div>
+            ) : visibleSimpleProductsWithOperation.length === 0 ? (
+              <div className="mt-6">
+                <EmptyState
+                  title="Operacion simple pendiente"
+                  description="No se encontro configuracion operativa para los productos simples visibles. Refresca el catalogo para regenerarla."
+                />
+              </div>
+            ) : (
+              <CatalogItemsTable
+                ariaLabel="Listado de productos simples"
+                caption="Tabla de productos simples con operacion unificada"
+                rows={visibleSimpleProductsWithOperation}
+                rowKey={(product) => product.id}
+                rowClassName={(product) =>
+                  !product.active || !product.operationalVariant?.active ? 'opacity-80' : undefined
+                }
+                tableMinWidthClassName="min-w-[1180px]"
+                columns={[
+                  {
+                    key: 'id',
+                    header: 'ID',
+                    width: '72px',
+                    cellClassName: 'whitespace-nowrap text-xs theme-text-muted',
+                    render: (product) => `#${product.id}`,
+                  },
+                  {
+                    key: 'product',
+                    header: 'Producto',
+                    render: (product) => (
+                      <p className="truncate text-[15px] font-semibold tracking-[-0.01em] theme-text-strong">
+                        {product.name}
+                      </p>
+                    ),
+                  },
+                  {
+                    key: 'sku',
+                    header: 'SKU',
+                    width: '148px',
+                    cellClassName: 'font-mono text-[12px]',
+                    render: (product) => product.operationalVariant?.sku ?? 'Sin SKU',
+                  },
+                  {
+                    key: 'price',
+                    header: 'Precio',
+                    width: '112px',
+                    align: 'right',
+                    cellClassName: 'whitespace-nowrap',
+                    render: (product) => (
+                      <span className="metric-accent text-[15px] font-semibold">
+                        {formatCurrency(Number(product.operationalVariant?.sale_price ?? 0))}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'status',
+                    header: 'Estado',
+                    width: '132px',
+                    render: (product) => (
+                      <StatusBadge
+                        label={getSimpleProductTableStatus(product)}
+                        tone={product.active && product.operationalVariant?.active ? 'success' : 'default'}
+                        className="min-w-[104px] justify-center"
+                      />
+                    ),
+                  },
+                  {
+                    key: 'recipe',
+                    header: 'Receta',
+                    width: '128px',
+                    render: (product) => {
+                      const variant = product.operationalVariant;
+                      const hasRecipe = variant ? recipeStatusByVariant[variant.id] ?? false : false;
+
+                      return (
+                        <StatusBadge
+                          label={hasRecipe ? 'Con receta' : 'Sin receta'}
+                          tone={hasRecipe ? 'info' : 'warning'}
+                          className="min-w-[112px] justify-center"
+                        />
+                      );
+                    },
+                  },
+                  {
+                    key: 'actions',
+                    header: 'Acciones',
+                    width: '332px',
+                    render: (product) =>
+                      canManageCatalog && product.operationalVariant ? (
+                        <div className="flex flex-nowrap items-center gap-3 whitespace-nowrap">
+                          <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
+                            Editar producto
+                          </Button>
+                          <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(product.operationalVariant!)}>
+                            Editar operacion
+                          </Button>
+                          <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(product.operationalVariant!)}>
+                            Gestionar receta
+                          </Button>
+                          <Button variant="ghost" className={product.operationalVariant.active ? 'action-soft-danger' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}>
+                            {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>
+                      ),
+                  },
+                ]}
+              />
             )}
           </Card>
 
           <Card>
             <p className="text-sm theme-text-muted">Listado real</p>
             <h2 className="font-display text-2xl font-bold theme-text-strong">Variantes</h2>
+            <CatalogListToolbar
+              countLabel={visibleVariantsLabel}
+              searchValue={variantSearchTerm}
+              onSearchChange={setVariantSearchTerm}
+              searchAriaLabel="Buscar variantes por nombre o SKU"
+              activeFilter={variantListFilter}
+              filters={variantStatusFilterOptions}
+              onFilterChange={setVariantListFilter}
+            />
 
             {loadingCatalog ? (
               <div className="mt-6 grid gap-3">
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="data-list-card h-20 animate-pulse rounded-3xl"
-                  />
+                  <div key={index} className="data-list-card h-20 animate-pulse rounded-3xl" />
                 ))}
               </div>
-            ) : variants.length === 0 ? (
+            ) : realVariants.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
                   title="Sin variantes cargadas"
-                  description="Crea la primera variante para alimentar el POS y los combos."
+                  description="Crea la primera variante real para ampliar el catalogo y los combos."
+                />
+              </div>
+            ) : filteredRealVariants.length === 0 ? (
+              <div className="mt-6">
+                <EmptyState
+                  title={variantSearchTerm.trim() ? 'Sin coincidencias para esta busqueda' : 'No hay variantes para este filtro'}
+                  description={
+                    variantSearchTerm.trim()
+                      ? 'No encontramos variantes que coincidan con el nombre o SKU ingresado.'
+                      : variantListFilter === 'ACTIVE'
+                      ? 'No hay variantes activas para mostrar en este momento.'
+                      : 'No hay variantes inactivas para revisar en este momento.'
+                  }
                 />
               </div>
             ) : (
-              <div className="mt-6 overflow-x-auto overscroll-x-contain touch-pan-x pb-1">
-                <div className="min-w-[1320px] overflow-hidden rounded-3xl table-shell">
-                  <ScrollPanel
-                    className="sm:pr-0"
-                    maxHeightClassName="max-h-[34rem]"
-                    tabIndex={0}
-                    aria-label="Listado de variantes"
-                  >
-                    <table className="w-full table-fixed border-separate border-spacing-0 text-sm text-[color:var(--text-secondary)]">
-                      <caption className="sr-only">Tabla de variantes del catálogo</caption>
-                      <colgroup>
-                        <col style={{ width: '64px' }} />
-                        <col />
-                        <col style={{ width: '84px' }} />
-                        <col style={{ width: '102px' }} />
-                        <col style={{ width: '92px' }} />
-                        <col style={{ width: '108px' }} />
-                        <col style={{ width: '136px' }} />
-                        <col style={{ width: '408px' }} />
-                      </colgroup>
-                      <thead className="table-head">
-                        <tr>
-                          <th scope="col" className="table-head-cell px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                            ID
-                          </th>
-                          <th scope="col" className="table-head-cell px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                            Producto
-                          </th>
-                          <th scope="col" className="table-head-cell px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                            Tamaño
-                          </th>
-                          <th scope="col" className="table-head-cell px-2.5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                            SKU
-                          </th>
-                          <th scope="col" className="table-head-cell pl-2.5 pr-3 py-3 text-right text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                            Precio
-                          </th>
-                          <th scope="col" className="table-head-cell px-3 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                            Estado
-                          </th>
-                          <th scope="col" className="table-head-cell pl-3 pr-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                            Receta
-                          </th>
-                          <th scope="col" className="table-head-cell pl-5 pr-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm">
-                            Acciones
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {variants.map((variant, index) => {
-                          const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
-
-                          return (
-                            <tr
-                              key={variant.id}
-                              className={[
-                                'table-row table-row-interactive text-[color:var(--text-secondary)]',
-                                index > 0 ? 'border-t theme-border-soft' : '',
-                              ].join(' ')}
-                            >
-                              <td className="px-3 py-3.5 align-middle whitespace-nowrap text-xs theme-text-muted">#{variant.id}</td>
-                              <td className="px-3 py-3.5 align-middle">
-                                <div className="min-w-0">
-                                  <p className="truncate text-[15px] font-semibold tracking-[-0.01em] theme-text-strong">{variant.product_name}</p>
-                                </div>
-                              </td>
-                              <td className="px-3 py-3.5 align-middle whitespace-nowrap text-sm">{variant.size}</td>
-                              <td className="px-2.5 py-3.5 align-middle">
-                                <span className="block truncate whitespace-nowrap font-mono text-[12px] text-[color:var(--text-secondary)]">{variant.sku}</span>
-                              </td>
-                              <td className="pl-2.5 pr-3 py-3.5 align-middle whitespace-nowrap text-right">
-                                <span className="metric-accent text-[15px] font-semibold">{formatCurrency(Number(variant.sale_price))}</span>
-                              </td>
-                              <td className="px-3 py-3.5 align-middle">
-                                <StatusBadge
-                                  label={variant.active ? 'Activa' : 'Inactiva'}
-                                  tone={variant.active ? 'success' : 'default'}
-                                  className="min-w-[92px] justify-center"
-                                />
-                              </td>
-                              <td className="pl-3 pr-5 py-3.5 align-middle">
-                                <StatusBadge
-                                  label={hasRecipe ? 'Con receta' : 'Sin receta'}
-                                  tone={hasRecipe ? 'info' : 'warning'}
-                                  className={hasRecipe
-                                    ? 'min-w-[112px] justify-center shadow-[0_10px_24px_rgba(124,58,237,0.12)]'
-                                    : 'min-w-[112px] justify-center shadow-[0_10px_24px_rgba(245,158,11,0.08)]'}
-                                />
-                              </td>
-                              <td className="pl-5 pr-5 py-3.5 align-middle">
-                                {canManageCatalog ? (
-                                  <div className="flex flex-nowrap items-center gap-3 whitespace-nowrap">
-                                    <Button
-                                      variant="secondary"
-                                      className="action-soft-brand"
-                                      aria-haspopup="dialog"
-                                      aria-controls="variant-editor-dialog"
-                                      onClick={() => openVariantEditor(variant)}
-                                    >
-                                      Editar variante
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      className={variant.active
-                                        ? 'action-soft-danger'
-                                        : 'action-soft-success'}
-                                      onClick={() => void handleToggleVariantStatus(variant)}
-                                    >
-                                      {variant.active ? 'Desactivar' : 'Activar'}
-                                    </Button>
-                                    <Button
-                                      variant="secondary"
-                                      className="action-soft-brand"
-                                      aria-haspopup="dialog"
-                                      aria-controls="recipe-manager-dialog"
-                                      onClick={() => void openRecipeManager(variant)}
-                                    >
-                                      Gestionar receta
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </ScrollPanel>
-                </div>
-              </div>
+              <CatalogItemsTable
+                ariaLabel="Listado de variantes"
+                caption="Tabla de variantes del catalogo"
+                rows={filteredRealVariants}
+                rowKey={(variant) => variant.id}
+                rowClassName={(variant) => (!variant.active ? 'opacity-80' : undefined)}
+                tableMinWidthClassName="min-w-[1280px]"
+                columns={[
+                  { key: 'id', header: 'ID', width: '64px', cellClassName: 'whitespace-nowrap text-xs theme-text-muted', render: (variant) => `#${variant.id}` },
+                  { key: 'product', header: 'Producto', render: (variant) => (<div className="min-w-0"><p className="truncate text-[15px] font-semibold tracking-[-0.01em] theme-text-strong">{variant.product_name}</p>{!variant.active ? (<p className="mt-1 text-xs text-[color:var(--text-faint)]">Variante inactiva. Sigue disponible aqui para revision o reactivacion.</p>) : null}</div>) },
+                  { key: 'size', header: 'Tamano', width: '92px', cellClassName: 'whitespace-nowrap text-sm', render: (variant) => variant.size },
+                  { key: 'sku', header: 'SKU', width: '112px', cellClassName: 'font-mono text-[12px]', render: (variant) => variant.sku },
+                  { key: 'price', header: 'Precio', width: '104px', align: 'right', cellClassName: 'whitespace-nowrap', render: (variant) => (<span className="metric-accent text-[15px] font-semibold">{formatCurrency(Number(variant.sale_price))}</span>) },
+                  { key: 'status', header: 'Estado', width: '108px', render: (variant) => (<StatusBadge label={variant.active ? 'Activa' : 'Inactiva'} tone={variant.active ? 'success' : 'default'} className="min-w-[92px] justify-center" />) },
+                  { key: 'recipe', header: 'Receta', width: '128px', render: (variant) => { const hasRecipe = recipeStatusByVariant[variant.id] ?? false; return (<StatusBadge label={hasRecipe ? 'Con receta' : 'Sin receta'} tone={hasRecipe ? 'info' : 'warning'} className="min-w-[112px] justify-center" />); } },
+                  { key: 'actions', header: 'Acciones', width: '372px', render: (variant) => canManageCatalog ? (<div className="flex flex-nowrap items-center gap-3 whitespace-nowrap"><Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(variant)}>Editar variante</Button><Button variant="ghost" className={variant.active ? 'action-soft-danger' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(variant)}>{variant.active ? 'Desactivar' : 'Activar'}</Button><Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(variant)}>Gestionar receta</Button><Button variant="ghost" className="action-soft-danger" onClick={() => requestVariantDelete(variant)}>Eliminar</Button></div>) : (<span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>) },
+                ]}
+              />
             )}
 
-            {variants.length > 0 ? (
+            {activeVariantsCount > 0 ? (
               <div className="toolbar-shell mt-4 rounded-2xl px-4 py-3 text-xs text-[color:var(--text-faint)]">
-                Las variantes activas sin receta seguirán detectándose aquí para que administración complete la configuración antes de vender.
+                Las operaciones activas sin receta seguiran detectandose aqui para que administracion complete la configuracion antes de vender.
               </div>
             ) : null}
           </Card>
         </div>
       </div>
-
       <Modal
         id="product-editor-dialog"
         open={productEditorOpen}
         onClose={() => setProductEditorOpen(false)}
         title="Editar producto"
-        subtitle="Actualiza el nombre, el estado y la preparacion fiscal opcional del producto."
+        subtitle="Actualiza la ficha comercial, el estado y la preparacion fiscal opcional del producto."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Input
@@ -1165,6 +1474,45 @@ export function ProductsPage() {
             value={editProductName}
             onChange={(event) => setEditProductName(event.target.value)}
             placeholder="Nombre del producto"
+          />
+          <ProductCatalogFieldsSection
+            draft={editProductCatalogDraft}
+            onInternalCodeChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                internalCode: value,
+              }))
+            }
+            onBarcodeChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                barcode: value,
+              }))
+            }
+            onSupplierReferenceChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                supplierReference: value,
+              }))
+            }
+            onDescriptionChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                description: value,
+              }))
+            }
+            onBrandChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                brand: value,
+              }))
+            }
+            onProductTypeChange={(value) =>
+              setEditProductCatalogDraft((current) => ({
+                ...current,
+                productType: value,
+              }))
+            }
           />
           <ProductFiscalFieldsSection
             open={editProductFiscalSectionOpen}
@@ -1228,24 +1576,26 @@ export function ProductsPage() {
         id="variant-editor-dialog"
         open={variantEditorOpen}
         onClose={() => setVariantEditorOpen(false)}
-        title="Editar variante"
-        subtitle="Ajusta tamaño, SKU, precio y estado de la variante seleccionada."
+        title={selectedVariant?.is_operational ? 'Editar operacion simple' : 'Editar variante'}
+        subtitle={selectedVariant?.is_operational
+          ? 'Ajusta SKU, precio y estado de la operacion que mantiene compatible el producto simple con POS y recetas.'
+          : 'Ajusta tamano, SKU, precio y estado de la variante seleccionada.'}
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
-          <div className="grid gap-4 sm:grid-cols-2">
+          {selectedVariant?.is_operational ? null : (
             <Input
-              label="Tamaño"
+              label="Tamano"
               value={editVariantSize}
               onChange={(event) => setEditVariantSize(event.target.value)}
               placeholder="Ej: 16oz"
             />
-            <Input
-              label="SKU"
-              value={editVariantSku}
-              onChange={(event) => setEditVariantSku(event.target.value)}
-              placeholder="Ej: LAT-AV-16"
-            />
-          </div>
+          )}
+          <Input
+            label="SKU"
+            value={editVariantSku}
+            onChange={(event) => setEditVariantSku(event.target.value)}
+            placeholder={selectedVariant?.is_operational ? 'Ej: CAF-BASE' : 'Ej: LAT-AV-16'}
+          />
           <Input
             type="number"
             min={0}
@@ -1258,8 +1608,10 @@ export function ProductsPage() {
             placeholder="Ej: 15000"
           />
           <CheckboxField
-            label="Activa"
-            description="Las variantes inactivas no se muestran en POS."
+            label={selectedVariant?.is_operational ? 'Operativa en POS' : 'Activa'}
+            description={selectedVariant?.is_operational
+              ? 'Cuando se desactiva, el producto simple deja de operar en POS.'
+              : 'Las variantes inactivas no se muestran en POS.'}
             checked={editVariantActive}
             onChange={(event) => setEditVariantActive(event.target.checked)}
           />
@@ -1275,14 +1627,63 @@ export function ProductsPage() {
       </Modal>
 
       <Modal
+        id="catalog-delete-dialog"
+        open={deleteTarget !== null}
+        onClose={() => {
+          if (!deletingRecord) {
+            setDeleteTarget(null);
+          }
+        }}
+        title={deleteTarget?.kind === 'PRODUCT' ? 'Eliminar producto' : 'Eliminar variante'}
+        subtitle="Esta acción solo debe usarse cuando el registro ya no deba existir en el catálogo."
+      >
+        <div className="grid min-w-0 gap-4 sm:gap-5">
+          <div className="rounded-3xl border border-[color:var(--border-soft)] bg-[color:var(--surface-subtle)] px-4 py-4">
+            <p className="text-sm font-semibold theme-text-strong">
+              {deleteTarget?.label ?? 'Registro seleccionado'}
+            </p>
+            {deleteTarget ? (
+              <p className="mt-2 text-sm text-[color:var(--text-faint)]">
+                {deleteTarget.detail}
+              </p>
+            ) : null}
+          </div>
+          <p className="text-sm text-[color:var(--text-secondary)]">
+            ¿Deseas continuar con la eliminación? Si el registro tiene ventas históricas o relaciones activas, el sistema bloqueará la operación y te pedirá desactivarlo o limpiar dependencias primero.
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="ghost"
+              disabled={deletingRecord}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={deletingRecord || !deleteTarget}
+              className="action-soft-danger"
+              onClick={() => void handleConfirmDelete()}
+            >
+              {deletingRecord ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
         id="recipe-manager-dialog"
         open={recipeModalOpen}
         onClose={() => setRecipeModalOpen(false)}
         title="Gestionar receta"
         subtitle={
           selectedVariant
-            ? `${selectedVariant.product_name} | ${selectedVariant.size} | ${selectedVariant.sku}`
-            : 'Configura los ingredientes de la variante'
+            ? [
+                formatVariantDisplayName(selectedVariant),
+                formatVariantSubtitle(selectedVariant, { includeSkuPrefix: true }) || null,
+              ]
+                .filter(Boolean)
+                .join(' - ')
+            : 'Configura los ingredientes del item seleccionado'
         }
       >
         {loadingRecipe ? (
@@ -1391,6 +1792,218 @@ export function ProductsPage() {
   );
 }
 
+type CatalogFilterOption<T extends string> = {
+  value: T;
+  label: string;
+};
+
+function CatalogListToolbar<T extends string>({
+  countLabel,
+  searchValue,
+  onSearchChange,
+  searchAriaLabel,
+  filters,
+  activeFilter,
+  onFilterChange,
+}: {
+  countLabel: string;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  searchAriaLabel: string;
+  filters: readonly CatalogFilterOption<T>[];
+  activeFilter: T;
+  onFilterChange: (value: T) => void;
+}) {
+  return (
+    <div className="toolbar-shell mt-4 grid gap-3 rounded-2xl px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+      <p className="text-sm text-[color:var(--text-faint)]">{countLabel}</p>
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
+        <Input
+          type="search"
+          value={searchValue}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="Buscar por nombre o SKU"
+          aria-label={searchAriaLabel}
+          autoComplete="off"
+          className="min-h-10"
+          wrapperClassName="w-full sm:max-w-[280px] xl:max-w-[300px]"
+        />
+        <div className="flex flex-wrap justify-end gap-2">
+          {filters.map((filterOption) => (
+            <Button
+              key={filterOption.value}
+              variant={activeFilter === filterOption.value ? 'primary' : 'ghost'}
+              className="min-h-10 min-w-[98px] rounded-xl px-3 py-2 text-xs"
+              onClick={() => onFilterChange(filterOption.value)}
+            >
+              {filterOption.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getProductCardVariant(product: EnrichedCatalogProduct) {
+  if (product.productType === 'SIMPLE') return product.operationalVariant;
+
+  const activeVariant = product.relatedVariants.find((variant) => variant.active);
+  return activeVariant ?? product.relatedVariants[0] ?? null;
+}
+
+function getProductCardMetaItems(
+  product: EnrichedCatalogProduct,
+  variant: CatalogVariant | null,
+) {
+  const items: Array<{ label: string; value: string; mono?: boolean }> = [];
+
+  if (variant?.sku) {
+    items.push({ label: 'SKU', value: variant.sku, mono: true });
+  }
+
+  if (variant?.size) {
+    items.push({
+      label: 'Tamano',
+      value:
+        product.productType === 'VARIANT' && product.relatedVariants.length > 1
+          ? 'Varios'
+          : variant.size,
+    });
+  }
+
+  if (product.brand) {
+    items.push({ label: 'Marca', value: product.brand });
+  }
+
+  return items;
+}
+
+function getProductCardPriceLabel(
+  product: EnrichedCatalogProduct,
+  variant: CatalogVariant | null,
+) {
+  if (product.productType === 'VARIANT') {
+    const variantPrices = product.relatedVariants
+      .map((candidate) => Number(candidate.sale_price))
+      .filter((price) => Number.isFinite(price));
+
+    if (variantPrices.length > 1) {
+      return `Desde ${formatCurrency(Math.min(...variantPrices))}`;
+    }
+  }
+
+  return variant ? formatCurrency(Number(variant.sale_price)) : 'Sin precio';
+}
+
+function getProductCardRecipeState(
+  product: EnrichedCatalogProduct,
+  recipeStatusByVariant: Record<number, boolean>,
+) {
+  const activeRealVariants = product.relatedVariants.filter((variant) => variant.active);
+  const comparableVariants =
+    product.productType === 'SIMPLE'
+      ? product.operationalVariant
+        ? [product.operationalVariant]
+        : []
+      : activeRealVariants.length > 0
+        ? activeRealVariants
+        : product.relatedVariants;
+
+  const hasRecipe =
+    comparableVariants.length > 0 &&
+    comparableVariants.every((variant) => recipeStatusByVariant[variant.id] ?? false);
+
+  return {
+    label: hasRecipe ? 'Con receta' : 'Sin receta',
+    tone: hasRecipe ? 'info' : 'warning',
+  } as const;
+}
+
+function getSimpleProductTableStatus(product: EnrichedCatalogProduct) {
+  if (!product.active) return 'Inactivo';
+  if (!product.operationalVariant?.active) return 'POS inactivo';
+  return 'Activo';
+}
+
+function normalizeCatalogSearch(value: string) {
+  return value.trim().toLocaleLowerCase();
+}
+
+function matchesProductSearch(product: EnrichedCatalogProduct, searchTerm: string) {
+  const normalizedSearch = normalizeCatalogSearch(searchTerm);
+  if (!normalizedSearch) return true;
+
+  const candidate = [
+    product.name,
+    product.operationalVariant?.sku ?? '',
+    ...product.relatedVariants.map((variant) => variant.sku),
+  ]
+    .join(' ')
+    .toLocaleLowerCase();
+
+  return candidate.includes(normalizedSearch);
+}
+
+function matchesSimpleProductSearch(product: EnrichedCatalogProduct, searchTerm: string) {
+  const normalizedSearch = normalizeCatalogSearch(searchTerm);
+  if (!normalizedSearch) return true;
+
+  return [product.name, product.operationalVariant?.sku ?? '']
+    .join(' ')
+    .toLocaleLowerCase()
+    .includes(normalizedSearch);
+}
+
+function matchesVariantSearch(variant: CatalogVariant, searchTerm: string) {
+  const normalizedSearch = normalizeCatalogSearch(searchTerm);
+  if (!normalizedSearch) return true;
+
+  return [variant.product_name, variant.sku]
+    .join(' ')
+    .toLocaleLowerCase()
+    .includes(normalizedSearch);
+}
+function createEmptyProductCatalogDraft(): ProductCatalogDraft {
+  return {
+    internalCode: '',
+    barcode: '',
+    supplierReference: '',
+    description: '',
+    brand: '',
+    productType: 'SIMPLE',
+  };
+}
+
+function getProductCatalogDraft(product: {
+  internalCode: string | null;
+  barcode: string | null;
+  supplierReference: string | null;
+  description: string | null;
+  brand: string | null;
+  productType: ProductType;
+}): ProductCatalogDraft {
+  return {
+    internalCode: product.internalCode ?? '',
+    barcode: product.barcode ?? '',
+    supplierReference: product.supplierReference ?? '',
+    description: product.description ?? '',
+    brand: product.brand ?? '',
+    productType: product.productType,
+  };
+}
+
+function serializeProductCatalogDraft(draft: ProductCatalogDraft) {
+  return {
+    internalCode: draft.internalCode.trim() || null,
+    barcode: draft.barcode.trim() || null,
+    supplierReference: draft.supplierReference.trim() || null,
+    description: draft.description.trim() || null,
+    brand: draft.brand.trim() || null,
+    productType: draft.productType,
+  };
+}
+
 function createEmptyProductFiscalDraft(): ProductFiscalDraft {
   return {
     unspscCode: '',
@@ -1448,7 +2061,6 @@ function hasConfiguredFiscalData(product: {
       product.applyInc,
   );
 }
-
 function createEmptyRecipeDraft(): RecipeDraftItem {
   return {
     ingredient_id: '',
@@ -1460,14 +2072,22 @@ function createEmptyRecipeDraft(): RecipeDraftItem {
 
 function translateCatalogError(message: string) {
   if (message === 'Product name already exists') return 'Ya existe un producto con ese nombre.';
+  if (message === 'Product internal code already exists') return 'Ya existe un producto con ese codigo interno.';
+  if (message === 'Product barcode already exists') return 'Ya existe un producto con ese codigo de barras.';
   if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
   if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
   if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';
+  if (message === 'Product type does not support variants') {
+    return 'Solo los productos configurados como tipo variante pueden recibir variantes.';
+  }
   if (message.includes('historical sales')) {
     return 'No se puede eliminar porque ya tiene ventas históricas. Desactívalo en su lugar.';
   }
-  if (message.includes('assigned to one or more combos')) {
-    return 'No se puede eliminar porque la variante está asociada a combos. Quita esas relaciones primero.';
+  if (
+    message.includes('assigned to one or more combos') ||
+    message.includes('assigned to combos')
+  ) {
+    return 'No se puede eliminar porque hay relaciones activas con combos. Quita esas relaciones primero.';
   }
   if (message.includes('variants configured')) {
     return 'No se puede eliminar el producto mientras tenga variantes configuradas.';

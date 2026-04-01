@@ -46,6 +46,7 @@ export type TaxCategory =
   | "EXEMPT"
   | "EXCLUDED"
   | "NOT_SUBJECT";
+export type ProductType = "SIMPLE" | "VARIANT";
 export interface User {
   id: number;
   name: string;
@@ -71,6 +72,12 @@ export interface Location {
 export interface Product {
   id: number;
   name: string;
+  internalCode: string | null;
+  barcode: string | null;
+  supplierReference: string | null;
+  description: string | null;
+  brand: string | null;
+  productType: ProductType;
   unspscCode: string | null;
   vatType: VatType | null;
   taxCategory: TaxCategory | null;
@@ -81,15 +88,7 @@ export interface Product {
   variants?: CatalogVariant[];
 }
 
-export interface Variant {
-  id: number;
-  productId: number;
-  size: string;
-  sku: string;
-  salePrice: number | string;
-  active: boolean;
-  product?: Product;
-}
+export type Variant = CatalogVariant;
 
 export interface Ingredient {
   id: number;
@@ -280,12 +279,16 @@ export interface CartItem {
   subtitle?: string;
   unit_price: number;
   qty: number;
+  product_type?: ProductType;
+  is_operational?: boolean;
 }
 
 export interface CatalogVariant {
   id: number;
   product_id: number;
   product_name: string;
+  product_type: ProductType;
+  is_operational: boolean;
   size: string;
   sku: string;
   sale_price: number;
@@ -304,6 +307,8 @@ export interface VariantRecipe {
   variant_id: number;
   product_id: number;
   product_name: string;
+  product_type: ProductType;
+  is_operational: boolean;
   size: string;
   active: boolean;
   has_recipe: boolean;
@@ -329,6 +334,12 @@ export interface CatalogCombo {
 export interface CatalogProduct {
   id: number;
   name: string;
+  internalCode: string | null;
+  barcode: string | null;
+  supplierReference: string | null;
+  description: string | null;
+  brand: string | null;
+  productType: ProductType;
   unspscCode: string | null;
   vatType: VatType | null;
   taxCategory: TaxCategory | null;
@@ -336,14 +347,7 @@ export interface CatalogProduct {
   isService: boolean;
   applyInc: boolean;
   active: boolean;
-  variants: Array<{
-    id: number;
-    product_id: number;
-    size: string;
-    sku: string;
-    sale_price: number;
-    active: boolean;
-  }>;
+  variants: CatalogVariant[];
 }
 
 export interface CatalogResponse {
@@ -410,4 +414,6 @@ export interface AdminRecentActivityItem {
 export interface AdminRecentActivityResponse {
   items: AdminRecentActivityItem[];
 }
+
+
 
