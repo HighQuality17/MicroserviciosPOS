@@ -1113,7 +1113,7 @@ export function ProductsPage() {
               searchAriaLabel="Buscar productos por nombre o SKU"
               activeFilter={productListFilter}
               filters={productStatusFilterOptions}
-              onFilterChange={setProductListFilter}
+              onFilterChange={(value) => setProductListFilter(value as StatusOnlyFilter)}
             />
 
             {loadingCatalog ? (
@@ -1254,7 +1254,7 @@ export function ProductsPage() {
               searchAriaLabel="Buscar productos simples por nombre o SKU"
               activeFilter={simpleProductListFilter}
               filters={productStatusFilterOptions}
-              onFilterChange={setSimpleProductListFilter}
+              onFilterChange={(value) => setSimpleProductListFilter(value as StatusOnlyFilter)}
             />
 
             {loadingCatalog ? (
@@ -1403,7 +1403,7 @@ export function ProductsPage() {
               searchAriaLabel="Buscar variantes por nombre o SKU"
               activeFilter={variantListFilter}
               filters={variantStatusFilterOptions}
-              onFilterChange={setVariantListFilter}
+              onFilterChange={(value) => setVariantListFilter(value as StatusOnlyFilter)}
             />
 
             {loadingCatalog ? (
