@@ -465,7 +465,7 @@ export class SalesService {
   ) {
     const variant = variantById.get(refId);
     return variant
-      ? `${variant.product.name} ${variant.size}`
+      ? [variant.product.name, variant.size].filter(Boolean).join(' ').trim()
       : `Variant ${refId}`;
   }
 
@@ -791,3 +791,4 @@ export class SalesService {
     }
   }
 }
+

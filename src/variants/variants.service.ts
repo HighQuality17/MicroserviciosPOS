@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 import { ProductType, SaleItemType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  ensureOperationalVariantsForSimpleProducts,
+  isOperationalVariantProduct,
+} from '../products/operational-variant.util';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { VariantListStatus } from './dto/get-variants-query.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
@@ -28,7 +32,7 @@ export class VariantsService {
     }
 
     try {
-      return await this.prisma.productVariant.create({
+      const variant = await this.prisma.productVariant.create({
         data: {
           productId: dto.product_id,
           size: dto.size.trim(),
@@ -36,13 +40,20 @@ export class VariantsService {
           salePrice: dto.sale_price,
           active: dto.active ?? true,
         },
+        include: {
+          product: true,
+        },
       });
+
+      return this.mapVariant(variant);
     } catch {
       throw new ConflictException('Variant sku already exists');
     }
   }
 
   async findActive() {
+    await ensureOperationalVariantsForSimpleProducts(this.prisma);
+
     const variants = await this.prisma.productVariant.findMany({
       where: {
         active: true,
@@ -60,6 +71,8 @@ export class VariantsService {
   }
 
   async findAll(status: VariantListStatus = VariantListStatus.ACTIVE) {
+    await ensureOperationalVariantsForSimpleProducts(this.prisma);
+
     const variants = await this.prisma.productVariant.findMany({
       where: this.resolveVariantListWhere(status),
       include: {
@@ -83,7 +96,19 @@ export class VariantsService {
     if (dto.sale_price !== undefined && dto.sale_price < 0) {
       throw new BadRequestException('sale_price must be >= 0');
     }
-    if (variant.product.productType !== ProductType.VARIANT) {
+
+    const isOperational = isOperationalVariantProduct(variant.product.productType);
+    if (
+      isOperational &&
+      dto.size !== undefined &&
+      dto.size.trim().length > 0
+    ) {
+      throw new BadRequestException(
+        'Operational variant size is managed automatically for simple products',
+      );
+    }
+
+    if (!isOperational && variant.product.productType !== ProductType.VARIANT) {
       throw new BadRequestException('Product type does not support variants');
     }
 
@@ -91,7 +116,7 @@ export class VariantsService {
       const updatedVariant = await this.prisma.productVariant.update({
         where: { id },
         data: {
-          ...(dto.size !== undefined ? { size: dto.size.trim() } : {}),
+          ...(dto.size !== undefined && !isOperational ? { size: dto.size.trim() } : {}),
           ...(dto.sku !== undefined ? { sku: dto.sku.trim() } : {}),
           ...(dto.sale_price !== undefined ? { salePrice: dto.sale_price } : {}),
           ...(dto.active !== undefined ? { active: dto.active } : {}),
@@ -110,6 +135,9 @@ export class VariantsService {
   async updateStatus(id: number, dto: UpdateVariantStatusDto) {
     const variant = await this.prisma.productVariant.findUnique({
       where: { id },
+      include: {
+        product: true,
+      },
     });
 
     if (!variant) throw new NotFoundException('Variant not found');
@@ -134,6 +162,12 @@ export class VariantsService {
     });
 
     if (!variant) throw new NotFoundException('Variant not found');
+
+    if (isOperationalVariantProduct(variant.product.productType)) {
+      throw new BadRequestException(
+        'Operational variant of a simple product cannot be deleted directly',
+      );
+    }
 
     const [historicalSalesCount, comboAssignmentsCount] = await Promise.all([
       this.prisma.saleItem.count({
@@ -202,12 +236,14 @@ export class VariantsService {
     sku: string;
     salePrice: unknown;
     active: boolean;
-    product: { name: string };
+    product: { name: string; productType: ProductType };
   }) {
     return {
       id: variant.id,
       product_id: variant.productId,
       product_name: variant.product.name,
+      product_type: variant.product.productType,
+      is_operational: isOperationalVariantProduct(variant.product.productType),
       size: variant.size,
       sku: variant.sku,
       sale_price: Number(variant.salePrice),

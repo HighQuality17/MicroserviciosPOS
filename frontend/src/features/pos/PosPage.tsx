@@ -11,7 +11,6 @@ import { PaymentModal } from '@/components/PaymentModal';
 import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
-import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useCartStore } from '@/store/cartStore';
@@ -26,6 +25,11 @@ import type {
   UserRole,
 } from '@/types/api';
 import { computeCartTotals } from '@/utils/cart';
+import {
+  formatVariantDisplayName,
+  formatVariantSubtitle,
+  isSimpleOperationalVariant,
+} from '@/utils/catalog';
 import { formatCurrency } from '@/utils/format';
 import { normalizeNumberInput } from '@/utils/numberInput';
 
@@ -107,12 +111,12 @@ export function PosPage() {
       key: `catalog-variant-${variant.id}`,
       item_type: 'VARIANT',
       ref_id: variant.id,
-      name: variant.product_name,
-      subtitle: [variant.size, variant.sku ? `SKU ${variant.sku}` : null]
-        .filter(Boolean)
-        .join(' - '),
+      name: formatVariantDisplayName(variant),
+      subtitle: formatVariantSubtitle(variant, { includeSkuPrefix: true }) || undefined,
       unit_price: Number(variant.sale_price),
       qty: 1,
+      product_type: variant.product_type,
+      is_operational: variant.is_operational,
     }));
 
     const comboCards: CartItemType[] = catalog.combos.map((combo: CatalogCombo) => ({
@@ -141,16 +145,13 @@ export function PosPage() {
     const map = new Map<number, string>();
 
     for (const variant of catalog.variants) {
-      const label = [variant.product_name, variant.size || null]
-        .filter(Boolean)
-        .join(' - ');
-      map.set(variant.id, label || `Variante #${variant.id}`);
+      map.set(variant.id, formatVariantDisplayName(variant));
     }
 
     for (const item of items) {
       if (item.item_type === 'VARIANT' && !map.has(item.ref_id)) {
         const label = [item.name, item.subtitle || null].filter(Boolean).join(' - ');
-        map.set(item.ref_id, label || `Variante #${item.ref_id}`);
+        map.set(item.ref_id, label || `Producto ${item.ref_id}`);
       }
     }
 
@@ -283,7 +284,7 @@ export function PosPage() {
           <SectionHeader
             eyebrow="Catalogo de venta"
             title="POS principal"
-            description="Explora variantes y combos activos para la caja seleccionada con una experiencia mas limpia y veloz."
+            description="Explora productos simples, variantes y combos activos para la caja seleccionada."
             actions={
               <div className="w-full md:max-w-md">
                 <Input
@@ -291,8 +292,8 @@ export function PosPage() {
                   labelClassName="sr-only"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar por nombre, talla o SKU"
-                  hint="Filtra por nombre, tamano o SKU sin salir del teclado."
+                  placeholder="Buscar por nombre, presentacion o SKU"
+                  hint="Filtra por nombre, SKU o presentacion sin salir del teclado."
                 />
               </div>
             }
@@ -312,7 +313,7 @@ export function PosPage() {
             <div className="mt-6">
               <LoadingState
                 title="Cargando catalogo"
-                description="Estamos trayendo variantes y combos activos para esta caja."
+                description="Estamos trayendo productos operativos y combos activos para esta caja."
                 rows={4}
               />
             </div>
@@ -332,7 +333,7 @@ export function PosPage() {
             <div className="mt-6">
               <EmptyState
                 title="Catalogo vacio"
-                description="No hay variantes ni combos activos disponibles para esta caja."
+                description="No hay productos operativos ni combos activos disponibles para esta caja."
               />
             </div>
           ) : (
@@ -343,7 +344,7 @@ export function PosPage() {
                   type="button"
                   onClick={() => addItem(item)}
                   disabled={!currentLocation}
-                  aria-label={`Agregar ${item.item_type === 'VARIANT' ? 'variante' : 'combo'} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
+                  aria-label={`Agregar ${resolveCatalogItemLabel(item)} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
                   className="surface-interactive data-list-card group rounded-[1.65rem] p-5 text-left focus-visible:outline-none"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -352,7 +353,7 @@ export function PosPage() {
                       <p className="mt-1 text-sm theme-text-muted">{item.subtitle}</p>
                     </div>
                     <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                      {item.item_type === 'VARIANT' ? 'Variante' : 'Combo'}
+                      {resolveCatalogItemBadge(item)}
                     </span>
                   </div>
                   <div className="mt-8 flex items-center justify-between">
@@ -383,7 +384,7 @@ export function PosPage() {
             {items.length === 0 ? (
               <EmptyState
                 title="Sin items cargados"
-                description="Agrega variantes o combos desde el catalogo para preparar la venta."
+                description="Agrega productos, variantes o combos desde el catalogo para preparar la venta."
               />
             ) : (
               items.map((item) => (
@@ -482,6 +483,26 @@ function formatUserRole(role: UserRole | undefined) {
   }
 }
 
+function resolveCatalogItemBadge(item: CartItemType) {
+  if (item.item_type === 'COMBO') {
+    return 'Combo';
+  }
+
+  return item.is_operational && item.product_type === 'SIMPLE'
+    ? 'Producto simple'
+    : 'Variante';
+}
+
+function resolveCatalogItemLabel(item: CartItemType) {
+  if (item.item_type === 'COMBO') {
+    return 'combo';
+  }
+
+  return item.is_operational && item.product_type === 'SIMPLE'
+    ? 'producto'
+    : 'variante';
+}
+
 function formatPosPaymentError(error: unknown, variantNameById: Map<number, string>) {
   const fallbackMessage = error instanceof Error ? error.message : 'No fue posible procesar el pago.';
   const missingRecipeMatch = fallbackMessage.match(missingRecipePattern);
@@ -494,8 +515,9 @@ function formatPosPaymentError(error: unknown, variantNameById: Map<number, stri
   const variantName = variantNameById.get(variantId);
 
   if (variantName) {
-    return `La variante "${variantName}" no tiene receta configurada. Revisala en administracion antes de cobrar esta venta.`;
+    return `El producto "${variantName}" no tiene receta configurada. Revisalo en administracion antes de cobrar esta venta.`;
   }
 
-  return 'La variante seleccionada no tiene receta configurada. Revisala en administracion antes de cobrar esta venta.';
+  return 'El item seleccionado no tiene receta configurada. Revisalo en administracion antes de cobrar esta venta.';
 }
+

@@ -3,9 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, ProductType } from '@prisma/client';
 import { round } from '../common/utils/number.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { isOperationalVariantProduct } from '../products/operational-variant.util';
 import { ReplaceVariantRecipeDto } from './dto/replace-variant-recipe.dto';
 import { UpsertVariantRecipeDto } from './dto/upsert-variant-recipe.dto';
 
@@ -161,7 +162,7 @@ export class RecipesService {
       id: number;
       size: string;
       active: boolean;
-      product: { id: number; name: string; active: boolean };
+      product: { id: number; name: string; active: boolean; productType: ProductType };
     },
     items: Array<{
       ingredientId: number;
@@ -178,6 +179,8 @@ export class RecipesService {
       variant_id: variant.id,
       product_id: variant.product.id,
       product_name: variant.product.name,
+      product_type: variant.product.productType,
+      is_operational: isOperationalVariantProduct(variant.product.productType),
       size: variant.size,
       active: variant.active,
       has_recipe: items.length > 0,
