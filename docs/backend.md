@@ -8,7 +8,7 @@ El backend está construido con NestJS y TypeScript en la raíz del repositorio.
 
 - NestJS 10
 - Prisma ORM 6
-- SQLite
+- PostgreSQL
 - JWT
 - `bcrypt`
 - `class-validator`
@@ -25,7 +25,12 @@ npm run lint
 npm run format
 npm run prisma:generate
 npm run prisma:migrate
+npm run prisma:migrate:deploy
 npm run prisma:seed
+npm run prisma:seed:demo
+npm run db:sqlite:export
+npm run db:postgres:import
+npm run db:postgres:verify
 ```
 
 Observación verificable: el backend sí expone script de lint; no expone script de test automatizado en `package.json`.
