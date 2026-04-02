@@ -16,9 +16,9 @@
 Backend:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/microserviciospos?schema=public"
+DATABASE_URL="postgresql://example-user-only:example-password-only@localhost:5432/microserviciospos?schema=public"
 SQLITE_DATABASE_URL="file:./prisma/dev.db"
-JWT_SECRET="change-this-in-production"
+JWT_SECRET="example-jwt-secret-only"
 ```
 
 - `DATABASE_URL` apunta a PostgreSQL y es la fuente operativa del backend.

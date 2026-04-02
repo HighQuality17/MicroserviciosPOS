@@ -17,7 +17,7 @@ Al ingresar al sistema, el usuario debe autenticarse con sus credenciales.
 - **Administrador:** `admin@local.pos`
 - **Cajero:** `cashier@local.pos`
 - **Auditor:** `auditor@local.pos`
-- **Contraseña para todos:** `Pos123456!`
+- **Contraseña para todos:** `example-demo-password-only`
 
 Una vez autenticado, el sistema mostrará las opciones disponibles según el rol asignado.
 
