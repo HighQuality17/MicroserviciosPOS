@@ -30,7 +30,7 @@ La documentación de este repositorio fue actualizada sobre el estado real del c
 
 `MicroserviciosPOS` es un sistema de punto de venta orientado a operación local. El repositorio concentra:
 
-- un backend con NestJS, Prisma y SQLite;
+- un backend con NestJS, Prisma y PostgreSQL;
 - un frontend con React, Vite y Zustand;
 - autenticación con JWT;
 - control de acceso por roles;
@@ -63,7 +63,7 @@ Las capacidades verificadas en código y documentación interna del repositorio 
 - NestJS 10
 - TypeScript 5
 - Prisma ORM 6
-- SQLite
+- PostgreSQL
 - JWT (`@nestjs/jwt`)
 - `bcrypt`
 - `class-validator` y `class-transformer`
@@ -99,7 +99,8 @@ Backend NestJS
 Persistencia
   ├─ Prisma ORM
   ├─ Migraciones versionadas
-  └─ SQLite local
+  ├─ PostgreSQL operativo
+  └─ SQLite legacy solo para exportacion y rollback
 ```
 
 Notas de arquitectura verificadas:
@@ -156,12 +157,15 @@ Notas de arquitectura verificadas:
 npm install
 # crear .env a partir de .env.example
 npm run prisma:generate
-npm run prisma:migrate
+npm run prisma:migrate:deploy
 npm run prisma:seed
+# opcional: solo para una base vacia de pruebas
+npm run prisma:seed:demo
 npm run start:dev
 ```
 
 La API quedará disponible en `http://localhost:3000/api`.
+Si vienes de una base SQLite existente, sigue antes la guia de [docs/postgresql-migration.md](docs/postgresql-migration.md).
 
 ### 2. Frontend
 
@@ -180,7 +184,8 @@ Si no se define otra URL, el frontend consumirá `http://localhost:3000/api`.
 Archivo base existente: `.env.example`
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/microserviciospos?schema=public"
+SQLITE_DATABASE_URL="file:./prisma/dev.db"
 JWT_SECRET="change-this-in-production"
 ```
 
@@ -197,10 +202,13 @@ VITE_API_URL=http://localhost:3000/api
 ## Base de datos y Prisma
 
 - ORM: Prisma
-- proveedor actual: SQLite
+- proveedor actual: PostgreSQL
 - archivo de esquema: `prisma/schema.prisma`
 - migraciones versionadas en `prisma/migrations/`
-- seed disponible en `prisma/seed.ts`
+- historial SQLite legado en `prisma/migrations_sqlite_legacy/`
+- seed de referencia en `prisma/seed.ts`
+- seed demo opcional en `prisma/seed.demo.ts`
+- tooling de migracion en `scripts/db/`
 
 Aspectos relevantes del modelo:
 
@@ -212,7 +220,7 @@ Aspectos relevantes del modelo:
 
 ## Usuarios de prueba
 
-El seed actual crea tres usuarios de ejemplo con contraseña compartida:
+Los usuarios demo siguen disponibles, pero ahora viven en un flujo separado para no interferir con importaciones reales. Cargalos con `npm run prisma:seed:demo` cuando trabajes sobre una base vacia de pruebas. El script aborta si detecta una base con datos operativos:
 
 | Rol | Username | Email | Contraseña |
 | --- | --- | --- | --- |

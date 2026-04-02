@@ -1,10 +1,16 @@
 # Puesta en Marcha y Despliegue
 
-## Alcance de este documento
+## Alcance
 
-Este repositorio sí incluye scripts de instalación, migración, seed y build. No incluye, en cambio, una estrategia de despliegue automatizada visible en archivos como `Dockerfile`, `docker-compose.yml`, pipelines CI/CD o manifiestos de infraestructura. Por esa razón, la guía se enfoca en la puesta en marcha manual y verificable.
+El repositorio no incluye una estrategia automatizada visible de despliegue final, pero si deja preparado el ciclo manual para PostgreSQL:
 
-## Ejecución en desarrollo
+- baseline Prisma para PostgreSQL;
+- seed de referencia separado del seed demo;
+- exportacion desde SQLite legacy;
+- importacion y verificacion de paridad;
+- rollback documentado.
+
+## Desarrollo local
 
 ### Backend
 
@@ -12,16 +18,19 @@ Este repositorio sí incluye scripts de instalación, migración, seed y build. 
 npm install
 # crear .env a partir de .env.example
 npm run prisma:generate
-npm run prisma:migrate
+npm run prisma:migrate:deploy
 npm run prisma:seed
+# opcional: solo para una base vacia de pruebas
+npm run prisma:seed:demo
 npm run start:dev
 ```
 
 Resultado esperado:
 
-- API disponible en `http://localhost:3000/api`
-- base SQLite local preparada;
-- usuarios de ejemplo cargados.
+- API disponible en `http://localhost:3000/api`;
+- PostgreSQL operativo;
+- datos de referencia cargados;
+- usuarios demo disponibles solo si se ejecuto `prisma:seed:demo`.
 
 ### Frontend
 
@@ -33,11 +42,22 @@ npm run dev
 
 Resultado esperado:
 
-- aplicación web de desarrollo en Vite;
+- frontend en desarrollo con Vite;
 - consumo de `http://localhost:3000/api` por defecto;
 - posibilidad de redefinir la URL con `VITE_API_URL`.
 
-## Build del sistema
+## Migracion desde SQLite existente
+
+Usa la guia detallada en [docs/postgresql-migration.md](./postgresql-migration.md). El flujo resumido es:
+
+```bash
+npm run db:sqlite:export -- --artifacts-dir <ruta-artifacts>
+npm run prisma:migrate:deploy
+npm run db:postgres:import -- --artifacts-dir <ruta-artifacts>
+npm run db:postgres:verify -- --artifacts-dir <ruta-artifacts>
+```
+
+## Build
 
 ### Backend
 
@@ -58,29 +78,20 @@ npm run preview
 
 Artefacto generado: `frontend/dist/`
 
-## Consideraciones para un despliegue formal
+## Consideraciones operativas
 
-Las siguientes recomendaciones son inferencias razonables a partir del material presente en el repositorio, no configuración ya implementada:
+- definir un `JWT_SECRET` real en cualquier entorno no local;
+- respaldar la SQLite legacy antes del cutover;
+- respaldar el PostgreSQL destino antes de repetir una importacion;
+- no ejecutar `prisma:seed:demo` sobre una base importada real;
+- correr siempre la verificacion de paridad antes de apuntar el backend al nuevo `DATABASE_URL`.
 
-- definir un `JWT_SECRET` no temporal;
-- ubicar la base SQLite en una ruta persistente respaldable;
-- establecer política de respaldo para la base de datos local;
-- decidir si el frontend se servirá de forma estática separada o por una capa web adicional;
-- documentar estrategia operativa para actualizaciones de migraciones;
-- proteger el acceso al archivo de base de datos y al entorno donde corre la API.
-
-## Checklist mínimo antes de entregar o desplegar
+## Checklist minimo antes de exponer el backend
 
 - crear `.env` desde `.env.example`;
-- ejecutar migraciones Prisma;
-- ejecutar seed si se requieren usuarios base;
-- validar login con `admin`, `cashier` o `auditor`;
-- verificar que el frontend apunte a la URL correcta del backend;
-- comprobar operación básica de POS, caja y consulta de ventas.
-
-## Material auxiliar existente
-
-- `requests.http`: colección útil para validar endpoints manualmente;
-- `CHANGELOG.md`: historial funcional del proyecto;
-- `docs/sprints/`: referencia de evolución reciente;
-- `docs/assets/screenshots/`: ubicación sugerida para evidencia visual de despliegue o presentación.
+- confirmar conectividad a PostgreSQL;
+- aplicar baseline Prisma;
+- ejecutar `prisma:seed` solo si la base esta vacia;
+- ejecutar `prisma:seed:demo` solo si quieres usuarios de prueba;
+- validar login, POS, caja, ventas, stock auditado y admin;
+- documentar la ruta del backup SQLite y el resultado de `db:postgres:verify`.
