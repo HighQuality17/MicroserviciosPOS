@@ -12,6 +12,8 @@ El repositorio no incluye una estrategia automatizada visible de despliegue fina
 
 ## Desarrollo local
 
+Si quieres levantar el sistema con contenedores en lugar del flujo manual por procesos separados, usa la guia de [docs/docker.md](./docker.md).
+
 ### Backend
 
 ```bash
@@ -77,6 +79,16 @@ npm run preview
 ```
 
 Artefacto generado: `frontend/dist/`
+
+## Docker local
+
+El repositorio ya incluye una dockerizacion local con:
+
+- `postgres` persistente;
+- `backend` NestJS + Prisma;
+- `frontend` servido por Nginx con proxy `/api`.
+
+Para uso operativo local con Compose, sigue [docs/docker.md](./docker.md).
 
 ## Consideraciones operativas
 

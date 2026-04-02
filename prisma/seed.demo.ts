@@ -49,7 +49,7 @@ async function assertFreshDemoDatabase(client: PrismaClient): Promise<void> {
 }
 
 async function seedDemoUsers(client: PrismaClient): Promise<void> {
-  const defaultPasswordHash = await hash('Pos123456!', 10);
+  const defaultPasswordHash = await hash('example-demo-password-only', 10);
   const users = [
     {
       id: 1,

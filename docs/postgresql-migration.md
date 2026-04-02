@@ -15,8 +15,8 @@ Ejemplo de PostgreSQL local con Docker:
 
 ```bash
 docker run --name microserviciospos-postgres ^
-  -e POSTGRES_USER=postgres ^
-  -e POSTGRES_PASSWORD=postgres ^
+  -e POSTGRES_USER=example-user-only ^
+  -e POSTGRES_PASSWORD=example-password-only ^
   -e POSTGRES_DB=microserviciospos ^
   -p 5432:5432 ^
   -d postgres:16
