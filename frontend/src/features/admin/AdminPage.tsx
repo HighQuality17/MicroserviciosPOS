@@ -9,6 +9,7 @@ import {
   Sparkles,
   Wallet,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AdminChartCard } from '@/components/AdminChartCard';
 import { AlertCard } from '@/components/AlertCard';
 import { AccessState } from '@/components/AccessState';
@@ -57,6 +58,7 @@ function SkeletonRows({ rows = 4 }: { rows?: number }) {
 }
 
 export function AdminPage() {
+  const navigate = useNavigate();
   const { isAdmin, isAuditor, can } = usePermissions();
   const availableLocations = useAppStore((state) => state.availableLocations);
   const locationsLoading = useAppStore((state) => state.locationsLoading);
@@ -780,7 +782,17 @@ export function AdminPage() {
             eyebrow="Siguiente fase"
             title="Controles administrativos"
             description="La base visual queda preparada para acciones futuras como exportacion, configuracion de alertas y reglas de supervision."
-            actions={<StatusBadge label="Roadmap visual" tone="default" />}
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge label="Roadmap visual" tone="default" />
+                <Button
+                  variant="secondary"
+                  onClick={() => navigate('/admin/config')}
+                >
+                  Configurar negocio
+                </Button>
+              </div>
+            }
           />
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

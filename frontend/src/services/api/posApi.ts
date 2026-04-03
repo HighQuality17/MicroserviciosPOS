@@ -8,6 +8,7 @@ import type {
   AdminTopItemsResponse,
   AuthLoginResponse,
   AuthUser,
+  BusinessConfig,
   CashCurrentResponse,
   CashSession,
   CatalogCombo,
@@ -25,6 +26,7 @@ import type {
   StockAdjustmentMutationResponse,
   StockAdjustmentsResponse,
   StockListResponse,
+  UpdateBusinessConfigPayload,
   Variant,
   VariantRecipe,
 } from "@/types/api";
@@ -118,6 +120,9 @@ export const posApi = {
     unwrap<AdminLowStockItem[]>(api.get("/admin/low-stock")),
   getAdminRecentActivity: () =>
     unwrap<AdminRecentActivityResponse>(api.get("/admin/recent-activity")),
+  getBusinessConfig: () => unwrap<BusinessConfig>(api.get("/config")),
+  updateBusinessConfig: (payload: UpdateBusinessConfigPayload) =>
+    unwrap<BusinessConfig>(api.patch("/config", payload)),
   getLocations: () => unwrap<Location[]>(api.get("/locations")),
   createLocation: (payload: { name: string }) =>
     unwrap<Location>(api.post("/locations", payload)),
