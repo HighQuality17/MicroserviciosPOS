@@ -24,6 +24,7 @@ import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
+import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -39,6 +40,14 @@ import type {
 } from '@/types/api';
 
 type BadgeTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
+
+type OptionalAdminCard = {
+  key: string;
+  title: string;
+  description: string;
+  actionLabel: string | null;
+  path: string | null;
+};
 
 function BlockError({ message }: { message: string }) {
   return <FeedbackMessage tone="error">{message}</FeedbackMessage>;
@@ -60,6 +69,7 @@ function SkeletonRows({ rows = 4 }: { rows?: number }) {
 export function AdminPage() {
   const navigate = useNavigate();
   const { isAdmin, isAuditor, can } = usePermissions();
+  const { isModuleEnabled } = useBusinessModules();
   const availableLocations = useAppStore((state) => state.availableLocations);
   const locationsLoading = useAppStore((state) => state.locationsLoading);
   const locationsError = useAppStore((state) => state.locationsError);
@@ -364,6 +374,71 @@ export function AdminPage() {
     : totalLocations > 0
       ? 'Cobertura lista'
       : 'Sin POS';
+  const optionalAdminCards = [
+    isModuleEnabled('ingredients')
+      ? {
+          key: 'ingredients',
+          title: 'Ingredientes',
+          description: 'Gestiona insumos, consulta disponibilidad y mantén el inventario administrativo visible.',
+          actionLabel: 'Abrir ingredientes',
+          path: '/ingredients',
+        }
+      : null,
+    isModuleEnabled('combos')
+      ? {
+          key: 'combos',
+          title: 'Combos',
+          description: 'Revisa la base comercial de combos y su preparación para venta desde POS.',
+          actionLabel: 'Abrir combos',
+          path: '/combos',
+        }
+      : null,
+    isModuleEnabled('recipes')
+      ? {
+          key: 'recipes',
+          title: 'Recetas',
+          description: 'Accede a productos para gestionar recetas operativas sin bloquear otras rutas todavía.',
+          actionLabel: 'Abrir productos',
+          path: '/products',
+        }
+      : null,
+    isModuleEnabled('fiscalFields')
+      ? {
+          key: 'fiscal-fields',
+          title: 'Campos fiscales',
+          description: 'Mantén visible la preparación fiscal opcional desde la administración de productos.',
+          actionLabel: 'Abrir productos',
+          path: '/products',
+        }
+      : null,
+    {
+      key: 'exports',
+      title: 'Exportacion de reportes',
+      description: 'Disponible cuando la siguiente fase habilite acciones administrativas.',
+      actionLabel: null,
+      path: null,
+    },
+    {
+      key: 'alerts',
+      title: 'Alertas configurables',
+      description: 'Disponible cuando la siguiente fase habilite acciones administrativas.',
+      actionLabel: null,
+      path: null,
+    },
+    {
+      key: 'branches',
+      title: 'Reglas por sucursal',
+      description: 'Disponible cuando la siguiente fase habilite acciones administrativas.',
+      actionLabel: null,
+      path: null,
+    },
+  ].reduce<OptionalAdminCard[]>((cards, item) => {
+    if (item !== null) {
+      cards.push(item);
+    }
+
+    return cards;
+  }, []);
 
   return (
     <div className="grid min-w-0 gap-5 sm:gap-6">
@@ -796,19 +871,30 @@ export function AdminPage() {
           />
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {['Exportacion de reportes', 'Alertas configurables', 'Reglas por sucursal'].map(
-              (item) => (
-                <div
-                  key={item}
-                  className="data-list-card rounded-3xl p-5"
-                >
-                  <p className="font-medium theme-text-strong">{item}</p>
-                  <p className="mt-2 text-sm theme-text-muted">
-                    Disponible cuando la siguiente fase habilite acciones administrativas.
-                  </p>
-                </div>
-              ),
-            )}
+            {optionalAdminCards.map((item) => (
+              <div
+                key={item.key}
+                className="data-list-card rounded-3xl p-5"
+              >
+                <p className="font-medium theme-text-strong">{item.title}</p>
+                <p className="mt-2 text-sm theme-text-muted">
+                  {item.description}
+                </p>
+                {item.path && item.actionLabel ? (
+                  <Button
+                    variant="secondary"
+                    className="mt-4 w-full justify-center"
+                    onClick={() => {
+                      if (item.path) {
+                        void navigate(item.path);
+                      }
+                    }}
+                  >
+                    {item.actionLabel}
+                  </Button>
+                ) : null}
+              </div>
+            ))}
           </div>
         </Card>
       ) : null}
