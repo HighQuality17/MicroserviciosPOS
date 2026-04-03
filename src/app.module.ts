@@ -15,11 +15,13 @@ import { SalesModule } from './sales/sales.module';
 import { CombosModule } from './combos/combos.module';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from './config/config.module';
 
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
+    ConfigModule,
     AuditModule,
     LocationsModule,
     UnitTypesModule,
@@ -36,3 +38,4 @@ import { AuthModule } from './auth/auth.module';
   controllers: [AppController],
 })
 export class AppModule {}
+

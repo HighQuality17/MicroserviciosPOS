@@ -13,6 +13,16 @@ enum UserRole {
   AUDITOR
 }
 
+enum BusinessType {
+  DESSERT_SHOP
+  CAFE
+  RESTAURANT
+  RETAIL
+  MINIMARKET
+  SALON
+  CUSTOM
+}
+
 enum Dimension {
   WEIGHT
   VOLUME
@@ -86,17 +96,36 @@ enum PaymentMethod {
 }
 
 model User {
-  id                  Int                  @id @default(autoincrement())
-  name                String
-  username            String               @unique
-  email               String               @unique
-  passwordHash        String
-  role                UserRole
-  themePreference     String               @default("midnight-indigo")
-  ingredientMovements IngredientMovement[]
-  openedSessions      CashSession[]        @relation("OpenedSessions")
-  sales               Sale[]
-  auditLogs           AuditLog[]
+  id                     Int                  @id @default(autoincrement())
+  name                   String
+  username               String               @unique
+  email                  String               @unique
+  passwordHash           String
+  role                   UserRole
+  themePreference        String               @default("midnight-indigo")
+  ingredientMovements    IngredientMovement[]
+  openedSessions         CashSession[]        @relation("OpenedSessions")
+  sales                  Sale[]
+  auditLogs              AuditLog[]
+  updatedBusinessConfigs BusinessConfig[]
+}
+
+model BusinessConfig {
+  id           Int          @id @default(1)
+  businessName String
+  legalName    String?
+  businessType BusinessType @default(DESSERT_SHOP)
+  currencyCode String       @default("COP")
+  timezone     String       @default("America/Bogota")
+  countryCode  String       @default("CO")
+  email        String?
+  phone        String?
+  address      String?
+  modules      Json
+  updatedById  Int?
+  updatedBy    User?        @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model Location {
@@ -288,6 +317,7 @@ model AuditLog {
   metadataJson String
   user         User      @relation(fields: [userId], references: [id])
 }
+
 
 
 

@@ -14,6 +14,7 @@ import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusH
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
+import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { usePermissions } from '@/hooks/usePermissions';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
@@ -84,7 +85,11 @@ const variantStatusFilterOptions = [
 
 export function ProductsPage() {
   const { can } = usePermissions();
+  const { isModuleEnabled } = useBusinessModules();
   const canManageCatalog = can('canManageCatalog');
+  const showIngredientsModule = isModuleEnabled('ingredients');
+  const showRecipeModule = showIngredientsModule && isModuleEnabled('recipes');
+  const showFiscalFields = isModuleEnabled('fiscalFields');
   const addSessionProduct = useAppStore((state) => state.addSessionProduct);
   const addSessionVariant = useAppStore((state) => state.addSessionVariant);
 
@@ -256,6 +261,53 @@ export function ProductsPage() {
     }
   }, [variantProductId, variantReadyProducts]);
 
+  useEffect(() => {
+    if (!showRecipeModule) {
+      setRecipeModalOpen(false);
+      setLoadedRecipe(null);
+      setRecipeDraftItems([]);
+    }
+  }, [showRecipeModule]);
+
+  useEffect(() => {
+    if (!showFiscalFields) {
+      setProductFiscalSectionOpen(false);
+      setEditProductFiscalSectionOpen(false);
+      setProductFiscalDraft(createEmptyProductFiscalDraft());
+    }
+  }, [showFiscalFields]);
+
+  function blockRecipeFlow() {
+    setRecipeModalOpen(false);
+    setLoadedRecipe(null);
+    setRecipeDraftItems([]);
+    setSubmitError('El modulo de recetas esta desactivado para este negocio.');
+  }
+
+  function blockFiscalFieldsFlow() {
+    setProductFiscalSectionOpen(false);
+    setEditProductFiscalSectionOpen(false);
+    setSubmitError('El modulo de campos fiscales esta desactivado para este negocio.');
+  }
+
+  function handleProductFiscalSectionOpenChange(nextOpen: boolean) {
+    if (nextOpen && !showFiscalFields) {
+      blockFiscalFieldsFlow();
+      return;
+    }
+
+    setProductFiscalSectionOpen(nextOpen);
+  }
+
+  function handleEditProductFiscalSectionOpenChange(nextOpen: boolean) {
+    if (nextOpen && !showFiscalFields) {
+      blockFiscalFieldsFlow();
+      return;
+    }
+
+    setEditProductFiscalSectionOpen(nextOpen);
+  }
+
   async function refreshCatalog() {
     try {
       setLoadingCatalog(true);
@@ -265,13 +317,17 @@ export function ProductsPage() {
       const [productsResponse, variantsResponse, ingredientsResponse] = await Promise.all([
         posApi.getProducts(),
         posApi.getVariants({ status: 'ALL' }),
-        posApi.getIngredients(),
+        showRecipeModule ? posApi.getIngredients() : Promise.resolve<Ingredient[]>([]),
       ]);
 
       setProducts(productsResponse);
       setVariants(variantsResponse);
       setIngredients(ingredientsResponse);
-      await loadRecipeStatuses(variantsResponse);
+      if (showRecipeModule) {
+        await loadRecipeStatuses(variantsResponse);
+      } else {
+        setRecipeStatusByVariant({});
+      }
     } catch (error) {
       setCatalogAccessDenied(isAccessDeniedError(error));
       setCatalogError(
@@ -318,7 +374,9 @@ export function ProductsPage() {
       const product = await posApi.createProduct({
         name: productName.trim(),
         ...serializeProductCatalogDraft(productCatalogDraft),
-        ...serializeProductFiscalDraft(productFiscalDraft),
+        ...serializeProductFiscalDraft(
+          showFiscalFields ? productFiscalDraft : createEmptyProductFiscalDraft(),
+        ),
         active: productActive,
       });
 
@@ -405,7 +463,7 @@ export function ProductsPage() {
     setEditProductCatalogDraft(getProductCatalogDraft(product));
     setEditProductFiscalDraft(getProductFiscalDraft(product));
     setEditProductActive(product.active);
-    setEditProductFiscalSectionOpen(hasConfiguredFiscalData(product));
+    setEditProductFiscalSectionOpen(showFiscalFields && hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
     setSubmitError(null);
   }
@@ -423,7 +481,9 @@ export function ProductsPage() {
       await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
         ...serializeProductCatalogDraft(editProductCatalogDraft),
-        ...serializeProductFiscalDraft(editProductFiscalDraft),
+        ...serializeProductFiscalDraft(
+          showFiscalFields ? editProductFiscalDraft : getProductFiscalDraft(selectedProduct),
+        ),
         active: editProductActive,
       });
       setProductEditorOpen(false);
@@ -593,6 +653,11 @@ export function ProductsPage() {
   }
 
   async function openRecipeManager(variant: CatalogVariant) {
+    if (!showRecipeModule) {
+      blockRecipeFlow();
+      return;
+    }
+
     try {
       setLoadingRecipe(true);
       setSubmitError(null);
@@ -642,10 +707,20 @@ export function ProductsPage() {
   }
 
   function handleAddRecipeRow() {
+    if (!showRecipeModule) {
+      blockRecipeFlow();
+      return;
+    }
+
     setRecipeDraftItems((current) => [...current, createEmptyRecipeDraft()]);
   }
 
   async function handleDeleteRecipeRow(index: number) {
+    if (!showRecipeModule) {
+      blockRecipeFlow();
+      return;
+    }
+
     if (!selectedVariant) return;
     const row = recipeDraftItems[index];
     const ingredientId = Number(row.ingredient_id);
@@ -687,6 +762,11 @@ export function ProductsPage() {
   }
 
   async function handleSaveRecipe() {
+    if (!showRecipeModule) {
+      blockRecipeFlow();
+      return;
+    }
+
     if (!selectedVariant) return;
 
     const validRows = recipeDraftItems.filter(
@@ -872,23 +952,25 @@ export function ProductsPage() {
                 : `${activeSimpleOperationalCount} simples - ${activeRealVariantsCount} variantes reales`
           }
         />
-        <ModuleStatusCard
-          label="Recetas configuradas"
-          value={String(configuredRecipesCount)}
-          icon={<BookOpenCheck size={16} />}
-          iconTone={recipeCoverageTone}
-          badgeLabel={recipeBadgeLabel}
-          badgeTone={recipeCoverageTone}
-          meta={
-            catalogAccessDenied
-              ? 'Requiere acceso admin'
-              : loadingCatalog
-                ? 'Verificando cobertura'
-                : activeVariantsCount > 0
-                  ? `${configuredRecipesCount}/${activeVariantsCount} operaciones activas con receta`
-                  : 'Crea items operativos para medir cobertura'
-          }
-        />
+        {showRecipeModule ? (
+          <ModuleStatusCard
+            label="Recetas configuradas"
+            value={String(configuredRecipesCount)}
+            icon={<BookOpenCheck size={16} />}
+            iconTone={recipeCoverageTone}
+            badgeLabel={recipeBadgeLabel}
+            badgeTone={recipeCoverageTone}
+            meta={
+              catalogAccessDenied
+                ? 'Requiere acceso admin'
+                : loadingCatalog
+                  ? 'Verificando cobertura'
+                  : activeVariantsCount > 0
+                    ? `${configuredRecipesCount}/${activeVariantsCount} operaciones activas con receta`
+                    : 'Crea items operativos para medir cobertura'
+            }
+          />
+        ) : null}
       </ModuleStatusHeader>
 
       {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
@@ -953,47 +1035,49 @@ export function ProductsPage() {
                 }
               />
 
-              <ProductFiscalFieldsSection
-                open={productFiscalSectionOpen}
-                onOpenChange={(nextOpen) => setProductFiscalSectionOpen(nextOpen)}
-                draft={productFiscalDraft}
-                onUnspscCodeChange={(value) =>
-                  setProductFiscalDraft((current) => ({
-                    ...current,
-                    unspscCode: value,
-                  }))
-                }
-                onVatTypeChange={(value) =>
-                  setProductFiscalDraft((current) => ({
-                    ...current,
-                    vatType: value,
-                  }))
-                }
-                onTaxCategoryChange={(value) =>
-                  setProductFiscalDraft((current) => ({
-                    ...current,
-                    taxCategory: value,
-                  }))
-                }
-                onUnitMeasureChange={(value) =>
-                  setProductFiscalDraft((current) => ({
-                    ...current,
-                    unitMeasure: value,
-                  }))
-                }
-                onIsServiceChange={(value) =>
-                  setProductFiscalDraft((current) => ({
-                    ...current,
-                    isService: value,
-                  }))
-                }
-                onApplyIncChange={(value) =>
-                  setProductFiscalDraft((current) => ({
-                    ...current,
-                    applyInc: value,
-                  }))
-                }
-              />
+              {showFiscalFields ? (
+                <ProductFiscalFieldsSection
+                  open={productFiscalSectionOpen}
+                  onOpenChange={handleProductFiscalSectionOpenChange}
+                  draft={productFiscalDraft}
+                  onUnspscCodeChange={(value) =>
+                    setProductFiscalDraft((current) => ({
+                      ...current,
+                      unspscCode: value,
+                    }))
+                  }
+                  onVatTypeChange={(value) =>
+                    setProductFiscalDraft((current) => ({
+                      ...current,
+                      vatType: value,
+                    }))
+                  }
+                  onTaxCategoryChange={(value) =>
+                    setProductFiscalDraft((current) => ({
+                      ...current,
+                      taxCategory: value,
+                    }))
+                  }
+                  onUnitMeasureChange={(value) =>
+                    setProductFiscalDraft((current) => ({
+                      ...current,
+                      unitMeasure: value,
+                    }))
+                  }
+                  onIsServiceChange={(value) =>
+                    setProductFiscalDraft((current) => ({
+                      ...current,
+                      isService: value,
+                    }))
+                  }
+                  onApplyIncChange={(value) =>
+                    setProductFiscalDraft((current) => ({
+                      ...current,
+                      applyInc: value,
+                    }))
+                  }
+                />
+              ) : null}
               <CheckboxField
                 label="Activo"
                 description="Define si el producto estara disponible en el catalogo operativo."
@@ -1225,10 +1309,12 @@ export function ProductsPage() {
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            <StatusBadge
-                              label={recipeState.label}
-                              tone={recipeState.tone}
-                            />
+                            {showRecipeModule ? (
+                              <StatusBadge
+                                label={recipeState.label}
+                                tone={recipeState.tone}
+                              />
+                            ) : null}
                             {product.productType === 'VARIANT' && product.relatedVariants.length > 1 ? (
                               <span className="text-xs text-[color:var(--text-faint)]">
                                 {product.relatedVariants.length} variantes configuradas
@@ -1347,23 +1433,27 @@ export function ProductsPage() {
                       />
                     ),
                   },
-                  {
-                    key: 'recipe',
-                    header: 'Receta',
-                    width: '128px',
-                    render: (product) => {
-                      const variant = product.operationalVariant;
-                      const hasRecipe = variant ? recipeStatusByVariant[variant.id] ?? false : false;
+                  ...(showRecipeModule
+                    ? [
+                        {
+                          key: 'recipe',
+                          header: 'Receta',
+                          width: '128px',
+                          render: (product: EnrichedCatalogProduct) => {
+                            const variant = product.operationalVariant;
+                            const hasRecipe = variant ? recipeStatusByVariant[variant.id] ?? false : false;
 
-                      return (
-                        <StatusBadge
-                          label={hasRecipe ? 'Con receta' : 'Sin receta'}
-                          tone={hasRecipe ? 'info' : 'warning'}
-                          className="min-w-[112px] justify-center"
-                        />
-                      );
-                    },
-                  },
+                            return (
+                              <StatusBadge
+                                label={hasRecipe ? 'Con receta' : 'Sin receta'}
+                                tone={hasRecipe ? 'info' : 'warning'}
+                                className="min-w-[112px] justify-center"
+                              />
+                            );
+                          },
+                        },
+                      ]
+                    : []),
                   {
                     key: 'actions',
                     header: 'Acciones',
@@ -1377,9 +1467,11 @@ export function ProductsPage() {
                           <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(product.operationalVariant!)}>
                             Editar operacion
                           </Button>
-                          <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(product.operationalVariant!)}>
-                            Gestionar receta
-                          </Button>
+                          {showRecipeModule ? (
+                            <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(product.operationalVariant!)}>
+                              Gestionar receta
+                            </Button>
+                          ) : null}
                           <Button variant="ghost" className={product.operationalVariant.active ? 'action-soft-danger' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}>
                             {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
                           </Button>
@@ -1447,13 +1539,37 @@ export function ProductsPage() {
                   { key: 'sku', header: 'SKU', width: '112px', cellClassName: 'font-mono text-[12px]', render: (variant) => variant.sku },
                   { key: 'price', header: 'Precio', width: '104px', align: 'right', cellClassName: 'whitespace-nowrap', render: (variant) => (<span className="metric-accent text-[15px] font-semibold">{formatCurrency(Number(variant.sale_price))}</span>) },
                   { key: 'status', header: 'Estado', width: '108px', render: (variant) => (<StatusBadge label={variant.active ? 'Activa' : 'Inactiva'} tone={variant.active ? 'success' : 'default'} className="min-w-[92px] justify-center" />) },
-                  { key: 'recipe', header: 'Receta', width: '128px', render: (variant) => { const hasRecipe = recipeStatusByVariant[variant.id] ?? false; return (<StatusBadge label={hasRecipe ? 'Con receta' : 'Sin receta'} tone={hasRecipe ? 'info' : 'warning'} className="min-w-[112px] justify-center" />); } },
-                  { key: 'actions', header: 'Acciones', width: '372px', render: (variant) => canManageCatalog ? (<div className="flex flex-nowrap items-center gap-3 whitespace-nowrap"><Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(variant)}>Editar variante</Button><Button variant="ghost" className={variant.active ? 'action-soft-danger' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(variant)}>{variant.active ? 'Desactivar' : 'Activar'}</Button><Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(variant)}>Gestionar receta</Button><Button variant="ghost" className="action-soft-danger" onClick={() => requestVariantDelete(variant)}>Eliminar</Button></div>) : (<span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>) },
+                  ...(showRecipeModule
+                    ? [
+                        {
+                          key: 'recipe',
+                          header: 'Receta',
+                          width: '128px',
+                          render: (variant: CatalogVariant) => {
+                            const hasRecipe = recipeStatusByVariant[variant.id] ?? false;
+
+                            return (
+                              <StatusBadge
+                                label={hasRecipe ? 'Con receta' : 'Sin receta'}
+                                tone={hasRecipe ? 'info' : 'warning'}
+                                className="min-w-[112px] justify-center"
+                              />
+                            );
+                          },
+                        },
+                      ]
+                    : []),
+                  {
+                    key: 'actions',
+                    header: 'Acciones',
+                    width: showRecipeModule ? '372px' : '252px',
+                    render: (variant) => canManageCatalog ? (<div className="flex flex-nowrap items-center gap-3 whitespace-nowrap"><Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(variant)}>Editar variante</Button><Button variant="ghost" className={variant.active ? 'action-soft-danger' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(variant)}>{variant.active ? 'Desactivar' : 'Activar'}</Button>{showRecipeModule ? (<Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(variant)}>Gestionar receta</Button>) : null}<Button variant="ghost" className="action-soft-danger" onClick={() => requestVariantDelete(variant)}>Eliminar</Button></div>) : (<span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>)
+                  },
                 ]}
               />
             )}
 
-            {activeVariantsCount > 0 ? (
+            {showRecipeModule && activeVariantsCount > 0 ? (
               <div className="toolbar-shell mt-4 rounded-2xl px-4 py-3 text-xs text-[color:var(--text-faint)]">
                 Las operaciones activas sin receta seguiran detectandose aqui para que administracion complete la configuracion antes de vender.
               </div>
@@ -1514,47 +1630,49 @@ export function ProductsPage() {
               }))
             }
           />
-          <ProductFiscalFieldsSection
-            open={editProductFiscalSectionOpen}
-            onOpenChange={(nextOpen) => setEditProductFiscalSectionOpen(nextOpen)}
-            draft={editProductFiscalDraft}
-            onUnspscCodeChange={(value) =>
-              setEditProductFiscalDraft((current) => ({
-                ...current,
-                unspscCode: value,
-              }))
-            }
-            onVatTypeChange={(value) =>
-              setEditProductFiscalDraft((current) => ({
-                ...current,
-                vatType: value,
-              }))
-            }
-            onTaxCategoryChange={(value) =>
-              setEditProductFiscalDraft((current) => ({
-                ...current,
-                taxCategory: value,
-              }))
-            }
-            onUnitMeasureChange={(value) =>
-              setEditProductFiscalDraft((current) => ({
-                ...current,
-                unitMeasure: value,
-              }))
-            }
-            onIsServiceChange={(value) =>
-              setEditProductFiscalDraft((current) => ({
-                ...current,
-                isService: value,
-              }))
-            }
-            onApplyIncChange={(value) =>
-              setEditProductFiscalDraft((current) => ({
-                ...current,
-                applyInc: value,
-              }))
-            }
-          />
+          {showFiscalFields ? (
+            <ProductFiscalFieldsSection
+              open={editProductFiscalSectionOpen}
+              onOpenChange={handleEditProductFiscalSectionOpenChange}
+              draft={editProductFiscalDraft}
+              onUnspscCodeChange={(value) =>
+                setEditProductFiscalDraft((current) => ({
+                  ...current,
+                  unspscCode: value,
+                }))
+              }
+              onVatTypeChange={(value) =>
+                setEditProductFiscalDraft((current) => ({
+                  ...current,
+                  vatType: value,
+                }))
+              }
+              onTaxCategoryChange={(value) =>
+                setEditProductFiscalDraft((current) => ({
+                  ...current,
+                  taxCategory: value,
+                }))
+              }
+              onUnitMeasureChange={(value) =>
+                setEditProductFiscalDraft((current) => ({
+                  ...current,
+                  unitMeasure: value,
+                }))
+              }
+              onIsServiceChange={(value) =>
+                setEditProductFiscalDraft((current) => ({
+                  ...current,
+                  isService: value,
+                }))
+              }
+              onApplyIncChange={(value) =>
+                setEditProductFiscalDraft((current) => ({
+                  ...current,
+                  applyInc: value,
+                }))
+              }
+            />
+          ) : null}
           <CheckboxField
             label="Activo"
             description="Define si el producto estara disponible en el catalogo operativo."
@@ -1670,22 +1788,23 @@ export function ProductsPage() {
         </div>
       </Modal>
 
-      <Modal
-        id="recipe-manager-dialog"
-        open={recipeModalOpen}
-        onClose={() => setRecipeModalOpen(false)}
-        title="Gestionar receta"
-        subtitle={
-          selectedVariant
-            ? [
-                formatVariantDisplayName(selectedVariant),
-                formatVariantSubtitle(selectedVariant, { includeSkuPrefix: true }) || null,
-              ]
-                .filter(Boolean)
-                .join(' - ')
-            : 'Configura los ingredientes del item seleccionado'
-        }
-      >
+      {showRecipeModule ? (
+        <Modal
+          id="recipe-manager-dialog"
+          open={recipeModalOpen}
+          onClose={() => setRecipeModalOpen(false)}
+          title="Gestionar receta"
+          subtitle={
+            selectedVariant
+              ? [
+                  formatVariantDisplayName(selectedVariant),
+                  formatVariantSubtitle(selectedVariant, { includeSkuPrefix: true }) || null,
+                ]
+                  .filter(Boolean)
+                  .join(' - ')
+              : 'Configura los ingredientes del item seleccionado'
+          }
+        >
         {loadingRecipe ? (
           <LoadingState
             title="Cargando receta"
@@ -1787,7 +1906,8 @@ export function ProductsPage() {
             </div>
           </div>
         )}
-      </Modal>
+        </Modal>
+      ) : null}
     </div>
   );
 }

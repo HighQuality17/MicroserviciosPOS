@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { getNavigationByRole } from '@/app/permissions';
+import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { useSessionStore } from '@/store/sessionStore';
 
 interface SidebarProps {
@@ -24,7 +25,18 @@ export function Sidebar({
   const navigate = useNavigate();
   const currentUser = useSessionStore((state) => state.currentUser);
   const clearSession = useSessionStore((state) => state.clearSession);
-  const links = getNavigationByRole(currentUser?.role);
+  const { isModuleEnabled } = useBusinessModules();
+  const links = getNavigationByRole(currentUser?.role).filter((link) => {
+    if (link.to === '/ingredients') {
+      return isModuleEnabled('ingredients');
+    }
+
+    if (link.to === '/combos') {
+      return isModuleEnabled('combos');
+    }
+
+    return true;
+  });
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const isMobile = variant === 'mobile';
   const isDesktopCollapsed = !isMobile && isCollapsed;
