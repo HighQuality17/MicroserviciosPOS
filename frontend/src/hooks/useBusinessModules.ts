@@ -18,10 +18,12 @@ export function useBusinessModules() {
   const configError = useBusinessConfigStore((state) => state.configError);
 
   const modules = config?.modules ?? safeFallbackModules;
+  const hasResolvedConfig = config !== null;
 
   return {
     config,
     modules,
+    hasResolvedConfig,
     isLoadingConfig,
     configError,
     isModuleEnabled: (moduleKey: BusinessModuleKey) => modules[moduleKey],

@@ -264,8 +264,49 @@ export function ProductsPage() {
   useEffect(() => {
     if (!showRecipeModule) {
       setRecipeModalOpen(false);
+      setLoadedRecipe(null);
+      setRecipeDraftItems([]);
     }
   }, [showRecipeModule]);
+
+  useEffect(() => {
+    if (!showFiscalFields) {
+      setProductFiscalSectionOpen(false);
+      setEditProductFiscalSectionOpen(false);
+      setProductFiscalDraft(createEmptyProductFiscalDraft());
+    }
+  }, [showFiscalFields]);
+
+  function blockRecipeFlow() {
+    setRecipeModalOpen(false);
+    setLoadedRecipe(null);
+    setRecipeDraftItems([]);
+    setSubmitError('El modulo de recetas esta desactivado para este negocio.');
+  }
+
+  function blockFiscalFieldsFlow() {
+    setProductFiscalSectionOpen(false);
+    setEditProductFiscalSectionOpen(false);
+    setSubmitError('El modulo de campos fiscales esta desactivado para este negocio.');
+  }
+
+  function handleProductFiscalSectionOpenChange(nextOpen: boolean) {
+    if (nextOpen && !showFiscalFields) {
+      blockFiscalFieldsFlow();
+      return;
+    }
+
+    setProductFiscalSectionOpen(nextOpen);
+  }
+
+  function handleEditProductFiscalSectionOpenChange(nextOpen: boolean) {
+    if (nextOpen && !showFiscalFields) {
+      blockFiscalFieldsFlow();
+      return;
+    }
+
+    setEditProductFiscalSectionOpen(nextOpen);
+  }
 
   async function refreshCatalog() {
     try {
@@ -276,13 +317,17 @@ export function ProductsPage() {
       const [productsResponse, variantsResponse, ingredientsResponse] = await Promise.all([
         posApi.getProducts(),
         posApi.getVariants({ status: 'ALL' }),
-        posApi.getIngredients(),
+        showRecipeModule ? posApi.getIngredients() : Promise.resolve<Ingredient[]>([]),
       ]);
 
       setProducts(productsResponse);
       setVariants(variantsResponse);
       setIngredients(ingredientsResponse);
-      await loadRecipeStatuses(variantsResponse);
+      if (showRecipeModule) {
+        await loadRecipeStatuses(variantsResponse);
+      } else {
+        setRecipeStatusByVariant({});
+      }
     } catch (error) {
       setCatalogAccessDenied(isAccessDeniedError(error));
       setCatalogError(
@@ -329,7 +374,9 @@ export function ProductsPage() {
       const product = await posApi.createProduct({
         name: productName.trim(),
         ...serializeProductCatalogDraft(productCatalogDraft),
-        ...serializeProductFiscalDraft(productFiscalDraft),
+        ...serializeProductFiscalDraft(
+          showFiscalFields ? productFiscalDraft : createEmptyProductFiscalDraft(),
+        ),
         active: productActive,
       });
 
@@ -416,7 +463,7 @@ export function ProductsPage() {
     setEditProductCatalogDraft(getProductCatalogDraft(product));
     setEditProductFiscalDraft(getProductFiscalDraft(product));
     setEditProductActive(product.active);
-    setEditProductFiscalSectionOpen(hasConfiguredFiscalData(product));
+    setEditProductFiscalSectionOpen(showFiscalFields && hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
     setSubmitError(null);
   }
@@ -434,7 +481,9 @@ export function ProductsPage() {
       await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
         ...serializeProductCatalogDraft(editProductCatalogDraft),
-        ...serializeProductFiscalDraft(editProductFiscalDraft),
+        ...serializeProductFiscalDraft(
+          showFiscalFields ? editProductFiscalDraft : getProductFiscalDraft(selectedProduct),
+        ),
         active: editProductActive,
       });
       setProductEditorOpen(false);
@@ -604,6 +653,11 @@ export function ProductsPage() {
   }
 
   async function openRecipeManager(variant: CatalogVariant) {
+    if (!showRecipeModule) {
+      blockRecipeFlow();
+      return;
+    }
+
     try {
       setLoadingRecipe(true);
       setSubmitError(null);
@@ -653,10 +707,20 @@ export function ProductsPage() {
   }
 
   function handleAddRecipeRow() {
+    if (!showRecipeModule) {
+      blockRecipeFlow();
+      return;
+    }
+
     setRecipeDraftItems((current) => [...current, createEmptyRecipeDraft()]);
   }
 
   async function handleDeleteRecipeRow(index: number) {
+    if (!showRecipeModule) {
+      blockRecipeFlow();
+      return;
+    }
+
     if (!selectedVariant) return;
     const row = recipeDraftItems[index];
     const ingredientId = Number(row.ingredient_id);
@@ -698,6 +762,11 @@ export function ProductsPage() {
   }
 
   async function handleSaveRecipe() {
+    if (!showRecipeModule) {
+      blockRecipeFlow();
+      return;
+    }
+
     if (!selectedVariant) return;
 
     const validRows = recipeDraftItems.filter(
@@ -969,7 +1038,7 @@ export function ProductsPage() {
               {showFiscalFields ? (
                 <ProductFiscalFieldsSection
                   open={productFiscalSectionOpen}
-                  onOpenChange={(nextOpen) => setProductFiscalSectionOpen(nextOpen)}
+                  onOpenChange={handleProductFiscalSectionOpenChange}
                   draft={productFiscalDraft}
                   onUnspscCodeChange={(value) =>
                     setProductFiscalDraft((current) => ({
@@ -1564,7 +1633,7 @@ export function ProductsPage() {
           {showFiscalFields ? (
             <ProductFiscalFieldsSection
               open={editProductFiscalSectionOpen}
-              onOpenChange={(nextOpen) => setEditProductFiscalSectionOpen(nextOpen)}
+              onOpenChange={handleEditProductFiscalSectionOpenChange}
               draft={editProductFiscalDraft}
               onUnspscCodeChange={(value) =>
                 setEditProductFiscalDraft((current) => ({
