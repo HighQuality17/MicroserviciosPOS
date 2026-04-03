@@ -21,6 +21,7 @@ import { Select } from '@/components/Select';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Textarea } from '@/components/Textarea';
 import { posApi } from '@/services/api/posApi';
+import { useBusinessConfigStore } from '@/store/businessConfigStore';
 import type {
   BusinessConfig,
   BusinessModules,
@@ -146,72 +147,34 @@ const presetByBusinessType: Partial<Record<BusinessType, BusinessModules>> = {
 
 export function AdminConfigPage() {
   const navigate = useNavigate();
+  const config = useBusinessConfigStore((state) => state.config);
+  const isLoadingConfig = useBusinessConfigStore((state) => state.isLoadingConfig);
+  const configError = useBusinessConfigStore((state) => state.configError);
+  const refreshConfig = useBusinessConfigStore((state) => state.refreshConfig);
+  const setConfig = useBusinessConfigStore((state) => state.setConfig);
   const [form, setForm] = useState<BusinessConfigFormState | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadConfig() {
-      try {
-        setLoading(true);
-        setLoadError(null);
-        setSubmitError(null);
-        const config = await posApi.getBusinessConfig();
-
-        if (cancelled) {
-          return;
-        }
-
-        setForm(createFormState(config));
-        setUpdatedAt(config.updatedAt);
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        setLoadError(
-          error instanceof Error
-            ? translateProtectedError(error, 'No fue posible cargar la configuracion del negocio.')
-            : 'No fue posible cargar la configuracion del negocio.',
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    if (config) {
+      setForm(createFormState(config));
     }
+  }, [config]);
 
-    void loadConfig();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  useEffect(() => {
+    if (!config && !isLoadingConfig && !configError) {
+      setSubmitError(null);
+      void refreshConfig();
+    }
+  }, [config, configError, isLoadingConfig, refreshConfig]);
 
   async function handleRefresh() {
-    try {
-      setLoading(true);
-      setLoadError(null);
-      setSubmitError(null);
-      const config = await posApi.getBusinessConfig();
-      setForm(createFormState(config));
-      setUpdatedAt(config.updatedAt);
-    } catch (error) {
-      setLoadError(
-        error instanceof Error
-          ? translateProtectedError(error, 'No fue posible actualizar la configuracion del negocio.')
-          : 'No fue posible actualizar la configuracion del negocio.',
-      );
-    } finally {
-      setLoading(false);
-    }
+    setSubmitError(null);
+    setSubmitSuccess(null);
+    await refreshConfig();
   }
 
   function setField<K extends keyof BusinessConfigFormState>(
@@ -324,8 +287,8 @@ export function AdminConfigPage() {
       setSubmitError(null);
       setSubmitSuccess(null);
       const updatedConfig = await posApi.updateBusinessConfig(payload);
+      setConfig(updatedConfig);
       setForm(createFormState(updatedConfig));
-      setUpdatedAt(updatedConfig.updatedAt);
       setSubmitSuccess('Configuracion guardada correctamente.');
       setFieldErrors({});
     } catch (error) {
@@ -339,7 +302,7 @@ export function AdminConfigPage() {
     }
   }
 
-  if (loading && !form) {
+  if (isLoadingConfig && !form) {
     return (
       <LoadingState
         title="Cargando configuracion"
@@ -357,9 +320,12 @@ export function AdminConfigPage() {
           title="Configuracion del negocio"
           description="No fue posible preparar esta vista administrativa."
         />
-        {loadError ? (
+        {configError ? (
           <FeedbackMessage tone="error" className="mt-6">
-            {loadError}
+            {translateProtectedError(
+              new Error(configError),
+              'No fue posible cargar la configuracion del negocio.',
+            )}
           </FeedbackMessage>
         ) : null}
         <div className="mt-6 flex flex-wrap gap-3">
@@ -375,6 +341,8 @@ export function AdminConfigPage() {
     );
   }
 
+  const updatedAt = config?.updatedAt ?? null;
+
   const selectedBusinessType = businessTypeOptions.find(
     (option) => option.value === form.businessType,
   );
@@ -387,8 +355,8 @@ export function AdminConfigPage() {
         ariaLabel="Estado de la configuracion del negocio"
         eyebrow="BusinessConfig"
         title="Configuracion del negocio"
-        statusLabel={saving ? 'Guardando' : 'Editable'}
-        statusTone={saving ? 'info' : 'success'}
+        statusLabel={saving ? 'Guardando' : isLoadingConfig ? 'Sincronizando' : 'Editable'}
+        statusTone={saving ? 'info' : isLoadingConfig ? 'info' : 'success'}
         description="Define datos base, tipo de negocio y modulos activos desde una vista administrativa limpia y aislada."
         helpText="Esta pantalla solo administra BusinessConfig. Todavia no oculta modulos, no bloquea rutas y no cambia la navegacion global."
         icon={<Sparkles size={18} />}
@@ -422,9 +390,12 @@ export function AdminConfigPage() {
         />
       </ModuleStatusHeader>
 
-      {loadError ? (
+      {configError && form ? (
         <FeedbackMessage tone="warning">
-          {loadError}
+          {translateProtectedError(
+            new Error(configError),
+            'No fue posible actualizar la configuracion del negocio.',
+          )}
         </FeedbackMessage>
       ) : null}
 
@@ -649,7 +620,7 @@ export function AdminConfigPage() {
               <Button
                 type="button"
                 variant="secondary"
-                disabled={loading || saving}
+                disabled={isLoadingConfig || saving}
                 onClick={() => void handleRefresh()}
               >
                 Actualizar
