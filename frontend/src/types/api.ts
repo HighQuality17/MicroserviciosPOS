@@ -47,6 +47,14 @@ export type TaxCategory =
   | "EXCLUDED"
   | "NOT_SUBJECT";
 export type ProductType = "SIMPLE" | "VARIANT";
+export type BusinessType =
+  | "DESSERT_SHOP"
+  | "CAFE"
+  | "RESTAURANT"
+  | "RETAIL"
+  | "MINIMARKET"
+  | "SALON"
+  | "CUSTOM";
 export interface User {
   id: number;
   name: string;
@@ -413,6 +421,46 @@ export interface AdminRecentActivityItem {
 
 export interface AdminRecentActivityResponse {
   items: AdminRecentActivityItem[];
+}
+
+export interface BusinessModules {
+  ingredients: boolean;
+  recipes: boolean;
+  combos: boolean;
+  priceLists: boolean;
+  fiscalFields: boolean;
+  electronicInvoicing: boolean;
+}
+
+export interface BusinessConfig {
+  id: number;
+  businessName: string;
+  legalName: string | null;
+  businessType: BusinessType;
+  currencyCode: string;
+  timezone: string;
+  countryCode: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  modules: BusinessModules;
+  updatedById: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateBusinessConfigPayload {
+  businessName?: string;
+  legalName?: string | null;
+  businessType?: BusinessType;
+  currencyCode?: string;
+  timezone?: string;
+  countryCode?: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  modules?: Partial<BusinessModules>;
+  applyPreset?: boolean;
 }
 
 
