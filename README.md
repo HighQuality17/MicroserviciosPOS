@@ -11,6 +11,7 @@ La documentación de este repositorio fue actualizada sobre el estado real del c
 - [Stack tecnológico real](#stack-tecnológico-real)
 - [Arquitectura general](#arquitectura-general)
 - [Módulos principales](#módulos-principales)
+- [BusinessConfig](#businessconfig)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Requisitos previos](#requisitos-previos)
 - [Instalación y puesta en marcha](#instalación-y-puesta-en-marcha)
@@ -127,6 +128,16 @@ Notas de arquitectura verificadas:
 | Ventas y recibos | `/sales`, `/sales/recent`, `/sales/latest`, `/sales/:id/receipt` | `/sales` | consulta `ADMIN`, `CASHIER`, `AUDITOR` |
 | Panel administrativo | `/admin/*`, `/locations` | `/admin` | panel `ADMIN`, `AUDITOR`; creación de POS `ADMIN` |
 | Temas | `/auth/me/theme` | selector en header autenticado | usuario autenticado |
+
+## BusinessConfig
+
+`BusinessConfig` centraliza la configuracion global del negocio y habilita una capa gradual de modulos opcionales sin intervenir todavia los modulos core del sistema.
+
+- backend: modelo singleton `BusinessConfig`, enum `BusinessType`, presets por tipo de negocio y endpoints `GET /api/config` y `PATCH /api/config`;
+- frontend admin: pantalla `/admin/config` para consultar y editar datos del negocio, tipo de negocio y `modules`;
+- estado global: la app autenticada carga la configuracion despues de restaurar sesion y la expone mediante un store dedicado;
+- aplicacion actual: ya se usa para visibilidad condicional y proteccion gradual de `ingredients`, `combos`, `recipes` y `fiscalFields`;
+- referencia tecnica: [`docs/business-config.md`](docs/business-config.md).
 
 ## Estructura del repositorio
 
@@ -315,6 +326,7 @@ La documentación detallada quedó organizada en `docs/`:
 - [`docs/architecture.md`](docs/architecture.md): arquitectura y flujos entre capas
 - [`docs/backend.md`](docs/backend.md): backend, módulos, seguridad y API
 - [`docs/frontend.md`](docs/frontend.md): frontend, rutas, stores y UX
+- [`docs/business-config.md`](docs/business-config.md): implementacion de BusinessConfig, presets, endpoints, store global y proteccion gradual por modulo
 - [`docs/navigation-and-layout-updates.md`](docs/navigation-and-layout-updates.md): nota breve sobre navegación responsive, scroll-to-top y colapso del sidebar
 - [`docs/database.md`](docs/database.md): Prisma, modelos y reglas de datos
 - [`docs/modules.md`](docs/modules.md): mapa funcional del sistema
