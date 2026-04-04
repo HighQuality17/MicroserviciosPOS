@@ -159,7 +159,7 @@ Notas de arquitectura verificadas:
 - npm
 - Entorno capaz de ejecutar backend NestJS y frontend Vite
 - Docker Desktop o Docker Engine con Compose plugin, solo si vas a usar el stack Docker local
-- Puerto `3000` disponible para la API local
+- Puerto `3000` disponible para la API 
 - Puerto disponible para Vite en desarrollo
 
 ## Instalación y puesta en marcha
@@ -326,6 +326,7 @@ La documentación detallada quedó organizada en `docs/`:
 - [`docs/architecture.md`](docs/architecture.md): arquitectura y flujos entre capas
 - [`docs/backend.md`](docs/backend.md): backend, módulos, seguridad y API
 - [`docs/frontend.md`](docs/frontend.md): frontend, rutas, stores y UX
+- [`docs/combos.md`](docs/combos.md): resumen funcional y tecnico de la operacion actual de la pestana Combos
 - [`docs/business-config.md`](docs/business-config.md): implementacion de BusinessConfig, presets, endpoints, store global y proteccion gradual por modulo
 - [`docs/navigation-and-layout-updates.md`](docs/navigation-and-layout-updates.md): nota breve sobre navegación responsive, scroll-to-top y colapso del sidebar
 - [`docs/database.md`](docs/database.md): Prisma, modelos y reglas de datos
@@ -358,7 +359,7 @@ Estado verificado a nivel de repositorio:
   - exportación de reportes;
   - alertas configurables;
   - reglas por sucursal;
-  - edición/reordenación completa de combos;
+  - reordenacion visual de combos y refinamiento UX avanzado de su editor;
   - historial visual de movimientos recientes en inventario.
 
 ## Licencia
@@ -388,6 +389,13 @@ Actualizacion breve de barras superiores y resumenes de modulos:
 - uso de una base reusable para estandarizar composicion y ayudas contextuales sin recargar la UI.
 
 Detalle tecnico breve: [docs/module-status-header-updates.md](docs/module-status-header-updates.md)
+
+Actualizacion breve de Combos:
+
+- la pestana `Combos` ya permite crear, editar, activar o desactivar, eliminar con confirmacion, buscar por nombre y refrescar el listado sin salir de la vista;
+- la composicion del combo ahora puede editarse desde un borrador explicito con visualizacion de items actuales, cambio de cantidades, baja puntual de items y alta de nuevos items antes de guardar;
+- el POS mantiene compatibilidad porque sigue consumiendo combos activos desde `/catalog`, mientras la gestion administrativa opera sobre `/combos`;
+- detalle tecnico y limitaciones actuales: [docs/combos.md](docs/combos.md)
 ## Historial de cambios
 
 - Historial principal: [`CHANGELOG.md`](CHANGELOG.md)
