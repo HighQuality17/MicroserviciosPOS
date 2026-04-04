@@ -47,6 +47,7 @@ export type TaxCategory =
   | "EXCLUDED"
   | "NOT_SUBJECT";
 export type ProductType = "SIMPLE" | "VARIANT";
+export type ComboListStatus = "ALL" | "ACTIVE" | "INACTIVE";
 export type BusinessType =
   | "DESSERT_SHOP"
   | "CAFE"
