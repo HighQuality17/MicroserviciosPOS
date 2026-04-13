@@ -4,7 +4,7 @@
 
 La fase POS 1A documenta la primera mejora estructural del POS enfocada en UX, con prioridad en claridad operativa, mejor jerarquia visual y una experiencia movil mas usable sin tocar reglas de negocio, backend ni contratos API.
 
-No es un rediseÃ±o visual completo del POS ni del sistema entero. Es una capa inicial para ordenar la vista, dar mas presencia al carrito y preparar una fase visual mas fuerte despues.
+No es un rediseño visual completo del POS ni del sistema entero. Es una capa inicial para ordenar la vista, dar mas presencia al carrito y preparar una fase visual mas fuerte despues.
 
 ## Alcance de esta fase
 
@@ -26,7 +26,7 @@ Queda explicitamente fuera de esta fase:
 - paginacion clasica del catalogo;
 - paginacion del carrito;
 - imagenes reales de producto;
-- rediseÃ±o total del sistema.
+- rediseño total del sistema.
 
 ## Implementacion actual en frontend
 
@@ -160,7 +160,7 @@ La fase POS 1A deja varias decisiones deliberadamente pendientes:
 - no hay categorias reales de catalogo soportadas por backend para filtrar;
 - no hay imagenes reales de producto;
 - el cierre del carrito movil es por boton o backdrop, no por gesto avanzado;
-- el look ya es mas claro y usable, pero aun no representa un rediseÃ±o visual fuerte de marca;
+- el look ya es mas claro y usable, pero aun no representa un rediseño visual fuerte de marca;
 - el toast y el carrito movil estan orientados al flujo POS actual, no a escenarios futuros como promociones o multiples capas operativas.
 
 ## Que queda pendiente para la siguiente fase visual fuerte
@@ -187,5 +187,6 @@ POS 1A deja al POS con una base UX mas solida:
 - busqueda y filtros mas claros;
 - cards de catalogo mas informativas aun sin imagenes reales.
 
-Es una fase de ordenamiento y usabilidad. La siguiente etapa puede enfocarse en el rediseÃ±o visual fuerte sobre una estructura ya mas estable.
+Es una fase de ordenamiento y usabilidad. La siguiente etapa puede enfocarse en el rediseño visual fuerte sobre una estructura ya mas estable.
+
 
