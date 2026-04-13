@@ -1,16 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CircleDot, MapPin, Receipt, User } from 'lucide-react';
+import clsx from 'clsx';
+import { ChevronUp, CircleDot, MapPin, Receipt, Search, ShoppingCart, User } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { CartItem } from '@/components/CartItem';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
-import { PaymentModal } from '@/components/PaymentModal';
 import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
+import { PaymentModal } from '@/components/PaymentModal';
 import { SectionHeader } from '@/components/SectionHeader';
-import { Select } from '@/components/Select';
+import {
+  PosCartPanel,
+} from '@/features/pos/components/PosCartPanel';
+import { PosCartSheet } from '@/features/pos/components/PosCartSheet';
+import {
+  PosCatalogCard,
+  type PosCatalogCardKind,
+  type PosCatalogCardMetaRow,
+} from '@/features/pos/components/PosCatalogCard';
+import {
+  PosMobileCartToast,
+  type PosMobileCartToastData,
+} from '@/features/pos/components/PosMobileCartToast';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useCartStore } from '@/store/cartStore';
@@ -34,12 +46,25 @@ import { formatCurrency } from '@/utils/format';
 import { normalizeNumberInput } from '@/utils/numberInput';
 
 const missingRecipePattern = /^Variant (\d+) has no recipe configured$/i;
+const cartSheetId = 'mobile-cart-sheet';
+
+type CatalogFilter = 'ALL' | PosCatalogCardKind;
+
+interface PosCatalogEntry extends CartItemType {
+  kind: PosCatalogCardKind;
+  badge: string;
+  eyebrow: string;
+  description: string;
+  metaRows: PosCatalogCardMetaRow[];
+  searchText: string;
+}
 
 export function PosPage() {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
   const currentCashSession = useAppStore((state) => state.currentCashSession);
   const setCurrentCashSession = useAppStore((state) => state.setCurrentCashSession);
+  const setPosMobileOverlayOpen = useAppStore((state) => state.setPosMobileOverlayOpen);
   const addRecentReceipt = useAppStore((state) => state.addRecentReceipt);
   const recentReceipts = useAppStore((state) => state.recentReceipts);
   const items = useCartStore((state) => state.items);
@@ -59,11 +84,14 @@ export function PosPage() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>('ALL');
   const [discountInput, setDiscountInput] = useState('');
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [lastReceiptId, setLastReceiptId] = useState<number | null>(null);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [mobileCartToast, setMobileCartToast] = useState<PosMobileCartToastData | null>(null);
 
   useEffect(() => {
     async function loadCurrentCash() {
@@ -106,39 +134,132 @@ export function PosPage() {
     setDiscountInput(discountValue > 0 ? String(discountValue) : '');
   }, [discountValue]);
 
-  const catalogItems = useMemo(() => {
-    const variantCards: CartItemType[] = catalog.variants.map((variant: CatalogVariant) => ({
-      key: `catalog-variant-${variant.id}`,
-      item_type: 'VARIANT',
-      ref_id: variant.id,
-      name: formatVariantDisplayName(variant),
-      subtitle: formatVariantSubtitle(variant, { includeSkuPrefix: true }) || undefined,
-      unit_price: Number(variant.sale_price),
-      qty: 1,
-      product_type: variant.product_type,
-      is_operational: variant.is_operational,
-    }));
+  useEffect(() => {
+    if (!mobileCartToast) {
+      return;
+    }
 
-    const comboCards: CartItemType[] = catalog.combos.map((combo: CatalogCombo) => ({
+    const timeoutId = window.setTimeout(() => {
+      setMobileCartToast(null);
+    }, 3200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [mobileCartToast]);
+
+  useEffect(() => {
+    setPosMobileOverlayOpen(mobileCartOpen);
+
+    return () => {
+      setPosMobileOverlayOpen(false);
+    };
+  }, [mobileCartOpen, setPosMobileOverlayOpen]);
+
+  const catalogEntries = useMemo(() => {
+    const variantCards: PosCatalogEntry[] = catalog.variants.map((variant: CatalogVariant) => {
+      const isSimple = isSimpleOperationalVariant(variant);
+      const subtitle = formatVariantSubtitle(variant, { includeSkuPrefix: true }) || undefined;
+
+      return {
+        key: `catalog-variant-${variant.id}`,
+        item_type: 'VARIANT',
+        ref_id: variant.id,
+        name: formatVariantDisplayName(variant),
+        subtitle,
+        unit_price: Number(variant.sale_price),
+        qty: 1,
+        product_type: variant.product_type,
+        is_operational: variant.is_operational,
+        kind: isSimple ? 'SIMPLE' : 'VARIANT',
+        badge: isSimple ? 'Producto simple' : 'Variante',
+        eyebrow: isSimple ? 'Venta directa' : 'Presentacion operativa',
+        description: subtitle || (isSimple ? 'Producto simple listo para venta inmediata.' : 'Variante activa lista para vender.'),
+        metaRows: buildVariantMetaRows(variant),
+        searchText: [
+          formatVariantDisplayName(variant),
+          subtitle ?? '',
+          variant.product_name,
+          variant.size,
+          variant.sku,
+        ]
+          .join(' ')
+          .toLowerCase(),
+      };
+    });
+
+    const comboCards: PosCatalogEntry[] = catalog.combos.map((combo: CatalogCombo) => ({
       key: `catalog-combo-${combo.id}`,
       item_type: 'COMBO',
       ref_id: combo.id,
       name: combo.name,
-      subtitle: combo.items.length
-        ? `${combo.items.length} items configurados`
-        : 'Combo',
+      subtitle: combo.items.length ? `${combo.items.length} items configurados` : 'Combo',
       unit_price: Number(combo.sale_price),
       qty: 1,
+      kind: 'COMBO',
+      badge: 'Combo',
+      eyebrow: 'Combo listo',
+      description: combo.items.length
+        ? `${combo.items.length} items configurados para venta conjunta.`
+        : 'Combo operativo listo para vender en una sola accion.',
+      metaRows: [
+        {
+          label: 'Items',
+          value: combo.items.length ? `${combo.items.length} configurados` : 'Sin detalle',
+        },
+        {
+          label: 'Tipo',
+          value: 'Venta agrupada',
+        },
+      ],
+      searchText: `${combo.name} ${combo.items.length} combo`.toLowerCase(),
     }));
 
-    return [...variantCards, ...comboCards].filter((item) =>
-      `${item.name} ${item.subtitle ?? ''}`.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [catalog.combos, catalog.variants, search]);
+    return [...variantCards, ...comboCards];
+  }, [catalog.combos, catalog.variants]);
+
+  const visibleCatalogItems = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return catalogEntries.filter((item) => {
+      const matchesFilter = catalogFilter === 'ALL' || item.kind === catalogFilter;
+      const matchesSearch =
+        normalizedSearch.length === 0 || item.searchText.includes(normalizedSearch);
+
+      return matchesFilter && matchesSearch;
+    });
+  }, [catalogEntries, catalogFilter, search]);
+
+  const filterOptions = useMemo(
+    () => [
+      { value: 'ALL' as const, label: 'Todos', count: catalogEntries.length },
+      {
+        value: 'SIMPLE' as const,
+        label: 'Productos simples',
+        count: catalogEntries.filter((item) => item.kind === 'SIMPLE').length,
+      },
+      {
+        value: 'VARIANT' as const,
+        label: 'Variantes',
+        count: catalogEntries.filter((item) => item.kind === 'VARIANT').length,
+      },
+      {
+        value: 'COMBO' as const,
+        label: 'Combos',
+        count: catalogEntries.filter((item) => item.kind === 'COMBO').length,
+      },
+    ],
+    [catalogEntries],
+  );
 
   const totals = useMemo(
     () => computeCartTotals(items, discountType, discountValue),
     [discountType, discountValue, items],
+  );
+
+  const totalUnits = useMemo(
+    () => items.reduce((sum, item) => sum + item.qty, 0),
+    [items],
   );
 
   const variantNameById = useMemo(() => {
@@ -177,12 +298,75 @@ export function PosPage() {
     : currentLocation
       ? 'Caja pendiente'
       : 'Selecciona un POS';
+  const checkoutDisabledReason = !currentLocation
+    ? 'Selecciona un POS valido para cobrar.'
+    : !currentCashSession
+      ? 'Abre la caja en el modulo Caja antes de cobrar.'
+      : items.length === 0
+        ? 'Agrega al menos un item para habilitar el cobro.'
+        : null;
+  const catalogSummaryCopy =
+    visibleCatalogItems.length === catalogEntries.length && catalogFilter === 'ALL' && !search.trim()
+      ? 'Catalogo completo activo'
+      : `de ${catalogEntries.length} disponibles`;
+
+  function handleDiscountInputChange(rawValue: string) {
+    const nextValue = normalizeNumberInput(rawValue, {
+      allowDecimal: true,
+    });
+
+    if (nextValue === null) {
+      return;
+    }
+
+    setDiscountInput(nextValue);
+    setDiscount(discountType, nextValue === '' ? 0 : Number(nextValue));
+  }
+
+  function handleDiscountTypeChange(nextType: DiscountType) {
+    setDiscount(nextType, discountValue);
+  }
+
+  function handleAddCatalogItem(item: PosCatalogEntry) {
+    addItem(item);
+
+    const nextState = useCartStore.getState();
+    const nextTotals = computeCartTotals(
+      nextState.items,
+      nextState.discountType,
+      nextState.discountValue,
+    );
+    const nextItemCount = nextState.items.reduce(
+      (sum, cartItem) => sum + cartItem.qty,
+      0,
+    );
+
+    setMobileCartToast({
+      itemName: item.name,
+      itemCount: nextItemCount,
+      subtotal: nextTotals.subtotal,
+    });
+  }
+
+  function handleOpenMobileCart() {
+    setMobileCartToast(null);
+    setMobileCartOpen(true);
+  }
+
+  function handleOpenPayment() {
+    setPaymentError(null);
+    setMobileCartOpen(false);
+    setPaymentOpen(true);
+  }
 
   async function handleConfirmPayment(payload: {
     method: PaymentMethod;
     amount_received: number;
   }) {
-    if (!currentUser || !currentLocation) return;
+    if (!currentUser || !currentLocation) {
+      return;
+    }
+
     if (!currentCashSession) {
       setPaymentError('No hay una caja abierta para registrar la venta.');
       return;
@@ -215,6 +399,7 @@ export function PosPage() {
       addRecentReceipt(receipt);
       setLastReceiptId(receipt.sale_id);
       clearCart();
+      setMobileCartToast(null);
       setPaymentOpen(false);
     } catch (error) {
       setPaymentError(formatPosPaymentError(error, variantNameById));
@@ -279,24 +464,12 @@ export function PosPage() {
         />
       </ModuleStatusHeader>
 
-      <div className="grid min-w-0 items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(24rem,28rem)]">
         <Card className="self-start">
           <SectionHeader
             eyebrow="Catalogo de venta"
             title="POS principal"
-            description="Explora productos simples, variantes y combos activos para la caja seleccionada."
-            actions={
-              <div className="w-full md:max-w-md">
-                <Input
-                  label="Buscar en catalogo"
-                  labelClassName="sr-only"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar por nombre, presentacion o SKU"
-                  hint="Filtra por nombre, SKU o presentacion sin salir del teclado."
-                />
-              </div>
-            }
+            description="Explora productos simples, variantes y combos activos sin perder de vista el flujo de venta."
           />
 
           {!currentLocation ? (
@@ -308,6 +481,49 @@ export function PosPage() {
               Abre la caja en la pestana Caja antes de cobrar.
             </FeedbackMessage>
           ) : null}
+
+          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_15rem]">
+            <Input
+              label="Buscar en catalogo"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por nombre, presentacion o SKU"
+              hint="Filtra por nombre, SKU o presentacion sin salir del teclado."
+            />
+
+            <div className="surface-subtle rounded-[1.5rem] p-4">
+              <div className="flex items-center gap-2 theme-text-secondary">
+                <Search size={16} />
+                <span className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
+                  Mostrando
+                </span>
+              </div>
+              <p className="mt-3 font-display text-3xl font-bold theme-text-strong">
+                {visibleCatalogItems.length}
+              </p>
+              <p className="mt-1 text-sm theme-text-secondary">{catalogSummaryCopy}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+            {filterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={catalogFilter === option.value}
+                onClick={() => setCatalogFilter(option.value)}
+                className={clsx(
+                  'min-h-11 shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none',
+                  catalogFilter === option.value
+                    ? 'surface-selected'
+                    : 'surface-subtle theme-text-secondary hover:theme-text-strong',
+                )}
+              >
+                <span>{option.label}</span>
+                <span className="ml-2 text-xs theme-text-faint">{option.count}</span>
+              </button>
+            ))}
+          </div>
 
           {catalogLoading ? (
             <div className="mt-6">
@@ -329,134 +545,135 @@ export function PosPage() {
                 }
               />
             </div>
-          ) : catalogItems.length === 0 ? (
+          ) : visibleCatalogItems.length === 0 ? (
             <div className="mt-6">
               <EmptyState
-                title="Catalogo vacio"
-                description="No hay productos operativos ni combos activos disponibles para esta caja."
+                title={search.trim() || catalogFilter !== 'ALL' ? 'Sin coincidencias' : 'Catalogo vacio'}
+                description={
+                  search.trim() || catalogFilter !== 'ALL'
+                    ? `No encontramos items para ${resolveCatalogFilterLabel(catalogFilter).toLowerCase()} con el filtro actual. Ajusta la busqueda o vuelve a mostrar todo el catalogo.`
+                    : 'No hay productos operativos ni combos activos disponibles para esta caja.'
+                }
+                action={
+                  search.trim() || catalogFilter !== 'ALL' ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setSearch('');
+                        setCatalogFilter('ALL');
+                      }}
+                    >
+                      Limpiar filtros
+                    </Button>
+                  ) : undefined
+                }
               />
             </div>
           ) : (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-              {catalogItems.map((item) => (
-                <button
+              {visibleCatalogItems.map((item) => (
+                <PosCatalogCard
                   key={item.key}
-                  type="button"
-                  onClick={() => addItem(item)}
+                  item={item}
+                  kind={item.kind}
+                  badge={item.badge}
+                  eyebrow={item.eyebrow}
+                  description={item.description}
+                  metaRows={item.metaRows}
                   disabled={!currentLocation}
-                  aria-label={`Agregar ${resolveCatalogItemLabel(item)} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
-                  className="surface-interactive data-list-card group rounded-[1.65rem] p-5 text-left focus-visible:outline-none"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-display text-xl font-bold theme-text-strong">{item.name}</p>
-                      <p className="mt-1 text-sm theme-text-muted">{item.subtitle}</p>
-                    </div>
-                    <span className="soft-pill rounded-full px-3 py-1 text-xs">
-                      {resolveCatalogItemBadge(item)}
-                    </span>
-                  </div>
-                  <div className="mt-8 flex items-center justify-between">
-                    <span className="metric-accent font-display text-2xl font-bold">
-                      {formatCurrency(item.unit_price)}
-                    </span>
-                    <span className="text-sm theme-text-secondary">Agregar</span>
-                  </div>
-                </button>
+                  onAdd={() => handleAddCatalogItem(item)}
+                />
               ))}
             </div>
           )}
         </Card>
 
-        <Card className="h-fit self-start xl:sticky xl:top-4">
-          <SectionHeader
-            eyebrow="Venta en curso"
-            title="Carrito"
-            description="Ajusta cantidades, aplica descuentos y confirma el cobro sin salir de la operacion."
-            actions={
-              <Button variant="ghost" onClick={clearCart}>
-                Limpiar
-              </Button>
-            }
+        <Card className="hidden h-fit self-start lg:sticky lg:top-4 lg:block">
+          <PosCartPanel
+            mode="desktop"
+            items={items}
+            discountType={discountType}
+            discountInput={discountInput}
+            totals={totals}
+            locationName={currentLocation?.name}
+            checkoutDisabledReason={checkoutDisabledReason}
+            onClearCart={() => {
+              clearCart();
+              setMobileCartToast(null);
+            }}
+            onDiscountTypeChange={handleDiscountTypeChange}
+            onDiscountInputChange={handleDiscountInputChange}
+            onChangeQty={(key, qty) => updateQty(key, qty)}
+            onRemove={(key) => removeItem(key)}
+            onCheckout={handleOpenPayment}
           />
-
-          <div className="mt-5 grid gap-3">
-            {items.length === 0 ? (
-              <EmptyState
-                title="Sin items cargados"
-                description="Agrega productos, variantes o combos desde el catalogo para preparar la venta."
-              />
-            ) : (
-              items.map((item) => (
-                <CartItem
-                  key={item.key}
-                  item={item}
-                  onChangeQty={(qty) => updateQty(item.key, qty)}
-                  onRemove={() => removeItem(item.key)}
-                />
-              ))
-            )}
-          </div>
-
-          <div className="mt-6 grid gap-4 border-t border-[color:var(--line)] pt-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Select
-                label="Descuento"
-                value={discountType}
-                onChange={(event) =>
-                  setDiscount(event.target.value as DiscountType, discountValue)
-                }
-              >
-                <option value="NONE">Sin descuento</option>
-                <option value="PERCENT">Porcentaje</option>
-                <option value="FIXED">Valor fijo</option>
-              </Select>
-              <Input
-                type="number"
-                min={0}
-                label="Valor"
-                placeholder="Ej: 10"
-                value={discountInput}
-                onChange={(event) => {
-                  const nextValue = normalizeNumberInput(event.target.value, {
-                    allowDecimal: true,
-                  });
-                  if (nextValue !== null) {
-                    setDiscountInput(nextValue);
-                    setDiscount(discountType, nextValue === '' ? 0 : Number(nextValue));
-                  }
-                }}
-              />
-            </div>
-
-            <div className="surface-subtle-strong rounded-[1.65rem] p-4">
-              <div className="flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-                <span>Subtotal</span>
-                <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-                <span>Descuento</span>
-                <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
-              </div>
-              <div className="mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
-                <span className="font-display text-xl font-bold theme-text-strong">Total</span>
-                <span className="metric-accent-strong font-display text-3xl font-bold">
-                  {formatCurrency(totals.total)}
-                </span>
-              </div>
-            </div>
-
-            <Button
-              disabled={items.length === 0 || !currentLocation || !currentCashSession}
-              aria-haspopup="dialog"
-              aria-controls="payment-dialog"
-              onClick={() => setPaymentOpen(true)}
-            >
-              Cobrar
-            </Button>
-          </div>
         </Card>
       </div>
+
+      <PosMobileCartToast
+        toast={mobileCartToast}
+        cartSheetId={cartSheetId}
+        onOpenCart={handleOpenMobileCart}
+      />
+
+      {items.length > 0 ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 px-4 lg:hidden">
+          <button
+            type="button"
+            onClick={handleOpenMobileCart}
+            aria-haspopup="dialog"
+            aria-controls={cartSheetId}
+            className="pos-mobile-cart-button pointer-events-auto mx-auto flex w-full max-w-lg items-center justify-between gap-3 rounded-[1.6rem] px-4 py-3 text-left"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="pos-mobile-cart-button__icon" aria-hidden="true">
+                <ShoppingCart size={18} strokeWidth={2} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold theme-text-strong">Carrito</p>
+                <p className="truncate text-xs theme-text-secondary">
+                  {totalUnits === 1 ? '1 item' : `${totalUnits} items`} - {formatCurrency(totals.total)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="rounded-full border border-[color:var(--line)] bg-[color:rgb(255_255_255_/_0.04)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] theme-text-secondary">
+                {items.length === 1 ? '1 linea' : `${items.length} lineas`}
+              </span>
+              <ChevronUp size={18} className="theme-text-secondary" aria-hidden="true" />
+            </div>
+          </button>
+        </div>
+      ) : null}
+
+      <PosCartSheet
+        id={cartSheetId}
+        open={mobileCartOpen}
+        onClose={() => setMobileCartOpen(false)}
+        title="Carrito"
+        subtitle="El catalogo sigue al frente. Abre, revisa y cierra el carrito sin salir de la venta."
+      >
+        <PosCartPanel
+          mode="mobile"
+          className="min-h-0"
+          items={items}
+          discountType={discountType}
+          discountInput={discountInput}
+          totals={totals}
+          locationName={currentLocation?.name}
+          checkoutDisabledReason={checkoutDisabledReason}
+          onClearCart={() => {
+            clearCart();
+            setMobileCartToast(null);
+          }}
+          onDiscountTypeChange={handleDiscountTypeChange}
+          onDiscountInputChange={handleDiscountInputChange}
+          onChangeQty={(key, qty) => updateQty(key, qty)}
+          onRemove={(key) => removeItem(key)}
+          onCheckout={handleOpenPayment}
+        />
+      </PosCartSheet>
 
       <PaymentModal
         open={paymentOpen}
@@ -483,24 +700,32 @@ function formatUserRole(role: UserRole | undefined) {
   }
 }
 
-function resolveCatalogItemBadge(item: CartItemType) {
-  if (item.item_type === 'COMBO') {
-    return 'Combo';
+function resolveCatalogFilterLabel(filter: CatalogFilter) {
+  switch (filter) {
+    case 'SIMPLE':
+      return 'Productos simples';
+    case 'VARIANT':
+      return 'Variantes';
+    case 'COMBO':
+      return 'Combos';
+    default:
+      return 'Todo el catalogo';
   }
-
-  return item.is_operational && item.product_type === 'SIMPLE'
-    ? 'Producto simple'
-    : 'Variante';
 }
 
-function resolveCatalogItemLabel(item: CartItemType) {
-  if (item.item_type === 'COMBO') {
-    return 'combo';
-  }
+function buildVariantMetaRows(variant: CatalogVariant): PosCatalogCardMetaRow[] {
+  const isSimple = isSimpleOperationalVariant(variant);
 
-  return item.is_operational && item.product_type === 'SIMPLE'
-    ? 'producto'
-    : 'variante';
+  return [
+    {
+      label: 'SKU',
+      value: variant.sku.trim() || 'Sin SKU',
+    },
+    {
+      label: isSimple ? 'Tipo' : 'Presentacion',
+      value: isSimple ? 'Venta directa' : variant.size.trim() || 'Sin tamano',
+    },
+  ];
 }
 
 function formatPosPaymentError(error: unknown, variantNameById: Map<number, string>) {
@@ -520,4 +745,7 @@ function formatPosPaymentError(error: unknown, variantNameById: Map<number, stri
 
   return 'El item seleccionado no tiene receta configurada. Revisalo en administracion antes de cobrar esta venta.';
 }
+
+
+
 
