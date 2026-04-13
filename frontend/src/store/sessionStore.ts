@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { posApi } from '@/services/api/posApi';
 import { clearStoredToken, setStoredToken } from '@/services/api/tokenStorage';
 import { useAppStore } from '@/store/appStore';
+import { useBusinessConfigStore } from '@/store/businessConfigStore';
 import { useCartStore } from '@/store/cartStore';
 import type { AuthUser } from '@/types/api';
 import type { ThemeName } from '@/theme/theme';
@@ -108,6 +109,7 @@ export const useSessionStore = create<SessionState>()(
         clearStoredToken();
         useCartStore.getState().resetCartState();
         useAppStore.getState().resetAppState();
+        useBusinessConfigStore.getState().resetConfigState();
         set({
           currentUser: null,
           accessToken: null,

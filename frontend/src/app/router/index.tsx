@@ -5,6 +5,7 @@ import { LoginPage } from '@/features/login/LoginPage';
 import { PosPage } from '@/features/pos/PosPage';
 import { CashPage } from '@/features/cash/CashPage';
 import { ProtectedRoute } from '@/app/router/ProtectedRoute';
+import { ModuleAccessRoute } from '@/app/router/ModuleAccessRoute';
 import { AccessDeniedPage } from '@/features/access/AccessDeniedPage';
 import { LoadingState } from '@/components/LoadingState';
 import { getAllowedRolesForRoute, getDefaultRouteForRole } from '@/app/permissions';
@@ -33,6 +34,11 @@ const SalesPage = lazy(() =>
 const AdminPage = lazy(() =>
   import('@/features/admin/AdminPage').then((module) => ({
     default: module.AdminPage,
+  })),
+);
+const AdminConfigPage = lazy(() =>
+  import('@/features/admin/AdminConfigPage').then((module) => ({
+    default: module.AdminConfigPage,
   })),
 );
 
@@ -101,9 +107,14 @@ export const router = createBrowserRouter([
         path: '/ingredients',
         element: (
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/ingredients')}>
-            <LazyRoute>
-              <IngredientsPage />
-            </LazyRoute>
+            <ModuleAccessRoute
+              moduleKey="ingredients"
+              description="El modulo de ingredientes esta desactivado para este negocio. Puedes volver a una vista disponible o revisar la configuracion administrativa."
+            >
+              <LazyRoute>
+                <IngredientsPage />
+              </LazyRoute>
+            </ModuleAccessRoute>
           </ProtectedRoute>
         ),
       },
@@ -111,9 +122,14 @@ export const router = createBrowserRouter([
         path: '/combos',
         element: (
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/combos')}>
-            <LazyRoute>
-              <CombosPage />
-            </LazyRoute>
+            <ModuleAccessRoute
+              moduleKey="combos"
+              description="El modulo de combos esta desactivado para este negocio. La ruta sigue existiendo, pero el acceso operativo queda protegido hasta que el modulo se reactive."
+            >
+              <LazyRoute>
+                <CombosPage />
+              </LazyRoute>
+            </ModuleAccessRoute>
           </ProtectedRoute>
         ),
       },
@@ -133,6 +149,16 @@ export const router = createBrowserRouter([
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/admin')}>
             <LazyRoute>
               <AdminPage />
+            </LazyRoute>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/config',
+        element: (
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <LazyRoute>
+              <AdminConfigPage />
             </LazyRoute>
           </ProtectedRoute>
         ),

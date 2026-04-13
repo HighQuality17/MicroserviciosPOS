@@ -1,4 +1,4 @@
-# Documentación del Proyecto
+﻿# Documentación del Proyecto
 
 Centro documental del repositorio `MicroserviciosPOS`. Esta carpeta quedó reorganizada para servir tanto como guía técnica de desarrollo como material formal de presentación del software.
 
@@ -8,6 +8,8 @@ Centro documental del repositorio `MicroserviciosPOS`. Esta carpeta quedó reorg
 - [`architecture.md`](architecture.md): arquitectura del monorepo y relación entre frontend, backend y base de datos.
 - [`backend.md`](backend.md): módulos NestJS, seguridad, contratos y scripts del backend.
 - [`frontend.md`](frontend.md): estructura React/Vite, rutas, stores y comportamiento de la interfaz.
+- [`pos-mobile-ux.md`](pos-mobile-ux.md): documentacion tecnica y funcional de la fase POS 1A, carrito movil, toast, filtros y limitaciones actuales.
+- [`business-config.md`](business-config.md): implementacion completa de BusinessConfig en backend y frontend, con presets, endpoints y proteccion gradual por modulo.
 - [`navigation-and-layout-updates.md`](navigation-and-layout-updates.md): nota tecnica breve de la mejora reciente de navegacion responsive, layout autenticado y refinamiento visual del sidebar.
 - [`module-status-header-updates.md`](module-status-header-updates.md): nota tecnica breve de la estandarizacion visual de barras superiores y resumenes operativos por modulo.
 - [`database.md`](database.md): esquema Prisma, entidades principales y reglas de persistencia.
@@ -31,5 +33,8 @@ Centro documental del repositorio `MicroserviciosPOS`. Esta carpeta quedó reorg
 - Se documenta únicamente lo verificado en el código, scripts, migraciones y documentación existente.
 - No se describen integraciones, despliegues o funcionalidades que no estén sustentados en el repositorio.
 - Cuando una observación es inferida a partir de la ausencia de archivos o configuración, se señala como tal.
+
+
+
 
 

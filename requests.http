@@ -1,5 +1,5 @@
 @base = http://localhost:3000/api
-@token = replace-with-jwt-token
+@token = replace-with-jwt-token-only
 
 # Nota: todos los endpoints siguientes, excepto /auth/login, / y /health,
 # requieren:
@@ -11,7 +11,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "Pos123456!"
+  "password": "replace-with-demo-password-only"
 }
 
 ### Get current authenticated user

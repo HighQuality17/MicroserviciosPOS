@@ -14,7 +14,7 @@ Frontend React/Vite
 Backend NestJS (/api)
   │  Prisma ORM
   ▼
-SQLite local
+PostgreSQL operativo
 ```
 
 ## Organización del monorepo
@@ -39,8 +39,10 @@ SQLite local
 
 - esquema principal: `prisma/schema.prisma`
 - migraciones: `prisma/migrations/`
+- migraciones SQLite legacy: `prisma/migrations_sqlite_legacy/`
 - seed: `prisma/seed.ts`
-- proveedor actual: SQLite
+- seed demo opcional: `prisma/seed.demo.ts`
+- proveedor actual: PostgreSQL
 
 ## Flujo técnico entre capas
 

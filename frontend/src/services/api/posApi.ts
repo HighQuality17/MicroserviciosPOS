@@ -8,6 +8,7 @@ import type {
   AdminTopItemsResponse,
   AuthLoginResponse,
   AuthUser,
+  BusinessConfig,
   CashCurrentResponse,
   CashSession,
   CatalogCombo,
@@ -15,6 +16,7 @@ import type {
   CatalogResponse,
   CatalogVariant,
   Combo,
+  ComboListStatus,
   Ingredient,
   LatestSaleResponse,
   Location,
@@ -25,6 +27,7 @@ import type {
   StockAdjustmentMutationResponse,
   StockAdjustmentsResponse,
   StockListResponse,
+  UpdateBusinessConfigPayload,
   Variant,
   VariantRecipe,
 } from "@/types/api";
@@ -118,6 +121,9 @@ export const posApi = {
     unwrap<AdminLowStockItem[]>(api.get("/admin/low-stock")),
   getAdminRecentActivity: () =>
     unwrap<AdminRecentActivityResponse>(api.get("/admin/recent-activity")),
+  getBusinessConfig: () => unwrap<BusinessConfig>(api.get("/config")),
+  updateBusinessConfig: (payload: UpdateBusinessConfigPayload) =>
+    unwrap<BusinessConfig>(api.patch("/config", payload)),
   getLocations: () => unwrap<Location[]>(api.get("/locations")),
   createLocation: (payload: { name: string }) =>
     unwrap<Location>(api.post("/locations", payload)),
@@ -125,7 +131,8 @@ export const posApi = {
   getProducts: () => unwrap<CatalogProduct[]>(api.get("/products")),
   getVariants: (params?: { status?: "ALL" | "ACTIVE" | "INACTIVE" }) =>
     unwrap<CatalogVariant[]>(api.get("/variants", { params })),
-  getCombos: () => unwrap<CatalogCombo[]>(api.get("/combos")),
+  getCombos: (params?: { status?: ComboListStatus }) =>
+    unwrap<CatalogCombo[]>(api.get("/combos", { params })),
   getIngredients: () => unwrap<Ingredient[]>(api.get("/ingredients")),
   openCash: (payload: {
     location_id: number;
@@ -309,6 +316,24 @@ export const posApi = {
     sale_price: number;
     active?: boolean;
   }) => unwrap<Combo>(api.post("/combos", payload)),
+  updateCombo: (
+    comboId: number,
+    payload: {
+      name?: string;
+      sale_price?: number;
+      active?: boolean;
+    },
+  ) => unwrap<Combo>(api.patch(`/combos/${comboId}`, payload)),
+  updateComboStatus: (comboId: number, payload: { active: boolean }) =>
+    unwrap<Combo>(api.patch(`/combos/${comboId}/status`, payload)),
+  deleteCombo: (comboId: number) =>
+    unwrap<{ id: number; deleted: boolean; message: string }>(
+      api.delete(`/combos/${comboId}`),
+    ),
+  updateComboItems: (
+    comboId: number,
+    payload: { items: Array<{ variant_id: number; qty: number }> },
+  ) => unwrap(api.post(`/combos/${comboId}/items`, payload)),
   addComboItems: (
     comboId: number,
     payload: { items: Array<{ variant_id: number; qty: number }> },

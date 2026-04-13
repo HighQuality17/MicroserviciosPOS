@@ -1,110 +1,114 @@
 # Base de Datos
 
-## Tecnología y ubicación
+## Estado actual
 
 - ORM: Prisma
-- proveedor: SQLite
+- proveedor operativo: PostgreSQL
 - esquema: `prisma/schema.prisma`
-- migraciones: `prisma/migrations/`
-- seed: `prisma/seed.ts`
+- baseline activo: `prisma/migrations/`
+- historial SQLite legado: `prisma/migrations_sqlite_legacy/`
+- seed de referencia: `prisma/seed.ts`
+- seed demo opcional: `prisma/seed.demo.ts`
+- tooling de migracion: `scripts/db/`
 
-## Configuración actual
+## Variables de entorno
 
-Variable de entorno principal:
+Backend:
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="postgresql://example-user-only:example-password-only@localhost:5432/microserviciospos?schema=public"
+SQLITE_DATABASE_URL="file:./prisma/dev.db"
+JWT_SECRET="example-jwt-secret-only"
 ```
 
-Esto confirma una persistencia local basada en archivo SQLite dentro del proyecto.
+- `DATABASE_URL` apunta a PostgreSQL y es la fuente operativa del backend.
+- `SQLITE_DATABASE_URL` se conserva solo para exportacion, importacion y referencia de la fuente legacy.
+
+## Fuente de verdad
+
+La fuente de verdad del modelo es el `schema.prisma` actual mas la SQLite viva validada durante la migracion. El historial SQLite no se reutiliza como historial activo de PostgreSQL debido al drift detectado en `_prisma_migrations`.
 
 ## Modelos principales
 
 ### Seguridad y usuarios
 
-### `User`
+`User`
 
-- identidad básica;
-- `username` y `email` únicos;
+- nombre;
+- `username` y `email` unicos;
 - `passwordHash`;
 - `role`;
 - `themePreference`.
 
-### `AuditLog`
+`AuditLog`
 
 - usuario;
-- acción;
+- accion;
 - entidad afectada;
 - metadatos serializados.
 
-### Operación comercial
+### Operacion comercial
 
-### `Location`
+`Location`
 
-Representa puntos de venta reales usados por caja, ventas e inventario.
+- punto de venta operativo;
+- relacion con caja, ventas e inventario.
 
-### `CashSession`
+`CashSession`
 
-Registra aperturas y cierres por ubicación con:
-
-- apertura;
+- apertura y cierre por ubicacion;
 - efectivo inicial;
-- efectivo esperado al cierre;
-- efectivo contado;
-- marca temporal de cierre.
+- efectivo esperado y contado al cierre.
 
-### `Sale`
-
-Entidad principal de venta con:
+`Sale`
 
 - subtotal;
 - descuento;
 - total;
 - estado `PENDING`, `PAID` o `VOID`;
-- relación con ubicación, cajero y caja.
+- relacion con ubicacion, cajero y caja.
 
-### `SaleItem`
+`SaleItem`
 
-- ítems tipo `VARIANT` o `COMBO`;
+- item `VARIANT` o `COMBO`;
 - cantidad;
 - precio unitario;
-- total de línea.
+- total de linea.
 
-### `Payment`
+`Payment`
 
-- método `CASH` o `TRANSFER`;
+- metodo `CASH` o `TRANSFER`;
 - monto recibido;
 - monto aplicado;
 - cambio entregado.
 
-### Catálogo
+### Catalogo
 
-### `Product`
+`Product`
 
 - producto comercial;
-- estado activo/inactivo.
+- datos comerciales y fiscales;
+- estado activo.
 
-### `ProductVariant`
+`ProductVariant`
 
-- presentación vendible real;
-- relación con producto;
-- tamaño;
-- SKU único;
+- presentacion vendible;
+- relacion con producto;
+- SKU unico;
 - precio de venta;
-- estado activo/inactivo.
+- estado activo.
 
-### `Combo`
+`Combo`
 
 - producto compuesto con precio propio;
-- puede contener varias variantes;
-- estado activo/inactivo.
+- estado activo.
 
-### `ComboItem`
+`ComboItem`
 
-- relación entre combo y variante;
-- cantidad de esa variante dentro del combo.
+- relacion combo-variante;
+- cantidad por variante.
 
-### `VariantRecipeItem`
+`VariantRecipeItem`
 
 - receta por variante;
 - ingrediente consumido;
@@ -112,56 +116,52 @@ Entidad principal de venta con:
 
 ### Inventario
 
-### `UnitType`
+`UnitType`
 
-Catálogo de unidades con factor de conversión a base:
+- catalogo de unidades base y conversion;
+- peso: `g`, `kg`;
+- volumen: `ml`, `L`;
+- conteo: `unit`.
 
-- peso: `g`, `kg`
-- volumen: `ml`, `L`
-- conteo: `unit`
+`Ingredient`
 
-### `Ingredient`
-
-- nombre único;
-- dimensión (`WEIGHT`, `VOLUME`, `COUNT`);
+- nombre unico;
+- dimension;
 - unidad por defecto.
 
-### `IngredientStock`
+`IngredientStock`
 
-- stock actual por ingrediente y ubicación;
+- stock por ingrediente y ubicacion;
 - cantidad en unidad base.
 
-### `IngredientMovement`
+`IngredientMovement`
 
 - entradas, salidas y ajustes;
-- relación con usuario, ingrediente, ubicación y venta cuando aplica.
+- relacion con usuario, ingrediente, ubicacion y venta cuando aplica.
 
-## Reglas de persistencia verificadas
+## Seeds
 
-- El stock siempre se guarda en unidad base.
-- Las recetas también se persisten en unidad base.
-- El descuento de inventario ocurre al pagar la venta.
-- `themePreference` del usuario tiene valor por defecto `midnight-indigo`.
-- Una caja abierta se identifica por `closedAt = null`.
+`prisma/seed.ts`
 
-## Seed inicial
+- solo crea o sincroniza datos de referencia seguros;
+- hoy se limita a `UnitType`;
+- es idempotente y seguro sobre una base vacia.
 
-El seed actual crea:
+`prisma/seed.demo.ts`
 
-- unidades base por defecto;
-- usuario administrador;
-- usuario cajero;
-- usuario auditor.
+- crea usuarios demo `admin`, `cashier` y `auditor`;
+- aborta si detecta una base con datos operativos;
+- no debe ejecutarse durante una importacion real desde SQLite.
 
-Credenciales documentadas también en [`../README.md`](../README.md) y [`MANUAL_USUARIO.md`](MANUAL_USUARIO.md).
+## Migracion SQLite -> PostgreSQL
 
-## Migraciones presentes
+El flujo conservador de migracion queda separado del runtime diario:
 
-El historial de migraciones del repositorio permite identificar estas etapas:
+1. exportar la SQLite viva con `scripts/db/export-sqlite.ts`;
+2. aplicar baseline PostgreSQL;
+3. importar snapshot a PostgreSQL con `scripts/db/import-postgres.ts`;
+4. resetear secuencias;
+5. verificar paridad con `scripts/db/verify-parity.ts`;
+6. cambiar `DATABASE_URL` al destino PostgreSQL.
 
-- inicialización base;
-- incorporación de campos de autenticación;
-- soporte de combos;
-- persistencia de preferencia de tema de usuario.
-
-El detalle evolutivo está resumido en [`changelog-summary.md`](changelog-summary.md).
+La guia operativa completa esta en [docs/postgresql-migration.md](./postgresql-migration.md).

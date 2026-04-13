@@ -1,4 +1,4 @@
-# MicroserviciosPOS
+﻿# MicroserviciosPOS
 
 Repositorio principal de un sistema POS local con frontend y backend separados dentro del mismo proyecto. La interfaz autenticada se presenta como `Registry POS`, mientras que la API expone el backend local `MicroserviciosPOS API`.
 
@@ -11,11 +11,13 @@ La documentación de este repositorio fue actualizada sobre el estado real del c
 - [Stack tecnológico real](#stack-tecnológico-real)
 - [Arquitectura general](#arquitectura-general)
 - [Módulos principales](#módulos-principales)
+- [BusinessConfig](#businessconfig)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Requisitos previos](#requisitos-previos)
 - [Instalación y puesta en marcha](#instalación-y-puesta-en-marcha)
 - [Variables de entorno](#variables-de-entorno)
 - [Base de datos y Prisma](#base-de-datos-y-prisma)
+- [Docker local](#docker-local)
 - [Usuarios de prueba](#usuarios-de-prueba)
 - [Sistema de temas](#sistema-de-temas)
 - [Build y despliegue](#build-y-despliegue)
@@ -30,7 +32,7 @@ La documentación de este repositorio fue actualizada sobre el estado real del c
 
 `MicroserviciosPOS` es un sistema de punto de venta orientado a operación local. El repositorio concentra:
 
-- un backend con NestJS, Prisma y SQLite;
+- un backend con NestJS, Prisma y PostgreSQL;
 - un frontend con React, Vite y Zustand;
 - autenticación con JWT;
 - control de acceso por roles;
@@ -63,7 +65,7 @@ Las capacidades verificadas en código y documentación interna del repositorio 
 - NestJS 10
 - TypeScript 5
 - Prisma ORM 6
-- SQLite
+- PostgreSQL
 - JWT (`@nestjs/jwt`)
 - `bcrypt`
 - `class-validator` y `class-transformer`
@@ -99,7 +101,8 @@ Backend NestJS
 Persistencia
   ├─ Prisma ORM
   ├─ Migraciones versionadas
-  └─ SQLite local
+  ├─ PostgreSQL operativo
+  └─ SQLite legacy solo para exportacion y rollback
 ```
 
 Notas de arquitectura verificadas:
@@ -126,6 +129,16 @@ Notas de arquitectura verificadas:
 | Panel administrativo | `/admin/*`, `/locations` | `/admin` | panel `ADMIN`, `AUDITOR`; creación de POS `ADMIN` |
 | Temas | `/auth/me/theme` | selector en header autenticado | usuario autenticado |
 
+## BusinessConfig
+
+`BusinessConfig` centraliza la configuracion global del negocio y habilita una capa gradual de modulos opcionales sin intervenir todavia los modulos core del sistema.
+
+- backend: modelo singleton `BusinessConfig`, enum `BusinessType`, presets por tipo de negocio y endpoints `GET /api/config` y `PATCH /api/config`;
+- frontend admin: pantalla `/admin/config` para consultar y editar datos del negocio, tipo de negocio y `modules`;
+- estado global: la app autenticada carga la configuracion despues de restaurar sesion y la expone mediante un store dedicado;
+- aplicacion actual: ya se usa para visibilidad condicional y proteccion gradual de `ingredients`, `combos`, `recipes` y `fiscalFields`;
+- referencia tecnica: [`docs/business-config.md`](docs/business-config.md).
+
 ## Estructura del repositorio
 
 ```text
@@ -145,7 +158,8 @@ Notas de arquitectura verificadas:
 - Node.js 20 o superior recomendado
 - npm
 - Entorno capaz de ejecutar backend NestJS y frontend Vite
-- Puerto `3000` disponible para la API local
+- Docker Desktop o Docker Engine con Compose plugin, solo si vas a usar el stack Docker local
+- Puerto `3000` disponible para la API 
 - Puerto disponible para Vite en desarrollo
 
 ## Instalación y puesta en marcha
@@ -156,12 +170,15 @@ Notas de arquitectura verificadas:
 npm install
 # crear .env a partir de .env.example
 npm run prisma:generate
-npm run prisma:migrate
+npm run prisma:migrate:deploy
 npm run prisma:seed
+# opcional: solo para una base vacia de pruebas
+npm run prisma:seed:demo
 npm run start:dev
 ```
 
 La API quedará disponible en `http://localhost:3000/api`.
+Si vienes de una base SQLite existente, sigue antes la guia de [docs/postgresql-migration.md](docs/postgresql-migration.md).
 
 ### 2. Frontend
 
@@ -180,8 +197,9 @@ Si no se define otra URL, el frontend consumirá `http://localhost:3000/api`.
 Archivo base existente: `.env.example`
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
-JWT_SECRET="change-this-in-production"
+DATABASE_URL="postgresql://example-user-only:example-password-only@localhost:5432/microserviciospos?schema=public"
+SQLITE_DATABASE_URL="file:./prisma/dev.db"
+JWT_SECRET="example-jwt-secret-only"
 ```
 
 ### Frontend
@@ -197,10 +215,19 @@ VITE_API_URL=http://localhost:3000/api
 ## Base de datos y Prisma
 
 - ORM: Prisma
-- proveedor actual: SQLite
+- proveedor actual: PostgreSQL
 - archivo de esquema: `prisma/schema.prisma`
 - migraciones versionadas en `prisma/migrations/`
-- seed disponible en `prisma/seed.ts`
+- historial SQLite legado en `prisma/migrations_sqlite_legacy/`
+- seed de referencia en `prisma/seed.ts`
+- seed demo opcional en `prisma/seed.demo.ts`
+- tooling de migracion en `scripts/db/`
+
+Estado actual de persistencia:
+
+- la migración SQLite -> PostgreSQL ya quedó incorporada en esta línea base del repositorio;
+- SQLite se conserva como fuente legacy para exportación, importación controlada y rollback documental;
+- la guía operativa de migración sigue en [`docs/postgresql-migration.md`](docs/postgresql-migration.md).
 
 Aspectos relevantes del modelo:
 
@@ -210,15 +237,42 @@ Aspectos relevantes del modelo:
 - `Product`, `ProductVariant`, `VariantRecipeItem`, `Combo` y `ComboItem` componen el catálogo comercial;
 - `CashSession`, `Sale`, `SaleItem`, `Payment` y `AuditLog` cubren la operación comercial y de caja.
 
+## Docker local
+
+El repositorio ya incluye dockerización local para `postgres`, `backend` y `frontend`. El frontend se sirve con Nginx, consume la API por `/api` y hace proxy al backend sin cambiar los contratos HTTP de la aplicación.
+
+Resumen de uso:
+
+- para una base nueva o vacía: levantar `postgres`, correr `prisma:migrate:deploy`, ejecutar `prisma:seed` y luego subir `backend` y `frontend`;
+- para una base ya migrada o importada: basta con `docker compose --env-file .env.docker up --build -d`;
+- `prisma:seed:demo` debe usarse solo sobre una base vacía de pruebas;
+- el detalle técnico completo quedó en [`docs/docker.md`](docs/docker.md).
+
+Comandos principales:
+
+```bash
+cp .env.docker.example .env.docker
+docker compose --env-file .env.docker up -d postgres
+docker compose --env-file .env.docker run --rm backend npm run prisma:migrate:deploy
+docker compose --env-file .env.docker run --rm backend npm run prisma:seed
+docker compose --env-file .env.docker up --build -d backend frontend
+```
+
+Para una base ya migrada o importada:
+
+```bash
+docker compose --env-file .env.docker up --build -d
+```
+
 ## Usuarios de prueba
 
-El seed actual crea tres usuarios de ejemplo con contraseña compartida:
+Los usuarios demo siguen disponibles, pero ahora viven en un flujo separado para no interferir con importaciones reales. Cargalos con `npm run prisma:seed:demo` cuando trabajes sobre una base vacia de pruebas. El script aborta si detecta una base con datos operativos:
 
 | Rol | Username | Email | Contraseña |
 | --- | --- | --- | --- |
-| Administrador | `admin` | `admin@local.pos` | `Pos123456!` |
-| Cajero | `cashier` | `cashier@local.pos` | `Pos123456!` |
-| Auditor | `auditor` | `auditor@local.pos` | `Pos123456!` |
+| Administrador | `admin` | `admin@local.pos` | `example-demo-password-only` |
+| Cajero | `cashier` | `cashier@local.pos` | `example-demo-password-only` |
+| Auditor | `auditor` | `auditor@local.pos` | `example-demo-password-only` |
 
 ## Sistema de temas
 
@@ -258,8 +312,8 @@ npm run preview
 
 Observaciones verificadas en el repositorio:
 
-- no se detectaron `Dockerfile`, `docker-compose`, manifiestos de orquestación ni pipeline CI/CD dentro del repo;
-- la estrategia de despliegue documentable hoy es manual/local;
+- el repositorio ya incluye `Dockerfile`, `compose.yaml` y configuración Docker dedicada para postgres, backend y frontend;
+- la estrategia de despliegue documentable hoy sigue siendo local/manual, con una opción adicional vía Docker Compose;
 - el backend genera artefactos en `dist/`;
 - el frontend genera artefactos en `frontend/dist/`.
 
@@ -272,10 +326,14 @@ La documentación detallada quedó organizada en `docs/`:
 - [`docs/architecture.md`](docs/architecture.md): arquitectura y flujos entre capas
 - [`docs/backend.md`](docs/backend.md): backend, módulos, seguridad y API
 - [`docs/frontend.md`](docs/frontend.md): frontend, rutas, stores y UX
+- [docs/pos-mobile-ux.md](docs/pos-mobile-ux.md): resumen tecnico y funcional de la fase POS 1A enfocada en jerarquia visual inicial y UX movil del POS
+- [`docs/business-config.md`](docs/business-config.md): implementacion de BusinessConfig, presets, endpoints, store global y proteccion gradual por modulo
 - [`docs/navigation-and-layout-updates.md`](docs/navigation-and-layout-updates.md): nota breve sobre navegación responsive, scroll-to-top y colapso del sidebar
 - [`docs/database.md`](docs/database.md): Prisma, modelos y reglas de datos
 - [`docs/modules.md`](docs/modules.md): mapa funcional del sistema
 - [`docs/deployment.md`](docs/deployment.md): puesta en marcha y despliegue manual
+- [`docs/postgresql-migration.md`](docs/postgresql-migration.md): guía de migración, importación y rollback controlado de SQLite a PostgreSQL
+- [`docs/docker.md`](docs/docker.md): guía de uso local con Docker Compose
 - [`docs/theme-system.md`](docs/theme-system.md): sistema visual y temas
 - [`docs/product-catalog-enrichment.md`](docs/product-catalog-enrichment.md): enriquecimiento comercial y operativo incremental del catalogo de productos
 - [`docs/user-flows.md`](docs/user-flows.md): flujos funcionales principales
@@ -301,7 +359,7 @@ Estado verificado a nivel de repositorio:
   - exportación de reportes;
   - alertas configurables;
   - reglas por sucursal;
-  - edición/reordenación completa de combos;
+  - reordenacion visual de combos y refinamiento UX avanzado de su editor;
   - historial visual de movimientos recientes en inventario.
 
 ## Licencia
@@ -331,6 +389,23 @@ Actualizacion breve de barras superiores y resumenes de modulos:
 - uso de una base reusable para estandarizar composicion y ayudas contextuales sin recargar la UI.
 
 Detalle tecnico breve: [docs/module-status-header-updates.md](docs/module-status-header-updates.md)
+
+Actualizacion breve de Combos:
+
+- la pestana `Combos` ya permite crear, editar, activar o desactivar, eliminar con confirmacion, buscar por nombre y refrescar el listado sin salir de la vista;
+- la composicion del combo ahora puede editarse desde un borrador explicito con visualizacion de items actuales, cambio de cantidades, baja puntual de items y alta de nuevos items antes de guardar;
+- el POS mantiene compatibilidad porque sigue consumiendo combos activos desde `/catalog`, mientras la gestion administrativa opera sobre `/combos`;
+- detalle tecnico y limitaciones actuales: [docs/combos.md](docs/combos.md)
+
+Actualizacion breve de POS 1A:
+
+- el POS recibio una primera mejora de UX enfocada en claridad operativa, jerarquia visual y uso mobile-first sin tocar backend ni reglas de negocio;
+- el catalogo gano busqueda y filtros mas claros, junto con cards que comunican mejor nombre, tipo, SKU o presentacion y precio;
+- el carrito gano mas presencia en desktop y en movil paso a vivir como una capa dedicada con toast de agregado, boton flotante y scroll interno;
+- esta fase no implementa imagenes reales ni paginacion clasica; prepara la base para una siguiente etapa de rediseno visual mas fuerte.
+
+Detalle tecnico breve: [docs/pos-mobile-ux.md](docs/pos-mobile-ux.md)
+
 ## Historial de cambios
 
 - Historial principal: [`CHANGELOG.md`](CHANGELOG.md)
@@ -338,4 +413,7 @@ Detalle tecnico breve: [docs/module-status-header-updates.md](docs/module-status
   - [`docs/sprints/sprint-7.md`](docs/sprints/sprint-7.md)
   - [`docs/sprints/sprint-8.md`](docs/sprints/sprint-8.md)
   - [`docs/sprints/sprint-9.md`](docs/sprints/sprint-9.md)
+
+
+
 
