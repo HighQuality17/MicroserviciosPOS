@@ -14,6 +14,7 @@ export function AppLayout() {
   const setAvailableLocations = useAppStore((state) => state.setAvailableLocations);
   const setLocationsLoading = useAppStore((state) => state.setLocationsLoading);
   const setLocationsError = useAppStore((state) => state.setLocationsError);
+  const isPosMobileOverlayOpen = useAppStore((state) => state.isPosMobileOverlayOpen);
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const navigationId = 'primary-navigation-drawer';
@@ -25,6 +26,8 @@ export function AppLayout() {
     top: '1.75rem',
     left: isDesktopSidebarCollapsed ? '104px' : '260px',
   };
+  const shouldShowMobileNavigationButton =
+    !isMobileNavigationOpen && !isPosMobileOverlayOpen;
 
   useEffect(() => {
     let cancelled = false;
@@ -108,19 +111,21 @@ export function AppLayout() {
       </a>
       <ScrollToTop />
 
-      <Button
-        type="button"
-        variant="secondary"
-        className="fixed z-50 lg:hidden"
-        style={mobileNavigationButtonStyle}
-        aria-label={isMobileNavigationOpen ? 'Cerrar menu de navegacion' : 'Abrir menu de navegacion'}
-        aria-controls={navigationId}
-        aria-expanded={isMobileNavigationOpen}
-        onClick={() => setIsMobileNavigationOpen((open) => !open)}
-      >
-        {isMobileNavigationOpen ? <X size={18} /> : <Menu size={18} />}
-        <span>Menu</span>
-      </Button>
+      {shouldShowMobileNavigationButton ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="fixed z-50 lg:hidden"
+          style={mobileNavigationButtonStyle}
+          aria-label="Abrir menu de navegacion"
+          aria-controls={navigationId}
+          aria-expanded={false}
+          onClick={() => setIsMobileNavigationOpen(true)}
+        >
+          <Menu size={18} />
+          <span>Menu</span>
+        </Button>
+      ) : null}
 
       {isMobileNavigationOpen ? (
         <div

@@ -20,6 +20,7 @@ interface AppState {
   sessionIngredients: Ingredient[];
   sessionCombos: Combo[];
   recentReceipts: SaleReceipt[];
+  isPosMobileOverlayOpen: boolean;
   setAvailableLocations: (locations: Location[]) => void;
   setCurrentLocation: (location: Location | null) => void;
   setLocationsLoading: (loading: boolean) => void;
@@ -30,6 +31,7 @@ interface AppState {
   addSessionIngredient: (ingredient: Ingredient) => void;
   addSessionCombo: (combo: Combo) => void;
   addRecentReceipt: (receipt: SaleReceipt) => void;
+  setPosMobileOverlayOpen: (open: boolean) => void;
   resetAppState: () => void;
 }
 
@@ -44,6 +46,7 @@ export const useAppStore = create<AppState>((set) => ({
   sessionIngredients: [],
   sessionCombos: [],
   recentReceipts: [],
+  isPosMobileOverlayOpen: false,
   setAvailableLocations: (locations) =>
     set((state) => {
       const nextLocations = dedupeLocations(locations);
@@ -81,6 +84,7 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ sessionCombos: upsertById(state.sessionCombos, combo) })),
   addRecentReceipt: (receipt) =>
     set((state) => ({ recentReceipts: upsertReceipt(state.recentReceipts, receipt) })),
+  setPosMobileOverlayOpen: (open) => set({ isPosMobileOverlayOpen: open }),
   resetAppState: () =>
     set({
       availableLocations: [],
@@ -93,6 +97,7 @@ export const useAppStore = create<AppState>((set) => ({
       sessionIngredients: [],
       sessionCombos: [],
       recentReceipts: [],
+      isPosMobileOverlayOpen: false,
     }),
 }));
 
