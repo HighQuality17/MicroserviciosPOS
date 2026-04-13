@@ -2,19 +2,19 @@
 
 Repositorio principal de un sistema POS local con frontend y backend separados dentro del mismo proyecto. La interfaz autenticada se presenta como `Registry POS`, mientras que la API expone el backend local `MicroserviciosPOS API`.
 
-La documentaciÃ³n de este repositorio fue actualizada sobre el estado real del cÃ³digo inspeccionado el 26 de marzo de 2026. Resume Ãºnicamente la arquitectura, mÃ³dulos, scripts y flujos que hoy estÃ¡n presentes en el repositorio.
+La documentación de este repositorio fue actualizada sobre el estado real del código inspeccionado el 26 de marzo de 2026. Resume únicamente la arquitectura, módulos, scripts y flujos que hoy están presentes en el repositorio.
 
 ## Contenido
 
 - [Resumen del sistema](#resumen-del-sistema)
 - [Alcance funcional verificado](#alcance-funcional-verificado)
-- [Stack tecnolÃ³gico real](#stack-tecnolÃ³gico-real)
+- [Stack tecnológico real](#stack-tecnológico-real)
 - [Arquitectura general](#arquitectura-general)
-- [MÃ³dulos principales](#mÃ³dulos-principales)
+- [Módulos principales](#módulos-principales)
 - [BusinessConfig](#businessconfig)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Requisitos previos](#requisitos-previos)
-- [InstalaciÃ³n y puesta en marcha](#instalaciÃ³n-y-puesta-en-marcha)
+- [Instalación y puesta en marcha](#instalación-y-puesta-en-marcha)
 - [Variables de entorno](#variables-de-entorno)
 - [Base de datos y Prisma](#base-de-datos-y-prisma)
 - [Docker local](#docker-local)
@@ -22,43 +22,43 @@ La documentaciÃ³n de este repositorio fue actualizada sobre el estado real del
 - [Sistema de temas](#sistema-de-temas)
 - [Build y despliegue](#build-y-despliegue)
 - [Mejoras recientes de frontend](#mejoras-recientes-de-frontend)
-- [DocumentaciÃ³n complementaria](#documentaciÃ³n-complementaria)
+- [Documentación complementaria](#documentación-complementaria)
 - [Capturas y material visual](#capturas-y-material-visual)
 - [Estado actual del proyecto](#estado-actual-del-proyecto)
-- [AutorÃ­a y uso del software](#autorÃ­a-y-uso-del-software)
+- [Autoría y uso del software](#autoría-y-uso-del-software)
 - [Historial de cambios](#historial-de-cambios)
 
 ## Resumen del sistema
 
-`MicroserviciosPOS` es un sistema de punto de venta orientado a operaciÃ³n local. El repositorio concentra:
+`MicroserviciosPOS` es un sistema de punto de venta orientado a operación local. El repositorio concentra:
 
 - un backend con NestJS, Prisma y PostgreSQL;
 - un frontend con React, Vite y Zustand;
-- autenticaciÃ³n con JWT;
+- autenticación con JWT;
 - control de acceso por roles;
-- operaciÃ³n de POS y caja;
-- administraciÃ³n de productos, variantes, ingredientes, stock, recetas y combos;
-- gestiÃ³n de ventas, recibos e indicadores administrativos;
+- operación de POS y caja;
+- administración de productos, variantes, ingredientes, stock, recetas y combos;
+- gestión de ventas, recibos e indicadores administrativos;
 - un sistema visual premium con temas predefinidos persistidos por usuario.
 
 ## Alcance funcional verificado
 
-Las capacidades verificadas en cÃ³digo y documentaciÃ³n interna del repositorio incluyen:
+Las capacidades verificadas en código y documentación interna del repositorio incluyen:
 
-- inicio de sesiÃ³n por `email` o `username`;
+- inicio de sesión por `email` o `username`;
 - roles `ADMIN`, `CASHIER` y `AUDITOR`;
-- selecciÃ³n de punto de venta activo desde el encabezado del frontend;
-- catÃ¡logo operativo consolidado para POS con variantes y combos activos;
-- apertura, consulta y cierre de caja por ubicaciÃ³n;
-- creaciÃ³n de ventas, aplicaciÃ³n de descuentos y pago en `CASH` o `TRANSFER`;
-- generaciÃ³n y consulta de comprobantes, Ãºltimas ventas e historial filtrable;
-- gestiÃ³n administrativa de productos, variantes y recetas;
-- gestiÃ³n de ingredientes, unidades base y ajustes de stock por ubicaciÃ³n;
-- configuraciÃ³n comercial de combos a partir de variantes;
-- panel administrativo con resumen comercial, ventas por mÃ©todo de pago, top de Ã­tems, stock bajo y actividad reciente;
+- selección de punto de venta activo desde el encabezado del frontend;
+- catálogo operativo consolidado para POS con variantes y combos activos;
+- apertura, consulta y cierre de caja por ubicación;
+- creación de ventas, aplicación de descuentos y pago en `CASH` o `TRANSFER`;
+- generación y consulta de comprobantes, últimas ventas e historial filtrable;
+- gestión administrativa de productos, variantes y recetas;
+- gestión de ingredientes, unidades base y ajustes de stock por ubicación;
+- configuración comercial de combos a partir de variantes;
+- panel administrativo con resumen comercial, ventas por método de pago, top de ítems, stock bajo y actividad reciente;
 - sistema de temas con cinco variantes visuales y preferencia persistida por usuario.
 
-## Stack tecnolÃ³gico real
+## Stack tecnológico real
 
 ### Backend
 
@@ -86,47 +86,47 @@ Las capacidades verificadas en cÃ³digo y documentaciÃ³n interna del reposito
 
 ```text
 Frontend React/Vite
-  â”œâ”€ Router protegido por rol
-  â”œâ”€ Stores Zustand (sesiÃ³n, app, carrito)
-  â”œâ”€ ThemeProvider + selector de tema
-  â””â”€ Cliente Axios -> /api
+  ├─ Router protegido por rol
+  ├─ Stores Zustand (sesión, app, carrito)
+  ├─ ThemeProvider + selector de tema
+  └─ Cliente Axios -> /api
 
 Backend NestJS
-  â”œâ”€ Guards JWT + roles
-  â”œâ”€ MÃ³dulos por dominio
-  â”œâ”€ ValidaciÃ³n global
-  â”œâ”€ Interceptor de respuesta uniforme
-  â””â”€ Filtro global de errores
+  ├─ Guards JWT + roles
+  ├─ Módulos por dominio
+  ├─ Validación global
+  ├─ Interceptor de respuesta uniforme
+  └─ Filtro global de errores
 
 Persistencia
-  â”œâ”€ Prisma ORM
-  â”œâ”€ Migraciones versionadas
-  â”œâ”€ PostgreSQL operativo
-  â””â”€ SQLite legacy solo para exportacion y rollback
+  ├─ Prisma ORM
+  ├─ Migraciones versionadas
+  ├─ PostgreSQL operativo
+  └─ SQLite legacy solo para exportacion y rollback
 ```
 
 Notas de arquitectura verificadas:
 
 - el backend publica su API bajo el prefijo global `http://localhost:3000/api`;
 - el frontend usa `VITE_API_URL` y, si no existe, apunta a `http://localhost:3000/api`;
-- la autenticaciÃ³n se resuelve con JWT de 12 horas;
+- la autenticación se resuelve con JWT de 12 horas;
 - las respuestas exitosas y de error tienen envoltura consistente;
-- el inventario se gestiona en unidad base (`g`, `ml`, `unit`) con conversiÃ³n desde la unidad enviada;
+- el inventario se gestiona en unidad base (`g`, `ml`, `unit`) con conversión desde la unidad enviada;
 - la preferencia de tema se persiste en el modelo `User`.
 
-## MÃ³dulos principales
+## Módulos principales
 
 | Dominio | Backend | Frontend | Acceso verificado |
 | --- | --- | --- | --- |
-| AutenticaciÃ³n | `/auth/login`, `/auth/me`, `/auth/me/theme` | login, restauraciÃ³n de sesiÃ³n, logout por expiraciÃ³n | Todos autenticados segÃºn sesiÃ³n |
+| Autenticación | `/auth/login`, `/auth/me`, `/auth/me/theme` | login, restauración de sesión, logout por expiración | Todos autenticados según sesión |
 | POS | `/catalog`, `/sales`, `/sales/:id/pay` | `/pos` | `ADMIN`, `CASHIER` |
 | Caja | `/cash/open`, `/cash/current`, `/cash/close` | `/cash` | `ADMIN`, `CASHIER` |
-| Productos y variantes | `/products`, `/variants` | `/products` | gestiÃ³n `ADMIN`, consulta `AUDITOR` |
-| Recetas | `/recipes/variant/:id` | `/products` | gestiÃ³n `ADMIN`, consulta `AUDITOR` |
-| Ingredientes y stock | `/ingredients`, `/stock` | `/ingredients` | gestiÃ³n `ADMIN`, consulta parcial `AUDITOR` |
-| Combos | `/combos`, `/combos/:id/items` | `/combos` | gestiÃ³n `ADMIN`, consulta `AUDITOR` |
+| Productos y variantes | `/products`, `/variants` | `/products` | gestión `ADMIN`, consulta `AUDITOR` |
+| Recetas | `/recipes/variant/:id` | `/products` | gestión `ADMIN`, consulta `AUDITOR` |
+| Ingredientes y stock | `/ingredients`, `/stock` | `/ingredients` | gestión `ADMIN`, consulta parcial `AUDITOR` |
+| Combos | `/combos`, `/combos/:id/items` | `/combos` | gestión `ADMIN`, consulta `AUDITOR` |
 | Ventas y recibos | `/sales`, `/sales/recent`, `/sales/latest`, `/sales/:id/receipt` | `/sales` | consulta `ADMIN`, `CASHIER`, `AUDITOR` |
-| Panel administrativo | `/admin/*`, `/locations` | `/admin` | panel `ADMIN`, `AUDITOR`; creaciÃ³n de POS `ADMIN` |
+| Panel administrativo | `/admin/*`, `/locations` | `/admin` | panel `ADMIN`, `AUDITOR`; creación de POS `ADMIN` |
 | Temas | `/auth/me/theme` | selector en header autenticado | usuario autenticado |
 
 ## BusinessConfig
@@ -143,14 +143,14 @@ Notas de arquitectura verificadas:
 
 ```text
 .
-â”œâ”€ src/                     # Backend NestJS por mÃ³dulos
-â”œâ”€ prisma/                  # schema.prisma, migraciones y seed
-â”œâ”€ frontend/                # AplicaciÃ³n React/Vite
-â”œâ”€ docs/                    # DocumentaciÃ³n tÃ©cnica, funcional e histÃ³rica
-â”œâ”€ requests.http            # ColecciÃ³n manual de pruebas HTTP
-â”œâ”€ CHANGELOG.md             # Historial principal de cambios
-â”œâ”€ package.json             # Scripts y dependencias del backend
-â””â”€ README.md                # Portada del repositorio
+├─ src/                     # Backend NestJS por módulos
+├─ prisma/                  # schema.prisma, migraciones y seed
+├─ frontend/                # Aplicación React/Vite
+├─ docs/                    # Documentación técnica, funcional e histórica
+├─ requests.http            # Colección manual de pruebas HTTP
+├─ CHANGELOG.md             # Historial principal de cambios
+├─ package.json             # Scripts y dependencias del backend
+└─ README.md                # Portada del repositorio
 ```
 
 ## Requisitos previos
@@ -162,7 +162,7 @@ Notas de arquitectura verificadas:
 - Puerto `3000` disponible para la API 
 - Puerto disponible para Vite en desarrollo
 
-## InstalaciÃ³n y puesta en marcha
+## Instalación y puesta en marcha
 
 ### 1. Backend
 
@@ -177,7 +177,7 @@ npm run prisma:seed:demo
 npm run start:dev
 ```
 
-La API quedarÃ¡ disponible en `http://localhost:3000/api`.
+La API quedará disponible en `http://localhost:3000/api`.
 Si vienes de una base SQLite existente, sigue antes la guia de [docs/postgresql-migration.md](docs/postgresql-migration.md).
 
 ### 2. Frontend
@@ -188,7 +188,7 @@ npm install
 npm run dev
 ```
 
-Si no se define otra URL, el frontend consumirÃ¡ `http://localhost:3000/api`.
+Si no se define otra URL, el frontend consumirá `http://localhost:3000/api`.
 
 ## Variables de entorno
 
@@ -204,13 +204,13 @@ JWT_SECRET="example-jwt-secret-only"
 
 ### Frontend
 
-No existe un `.env.example` especÃ­fico para `frontend/`, pero el cÃ³digo soporta:
+No existe un `.env.example` específico para `frontend/`, pero el código soporta:
 
 ```env
 VITE_API_URL=http://localhost:3000/api
 ```
 
-Ãšsalo solo si el backend no corre en la URL local por defecto.
+Úsalo solo si el backend no corre en la URL local por defecto.
 
 ## Base de datos y Prisma
 
@@ -225,28 +225,28 @@ VITE_API_URL=http://localhost:3000/api
 
 Estado actual de persistencia:
 
-- la migraciÃ³n SQLite -> PostgreSQL ya quedÃ³ incorporada en esta lÃ­nea base del repositorio;
-- SQLite se conserva como fuente legacy para exportaciÃ³n, importaciÃ³n controlada y rollback documental;
-- la guÃ­a operativa de migraciÃ³n sigue en [`docs/postgresql-migration.md`](docs/postgresql-migration.md).
+- la migración SQLite -> PostgreSQL ya quedó incorporada en esta línea base del repositorio;
+- SQLite se conserva como fuente legacy para exportación, importación controlada y rollback documental;
+- la guía operativa de migración sigue en [`docs/postgresql-migration.md`](docs/postgresql-migration.md).
 
 Aspectos relevantes del modelo:
 
 - `User` incluye `role`, `passwordHash` y `themePreference`;
 - `Location` representa puntos de venta reales;
 - `Ingredient`, `UnitType`, `IngredientStock` e `IngredientMovement` sostienen inventario y trazabilidad;
-- `Product`, `ProductVariant`, `VariantRecipeItem`, `Combo` y `ComboItem` componen el catÃ¡logo comercial;
-- `CashSession`, `Sale`, `SaleItem`, `Payment` y `AuditLog` cubren la operaciÃ³n comercial y de caja.
+- `Product`, `ProductVariant`, `VariantRecipeItem`, `Combo` y `ComboItem` componen el catálogo comercial;
+- `CashSession`, `Sale`, `SaleItem`, `Payment` y `AuditLog` cubren la operación comercial y de caja.
 
 ## Docker local
 
-El repositorio ya incluye dockerizaciÃ³n local para `postgres`, `backend` y `frontend`. El frontend se sirve con Nginx, consume la API por `/api` y hace proxy al backend sin cambiar los contratos HTTP de la aplicaciÃ³n.
+El repositorio ya incluye dockerización local para `postgres`, `backend` y `frontend`. El frontend se sirve con Nginx, consume la API por `/api` y hace proxy al backend sin cambiar los contratos HTTP de la aplicación.
 
 Resumen de uso:
 
-- para una base nueva o vacÃ­a: levantar `postgres`, correr `prisma:migrate:deploy`, ejecutar `prisma:seed` y luego subir `backend` y `frontend`;
+- para una base nueva o vacía: levantar `postgres`, correr `prisma:migrate:deploy`, ejecutar `prisma:seed` y luego subir `backend` y `frontend`;
 - para una base ya migrada o importada: basta con `docker compose --env-file .env.docker up --build -d`;
-- `prisma:seed:demo` debe usarse solo sobre una base vacÃ­a de pruebas;
-- el detalle tÃ©cnico completo quedÃ³ en [`docs/docker.md`](docs/docker.md).
+- `prisma:seed:demo` debe usarse solo sobre una base vacía de pruebas;
+- el detalle técnico completo quedó en [`docs/docker.md`](docs/docker.md).
 
 Comandos principales:
 
@@ -268,7 +268,7 @@ docker compose --env-file .env.docker up --build -d
 
 Los usuarios demo siguen disponibles, pero ahora viven en un flujo separado para no interferir con importaciones reales. Cargalos con `npm run prisma:seed:demo` cuando trabajes sobre una base vacia de pruebas. El script aborta si detecta una base con datos operativos:
 
-| Rol | Username | Email | ContraseÃ±a |
+| Rol | Username | Email | Contraseña |
 | --- | --- | --- | --- |
 | Administrador | `admin` | `admin@local.pos` | `example-demo-password-only` |
 | Cajero | `cashier` | `cashier@local.pos` | `example-demo-password-only` |
@@ -276,7 +276,7 @@ Los usuarios demo siguen disponibles, pero ahora viven en un flujo separado para
 
 ## Sistema de temas
 
-El sistema de temas estÃ¡ implementado y activo en la UI autenticada. Temas soportados:
+El sistema de temas está implementado y activo en la UI autenticada. Temas soportados:
 
 - `midnight-indigo`
 - `graphite-cyan`
@@ -289,7 +289,7 @@ Comportamiento verificado:
 - la pantalla de login y el estado no autenticado permanecen en `midnight-indigo`;
 - el usuario autenticado puede cambiar el tema desde el header;
 - la preferencia se aplica de inmediato en el documento y se persiste por usuario en backend;
-- `localStorage` se usa como respaldo tÃ©cnico, no como fuente primaria del tema autenticado.
+- `localStorage` se usa como respaldo técnico, no como fuente primaria del tema autenticado.
 
 Detalle completo en [`docs/theme-system.md`](docs/theme-system.md).
 
@@ -312,37 +312,37 @@ npm run preview
 
 Observaciones verificadas en el repositorio:
 
-- el repositorio ya incluye `Dockerfile`, `compose.yaml` y configuraciÃ³n Docker dedicada para postgres, backend y frontend;
-- la estrategia de despliegue documentable hoy sigue siendo local/manual, con una opciÃ³n adicional vÃ­a Docker Compose;
+- el repositorio ya incluye `Dockerfile`, `compose.yaml` y configuración Docker dedicada para postgres, backend y frontend;
+- la estrategia de despliegue documentable hoy sigue siendo local/manual, con una opción adicional vía Docker Compose;
 - el backend genera artefactos en `dist/`;
 - el frontend genera artefactos en `frontend/dist/`.
 
-## DocumentaciÃ³n complementaria
+## Documentación complementaria
 
-La documentaciÃ³n detallada quedÃ³ organizada en `docs/`:
+La documentación detallada quedó organizada en `docs/`:
 
-- [`docs/README.md`](docs/README.md): Ã­ndice documental
-- [`docs/overview.md`](docs/overview.md): visiÃ³n general y alcance
+- [`docs/README.md`](docs/README.md): índice documental
+- [`docs/overview.md`](docs/overview.md): visión general y alcance
 - [`docs/architecture.md`](docs/architecture.md): arquitectura y flujos entre capas
-- [`docs/backend.md`](docs/backend.md): backend, mÃ³dulos, seguridad y API
+- [`docs/backend.md`](docs/backend.md): backend, módulos, seguridad y API
 - [`docs/frontend.md`](docs/frontend.md): frontend, rutas, stores y UX
 - [docs/pos-mobile-ux.md](docs/pos-mobile-ux.md): resumen tecnico y funcional de la fase POS 1A enfocada en jerarquia visual inicial y UX movil del POS
 - [`docs/business-config.md`](docs/business-config.md): implementacion de BusinessConfig, presets, endpoints, store global y proteccion gradual por modulo
-- [`docs/navigation-and-layout-updates.md`](docs/navigation-and-layout-updates.md): nota breve sobre navegaciÃ³n responsive, scroll-to-top y colapso del sidebar
+- [`docs/navigation-and-layout-updates.md`](docs/navigation-and-layout-updates.md): nota breve sobre navegación responsive, scroll-to-top y colapso del sidebar
 - [`docs/database.md`](docs/database.md): Prisma, modelos y reglas de datos
 - [`docs/modules.md`](docs/modules.md): mapa funcional del sistema
 - [`docs/deployment.md`](docs/deployment.md): puesta en marcha y despliegue manual
-- [`docs/postgresql-migration.md`](docs/postgresql-migration.md): guÃ­a de migraciÃ³n, importaciÃ³n y rollback controlado de SQLite a PostgreSQL
-- [`docs/docker.md`](docs/docker.md): guÃ­a de uso local con Docker Compose
+- [`docs/postgresql-migration.md`](docs/postgresql-migration.md): guía de migración, importación y rollback controlado de SQLite a PostgreSQL
+- [`docs/docker.md`](docs/docker.md): guía de uso local con Docker Compose
 - [`docs/theme-system.md`](docs/theme-system.md): sistema visual y temas
 - [`docs/product-catalog-enrichment.md`](docs/product-catalog-enrichment.md): enriquecimiento comercial y operativo incremental del catalogo de productos
 - [`docs/user-flows.md`](docs/user-flows.md): flujos funcionales principales
-- [`docs/changelog-summary.md`](docs/changelog-summary.md): sÃ­ntesis evolutiva del proyecto
-- [`docs/MANUAL_USUARIO.md`](docs/MANUAL_USUARIO.md): manual de operaciÃ³n para usuario final
+- [`docs/changelog-summary.md`](docs/changelog-summary.md): síntesis evolutiva del proyecto
+- [`docs/MANUAL_USUARIO.md`](docs/MANUAL_USUARIO.md): manual de operación para usuario final
 
 ## Capturas y material visual
 
-El repositorio no incluye capturas oficiales actualmente. Se dejÃ³ una ubicaciÃ³n sugerida para material de presentaciÃ³n en:
+El repositorio no incluye capturas oficiales actualmente. Se dejó una ubicación sugerida para material de presentación en:
 
 - [`docs/assets/screenshots/README.md`](docs/assets/screenshots/README.md)
 
@@ -351,12 +351,12 @@ El repositorio no incluye capturas oficiales actualmente. Se dejÃ³ una ubicaci
 Estado verificado a nivel de repositorio:
 
 - backend y frontend conviven en un mismo monorepo y comparten contratos reales;
-- existen migraciones Prisma, seed inicial, colecciÃ³n `requests.http` y changelog histÃ³rico;
+- existen migraciones Prisma, seed inicial, colección `requests.http` y changelog histórico;
 - el sistema de temas con persistencia por usuario ya forma parte del producto;
-- la navegaciÃ³n y el acceso por rol estÃ¡n centralizados;
+- la navegación y el acceso por rol están centralizados;
 - no se identificaron scripts de pruebas automatizadas en los `package.json`;
-- sÃ­ existen algunos elementos marcados como siguientes fases en la UI, por ejemplo:
-  - exportaciÃ³n de reportes;
+- sí existen algunos elementos marcados como siguientes fases en la UI, por ejemplo:
+  - exportación de reportes;
   - alertas configurables;
   - reglas por sucursal;
   - reordenacion visual de combos y refinamiento UX avanzado de su editor;
@@ -366,7 +366,7 @@ Estado verificado a nivel de repositorio:
 
 Software propietario. Todos los derechos reservados.
 
-Consulta el archivo `LICENSE.md` para mÃ¡s informaciÃ³n.
+Consulta el archivo `LICENSE.md` para más información.
 
 ## Mejoras recientes de frontend
 
@@ -413,6 +413,7 @@ Detalle tecnico breve: [docs/pos-mobile-ux.md](docs/pos-mobile-ux.md)
   - [`docs/sprints/sprint-7.md`](docs/sprints/sprint-7.md)
   - [`docs/sprints/sprint-8.md`](docs/sprints/sprint-8.md)
   - [`docs/sprints/sprint-9.md`](docs/sprints/sprint-9.md)
+
 
 
 
