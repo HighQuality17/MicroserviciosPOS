@@ -8,6 +8,7 @@ Centro documental del repositorio `MicroserviciosPOS`. Esta carpeta quedó reorg
 - [`architecture.md`](architecture.md): arquitectura del monorepo y relación entre frontend, backend y base de datos.
 - [`backend.md`](backend.md): módulos NestJS, seguridad, contratos y scripts del backend.
 - [`frontend.md`](frontend.md): estructura React/Vite, rutas, stores y comportamiento de la interfaz.
+- [`pos-visual-phases.md`](pos-visual-phases.md): alcance real de D0 y D1 en frontend, con foco en sistema visual base y refresco actual del POS.
 - [`pos-mobile-ux.md`](pos-mobile-ux.md): documentacion tecnica y funcional de la fase POS 1A, carrito movil, toast, filtros y limitaciones actuales.
 - [`business-config.md`](business-config.md): implementacion completa de BusinessConfig en backend y frontend, con presets, endpoints y proteccion gradual por modulo.
 - [`navigation-and-layout-updates.md`](navigation-and-layout-updates.md): nota tecnica breve de la mejora reciente de navegacion responsive, layout autenticado y refinamiento visual del sidebar.

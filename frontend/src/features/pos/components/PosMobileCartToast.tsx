@@ -44,9 +44,13 @@ export function PosMobileCartToast({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold theme-text-strong">Agregado al carrito</p>
               <p className="truncate text-sm theme-text-secondary">{toast.itemName}</p>
-              <p className="mt-1 text-xs theme-text-faint">
-                {formatItemCount(toast.itemCount)} - Subtotal {formatCurrency(toast.subtotal)}
-              </p>
+              <div className="pos-mobile-cart-toast__meta">
+                <span>{formatItemCount(toast.itemCount)}</span>
+                <span aria-hidden="true">•</span>
+                <span>
+                  Subtotal <strong>{formatCurrency(toast.subtotal)}</strong>
+                </span>
+              </div>
             </div>
             <ChevronRight size={18} className="shrink-0 theme-text-secondary" aria-hidden="true" />
           </div>

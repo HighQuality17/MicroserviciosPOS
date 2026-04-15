@@ -11,6 +11,7 @@ import { useAppStore } from '@/store/appStore';
 
 export function AppLayout() {
   const { pathname } = useLocation();
+  const isPosRoute = pathname.startsWith('/pos');
   const setAvailableLocations = useAppStore((state) => state.setAvailableLocations);
   const setLocationsLoading = useAppStore((state) => state.setLocationsLoading);
   const setLocationsError = useAppStore((state) => state.setLocationsError);
@@ -115,7 +116,10 @@ export function AppLayout() {
         <Button
           type="button"
           variant="secondary"
-          className="fixed z-50 lg:hidden"
+          className={clsx(
+            'fixed z-50 lg:hidden app-mobile-nav-button',
+            isPosRoute && 'app-mobile-nav-button--pos',
+          )}
           style={mobileNavigationButtonStyle}
           aria-label="Abrir menu de navegacion"
           aria-controls={navigationId}
@@ -171,9 +175,23 @@ export function AppLayout() {
         </div>
 
         <div className="min-w-0">
-          <div className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col px-3 pb-3 pt-[calc(env(safe-area-inset-top,0px)+4.5rem)] sm:px-4 sm:pb-4 sm:pt-[calc(env(safe-area-inset-top,0px)+4.75rem)] md:px-6 lg:px-8 lg:py-4">
-            <Header />
-            <main id="main-content" className="mt-4 min-w-0 flex-1" tabIndex={-1}>
+          <div
+            className={clsx(
+              'app-layout-shell mx-auto flex min-h-screen w-full max-w-[1680px] flex-col px-3 pb-3 sm:px-4 sm:pb-4 md:px-6 lg:px-8 lg:py-4',
+              isPosRoute
+                ? 'app-layout-shell--pos pt-[calc(env(safe-area-inset-top,0px)+3.95rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+4.2rem)]'
+                : 'pt-[calc(env(safe-area-inset-top,0px)+4.5rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+4.75rem)]',
+            )}
+          >
+            <Header compactForPosMobile={isPosRoute} />
+            <main
+              id="main-content"
+              className={clsx(
+                'app-layout-main min-w-0 flex-1',
+                isPosRoute ? 'mt-3 sm:mt-4' : 'mt-4',
+              )}
+              tabIndex={-1}
+            >
               <Outlet />
             </main>
           </div>

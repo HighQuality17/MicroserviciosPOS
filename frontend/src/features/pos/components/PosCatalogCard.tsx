@@ -30,6 +30,8 @@ export function PosCatalogCard({
   disabled,
   onAdd,
 }: PosCatalogCardProps) {
+  const detailLine = item.subtitle && item.subtitle !== description ? item.subtitle : null;
+
   return (
     <button
       type="button"
@@ -37,58 +39,64 @@ export function PosCatalogCard({
       disabled={disabled}
       aria-label={`Agregar ${badge.toLowerCase()} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
       className="pos-catalog-card surface-interactive group rounded-[1.65rem] p-4 text-left sm:p-5"
+      data-kind={kind}
     >
       <div className="pos-catalog-card__body">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="pos-catalog-card__topline">
+          <span className="pos-catalog-card__eyebrow">{eyebrow}</span>
+          <span className="pos-catalog-card__badge">{badge}</span>
+        </div>
+
+        <div className="pos-catalog-card__hero">
+          <div className="pos-catalog-card__media-wrap">
             <ProductMedia
               label={item.name}
               kind={kind}
-              size="md"
+              size="lg"
+              className="pos-catalog-card__media-frame"
               monogram={createMonogram(item.name)}
             />
-            <div className="min-w-0">
-              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
-                {eyebrow}
-              </p>
-              <p className="mt-2 font-display text-lg font-bold leading-tight theme-text-strong sm:text-xl">
-                {item.name}
-              </p>
-            </div>
           </div>
 
-          <span className="soft-pill shrink-0 rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em]">
-            {badge}
-          </span>
+          <div className="pos-catalog-card__title-block min-w-0">
+            <p className="pos-catalog-card__title font-display">{item.name}</p>
+            {detailLine ? (
+              <p className="pos-catalog-card__subtitle theme-text-secondary">{detailLine}</p>
+            ) : null}
+          </div>
         </div>
 
-        <p className="mt-4 min-h-12 text-sm leading-6 theme-text-secondary">
-          {description}
-        </p>
+        <p className="pos-catalog-card__description theme-text-secondary">{description}</p>
 
         <div className="pos-catalog-card__meta">
           {metaRows.map((row) => (
             <div
               key={`${row.label}-${row.value}`}
-              className="flex items-center justify-between gap-3 text-xs"
+              className="pos-catalog-card__meta-row"
             >
-              <span className="theme-text-faint">{row.label}</span>
-              <span className="font-medium theme-text-secondary">{row.value}</span>
+              <span className="pos-catalog-card__meta-label theme-text-faint">{row.label}</span>
+              <span className="pos-catalog-card__meta-value font-medium theme-text-secondary">
+                {row.value}
+              </span>
             </div>
           ))}
         </div>
 
-        <div className="pos-catalog-card__footer flex items-end justify-between gap-3">
-          <div>
+        <div className="pos-catalog-card__footer">
+          <div className="pos-catalog-card__price-block">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
               Precio
             </p>
-            <span className="metric-accent font-display text-2xl font-bold sm:text-[1.8rem]">
+            <span className="pos-catalog-card__price metric-accent font-display">
               {formatCurrency(item.unit_price)}
             </span>
           </div>
-          <span className="action-soft-brand rounded-2xl px-4 py-2.5 text-sm font-semibold">
-            Agregar
+
+          <span className="pos-catalog-card__cta">
+            <span>Agregar</span>
+            <span className="pos-catalog-card__cta-mark" aria-hidden="true">
+              +
+            </span>
           </span>
         </div>
       </div>

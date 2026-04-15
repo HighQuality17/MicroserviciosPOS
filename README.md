@@ -390,6 +390,13 @@ Actualizacion breve de barras superiores y resumenes de modulos:
 
 Detalle tecnico breve: [docs/module-status-header-updates.md](docs/module-status-header-updates.md)
 
+Actualizacion breve de D0 y D1 en frontend:
+
+- D0 dejo la base del sistema visual con tokens, superficies, botones, inputs, sheet, toast, search field, filter chip y `ProductMedia`;
+- D1 aplica esa base al POS con un refresco visual mas fuerte en header mobile, hero operativo, catalogo, cards, carrito desktop, carrito mobile y resumen de venta;
+- esta etapa sigue siendo frontend-only: no agrega backend, reglas nuevas ni imagenes reales de producto conectadas desde datos;
+- detalle tecnico y alcance verificado: [docs/pos-visual-phases.md](docs/pos-visual-phases.md)
+
 Actualizacion breve de Combos:
 
 - la pestana `Combos` ya permite crear, editar, activar o desactivar, eliminar con confirmacion, buscar por nombre y refrescar el listado sin salir de la vista;

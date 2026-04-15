@@ -14,28 +14,31 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
   const itemBadge = resolveCartItemBadge(item);
 
   return (
-    <div className="surface-subtle rounded-[1.45rem] p-4">
-      <div className="flex items-start gap-3">
+    <div className="pos-cart-item surface-subtle rounded-[1.45rem] p-4">
+      <div className="pos-cart-item__header flex items-start gap-3">
         <ProductMedia
           label={item.name}
           kind={itemBadge.kind}
           size="sm"
           monogram={itemBadge.shortLabel}
+          className="pos-cart-item__media"
         />
 
-        <div className="min-w-0 flex-1">
+        <div className="pos-cart-item__content min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium theme-text-strong">{item.name}</p>
-            <span className="soft-pill rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em]">
+            <p className="pos-cart-item__title font-medium theme-text-strong">{item.name}</p>
+            <span className="pos-cart-item__badge soft-pill rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em]">
               {itemBadge.label}
             </span>
           </div>
 
           {item.subtitle ? (
-            <p className="mt-1 text-xs leading-5 theme-text-muted">{item.subtitle}</p>
+            <p className="pos-cart-item__subtitle mt-1 text-xs leading-5 theme-text-muted">
+              {item.subtitle}
+            </p>
           ) : null}
 
-          <p className="mt-2 text-xs theme-text-faint">
+          <p className="pos-cart-item__unit mt-2 text-xs theme-text-faint">
             Unitario {formatCurrency(item.unit_price)}
           </p>
         </div>
@@ -55,8 +58,8 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
         />
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="pos-cart-item__footer mt-4 flex items-center justify-between gap-3">
+        <div className="pos-cart-item__qty flex items-center gap-2">
           <IconButton
             variant="secondary"
             size="sm"
@@ -83,7 +86,7 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
           />
         </div>
 
-        <div className="text-right">
+        <div className="pos-cart-item__total text-right">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
             Total linea
           </p>
