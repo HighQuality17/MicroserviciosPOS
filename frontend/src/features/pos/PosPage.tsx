@@ -5,10 +5,11 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
-import { Input } from '@/components/Input';
+import { FilterChip } from '@/components/FilterChip';
 import { LoadingState } from '@/components/LoadingState';
 import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
 import { PaymentModal } from '@/components/PaymentModal';
+import { SearchField } from '@/components/SearchField';
 import { SectionHeader } from '@/components/SectionHeader';
 import {
   PosCartPanel,
@@ -483,10 +484,11 @@ export function PosPage() {
           ) : null}
 
           <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_15rem]">
-            <Input
+            <SearchField
               label="Buscar en catalogo"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
+              onClear={() => setSearch('')}
               placeholder="Buscar por nombre, presentacion o SKU"
               hint="Filtra por nombre, SKU o presentacion sin salir del teclado."
             />
@@ -507,21 +509,17 @@ export function PosPage() {
 
           <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
             {filterOptions.map((option) => (
-              <button
+              <FilterChip
                 key={option.value}
-                type="button"
-                aria-pressed={catalogFilter === option.value}
                 onClick={() => setCatalogFilter(option.value)}
+                active={catalogFilter === option.value}
+                label={option.label}
+                count={option.count}
                 className={clsx(
-                  'min-h-11 shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none',
-                  catalogFilter === option.value
-                    ? 'surface-selected'
-                    : 'surface-subtle theme-text-secondary hover:theme-text-strong',
+                  'shrink-0',
+                  catalogFilter === option.value ? '' : 'theme-text-secondary',
                 )}
-              >
-                <span>{option.label}</span>
-                <span className="ml-2 text-xs theme-text-faint">{option.count}</span>
-              </button>
+              />
             ))}
           </div>
 

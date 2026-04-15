@@ -1,4 +1,5 @@
 import { ChevronRight, ShoppingCart } from 'lucide-react';
+import { Toast } from '@/components/Toast';
 import { formatCurrency } from '@/utils/format';
 
 export interface PosMobileCartToastData {
@@ -33,21 +34,23 @@ export function PosMobileCartToast({
         onClick={onOpenCart}
         aria-haspopup="dialog"
         aria-controls={cartSheetId}
-        className="pos-mobile-cart-toast pointer-events-auto w-full rounded-[1.45rem] px-4 py-3 text-left"
+        className="pointer-events-auto w-full text-left"
       >
-        <div className="flex items-center gap-3">
-          <div className="pos-mobile-cart-toast__icon" aria-hidden="true">
-            <ShoppingCart size={17} strokeWidth={2} />
+        <Toast tone="info" className="pos-mobile-cart-toast rounded-[1.45rem] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="pos-mobile-cart-toast__icon" aria-hidden="true">
+              <ShoppingCart size={17} strokeWidth={2} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold theme-text-strong">Agregado al carrito</p>
+              <p className="truncate text-sm theme-text-secondary">{toast.itemName}</p>
+              <p className="mt-1 text-xs theme-text-faint">
+                {formatItemCount(toast.itemCount)} - Subtotal {formatCurrency(toast.subtotal)}
+              </p>
+            </div>
+            <ChevronRight size={18} className="shrink-0 theme-text-secondary" aria-hidden="true" />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold theme-text-strong">Agregado al carrito</p>
-            <p className="truncate text-sm theme-text-secondary">{toast.itemName}</p>
-            <p className="mt-1 text-xs theme-text-faint">
-              {formatItemCount(toast.itemCount)} - Subtotal {formatCurrency(toast.subtotal)}
-            </p>
-          </div>
-          <ChevronRight size={18} className="shrink-0 theme-text-secondary" aria-hidden="true" />
-        </div>
+        </Toast>
       </button>
     </div>
   );

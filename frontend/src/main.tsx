@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { AppBootstrap } from '@/app/AppBootstrap';
 import { initializeTheme } from '@/theme/theme';
 import '@/styles.css';
+import '@/styles-d0.css';
 
 initializeTheme();
 

@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, useId } from 'react';
+import { InputHTMLAttributes, ReactNode, useId } from 'react';
 import clsx from 'clsx';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -7,6 +7,9 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   wrapperClassName?: string;
   labelClassName?: string;
+  fieldClassName?: string;
+  startAdornment?: ReactNode;
+  endAdornment?: ReactNode;
 }
 
 export function Input({
@@ -16,6 +19,9 @@ export function Input({
   className,
   wrapperClassName,
   labelClassName,
+  fieldClassName,
+  startAdornment,
+  endAdornment,
   id,
   required,
   ...props
@@ -29,6 +35,22 @@ export function Input({
     .join(' ');
   const isInvalid =
     Boolean(error) || props['aria-invalid'] === true || props['aria-invalid'] === 'true';
+  const hasAdornment = Boolean(startAdornment) || Boolean(endAdornment);
+  const inputElement = (
+    <input
+      id={inputId}
+      required={required}
+      aria-invalid={isInvalid || undefined}
+      aria-describedby={describedBy || undefined}
+      className={clsx(
+        'ui-control px-4 py-3 text-sm',
+        hasAdornment && 'ui-control--embedded flex-1 py-0',
+        isInvalid && 'ui-control-invalid',
+        className,
+      )}
+      {...props}
+    />
+  );
 
   return (
     <div className={clsx('block min-w-0 space-y-2', wrapperClassName)}>
@@ -38,18 +60,19 @@ export function Input({
           {required ? <span aria-hidden="true" className="theme-required-mark"> *</span> : null}
         </label>
       ) : null}
-      <input
-        id={inputId}
-        required={required}
-        aria-invalid={isInvalid || undefined}
-        aria-describedby={describedBy || undefined}
-        className={clsx(
-          'ui-control min-h-11 px-4 py-3 text-sm',
-          isInvalid && 'ui-control-invalid',
-          className,
-        )}
-        {...props}
-      />
+      {hasAdornment ? (
+        <div
+          className={clsx('ui-field-shell', fieldClassName)}
+          data-invalid={isInvalid || undefined}
+          data-disabled={props.disabled || undefined}
+        >
+          {startAdornment ? <span className="ui-field-adornment">{startAdornment}</span> : null}
+          {inputElement}
+          {endAdornment ? <span className="ui-field-adornment">{endAdornment}</span> : null}
+        </div>
+      ) : (
+        inputElement
+      )}
       {hint ? (
         <p id={hintId} className="ui-control-hint">
           {hint}

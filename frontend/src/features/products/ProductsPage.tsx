@@ -7,10 +7,12 @@ import { AccessState } from '@/components/AccessState';
 import { CheckboxField } from '@/components/CheckboxField';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { EmptyState } from '@/components/EmptyState';
+import { FilterChip } from '@/components/FilterChip';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { Modal } from '@/components/Modal';
 import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
+import { SearchField } from '@/components/SearchField';
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -1938,26 +1940,24 @@ function CatalogListToolbar<T extends string>({
     <div className="toolbar-shell mt-4 grid gap-3 rounded-2xl px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
       <p className="text-sm text-[color:var(--text-faint)]">{countLabel}</p>
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
-        <Input
-          type="search"
+        <SearchField
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
+          onClear={() => onSearchChange('')}
           placeholder="Buscar por nombre o SKU"
           aria-label={searchAriaLabel}
-          autoComplete="off"
           className="min-h-10"
           wrapperClassName="w-full sm:max-w-[280px] xl:max-w-[300px]"
         />
         <div className="flex flex-wrap justify-end gap-2">
           {filters.map((filterOption) => (
-            <Button
+            <FilterChip
               key={filterOption.value}
-              variant={activeFilter === filterOption.value ? 'primary' : 'ghost'}
-              className="min-h-10 min-w-[98px] rounded-xl px-3 py-2 text-xs"
+              active={activeFilter === filterOption.value}
+              className="min-w-[98px] justify-center"
+              label={filterOption.label}
               onClick={() => onFilterChange(filterOption.value)}
-            >
-              {filterOption.label}
-            </Button>
+            />
           ))}
         </div>
       </div>

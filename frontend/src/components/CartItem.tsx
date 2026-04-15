@@ -1,5 +1,6 @@
-import { Boxes, Layers3, Minus, Package2, Plus, Trash2 } from 'lucide-react';
-import { Button } from '@/components/Button';
+import { Minus, Plus, Trash2 } from 'lucide-react';
+import { IconButton } from '@/components/IconButton';
+import { ProductMedia } from '@/components/ProductMedia';
 import type { CartItem as CartItemType } from '@/types/api';
 import { formatCurrency } from '@/utils/format';
 
@@ -15,10 +16,12 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
   return (
     <div className="surface-subtle rounded-[1.45rem] p-4">
       <div className="flex items-start gap-3">
-        <div className="pos-catalog-card__media h-12 w-12 rounded-[1.1rem]" data-kind={itemBadge.kind}>
-          <span className="pos-catalog-card__icon">{resolveCartItemIcon(itemBadge.kind)}</span>
-          <span className="pos-catalog-card__monogram text-[0.62rem]">{itemBadge.shortLabel}</span>
-        </div>
+        <ProductMedia
+          label={item.name}
+          kind={itemBadge.kind}
+          size="sm"
+          monogram={itemBadge.shortLabel}
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -37,31 +40,31 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
           </p>
         </div>
 
-        <Button
+        <IconButton
           type="button"
           variant="ghost"
+          size="sm"
+          icon={<Trash2 size={16} />}
           onClick={onRemove}
-          className="min-h-10 rounded-xl px-2.5 py-2 theme-text-secondary hover:bg-[var(--semantic-danger-background)] hover:text-[color:var(--semantic-danger-text)]"
-          aria-label={
+          className="theme-text-secondary hover:bg-[var(--semantic-danger-background)] hover:text-[color:var(--semantic-danger-text)]"
+          label={
             item.subtitle
               ? 'Eliminar ' + item.name + ' ' + item.subtitle + ' del carrito'
               : 'Eliminar ' + item.name + ' del carrito'
           }
-        >
-          <Trash2 size={16} />
-        </Button>
+        />
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button
+          <IconButton
             variant="secondary"
-            className="min-h-10 rounded-xl px-3 py-2"
+            size="sm"
+            className="rounded-xl"
             onClick={() => onChangeQty(item.qty - 1)}
-            aria-label={'Reducir cantidad de ' + item.name}
-          >
-            <Minus size={14} />
-          </Button>
+            label={'Reducir cantidad de ' + item.name}
+            icon={<Minus size={14} />}
+          />
           <span
             className="surface-subtle-strong flex min-h-10 min-w-12 items-center justify-center rounded-xl px-3 text-sm font-semibold theme-text-strong"
             aria-live="polite"
@@ -70,14 +73,14 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
           >
             {item.qty}
           </span>
-          <Button
+          <IconButton
             variant="secondary"
-            className="min-h-10 rounded-xl px-3 py-2"
+            size="sm"
+            className="rounded-xl"
             onClick={() => onChangeQty(item.qty + 1)}
-            aria-label={'Aumentar cantidad de ' + item.name}
-          >
-            <Plus size={14} />
-          </Button>
+            label={'Aumentar cantidad de ' + item.name}
+            icon={<Plus size={14} />}
+          />
         </div>
 
         <div className="text-right">
@@ -117,14 +120,3 @@ function resolveCartItemBadge(item: CartItemType) {
   };
 }
 
-function resolveCartItemIcon(kind: 'SIMPLE' | 'VARIANT' | 'COMBO') {
-  if (kind === 'COMBO') {
-    return <Boxes size={16} strokeWidth={1.9} />;
-  }
-
-  if (kind === 'SIMPLE') {
-    return <Package2 size={16} strokeWidth={1.9} />;
-  }
-
-  return <Layers3 size={16} strokeWidth={1.9} />;
-}
