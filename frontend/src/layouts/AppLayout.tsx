@@ -19,10 +19,15 @@ export function AppLayout() {
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const navigationId = 'primary-navigation-drawer';
-  const mobileNavigationButtonStyle = {
-    top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
-    left: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
-  };
+  const mobileNavigationButtonStyle = isPosRoute
+    ? {
+        top: 'calc(env(safe-area-inset-top, 0px) + 0.58rem)',
+        left: 'calc(env(safe-area-inset-left, 0px) + 0.65rem)',
+      }
+    : {
+        top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        left: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+      };
   const desktopSidebarToggleStyle = {
     top: '1.75rem',
     left: isDesktopSidebarCollapsed ? '104px' : '260px',
