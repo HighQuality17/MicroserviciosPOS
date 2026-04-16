@@ -1,0 +1,666 @@
+/* D2A token layer for Caja. Reuses global theme variables so dark premium look
+   follows active theme without hardcoded colors. */
+.cash-page {
+  --cash-d2a-border: rgb(var(--theme-primary-rgb) / 0.16);
+  --cash-d2a-border-strong: rgb(var(--theme-primary-rgb) / 0.24);
+  --cash-d2a-accent-border: rgb(var(--theme-accent-rgb) / 0.22);
+  --cash-d2a-panel-background: var(--pos-status-background);
+  --cash-d2a-card-background:
+    linear-gradient(180deg, var(--surface-ghost-strong) 0%, var(--surface-ghost) 100%);
+  --cash-d2a-card-background-strong:
+    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.12) 0%, var(--surface-ghost) 100%);
+  --cash-d2a-card-background-accent:
+    radial-gradient(circle at top right, rgb(var(--theme-accent-rgb) / 0.12), transparent 30%),
+    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.08) 0%, var(--surface-ghost) 100%);
+  --cash-d2a-control-background:
+    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.08) 0%, var(--control-background) 100%);
+  --cash-d2a-empty-background:
+    radial-gradient(circle at top, rgb(var(--theme-primary-rgb) / 0.12), transparent 30%),
+    linear-gradient(180deg, var(--surface-ghost-strong) 0%, var(--surface-ghost) 100%);
+  --cash-d2a-shadow: var(--shadow-elevated);
+  --cash-d2a-card-shadow:
+    inset 0 1px 0 rgb(var(--theme-accent-rgb) / 0.08),
+    var(--shadow-soft);
+}
+
+.cash-page__hero .pos-status-bar,
+.cash-page__hero .pos-status-chip,
+.cash-feedback,
+.cash-panel,
+.cash-panel__spotlight,
+.cash-context-item,
+.cash-field__shell,
+.cash-panel__cta,
+.cash-summary-item {
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+/* Hero mirrors POS status language and gives Caja its top-level hierarchy. */
+.cash-page__hero {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.cash-page__hero .pos-status-bar {
+  border-color: var(--cash-d2a-border-strong);
+  background: var(--cash-d2a-panel-background);
+  box-shadow: var(--cash-d2a-shadow);
+}
+
+.cash-page__hero .pos-status-bar::before {
+  background: var(--pos-status-top-line);
+}
+
+.cash-page__hero .pos-status-bar::after {
+  background:
+    var(--pos-status-overlay),
+    linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.04) 0%, transparent 34%);
+}
+
+.cash-page__hero .pos-status-shell {
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.cash-page__hero .pos-status-intro {
+  border: 1px solid var(--cash-d2a-border);
+  border-radius: 1.6rem;
+  background: var(--cash-d2a-card-background-strong);
+  padding: 1rem;
+  box-shadow: var(--cash-d2a-card-shadow);
+}
+
+.cash-page__hero .pos-status-beacon {
+  min-height: 3.35rem;
+  min-width: 3.35rem;
+  border-color: var(--pos-beacon-border);
+  border-radius: 1.2rem;
+  background: var(--pos-beacon-background);
+  color: var(--pos-beacon-color);
+  box-shadow: var(--cash-d2a-card-shadow);
+}
+
+.cash-page__hero .module-status-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.cash-page__hero .module-status-title {
+  margin-top: 0.35rem;
+  font-family: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.04;
+  color: var(--text);
+}
+
+.cash-page__hero .module-status-description {
+  margin-top: 0.8rem;
+  max-width: 44rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.cash-page__hero .pos-status-grid {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+}
+
+.cash-page__hero .pos-status-chip {
+  border-color: var(--pos-chip-border);
+  border-radius: 1.45rem;
+  background: var(--pos-chip-background);
+  box-shadow: var(--cash-d2a-card-shadow);
+}
+
+.cash-page__hero .pos-status-chip__icon {
+  border-radius: 1rem;
+}
+
+.cash-page__hero .pos-status-chip__value {
+  font-size: 1.04rem;
+}
+
+.cash-page__hero .status-badge {
+  box-shadow: inset 0 1px 0 rgb(var(--theme-accent-rgb) / 0.12);
+}
+
+.cash-feedback {
+  border-radius: 1.4rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.cash-workspace {
+  align-items: stretch;
+}
+
+.cash-alert-card {
+  border-color: var(--cash-d2a-border);
+  background: var(--cash-d2a-panel-background);
+  box-shadow: var(--cash-d2a-shadow);
+}
+
+.cash-alert-card .empty-state-shell {
+  min-height: 13rem;
+  border-style: solid;
+  border-color: var(--cash-d2a-border);
+  background: var(--cash-d2a-empty-background);
+}
+
+.cash-panel {
+  min-height: 100%;
+  border-color: var(--cash-d2a-border);
+  background: var(--cash-d2a-panel-background);
+  box-shadow: var(--cash-d2a-shadow);
+}
+
+.cash-panel--open {
+  background:
+    radial-gradient(circle at top left, rgb(var(--theme-primary-rgb) / 0.14), transparent 32%),
+    var(--cash-d2a-panel-background);
+}
+
+.cash-panel--close {
+  background:
+    radial-gradient(circle at top right, rgb(var(--theme-accent-rgb) / 0.12), transparent 32%),
+    var(--cash-d2a-panel-background);
+}
+
+/* Panels share one shell, then opening/closing states branch through spotlight,
+   context rows and denser form controls. */
+.cash-panel__body {
+  display: grid;
+  gap: 1rem;
+  min-height: 100%;
+  padding: 1rem;
+}
+
+.cash-panel__hero {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cash-panel__heading {
+  gap: 0.9rem;
+}
+
+.cash-panel__heading .section-note {
+  max-width: 36rem;
+  color: var(--text-muted);
+}
+
+.cash-panel__spotlight {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 100%;
+  align-content: start;
+  border: 1px solid var(--cash-d2a-border);
+  border-radius: 1.45rem;
+  background: var(--cash-d2a-card-background);
+  padding: 1rem;
+  box-shadow: var(--cash-d2a-card-shadow);
+}
+
+.cash-panel__spotlight--open {
+  border-color: var(--cash-d2a-border-strong);
+  background: var(--cash-d2a-card-background-accent);
+}
+
+.cash-panel__spotlight--close {
+  border-color: var(--cash-d2a-accent-border);
+  background:
+    linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.12) 0%, var(--surface-ghost) 100%);
+}
+
+.cash-panel__spotlight-label,
+.cash-panel__footnote-label,
+.cash-context-item__label,
+.cash-close-empty__eyebrow,
+.cash-summary-item__label {
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.cash-panel__spotlight-value {
+  margin-top: 0.1rem;
+  color: var(--text);
+  font-family: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  font-size: 1.95rem;
+  font-weight: 700;
+  line-height: 1.04;
+}
+
+.cash-panel__spotlight-meta,
+.cash-panel__footnote-text,
+.cash-context-item__meta,
+.cash-close-empty__description {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.cash-context-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cash-context-grid--close {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cash-context-grid--close-empty {
+  grid-template-columns: 1fr;
+}
+
+.cash-context-item {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid var(--cash-d2a-border);
+  border-radius: 1.25rem;
+  background: var(--cash-d2a-card-background);
+  padding: 0.9rem 0.95rem;
+  box-shadow: var(--cash-d2a-card-shadow);
+}
+
+.cash-context-item__icon {
+  display: inline-flex;
+  min-height: 2.4rem;
+  min-width: 2.4rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cash-d2a-border);
+  border-radius: 0.95rem;
+  background:
+    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.14) 0%, rgb(var(--theme-accent-rgb) / 0.08) 100%);
+  color: var(--text);
+}
+
+.cash-context-item__value,
+.cash-close-empty__title,
+.cash-summary-item__value {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.cash-context-item__value {
+  margin-top: 0.3rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.cash-field {
+  gap: 0.55rem;
+}
+
+.cash-field__label {
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.cash-field__shell {
+  min-height: 4rem;
+  border-color: var(--cash-d2a-border);
+  border-radius: 1.28rem;
+  background: var(--cash-d2a-control-background);
+  padding-inline: 1rem;
+  box-shadow: var(--field-shadow);
+}
+
+.cash-field__shell:hover {
+  border-color: var(--cash-d2a-border-strong);
+}
+
+.cash-field__shell:focus-within {
+  border-color: var(--cash-d2a-border-strong);
+  box-shadow: var(--field-shadow-focus);
+}
+
+.cash-field__control {
+  border: 0;
+  background: transparent;
+  padding-inline: 0;
+  padding-block: 0;
+  box-shadow: none;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.cash-field__control:hover,
+.cash-field__control:focus-visible {
+  background: transparent;
+  box-shadow: none;
+}
+
+.cash-field__suffix {
+  display: inline-flex;
+  min-height: 1.9rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cash-d2a-border);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--surface-ghost-strong) 0%, var(--surface-ghost) 100%);
+  padding: 0.2rem 0.65rem;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.cash-form-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cash-form-grid--close {
+  align-items: end;
+}
+
+.cash-panel__cta {
+  min-height: 4rem;
+  width: 100%;
+  border-radius: 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.cash-panel__cta--open:not(:disabled),
+.cash-panel__cta--close:not(:disabled) {
+  border-color: var(--cash-d2a-border-strong);
+  background: var(--button-primary-background);
+  box-shadow:
+    var(--button-primary-shadow),
+    inset 0 1px 0 rgb(var(--theme-accent-rgb) / 0.18);
+}
+
+.cash-panel__footnote {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, var(--surface-ghost-strong) 0%, var(--surface-ghost) 100%);
+  padding: 0.9rem 1rem;
+}
+
+.cash-close-empty {
+  display: grid;
+  gap: 1rem;
+  min-height: 100%;
+  border: 1px dashed var(--cash-d2a-border);
+  border-radius: 1.55rem;
+  background: var(--cash-d2a-empty-background);
+  padding: 1rem;
+}
+
+.cash-close-empty__intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.cash-close-empty__icon {
+  display: inline-flex;
+  min-height: 3rem;
+  min-width: 3rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cash-d2a-accent-border);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.16) 0%, rgb(var(--theme-highlight-rgb) / 0.08) 100%);
+  color: var(--text);
+  box-shadow: var(--cash-d2a-card-shadow);
+}
+
+.cash-close-empty__title {
+  margin-top: 0.35rem;
+  font-family: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+
+/* Empty and summary blocks stay inside same card language to avoid flat gaps. */
+.cash-summary-card {
+  border-color: var(--cash-d2a-border);
+  background: var(--cash-d2a-panel-background);
+  box-shadow: var(--cash-d2a-shadow);
+}
+
+.cash-summary-card__body {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.cash-summary-card__heading .section-note {
+  max-width: 42rem;
+}
+
+.cash-summary-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+.cash-summary-item {
+  border: 1px solid var(--cash-d2a-border);
+  border-radius: 1.3rem;
+  background: var(--cash-d2a-card-background);
+  padding: 0.95rem 1rem;
+  box-shadow: var(--cash-d2a-card-shadow);
+}
+
+.cash-summary-item--accent {
+  border-color: var(--cash-d2a-accent-border);
+  background:
+    linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.12) 0%, var(--surface-ghost) 100%);
+}
+
+.cash-summary-item__value {
+  margin-top: 0.45rem;
+  font-family: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  font-size: 1.5rem;
+  line-height: 1.05;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cash-page__hero .pos-status-chip:hover,
+  .cash-panel:hover,
+  .cash-panel__spotlight:hover,
+  .cash-context-item:hover,
+  .cash-summary-item:hover {
+    transform: translateY(-1px);
+    border-color: rgb(var(--theme-secondary-rgb) / 0.22);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .cash-panel__cta:hover:not(:disabled) {
+    box-shadow:
+      0 22px 42px rgb(var(--theme-primary-rgb) / 0.28),
+      inset 0 1px 0 rgb(var(--theme-accent-rgb) / 0.2);
+  }
+}
+
+@media (min-width: 640px) {
+  .cash-page__hero .pos-status-shell,
+  .cash-panel__body,
+  .cash-summary-card__body {
+    padding: 1.18rem;
+  }
+
+  .cash-panel__hero {
+    grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 16rem);
+    align-items: start;
+  }
+
+  .cash-context-grid--close-empty {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cash-form-grid--close {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .cash-panel__cta--close {
+    min-width: 11.5rem;
+    width: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cash-page__hero .pos-status-shell {
+    padding: 1.3rem;
+  }
+
+  .cash-page__hero .module-status-title {
+    font-size: 2.2rem;
+  }
+
+  .cash-panel__spotlight-value {
+    font-size: 2.1rem;
+  }
+}
+
+/* Mobile trims radius, spacing and control heights so Caja matches compact POS feel. */
+@media (max-width: 639px) {
+  .cash-page {
+    gap: 0.78rem;
+  }
+
+  .cash-page__hero {
+    gap: 0.6rem;
+  }
+
+  .cash-page__hero .pos-status-shell {
+    gap: 0.66rem;
+    padding: 0.74rem;
+  }
+
+  .cash-page__hero .pos-status-intro {
+    gap: 0.62rem;
+    padding: 0.76rem;
+    border-radius: 1.28rem;
+  }
+
+  .cash-page__hero .pos-status-beacon {
+    min-height: 2.84rem;
+    min-width: 2.84rem;
+    border-radius: 0.95rem;
+  }
+
+  .cash-page__hero .module-status-title {
+    margin-top: 0.26rem;
+    font-size: 1.42rem;
+  }
+
+  .cash-page__hero .module-status-description {
+    margin-top: 0.34rem;
+    font-size: 0.8rem;
+    line-height: 1.44;
+  }
+
+  .cash-page__hero .pos-status-grid,
+  .cash-context-grid,
+  .cash-context-grid--close,
+  .cash-context-grid--close-empty {
+    grid-template-columns: 1fr;
+  }
+
+  .cash-page__hero .pos-status-chip,
+  .cash-feedback,
+  .cash-panel__spotlight,
+  .cash-context-item,
+  .cash-close-empty,
+  .cash-summary-item {
+    border-radius: 1.28rem;
+  }
+
+  .cash-panel__body,
+  .cash-summary-card__body {
+    gap: 0.82rem;
+    padding: 0.82rem;
+  }
+
+  .cash-panel__spotlight {
+    padding: 0.84rem;
+  }
+
+  .cash-panel__spotlight-value {
+    font-size: 1.56rem;
+  }
+
+  .cash-context-item {
+    padding: 0.8rem 0.82rem;
+  }
+
+  .cash-context-item__icon,
+  .cash-close-empty__icon {
+    min-height: 2.45rem;
+    min-width: 2.45rem;
+    border-radius: 0.9rem;
+  }
+
+  .cash-field__shell,
+  .cash-panel__cta {
+    min-height: 3.45rem;
+    border-radius: 1.12rem;
+  }
+
+  .cash-field__suffix {
+    min-height: 1.72rem;
+    padding-inline: 0.58rem;
+  }
+
+  .cash-panel__footnote {
+    padding: 0.78rem 0.84rem;
+    border-radius: 1.12rem;
+  }
+
+  .cash-close-empty {
+    padding: 0.84rem;
+  }
+
+  .cash-close-empty__title {
+    font-size: 1.16rem;
+  }
+
+  .cash-summary-item__value {
+    font-size: 1.32rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cash-page__hero .pos-status-chip,
+  .cash-feedback,
+  .cash-panel,
+  .cash-panel__spotlight,
+  .cash-context-item,
+  .cash-field__shell,
+  .cash-panel__cta,
+  .cash-summary-item {
+    transition: none;
+    transform: none;
+  }
+}
