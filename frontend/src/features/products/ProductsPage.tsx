@@ -967,10 +967,15 @@ export function ProductsPage() {
                 <div className="products-page__hero-title-wrap">
                   <h1 className="products-page__hero-title">Productos</h1>
                   <div className="products-page__hero-badges">
-                    <StatusBadge label={catalogStatusLabel} tone={catalogStatusTone} />
+                    <StatusBadge
+                      label={catalogStatusLabel}
+                      tone={catalogStatusTone}
+                      className="products-page__hero-badge"
+                    />
                     <StatusBadge
                       label={accessStatusLabel}
                       tone={canManageCatalog ? 'info' : 'default'}
+                      className="products-page__hero-badge"
                     />
                   </div>
                 </div>
@@ -1493,7 +1498,7 @@ export function ProductsPage() {
                           <div className="products-table-actions__primary">
                             <Button
                               variant="secondary"
-                              className="action-soft-brand"
+                              className="action-soft-brand products-action-edit"
                               aria-haspopup="dialog"
                               aria-controls="product-editor-dialog"
                               onClick={() => openProductEditor(product)}
@@ -1511,7 +1516,7 @@ export function ProductsPage() {
                             </Button>
                             <Button
                               variant="ghost"
-                              className="action-soft-danger"
+                              className="action-soft-danger products-action-delete"
                               onClick={() => requestProductDelete(product)}
                             >
                               Eliminar
@@ -1673,7 +1678,7 @@ export function ProductsPage() {
                       canManageCatalog && product.operationalVariant ? (
                         <div className="products-table-actions">
                           <div className="products-table-actions__primary">
-                            <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
+                            <Button variant="secondary" className="action-soft-brand products-action-edit" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
                               Editar
                             </Button>
                             <Button variant="secondary" className="action-soft-brand products-action-operation" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(product.operationalVariant!)}>
@@ -1811,7 +1816,7 @@ export function ProductsPage() {
                           <div className="products-table-actions__primary">
                             <Button
                               variant="secondary"
-                              className="action-soft-brand"
+                              className="action-soft-brand products-action-edit"
                               aria-haspopup="dialog"
                               aria-controls="variant-editor-dialog"
                               onClick={() => openVariantEditor(variant)}
@@ -1840,7 +1845,7 @@ export function ProductsPage() {
                             </Button>
                             <Button
                               variant="ghost"
-                              className="action-soft-danger"
+                              className="action-soft-danger products-action-delete"
                               onClick={() => requestVariantDelete(variant)}
                             >
                               Eliminar
@@ -2044,7 +2049,7 @@ export function ProductsPage() {
         subtitle="Esta acción solo debe usarse cuando el registro ya no deba existir en el catálogo."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
-          <div className="rounded-lg border border-[color:var(--border-soft)] bg-[color:var(--surface-subtle)] px-4 py-4">
+          <div className="products-delete-summary rounded-lg px-4 py-4">
             <p className="text-sm font-semibold theme-text-strong">
               {deleteTarget?.label ?? 'Registro seleccionado'}
             </p>
@@ -2235,15 +2240,16 @@ function CatalogListToolbar<T extends string>({
           onClear={() => onSearchChange('')}
           placeholder="Buscar por nombre o SKU"
           aria-label={searchAriaLabel}
+          fieldClassName="products-list-toolbar__search-field"
           className="min-h-10"
-          wrapperClassName="w-full sm:max-w-[280px] xl:max-w-[320px]"
+          wrapperClassName="products-list-toolbar__search w-full sm:max-w-[280px] xl:max-w-[320px]"
         />
         <div className="products-list-toolbar__filters flex flex-wrap justify-end gap-2">
           {filters.map((filterOption) => (
             <FilterChip
               key={filterOption.value}
               active={activeFilter === filterOption.value}
-              className="min-w-[98px] justify-center"
+              className="products-list-toolbar__filter min-w-[90px] justify-center"
               label={filterOption.label}
               onClick={() => onFilterChange(filterOption.value)}
             />
