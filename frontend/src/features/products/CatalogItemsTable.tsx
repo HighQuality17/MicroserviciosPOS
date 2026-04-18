@@ -33,7 +33,7 @@ export function CatalogItemsTable<Row>({
   tableMinWidthClassName = 'min-w-[1180px]',
 }: CatalogItemsTableProps<Row>) {
   return (
-    <div className="mt-5 -mx-1 overflow-hidden rounded-3xl table-shell sm:-mx-2 lg:-mx-3">
+    <div className="catalog-items-table mt-5 -mx-1 overflow-hidden rounded-3xl table-shell sm:-mx-2 lg:-mx-3">
       <div
         tabIndex={0}
         aria-label={ariaLabel}

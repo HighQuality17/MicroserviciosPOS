@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { CartItem } from '@/components/CartItem';
 import { EmptyState } from '@/components/EmptyState';
@@ -49,16 +50,17 @@ export function PosCartPanel({
   const totalUnits = items.reduce((sum, item) => sum + item.qty, 0);
   const activeDiscountLabel = resolveDiscountLabel(discountType, discountInput);
   const isMobile = mode === 'mobile';
+  const lineCountLabel = items.length === 1 ? '1 linea' : `${items.length} lineas`;
 
   if (isMobile) {
     return (
       <div
         className={clsx(
-          'grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden',
+          'pos-cart-panel pos-cart-panel--mobile grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden',
           className,
         )}
       >
-        <div className="grid gap-4 pb-4">
+        <div className="pos-cart-panel__hero grid gap-4 pb-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="section-kicker">Venta en curso</p>
@@ -71,28 +73,27 @@ export function PosCartPanel({
             </div>
             <Button
               variant="ghost"
+              size="sm"
               onClick={onClearCart}
               disabled={items.length === 0}
-              className="shrink-0"
+              className="pos-cart-panel__clear shrink-0"
             >
               Limpiar
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="surface-subtle rounded-[1.2rem] p-3.5">
+          <div className="pos-cart-panel__stats-grid grid grid-cols-2 gap-2">
+            <div className="pos-cart-panel__stat surface-subtle rounded-[1.2rem] p-3.5">
               <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] theme-text-faint">
                 Items
               </p>
               <p className="mt-2 font-display text-xl font-bold theme-text-strong">
                 {formatItemCount(totalUnits)}
               </p>
-              <p className="mt-1 text-xs theme-text-secondary">
-                {items.length === 1 ? '1 linea' : `${items.length} lineas`}
-              </p>
+              <p className="mt-1 text-xs theme-text-secondary">{lineCountLabel}</p>
             </div>
 
-            <div className="surface-subtle rounded-[1.2rem] p-3.5">
+            <div className="pos-cart-panel__stat surface-subtle rounded-[1.2rem] p-3.5">
               <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] theme-text-faint">
                 Total actual
               </p>
@@ -105,10 +106,19 @@ export function PosCartPanel({
         </div>
 
         <div className="pos-cart-panel__scroll min-h-0 overflow-y-auto pr-1">
-          <div className="grid content-start gap-5 pb-4">
-            {renderCartItemsList(items, onChangeQty, onRemove)}
+          <div className="pos-cart-panel__body grid content-start gap-5 pb-4">
+            <section className="pos-cart-panel__list-shell">
+              <div className="pos-cart-panel__section-head">
+                <div>
+                  <p className="pos-cart-panel__section-kicker">Items cargados</p>
+                  <p className="pos-cart-panel__section-title">Detalle de venta</p>
+                </div>
+                <span className="pos-cart-panel__section-pill">{lineCountLabel}</span>
+              </div>
+              {renderCartItemsList(items, onChangeQty, onRemove)}
+            </section>
 
-            <div className="grid gap-4">
+            <section className="pos-cart-panel__discount-shell grid gap-4">
               <div className="grid gap-4">
                 <Select
                   label="Descuento"
@@ -135,41 +145,42 @@ export function PosCartPanel({
                 />
               </div>
 
-              <div className="surface-subtle-strong rounded-[1.6rem] p-4">
-                <div className="flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
+              <div className="pos-cart-summary surface-subtle-strong rounded-[1.6rem] p-4">
+                <div className="pos-cart-summary__row flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
                   <span>Subtotal</span>
                   <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
+                <div className="pos-cart-summary__row mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
                   <span>Descuento</span>
                   <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
                 </div>
-                <div className="mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
+                <div className="pos-cart-summary__row mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
                   <span>Items</span>
                   <span className="metric-accent">{formatItemCount(totalUnits)}</span>
                 </div>
-                <div className="mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
+                <div className="pos-cart-summary__total mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
                   <span className="font-display text-xl font-bold theme-text-strong">Total</span>
                   <span className="metric-accent-strong font-display text-3xl font-bold">
                     {formatCurrency(totals.total)}
                   </span>
                 </div>
               </div>
-            </div>
+            </section>
           </div>
         </div>
 
-        <div className="grid gap-3 border-t border-[color:var(--line)] pt-4">
-          <p className="text-xs leading-5 theme-text-muted">
+        <div className="pos-cart-panel__footer grid gap-3 border-t border-[color:var(--line)] pt-4">
+          <p className="pos-cart-panel__footnote text-xs leading-5 theme-text-muted">
             {checkoutDisabledReason ?? 'Listo para cobrar con el flujo actual del POS.'}
           </p>
 
           <Button
+            size="lg"
             disabled={Boolean(checkoutDisabledReason)}
             aria-haspopup="dialog"
             aria-controls="payment-dialog"
             onClick={onCheckout}
-            className="w-full"
+            className="pos-cart-panel__checkout-button w-full"
           >
             Cobrar
           </Button>
@@ -179,8 +190,8 @@ export function PosCartPanel({
   }
 
   return (
-    <div className={clsx('flex min-h-0 flex-col overflow-hidden', className)}>
-      <div className="flex items-start justify-between gap-3">
+    <div className={clsx('pos-cart-panel pos-cart-panel--desktop flex min-h-0 flex-col overflow-hidden', className)}>
+      <div className="pos-cart-panel__hero flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="section-kicker">Venta en curso</p>
           <h2 className="font-display mt-2 text-2xl font-bold theme-text-strong">Carrito</h2>
@@ -192,28 +203,27 @@ export function PosCartPanel({
         </div>
         <Button
           variant="ghost"
+          size="sm"
           onClick={onClearCart}
           disabled={items.length === 0}
-          className="shrink-0"
+          className="pos-cart-panel__clear shrink-0"
         >
           Limpiar
         </Button>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="surface-subtle rounded-[1.35rem] p-4">
+      <div className="pos-cart-panel__stats-grid mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="pos-cart-panel__stat surface-subtle rounded-[1.35rem] p-4">
           <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
             Items cargados
           </p>
           <p className="mt-2 font-display text-2xl font-bold theme-text-strong">
             {formatItemCount(totalUnits)}
           </p>
-          <p className="mt-1 text-xs theme-text-secondary">
-            {items.length === 1 ? '1 linea en la venta' : `${items.length} lineas en la venta`}
-          </p>
+          <p className="mt-1 text-xs theme-text-secondary">{lineCountLabel} en la venta</p>
         </div>
 
-        <div className="surface-subtle rounded-[1.35rem] p-4">
+        <div className="pos-cart-panel__stat surface-subtle rounded-[1.35rem] p-4">
           <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
             Total actual
           </p>
@@ -224,13 +234,20 @@ export function PosCartPanel({
         </div>
       </div>
 
-      <div className="mt-5 min-h-0 flex-1 overflow-hidden pr-1">
-        <div className="pos-cart-panel__scroll max-h-[min(24rem,38vh)] overflow-y-auto xl:max-h-[calc(100vh-29rem)]">
+      <section className="pos-cart-panel__list-shell mt-5 min-h-0 flex-1 overflow-hidden">
+        <div className="pos-cart-panel__section-head">
+          <div>
+            <p className="pos-cart-panel__section-kicker">Venta activa</p>
+            <p className="pos-cart-panel__section-title">Items del carrito</p>
+          </div>
+          <span className="pos-cart-panel__section-pill">{lineCountLabel}</span>
+        </div>
+        <div className="pos-cart-panel__scroll max-h-[min(24rem,38vh)] overflow-y-auto xl:max-h-[calc(100vh-31rem)]">
           {renderCartItemsList(items, onChangeQty, onRemove)}
         </div>
-      </div>
+      </section>
 
-      <div className="mt-5 grid gap-4 border-t border-[color:var(--line)] pt-5">
+      <div className="pos-cart-panel__discount-shell mt-5 grid gap-4 border-t border-[color:var(--line)] pt-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
             label="Descuento"
@@ -257,20 +274,20 @@ export function PosCartPanel({
           />
         </div>
 
-        <div className="surface-subtle-strong rounded-[1.6rem] p-4 sm:p-5">
-          <div className="flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
+        <div className="pos-cart-summary surface-subtle-strong rounded-[1.6rem] p-4 sm:p-5">
+          <div className="pos-cart-summary__row flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
             <span>Subtotal</span>
             <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>
           </div>
-          <div className="mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
+          <div className="pos-cart-summary__row mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
             <span>Descuento</span>
             <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
           </div>
-          <div className="mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
+          <div className="pos-cart-summary__row mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
             <span>Items</span>
             <span className="metric-accent">{formatItemCount(totalUnits)}</span>
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
+          <div className="pos-cart-summary__total mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
             <span className="font-display text-xl font-bold theme-text-strong">Total</span>
             <span className="metric-accent-strong font-display text-3xl font-bold">
               {formatCurrency(totals.total)}
@@ -278,16 +295,17 @@ export function PosCartPanel({
           </div>
         </div>
 
-        <p className="text-xs leading-5 theme-text-muted">
+        <p className="pos-cart-panel__footnote text-xs leading-5 theme-text-muted">
           {checkoutDisabledReason ?? 'Listo para cobrar con el flujo actual del POS.'}
         </p>
 
         <Button
+          size="lg"
           disabled={Boolean(checkoutDisabledReason)}
           aria-haspopup="dialog"
           aria-controls="payment-dialog"
           onClick={onCheckout}
-          className="w-full"
+          className="pos-cart-panel__checkout-button w-full"
         >
           Cobrar
         </Button>
@@ -304,6 +322,7 @@ function renderCartItemsList(
   if (items.length === 0) {
     return (
       <EmptyState
+        icon={<ShoppingCart size={20} />}
         title="Sin items cargados"
         description="Agrega productos, variantes o combos desde el catalogo para preparar la venta."
       />
@@ -311,7 +330,7 @@ function renderCartItemsList(
   }
 
   return (
-    <div className="grid content-start gap-3">
+    <div className="pos-cart-panel__items-grid grid content-start gap-3">
       {items.map((item) => (
         <CartItem
           key={item.key}

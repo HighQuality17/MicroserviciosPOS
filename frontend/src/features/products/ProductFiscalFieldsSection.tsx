@@ -51,19 +51,25 @@ export function ProductFiscalFieldsSection({
   onApplyIncChange,
 }: ProductFiscalFieldsSectionProps) {
   return (
-    <div className="grid gap-4">
+    <div className="products-fiscal-shell grid gap-4">
       <CheckboxField
         label="Datos fiscales"
         description="Opción para configurar datos fiscales de producto"
+        wrapperClassName="products-toggle-card products-toggle-card--fiscal"
+        className="products-toggle-card__label"
         checked={open}
         onChange={(event) => onOpenChange(event.target.checked)}
       />
 
       {open ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="products-form-group products-form-group--fiscal grid gap-4 rounded-3xl p-5">
+            <div className="products-form-group__grid grid gap-4 sm:grid-cols-2">
             <Input
               label="Codigo UNSPSC"
+              wrapperClassName="products-field"
+              labelClassName="products-field__label"
+              className="products-field__control"
               value={draft.unspscCode}
               onChange={(event) =>
                 onUnspscCodeChange(event.target.value.replace(/\D+/g, '').slice(0, 8))
@@ -74,6 +80,9 @@ export function ProductFiscalFieldsSection({
             />
             <Input
               label="Unidad de medida"
+              wrapperClassName="products-field"
+              labelClassName="products-field__label"
+              className="products-field__control"
               value={draft.unitMeasure}
               onChange={(event) => onUnitMeasureChange(event.target.value)}
               placeholder="Ej: NIU"
@@ -81,6 +90,9 @@ export function ProductFiscalFieldsSection({
             />
             <Select
               label="Tipo IVA"
+              wrapperClassName="products-field"
+              labelClassName="products-field__label"
+              className="products-field__control"
               value={draft.vatType}
               onChange={(event) => onVatTypeChange(event.target.value as VatType | '')}
             >
@@ -93,6 +105,9 @@ export function ProductFiscalFieldsSection({
             </Select>
             <Select
               label="Categoria tributaria"
+              wrapperClassName="products-field"
+              labelClassName="products-field__label"
+              className="products-field__control"
               value={draft.taxCategory}
               onChange={(event) =>
                 onTaxCategoryChange(event.target.value as TaxCategory | '')
@@ -106,19 +121,22 @@ export function ProductFiscalFieldsSection({
               ))}
             </Select>
           </div>
+          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="products-fiscal-checks grid gap-3 sm:grid-cols-2">
             <CheckboxField
               label="Es servicio"
               checked={draft.isService}
               onChange={(event) => onIsServiceChange(event.target.checked)}
-              wrapperClassName="h-full"
+              wrapperClassName="products-toggle-card h-full"
+              className="products-toggle-card__label"
             />
             <CheckboxField
               label="Aplica INC"
               checked={draft.applyInc}
               onChange={(event) => onApplyIncChange(event.target.checked)}
-              wrapperClassName="h-full"
+              wrapperClassName="products-toggle-card h-full"
+              className="products-toggle-card__label"
             />
           </div>
         </>

@@ -1,10 +1,15 @@
+import clsx from 'clsx';
 import { MapPin } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatUserRole } from '@/utils/copy';
 
-export function Header() {
+interface HeaderProps {
+  compactForPosMobile?: boolean;
+}
+
+export function Header({ compactForPosMobile = false }: HeaderProps) {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
   const availableLocations = useAppStore((state) => state.availableLocations);
@@ -13,21 +18,28 @@ export function Header() {
   const setCurrentLocation = useAppStore((state) => state.setCurrentLocation);
 
   return (
-    <header className="glass-panel rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
+    <header
+      className={clsx(
+        'glass-panel app-header rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6',
+        compactForPosMobile && 'app-header--pos-compact',
+      )}
+    >
+      <div className="app-header__body flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="app-header__identity min-w-0">
+          <p className="app-header__eyebrow text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
             Operacion comercial conectada
           </p>
-          <h1 className="font-display text-2xl font-bold text-[color:var(--text)] sm:text-3xl">
+          <h1 className="app-header__title font-display text-2xl font-bold text-[color:var(--text)] sm:text-3xl">
             Registry POS
           </h1>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-          <ThemeSelector />
+        <div className="app-header__controls flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <div className="app-header__control app-header__control--theme min-w-0">
+            <ThemeSelector />
+          </div>
 
-          <div className="surface-subtle flex w-full min-w-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto sm:max-w-full">
+          <div className="app-header__control app-header__control--location surface-subtle flex w-full min-w-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto sm:max-w-full">
             <MapPin size={16} className="theme-accent-icon shrink-0" />
             <div className="min-w-0 flex-1">
               {locationsLoading ? (
@@ -62,7 +74,7 @@ export function Header() {
             </div>
           </div>
 
-          <div className="surface-subtle w-full rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto">
+          <div className="app-header__control app-header__control--user surface-subtle w-full rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto">
             <span className="block truncate text-[color:var(--text)]">
               {currentUser?.name} / {formatUserRole(currentUser?.role)}
             </span>
