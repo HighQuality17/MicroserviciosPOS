@@ -70,9 +70,9 @@ export function LoginPage() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="login-ambient absolute inset-0" />
         <div className="absolute inset-0 login-grid opacity-40" />
-        <div className="absolute left-[-10rem] top-[-9rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-primary-rgb)/0.2),transparent_68%)] blur-3xl" />
-        <div className="absolute right-[-8rem] top-1/4 h-[22rem] w-[22rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-secondary-rgb)/0.18),transparent_72%)] blur-3xl" />
-        <div className="absolute bottom-[-10rem] left-1/3 h-[18rem] w-[18rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-accent-rgb)/0.14),transparent_72%)] blur-3xl" />
+        <div className="absolute left-[-8rem] top-[-7rem] h-[22rem] w-[22rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-primary-rgb)/0.12),transparent_68%)] blur-2xl" />
+        <div className="absolute right-[-6rem] top-1/4 h-[18rem] w-[18rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-secondary-rgb)/0.08),transparent_72%)] blur-2xl" />
+        <div className="absolute bottom-[-8rem] left-1/3 h-[15rem] w-[15rem] rounded-full bg-[radial-gradient(circle,rgb(var(--theme-accent-rgb)/0.06),transparent_72%)] blur-2xl" />
       </div>
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[1120px] items-center px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
@@ -125,7 +125,7 @@ export function LoginPage() {
               <div aria-hidden="true" className="login-form-glow absolute inset-x-0 top-0 h-32" />
               <div
                 aria-hidden="true"
-                className="absolute right-[-3rem] top-[-3rem] h-32 w-32 rounded-full bg-[radial-gradient(circle,rgb(var(--theme-primary-rgb)/0.18),transparent_70%)] blur-3xl"
+                className="absolute right-[-2rem] top-[-2rem] h-28 w-28 rounded-full bg-[radial-gradient(circle,rgb(var(--theme-primary-rgb)/0.1),transparent_70%)] blur-2xl"
               />
 
               <div className="relative">
