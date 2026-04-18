@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Layers3, LogOut, X } from 'lucide-react';
 import clsx from 'clsx';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { getNavigationByRole } from '@/app/permissions';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
@@ -23,6 +23,8 @@ export function Sidebar({
   onClose,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isProductsRoute = pathname.startsWith('/products');
   const currentUser = useSessionStore((state) => state.currentUser);
   const clearSession = useSessionStore((state) => state.clearSession);
   const { isModuleEnabled } = useBusinessModules();
@@ -56,6 +58,7 @@ export function Sidebar({
       id={navigationId}
       className={clsx(
         'glass-panel-strong min-w-0 overflow-hidden px-4 py-5 transition-[padding] duration-300 lg:min-h-screen',
+        isProductsRoute && 'app-sidebar--products-admin',
         isMobile
           ? 'fixed inset-y-0 left-0 z-40 flex w-[min(88vw,320px)] max-w-full flex-col shadow-[0_30px_100px_rgba(0,0,0,0.55)] lg:hidden'
           : clsx(
