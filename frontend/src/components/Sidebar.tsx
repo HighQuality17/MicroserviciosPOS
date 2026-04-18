@@ -24,7 +24,8 @@ export function Sidebar({
 }: SidebarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const isProductsRoute = pathname.startsWith('/products');
+  const isOpsAdminRoute =
+    pathname.startsWith('/products') || pathname.startsWith('/cash');
   const currentUser = useSessionStore((state) => state.currentUser);
   const clearSession = useSessionStore((state) => state.clearSession);
   const { isModuleEnabled } = useBusinessModules();
@@ -58,7 +59,7 @@ export function Sidebar({
       id={navigationId}
       className={clsx(
         'glass-panel-strong min-w-0 overflow-hidden px-4 py-5 transition-[padding] duration-300 lg:min-h-screen',
-        isProductsRoute && 'app-sidebar--products-admin',
+        isOpsAdminRoute && 'app-sidebar--ops-admin',
         isMobile
           ? 'fixed inset-y-0 left-0 z-40 flex w-[min(88vw,320px)] max-w-full flex-col shadow-[0_30px_100px_rgba(0,0,0,0.55)] lg:hidden'
           : clsx(

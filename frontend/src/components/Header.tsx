@@ -12,7 +12,8 @@ interface HeaderProps {
 
 export function Header({ compactForPosMobile = false }: HeaderProps) {
   const { pathname } = useLocation();
-  const isProductsRoute = pathname.startsWith('/products');
+  const isOpsAdminRoute =
+    pathname.startsWith('/products') || pathname.startsWith('/cash');
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
   const availableLocations = useAppStore((state) => state.availableLocations);
@@ -25,7 +26,7 @@ export function Header({ compactForPosMobile = false }: HeaderProps) {
       className={clsx(
         'glass-panel app-header rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6',
         compactForPosMobile && 'app-header--pos-compact',
-        isProductsRoute && 'app-header--products-admin',
+        isOpsAdminRoute && 'app-header--ops-admin',
       )}
     >
       <div className="app-header__body flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

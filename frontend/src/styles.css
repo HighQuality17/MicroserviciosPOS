@@ -879,6 +879,106 @@ body {
   filter: none;
 }
 
+.app-header--ops-admin {
+  border-color: var(--line);
+  border-radius: 0.5rem;
+  background: var(--bg-panel);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.app-header--ops-admin .app-header__title {
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  letter-spacing: 0;
+}
+
+.app-header--ops-admin .app-header__eyebrow {
+  letter-spacing: 0.14em;
+}
+
+.app-header--ops-admin .app-header__control--theme > .surface-subtle,
+.app-header--ops-admin .app-header__control--theme > .surface-subtle-strong,
+.app-header--ops-admin .app-header__control--location,
+.app-header--ops-admin .app-header__control--user {
+  border-color: var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface-ghost);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.app-header--ops-admin .app-header__control--theme > .surface-subtle:hover,
+.app-header--ops-admin .app-header__control--theme > .surface-subtle-strong:hover,
+.app-header--ops-admin .app-header__control--location:hover,
+.app-header--ops-admin .app-header__control--user:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-ghost-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.app-header--ops-admin .app-header__control--theme > .surface-subtle:focus-within,
+.app-header--ops-admin .app-header__control--location:focus-within {
+  border-color: var(--surface-selected-border);
+  box-shadow: var(--focus-ring-shadow);
+}
+
+.app-header--ops-admin .surface-inline-select {
+  border-radius: 0.5rem;
+}
+
+.app-sidebar--ops-admin {
+  border-color: var(--line);
+  background: linear-gradient(180deg, var(--bg-panel-strong) 0%, var(--bg-panel) 100%);
+  box-shadow: inset 0 1px 0 var(--line-soft);
+  backdrop-filter: none;
+}
+
+.app-sidebar--ops-admin .app-brand-badge {
+  border-radius: 0.5rem;
+  box-shadow: none;
+}
+
+.app-sidebar--ops-admin .app-nav-link {
+  min-height: 2.9rem;
+  border-radius: 0.5rem;
+  box-shadow: none;
+}
+
+.app-sidebar--ops-admin .app-nav-link::before {
+  display: none;
+}
+
+.app-sidebar--ops-admin .app-nav-link:not(.app-nav-link-active):hover {
+  border-color: var(--line);
+  background: var(--surface-ghost);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 var(--line-soft);
+}
+
+.app-sidebar--ops-admin .app-nav-link-active,
+.app-sidebar--ops-admin .app-nav-link-active:hover {
+  border-color: var(--surface-selected-border);
+  background: var(--surface-selected-background);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 var(--line-soft);
+}
+
+.app-mobile-nav-button--ops-admin,
+.app-sidebar-toggle--ops-admin {
+  border-color: var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface-ghost);
+  box-shadow: inset 0 1px 0 var(--line-soft);
+  backdrop-filter: none;
+}
+
+.app-mobile-nav-button--ops-admin:hover,
+.app-sidebar-toggle--ops-admin:hover {
+  transform: none;
+  border-color: var(--line-strong);
+  background: var(--surface-ghost-strong);
+  box-shadow: inset 0 1px 0 var(--line-soft);
+}
+
 :root[data-theme='arctic-blue'] .glass-panel {
   box-shadow: 0 18px 42px rgba(74, 99, 129, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.62);
 }

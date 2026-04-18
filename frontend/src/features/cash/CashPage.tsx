@@ -282,7 +282,7 @@ export function CashPage() {
             label="Responsable"
             value={currentUserName}
             icon={<User size={16} />}
-            iconTone={currentUser ? 'violet' : 'default'}
+            iconTone={currentUser ? 'info' : 'default'}
             badgeLabel={currentUserRole}
             badgeTone={currentUser ? 'info' : 'default'}
             meta={currentUserHandle}
@@ -305,7 +305,7 @@ export function CashPage() {
       {/* Workspace: left panel drives opening, right panel resolves close or empty state. */}
       <div className="cash-workspace grid min-w-0 gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)]">
         {!currentLocation ? (
-          <Card className="cash-alert-card lg:col-span-2">
+          <Card glow={false} className="cash-alert-card lg:col-span-2">
             <EmptyState
               icon={<MapPin size={20} />}
               title="Sin punto de venta activo"
@@ -316,6 +316,7 @@ export function CashPage() {
 
         <Card
           padding="none"
+          glow={false}
           className="cash-panel cash-panel--open"
           contentClassName="cash-panel__body"
         >
@@ -403,6 +404,7 @@ export function CashPage() {
 
         <Card
           padding="none"
+          glow={false}
           className="cash-panel cash-panel--close"
           contentClassName="cash-panel__body"
         >
@@ -521,6 +523,7 @@ export function CashPage() {
         // Summary keeps same premium system so backend-calculated close data feels part of Caja.
         <Card
           padding="none"
+          glow={false}
           className="cash-summary-card"
           contentClassName="cash-summary-card__body"
         >

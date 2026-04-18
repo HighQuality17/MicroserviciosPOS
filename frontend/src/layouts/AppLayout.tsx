@@ -14,6 +14,7 @@ export function AppLayout() {
   const isPosRoute = pathname.startsWith('/pos');
   const isCashRoute = pathname.startsWith('/cash');
   const isProductsRoute = pathname.startsWith('/products');
+  const isOpsAdminRoute = isProductsRoute || isCashRoute;
   const isCompactMobileRoute = isPosRoute || isCashRoute;
   const setAvailableLocations = useAppStore((state) => state.setAvailableLocations);
   const setLocationsLoading = useAppStore((state) => state.setLocationsLoading);
@@ -143,7 +144,7 @@ export function AppLayout() {
             variant="secondary"
             className={clsx(
               'surface-subtle-strong h-11 w-11 px-0 shadow-[0_18px_38px_rgba(10,14,28,0.18)] transition-all duration-300 hover:-translate-y-px',
-              isProductsRoute && 'app-sidebar-toggle--products-admin',
+              isOpsAdminRoute && 'app-sidebar-toggle--ops-admin',
             )}
             aria-label={
               isDesktopSidebarCollapsed
@@ -173,7 +174,7 @@ export function AppLayout() {
                 className={clsx(
                   'mb-3 self-start lg:hidden app-mobile-nav-button',
                   isCompactMobileRoute && 'app-mobile-nav-button--pos',
-                  isProductsRoute && 'app-mobile-nav-button--products-admin',
+                  isOpsAdminRoute && 'app-mobile-nav-button--ops-admin',
                 )}
                 aria-label="Abrir menu de navegacion"
                 aria-controls={navigationId}
