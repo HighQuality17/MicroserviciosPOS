@@ -63,11 +63,11 @@ export function PosCartPanel({
         <div className="pos-cart-panel__hero grid gap-4 pb-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="section-kicker">Venta en curso</p>
-              <h2 className="font-display mt-2 text-2xl font-bold theme-text-strong">Carrito</h2>
+              <p className="section-kicker">Operacion de venta</p>
+              <h2 className="font-display mt-2 text-2xl font-bold theme-text-strong">Panel de venta</h2>
               <p className="mt-2 text-sm leading-6 theme-text-secondary">
                 {locationName
-                  ? `Venta activa en ${locationName}. Revisa items, descuento y cobro.`
+                  ? `POS activo en ${locationName}. Revisa items, descuento y cobro.`
                   : 'Revisa items, descuento y cobro sin salir de la operacion.'}
               </p>
             </div>
@@ -190,14 +190,14 @@ export function PosCartPanel({
   }
 
   return (
-    <div className={clsx('pos-cart-panel pos-cart-panel--desktop flex min-h-0 flex-col overflow-hidden', className)}>
+        <div className={clsx('pos-cart-panel pos-cart-panel--desktop flex min-h-0 flex-col overflow-hidden', className)}>
       <div className="pos-cart-panel__hero flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="section-kicker">Venta en curso</p>
-          <h2 className="font-display mt-2 text-2xl font-bold theme-text-strong">Carrito</h2>
+          <p className="section-kicker">Operacion de venta</p>
+          <h2 className="font-display mt-2 text-2xl font-bold theme-text-strong">Panel de venta</h2>
           <p className="mt-2 text-sm leading-6 theme-text-secondary">
             {locationName
-              ? `Venta activa en ${locationName}. Ajusta cantidades, descuentos y cobro sin salir del POS.`
+              ? `POS activo en ${locationName}. Ajusta cantidades, descuentos y cobro sin salir del flujo.`
               : 'Ajusta cantidades, descuentos y cobro sin salir de la operacion.'}
           </p>
         </div>

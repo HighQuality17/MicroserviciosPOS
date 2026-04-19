@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Layers3, LogOut, X } from 'lucide-react';
 import clsx from 'clsx';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { getNavigationByRole } from '@/app/permissions';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
@@ -23,9 +23,6 @@ export function Sidebar({
   onClose,
 }: SidebarProps) {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const isOpsAdminRoute =
-    pathname.startsWith('/products') || pathname.startsWith('/cash');
   const currentUser = useSessionStore((state) => state.currentUser);
   const clearSession = useSessionStore((state) => state.clearSession);
   const { isModuleEnabled } = useBusinessModules();
@@ -58,10 +55,9 @@ export function Sidebar({
     <aside
       id={navigationId}
       className={clsx(
-        'glass-panel-strong min-w-0 overflow-hidden px-4 py-5 transition-[padding] duration-300 lg:min-h-screen',
-        isOpsAdminRoute && 'app-sidebar--ops-admin',
+        'app-sidebar-shell glass-panel-strong min-w-0 overflow-hidden px-4 py-5 transition-[padding] duration-300 lg:min-h-screen',
         isMobile
-          ? 'fixed inset-y-0 left-0 z-40 flex w-[min(88vw,320px)] max-w-full flex-col shadow-[0_30px_100px_rgba(0,0,0,0.55)] lg:hidden'
+          ? 'fixed inset-y-0 left-0 z-40 flex w-[min(88vw,320px)] max-w-full flex-col shadow-[0_24px_64px_rgba(2,6,23,0.32)] lg:hidden'
           : clsx(
               'hidden lg:flex lg:flex-col lg:py-6',
               isDesktopCollapsed ? 'lg:px-3' : 'lg:px-6',
@@ -71,23 +67,32 @@ export function Sidebar({
     >
       <div
         className={clsx(
-          'flex items-center gap-3',
+          'app-sidebar__brand-shell flex items-center gap-3',
           isDesktopCollapsed ? 'justify-center px-1' : 'justify-between px-3',
         )}
       >
-        <div className={clsx('flex min-w-0 items-center gap-3', isDesktopCollapsed && 'justify-center')}>
-          <div className="app-brand-badge rounded-3xl p-3 text-white">
+        <div
+          className={clsx(
+            'app-sidebar__brand flex min-w-0 items-center gap-3',
+            isDesktopCollapsed && 'justify-center',
+          )}
+        >
+          <div className="app-brand-badge app-sidebar__brand-badge rounded-3xl p-3 text-[color:var(--text)]">
             <Layers3 size={22} />
           </div>
           <div
             aria-hidden={isDesktopCollapsed}
             className={clsx(
-              'min-w-0 overflow-hidden whitespace-nowrap transition-all duration-300',
+              'app-sidebar__brand-copy min-w-0 overflow-hidden whitespace-nowrap transition-all duration-300',
               isDesktopCollapsed ? 'max-w-0 opacity-0' : 'max-w-[12rem] opacity-100',
             )}
           >
-            <p className="font-display text-lg font-bold text-[color:var(--text)]">Registry POS</p>
-            <p className="text-xs text-[color:var(--text-faint)]">Operacion centralizada</p>
+            <p className="app-sidebar__brand-title font-display text-lg font-bold text-[color:var(--text)]">
+              Registry POS
+            </p>
+            <p className="app-sidebar__brand-subtitle text-xs text-[color:var(--text-faint)]">
+              Operacion centralizada
+            </p>
           </div>
         </div>
 
@@ -96,7 +101,7 @@ export function Sidebar({
             ref={closeButtonRef}
             type="button"
             variant="ghost"
-            className="shrink-0"
+            className="app-sidebar__close shrink-0"
             aria-label="Cerrar menu de navegacion"
             onClick={onClose}
           >
@@ -107,7 +112,7 @@ export function Sidebar({
 
       <nav
         className={clsx(
-          'mt-6 grid gap-2 overflow-y-auto px-1',
+          'app-sidebar__nav mt-6 grid gap-2 overflow-y-auto px-1',
           isDesktopCollapsed && 'justify-items-center px-0',
         )}
         aria-label="Secciones del sistema"
@@ -121,17 +126,19 @@ export function Sidebar({
             title={isDesktopCollapsed ? label : undefined}
             className={({ isActive }) =>
               clsx(
-                'app-nav-link flex min-h-11 items-center rounded-2xl py-3 text-sm font-medium transition',
+                'app-nav-link app-sidebar__nav-link flex min-h-11 items-center rounded-2xl py-3 text-sm font-medium transition',
                 isDesktopCollapsed ? 'w-[3.25rem] justify-center px-3' : 'gap-3 px-4',
                 isActive && 'app-nav-link-active',
               )
             }
           >
-            <Icon size={18} className="shrink-0" />
+            <span className="app-nav-link__icon shrink-0" aria-hidden="true">
+              <Icon size={18} />
+            </span>
             <span
               aria-hidden={isDesktopCollapsed}
               className={clsx(
-                'overflow-hidden whitespace-nowrap transition-all duration-300',
+                'app-nav-link__label overflow-hidden whitespace-nowrap transition-all duration-300',
                 isDesktopCollapsed ? 'max-w-0 opacity-0' : 'max-w-[12rem] opacity-100',
               )}
             >
@@ -141,13 +148,13 @@ export function Sidebar({
         ))}
       </nav>
 
-      <div className="mt-6 border-t border-[color:var(--line)] pt-6 lg:mt-auto">
+      <div className="app-sidebar__footer mt-6 border-t border-[color:var(--line)] pt-6 lg:mt-auto">
         <Button
           variant="secondary"
           aria-label={isDesktopCollapsed ? 'Salir' : undefined}
           title={isDesktopCollapsed ? 'Salir' : undefined}
           className={clsx(
-            'w-full justify-center overflow-hidden transition-all duration-300',
+            'app-sidebar__logout w-full justify-center overflow-hidden transition-all duration-300',
             isDesktopCollapsed ? 'px-3' : 'px-4',
           )}
           onClick={() => {
