@@ -37,18 +37,21 @@ export function ProductCatalogFieldsSection({
   onProductTypeChange,
 }: ProductCatalogFieldsSectionProps) {
   return (
-    <div className="grid gap-4">
-      <div className="surface-subtle-strong rounded-3xl p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
+    <div className="products-form-sections grid gap-4">
+      <div className="products-form-group products-form-group--strong surface-subtle-strong rounded-lg p-4 sm:p-5">
+        <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
           Datos comerciales
         </p>
-        <p className="mt-2 text-sm theme-text-muted">
+        <p className="products-form-group__description mt-2 text-sm theme-text-muted">
           Completa identificadores operativos, marca y tipo sin afectar la logica actual de variantes.
         </p>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="products-form-group__grid mt-4 grid gap-4 sm:grid-cols-2">
           <Input
             label="Codigo interno"
+            wrapperClassName="products-field"
+            labelClassName="products-field__label"
+            className="products-field__control"
             value={draft.internalCode}
             onChange={(event) => onInternalCodeChange(event.target.value)}
             placeholder="Ej: CAF-LAT-001"
@@ -56,6 +59,9 @@ export function ProductCatalogFieldsSection({
           />
           <Input
             label="Codigo de barras"
+            wrapperClassName="products-field"
+            labelClassName="products-field__label"
+            className="products-field__control"
             value={draft.barcode}
             onChange={(event) => onBarcodeChange(event.target.value)}
             placeholder="Ej: 7701234567890"
@@ -63,6 +69,9 @@ export function ProductCatalogFieldsSection({
           />
           <Input
             label="Marca"
+            wrapperClassName="products-field"
+            labelClassName="products-field__label"
+            className="products-field__control"
             value={draft.brand}
             onChange={(event) => onBrandChange(event.target.value)}
             placeholder="Ej: Registry House"
@@ -70,6 +79,9 @@ export function ProductCatalogFieldsSection({
           />
           <Select
             label="Tipo de producto"
+            wrapperClassName="products-field"
+            labelClassName="products-field__label"
+            className="products-field__control"
             value={draft.productType}
             onChange={(event) => onProductTypeChange(event.target.value as ProductType)}
           >
@@ -82,17 +94,20 @@ export function ProductCatalogFieldsSection({
         </div>
       </div>
 
-      <div className="surface-subtle rounded-3xl p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
+      <div className="products-form-group surface-subtle rounded-lg p-4 sm:p-5">
+        <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
           Detalle adicional
         </p>
-        <p className="mt-2 text-sm theme-text-muted">
+        <p className="products-form-group__description mt-2 text-sm theme-text-muted">
           Referencia del proveedor y descripcion comercial opcional para enriquecer el catalogo.
         </p>
 
-        <div className="mt-4 grid gap-4">
+        <div className="products-form-group__grid mt-4 grid gap-4">
           <Input
             label="Referencia proveedor"
+            wrapperClassName="products-field"
+            labelClassName="products-field__label"
+            className="products-field__control"
             value={draft.supplierReference}
             onChange={(event) => onSupplierReferenceChange(event.target.value)}
             placeholder="Ej: PROV-LAT-AV-220"
@@ -100,12 +115,14 @@ export function ProductCatalogFieldsSection({
           />
           <Textarea
             label="Descripcion"
+            wrapperClassName="products-field"
+            labelClassName="products-field__label"
+            className="products-field__control min-h-28 resize-y"
             value={draft.description}
             onChange={(event) => onDescriptionChange(event.target.value)}
             placeholder="Resumen comercial breve, notas operativas o detalles utiles para catalogo."
             maxLength={1000}
             rows={4}
-            className="min-h-28 resize-y"
           />
         </div>
       </div>

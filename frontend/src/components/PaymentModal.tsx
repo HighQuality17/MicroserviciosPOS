@@ -139,7 +139,7 @@ export function PaymentModal({
           <Button variant="ghost" type="button" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading} aria-busy={loading}>
+          <Button type="submit" loading={loading}>
             {loading ? 'Procesando...' : 'Confirmar pago'}
           </Button>
         </div>

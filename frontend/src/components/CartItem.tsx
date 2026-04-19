@@ -1,5 +1,6 @@
-import { Boxes, Layers3, Minus, Package2, Plus, Trash2 } from 'lucide-react';
-import { Button } from '@/components/Button';
+import { Minus, Plus, Trash2 } from 'lucide-react';
+import { IconButton } from '@/components/IconButton';
+import { ProductMedia } from '@/components/ProductMedia';
 import type { CartItem as CartItemType } from '@/types/api';
 import { formatCurrency } from '@/utils/format';
 
@@ -13,55 +14,60 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
   const itemBadge = resolveCartItemBadge(item);
 
   return (
-    <div className="surface-subtle rounded-[1.45rem] p-4">
-      <div className="flex items-start gap-3">
-        <div className="pos-catalog-card__media h-12 w-12 rounded-[1.1rem]" data-kind={itemBadge.kind}>
-          <span className="pos-catalog-card__icon">{resolveCartItemIcon(itemBadge.kind)}</span>
-          <span className="pos-catalog-card__monogram text-[0.62rem]">{itemBadge.shortLabel}</span>
-        </div>
+    <div className="pos-cart-item surface-subtle rounded-[1.45rem] p-4">
+      <div className="pos-cart-item__header flex items-start gap-3">
+        <ProductMedia
+          label={item.name}
+          kind={itemBadge.kind}
+          size="sm"
+          monogram={itemBadge.shortLabel}
+          className="pos-cart-item__media"
+        />
 
-        <div className="min-w-0 flex-1">
+        <div className="pos-cart-item__content min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium theme-text-strong">{item.name}</p>
-            <span className="soft-pill rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em]">
+            <p className="pos-cart-item__title font-medium theme-text-strong">{item.name}</p>
+            <span className="pos-cart-item__badge soft-pill rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em]">
               {itemBadge.label}
             </span>
           </div>
 
           {item.subtitle ? (
-            <p className="mt-1 text-xs leading-5 theme-text-muted">{item.subtitle}</p>
+            <p className="pos-cart-item__subtitle mt-1 text-xs leading-5 theme-text-muted">
+              {item.subtitle}
+            </p>
           ) : null}
 
-          <p className="mt-2 text-xs theme-text-faint">
+          <p className="pos-cart-item__unit mt-2 text-xs theme-text-faint">
             Unitario {formatCurrency(item.unit_price)}
           </p>
         </div>
 
-        <Button
+        <IconButton
           type="button"
           variant="ghost"
+          size="sm"
+          icon={<Trash2 size={16} />}
           onClick={onRemove}
-          className="min-h-10 rounded-xl px-2.5 py-2 theme-text-secondary hover:bg-[var(--semantic-danger-background)] hover:text-[color:var(--semantic-danger-text)]"
-          aria-label={
+          className="theme-text-secondary hover:bg-[var(--semantic-danger-background)] hover:text-[color:var(--semantic-danger-text)]"
+          label={
             item.subtitle
               ? 'Eliminar ' + item.name + ' ' + item.subtitle + ' del carrito'
               : 'Eliminar ' + item.name + ' del carrito'
           }
-        >
-          <Trash2 size={16} />
-        </Button>
+        />
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Button
+      <div className="pos-cart-item__footer mt-4 flex items-center justify-between gap-3">
+        <div className="pos-cart-item__qty flex items-center gap-2">
+          <IconButton
             variant="secondary"
-            className="min-h-10 rounded-xl px-3 py-2"
+            size="sm"
+            className="rounded-xl"
             onClick={() => onChangeQty(item.qty - 1)}
-            aria-label={'Reducir cantidad de ' + item.name}
-          >
-            <Minus size={14} />
-          </Button>
+            label={'Reducir cantidad de ' + item.name}
+            icon={<Minus size={14} />}
+          />
           <span
             className="surface-subtle-strong flex min-h-10 min-w-12 items-center justify-center rounded-xl px-3 text-sm font-semibold theme-text-strong"
             aria-live="polite"
@@ -70,17 +76,17 @@ export function CartItem({ item, onChangeQty, onRemove }: CartItemProps) {
           >
             {item.qty}
           </span>
-          <Button
+          <IconButton
             variant="secondary"
-            className="min-h-10 rounded-xl px-3 py-2"
+            size="sm"
+            className="rounded-xl"
             onClick={() => onChangeQty(item.qty + 1)}
-            aria-label={'Aumentar cantidad de ' + item.name}
-          >
-            <Plus size={14} />
-          </Button>
+            label={'Aumentar cantidad de ' + item.name}
+            icon={<Plus size={14} />}
+          />
         </div>
 
-        <div className="text-right">
+        <div className="pos-cart-item__total text-right">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
             Total linea
           </p>
@@ -117,14 +123,3 @@ function resolveCartItemBadge(item: CartItemType) {
   };
 }
 
-function resolveCartItemIcon(kind: 'SIMPLE' | 'VARIANT' | 'COMBO') {
-  if (kind === 'COMBO') {
-    return <Boxes size={16} strokeWidth={1.9} />;
-  }
-
-  if (kind === 'SIMPLE') {
-    return <Package2 size={16} strokeWidth={1.9} />;
-  }
-
-  return <Layers3 size={16} strokeWidth={1.9} />;
-}

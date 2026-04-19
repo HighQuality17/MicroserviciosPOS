@@ -4,27 +4,45 @@ import clsx from 'clsx';
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { children, className, type = 'button', variant = 'primary', ...props },
+  {
+    children,
+    className,
+    type = 'button',
+    variant = 'primary',
+    size = 'md',
+    loading = false,
+    disabled,
+    ...props
+  },
   ref,
 ) {
+  const isDisabled = disabled || loading;
+
   return (
     <button
       ref={ref}
       type={type}
       className={clsx(
-        'ui-button-base inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]',
+        'ui-button-base action-button inline-flex items-center justify-center whitespace-nowrap focus-visible:outline-none',
         variant === 'primary' && 'ui-button-primary',
         variant === 'secondary' && 'ui-button-secondary',
         variant === 'ghost' && 'ui-button-ghost',
         variant === 'danger' && 'ui-button-danger',
         className,
       )}
+      data-size={size}
+      data-loading={loading || undefined}
+      disabled={isDisabled}
+      aria-busy={loading || props['aria-busy'] || undefined}
       {...props}
     >
-      {children}
+      {loading ? <span className="action-button__spinner" aria-hidden="true" /> : null}
+      <span className="action-button__content">{children}</span>
     </button>
   );
 });

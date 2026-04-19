@@ -1,16 +1,22 @@
+import '@/features/products/products-d2b.css';
 import clsx from 'clsx';
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, PackagePlus, Shapes } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
 import { CheckboxField } from '@/components/CheckboxField';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { EmptyState } from '@/components/EmptyState';
+import { FilterChip } from '@/components/FilterChip';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { Modal } from '@/components/Modal';
-import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
+import { ModulePageHeader } from '@/components/ModulePageHeader';
+import type {
+  ModulePageHeaderBadge,
+  ModulePageHeaderCard,
+} from '@/components/ModulePageHeader';
+import { SearchField } from '@/components/SearchField';
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -870,13 +876,6 @@ export function ProductsPage() {
     : configuredRecipesCount === activeVariantsCount
       ? 'success'
       : 'info';
-  const productBadgeLabel = loadingCatalog
-    ? 'Sincronizando'
-    : products.length === 0
-      ? 'Sin catalogo'
-      : inactiveProductsCount > 0
-        ? 'Mixto'
-        : 'Catalogo activo';
   const operationalBadgeLabel = loadingCatalog
     ? 'Sincronizando'
     : variants.length > 0
@@ -908,89 +907,148 @@ export function ProductsPage() {
     : simpleProductListFilter === 'ACTIVE'
       ? `${activeSimpleProductsCount} activos visibles`
       : `${inactiveSimpleProductsCount} inactivos visibles`;
+  const accessStatusLabel = canManageCatalog ? 'Edicion habilitada' : 'Solo lectura';
+  const heroSummaryLabel = showRecipeModule ? 'Cobertura activa' : 'Operacion activa';
+  const heroSummaryValue = showRecipeModule ? recipeBadgeLabel : operationalBadgeLabel;
+  const heroSummaryNote = catalogAccessDenied
+    ? 'Tu perfil actual solo puede revisar estado general del catalogo.'
+    : showRecipeModule
+      ? activeVariantsCount > 0
+        ? `${configuredRecipesCount} recetas listas para ${activeVariantsCount} operaciones activas`
+        : 'Crea operaciones para medir cobertura administrativa.'
+      : `${activeSimpleOperationalCount} simples y ${activeRealVariantsCount} variantes activas en POS`;
+  const productsHeroMetrics: ModulePageHeaderCard[] = [
+    {
+      label: 'Catalogo total',
+      value: String(products.length),
+      note: loadingCatalog
+        ? 'Sincronizando productos y operaciones'
+        : inactiveProductsCount > 0
+          ? `${activeProductsCount} activos y ${inactiveProductsCount} inactivos`
+          : `${activeProductsCount} activos en catalogo`,
+      accent: catalogStatusTone,
+    },
+    {
+      label: 'Productos simples',
+      value: String(simpleProducts.length),
+      note:
+        simpleProducts.length > 0
+          ? `${activeSimpleProductsCount} activos con operacion unificada`
+          : 'Aun no hay productos simples configurados',
+      accent: 'default' as const,
+    },
+    {
+      label: 'Variantes reales',
+      value: String(realVariants.length),
+      note:
+        realVariants.length > 0
+          ? `${activeRealVariantsCount} listas para venta`
+          : 'Sin variantes reales configuradas',
+      accent: 'info' as const,
+    },
+    {
+      label: showRecipeModule ? 'Cobertura receta' : 'Operaciones activas',
+      value: showRecipeModule
+        ? activeVariantsCount > 0
+          ? `${configuredRecipesCount}/${activeVariantsCount}`
+          : '0'
+        : String(activeSimpleOperationalCount + activeRealVariantsCount),
+      note: showRecipeModule
+        ? activeVariantsCount > 0
+          ? recipeBadgeLabel
+          : 'Sin cobertura pendiente por medir'
+        : `${activeSimpleOperationalCount} simples y ${activeRealVariantsCount} variantes activas`,
+      accent: showRecipeModule ? recipeCoverageTone : ('success' as const),
+    },
+  ];
+  const productsHeaderBadges: ModulePageHeaderBadge[] = [
+    {
+      label: catalogStatusLabel,
+      tone: catalogStatusTone,
+    },
+    {
+      label: accessStatusLabel,
+      tone: canManageCatalog ? ('info' as const) : ('default' as const),
+    },
+  ];
   return (
-    <div className="grid min-w-0 gap-4 sm:gap-5">
-      <ModuleStatusHeader
+    <div className="products-page grid min-w-0 gap-5 sm:gap-6">
+      <ModulePageHeader
+        className="products-page__hero"
         ariaLabel="Estado operativo de productos"
-        eyebrow="Operacion de catalogo"
+        eyebrow="Administracion de catalogo"
         title="Productos"
-        statusLabel={catalogStatusLabel}
-        statusTone={catalogStatusTone}
-        description="Catalogo, operaciones de venta y cobertura de recetas."
-        helpText="Resume el estado del catalogo comercial, las operaciones disponibles para POS y la cobertura real de recetas."
-        icon={<PackagePlus size={18} />}
-      >
-        <ModuleStatusCard
-          label="Productos"
-          value={String(products.length)}
-          icon={<PackagePlus size={16} />}
-          iconTone={products.length > 0 ? 'success' : 'default'}
-          badgeLabel={productBadgeLabel}
-          badgeTone={loadingCatalog ? 'info' : products.length > 0 ? 'success' : 'default'}
-          meta={
-            catalogAccessDenied
-              ? 'Sin acceso al catalogo'
-              : loadingCatalog
-                ? 'Sincronizando catalogo'
-                : inactiveProductsCount > 0
-                  ? `${activeProductsCount} activos - ${inactiveProductsCount} inactivos`
-                  : `${activeProductsCount} activos`
-          }
-        />
-        <ModuleStatusCard
-          label="Operaciones POS"
-          value={String(variants.length)}
-          icon={<Shapes size={16} />}
-          iconTone={variants.length > 0 ? 'info' : 'default'}
-          badgeLabel={operationalBadgeLabel}
-          badgeTone={loadingCatalog ? 'info' : variants.length > 0 ? 'info' : 'default'}
-          meta={
-            catalogAccessDenied
-              ? 'Sin acceso operativo'
-              : loadingCatalog
-                ? 'Preparando datos'
-                : `${activeSimpleOperationalCount} simples - ${activeRealVariantsCount} variantes reales`
-          }
-        />
-        {showRecipeModule ? (
-          <ModuleStatusCard
-            label="Recetas configuradas"
-            value={String(configuredRecipesCount)}
-            icon={<BookOpenCheck size={16} />}
-            iconTone={recipeCoverageTone}
-            badgeLabel={recipeBadgeLabel}
-            badgeTone={recipeCoverageTone}
-            meta={
-              catalogAccessDenied
-                ? 'Requiere acceso admin'
-                : loadingCatalog
-                  ? 'Verificando cobertura'
-                  : activeVariantsCount > 0
-                    ? `${configuredRecipesCount}/${activeVariantsCount} operaciones activas con receta`
-                    : 'Crea items operativos para medir cobertura'
-            }
-          />
-        ) : null}
-      </ModuleStatusHeader>
+        badges={productsHeaderBadges}
+        description="Catalogo comercial, operaciones de venta y control administrativo para mantener producto y receta en orden."
+        summary={{
+          label: heroSummaryLabel,
+          value: heroSummaryValue,
+          note: heroSummaryNote,
+        }}
+        asideAction={
+          <Button
+            variant="secondary"
+            onClick={() => void refreshCatalog()}
+          >
+            Actualizar catalogo
+          </Button>
+        }
+        cards={productsHeroMetrics}
+      />
 
-      {message ? <FeedbackMessage tone="success">{message}</FeedbackMessage> : null}
+      {message ? <FeedbackMessage tone="success" className="products-feedback">{message}</FeedbackMessage> : null}
 
-      {submitError ? <FeedbackMessage tone="error">{submitError}</FeedbackMessage> : null}
+      {submitError ? <FeedbackMessage tone="error" className="products-feedback">{submitError}</FeedbackMessage> : null}
 
-      {catalogError ? <FeedbackMessage tone="error">{catalogError}</FeedbackMessage> : null}
+      {catalogError ? <FeedbackMessage tone="error" className="products-feedback">{catalogError}</FeedbackMessage> : null}
 
       {catalogAccessDenied ? (
         <AccessState description="Tu perfil actual no puede consultar productos, operaciones de venta ni recetas administrativas." />
       ) : null}
 
-      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,480px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,500px)_minmax(0,1fr)]">
-        <div className="grid min-w-0 gap-4 sm:gap-5">
-          <Card>
-            <p className="text-sm theme-text-muted">Gestión de productos</p>
-            <h2 className="font-display text-2xl font-bold theme-text-strong">Crear producto</h2>
-            <div className="mt-5 grid gap-4">
+      <div className="products-workspace grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:gap-5 xl:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
+        <div className="products-form-rail grid min-w-0 gap-4 sm:gap-5">
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--form"
+            contentClassName="products-panel__body"
+          >
+            <div className="products-panel__intro">
+              <div className="products-panel__header-copy">
+                <p className="text-sm theme-text-muted">Administracion base</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">Crear producto</h2>
+                <p className="products-panel__description">
+                  Define ficha comercial, tipo de producto y estado operativo sin cambiar flujo.
+                </p>
+              </div>
+            </div>
+            <div className="products-panel__highlights">
+              <div className="products-panel__spotlight products-panel__spotlight--variant">
+                <p className="products-panel__spotlight-label">Familias disponibles</p>
+                <p className="products-panel__spotlight-value">{variantReadyProducts.length}</p>
+                <p className="products-panel__spotlight-note">
+                  Solo se habilitan productos activos configurados para trabajar con variantes.
+                </p>
+              </div>
+              <div className="products-panel__spotlight products-panel__spotlight--product">
+                <p className="products-panel__spotlight-label">Tipo base</p>
+                <p className="products-panel__spotlight-value">
+                  {productCatalogDraft.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
+                </p>
+                <p className="products-panel__spotlight-note">
+                  {productName.trim()
+                    ? productName
+                    : 'Define la ficha base antes de crear operaciones de venta.'}
+                </p>
+              </div>
+            </div>
+            <div className="products-form-stack grid gap-4">
               <Input
                 label="Nombre"
+                wrapperClassName="products-field"
+                labelClassName="products-field__label"
+                className="products-field__control"
                 value={productName}
                 onChange={(event) => setProductName(event.target.value)}
                 placeholder="Latte avellana"
@@ -1081,20 +1139,23 @@ export function ProductsPage() {
               <CheckboxField
                 label="Activo"
                 description="Define si el producto estara disponible en el catalogo operativo."
+                wrapperClassName="products-toggle-card"
+                className="products-toggle-card__label"
                 checked={productActive}
                 onChange={(event) => setProductActive(event.target.checked)}
               />
 
 
-              <div className="flex gap-3">
+              <div className="products-panel__actions flex gap-3">
                 <Button
                   disabled={!canManageCatalog || creatingProduct || !productName.trim()}
                   onClick={handleCreateProduct}
+                  className="products-panel__cta"
                 >
                   {creatingProduct ? 'Guardando...' : 'Crear producto'}
                 </Button>
                 {!canManageCatalog ? (
-                  <Button variant="secondary" disabled>
+                  <Button variant="secondary" disabled className="products-panel__secondary">
                     Solo lectura
                   </Button>
                 ) : null}
@@ -1102,12 +1163,47 @@ export function ProductsPage() {
             </div>
           </Card>
 
-          <Card>
-            <p className="text-sm theme-text-muted">Gestión de variantes</p>
-            <h2 className="font-display text-2xl font-bold theme-text-strong">Crear variante</h2>
-            <div className="mt-5 grid gap-4">
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--form"
+            contentClassName="products-panel__body"
+          >
+            <div className="products-panel__intro">
+              <div className="products-panel__header-copy">
+                <p className="text-sm theme-text-muted">Operaciones de venta</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">Crear variante</h2>
+                <p className="products-panel__description">
+                  Asigna SKU, tamano y precio a familias activas preparadas para POS.
+                </p>
+              </div>
+            </div>
+            <div className="products-panel__highlights">
+              <div className="products-panel__spotlight products-panel__spotlight--variant">
+                <p className="products-panel__spotlight-label">Familias disponibles</p>
+                <p className="products-panel__spotlight-value">{variantReadyProducts.length}</p>
+                <p className="products-panel__spotlight-note">
+                  Solo aparecen productos activos listos para trabajar con variantes reales.
+                </p>
+              </div>
+              <div className="products-panel__spotlight">
+                <p className="products-panel__spotlight-label">Estado inicial</p>
+                <p className="products-panel__spotlight-value">
+                  {variantActive ? 'Activa' : 'Inactiva'}
+                </p>
+                <p className="products-panel__spotlight-note">
+                  {variantProductId
+                    ? 'Se creara para la familia seleccionada.'
+                    : 'Selecciona primero una familia para continuar.'}
+                </p>
+              </div>
+            </div>
+            <div className="products-form-stack grid gap-4">
               <Select
                 label="Producto"
+                wrapperClassName="products-field"
+                labelClassName="products-field__label"
+                className="products-field__control"
                 value={variantProductId}
                 onChange={(event) => setVariantProductId(event.target.value)}
               >
@@ -1122,7 +1218,7 @@ export function ProductsPage() {
                   </option>
                 ))}
               </Select>
-              <p className="text-xs text-[color:var(--text-faint)]">
+              <p className="products-inline-note">
                 Solo se listan productos activos configurados como tipo variante.
               </p>
 
@@ -1130,12 +1226,18 @@ export function ProductsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label="Tamaño"
+                  wrapperClassName="products-field"
+                  labelClassName="products-field__label"
+                  className="products-field__control"
                   value={variantSize}
                   onChange={(event) => setVariantSize(event.target.value)}
                   placeholder="Ej: 12oz"
                 />
                 <Input
                   label="SKU"
+                  wrapperClassName="products-field"
+                  labelClassName="products-field__label"
+                  className="products-field__control"
                   value={variantSku}
                   onChange={(event) => setVariantSku(event.target.value)}
                   placeholder="Ej: CAF-AM-12"
@@ -1146,6 +1248,9 @@ export function ProductsPage() {
                 type="number"
                 min={0}
                 label="Precio de venta"
+                wrapperClassName="products-field"
+                labelClassName="products-field__label"
+                className="products-field__control"
                 placeholder="Ej: 12000"
                 value={variantPriceInput}
                 onChange={(event) => {
@@ -1157,19 +1262,22 @@ export function ProductsPage() {
               <CheckboxField
                 label="Activa"
                 description="Las variantes inactivas no se muestran en POS."
+                wrapperClassName="products-toggle-card"
+                className="products-toggle-card__label"
                 checked={variantActive}
                 onChange={(event) => setVariantActive(event.target.checked)}
               />
 
-              <div className="flex gap-3">
+              <div className="products-panel__actions flex gap-3">
                 <Button
                   disabled={!canManageCatalog || creatingVariant || variantReadyProducts.length === 0}
                   onClick={handleCreateVariant}
+                  className="products-panel__cta"
                 >
                   {creatingVariant ? 'Guardando...' : 'Crear variante'}
                 </Button>
                 {!canManageCatalog ? (
-                  <Button variant="secondary" disabled>
+                  <Button variant="secondary" disabled className="products-panel__secondary">
                     Solo lectura
                   </Button>
                 ) : null}
@@ -1178,16 +1286,21 @@ export function ProductsPage() {
           </Card>
         </div>
 
-        <div className="grid min-w-0 gap-4 sm:gap-5">
-          <Card>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm theme-text-muted">Vista operativa</p>
+        <div className="products-data-rail grid min-w-0 gap-4 sm:gap-5">
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--list"
+            contentClassName="products-panel__body"
+          >
+            <div className="products-panel__header">
+              <div className="products-panel__header-copy">
+                <p className="text-sm theme-text-muted">Vista general</p>
                 <h2 className="font-display text-2xl font-bold theme-text-strong">Productos</h2>
+                <p className="products-panel__description">
+                  Listado base del catalogo con operacion principal, estado y precio de referencia.
+                </p>
               </div>
-              <Button variant="secondary" onClick={() => void refreshCatalog()}>
-                Refrescar
-              </Button>
             </div>
 
             <CatalogListToolbar
@@ -1228,111 +1341,196 @@ export function ProductsPage() {
                 />
               </div>
             ) : (
-              <ScrollPanel className="mt-6 grid gap-4" tabIndex={0} aria-label="Listado de productos">
-                {filteredProducts.map((product) => {
-                  const displayVariant = getProductCardVariant(product);
-                  const recipeState = getProductCardRecipeState(product, recipeStatusByVariant);
-                  const priceLabel = getProductCardPriceLabel(product, displayVariant);
-                  const metaItems = getProductCardMetaItems(product, displayVariant);
+              <CatalogItemsTable
+                ariaLabel="Listado de productos"
+                caption="Tabla general de productos del catalogo"
+                rows={filteredProducts}
+                rowKey={(product) => product.id}
+                rowClassName={(product) => (!product.active ? 'opacity-80' : undefined)}
+                tableMinWidthClassName="min-w-[1360px]"
+                columns={[
+                  {
+                    key: 'id',
+                    header: 'ID',
+                    width: '72px',
+                    cellClassName: 'whitespace-nowrap text-xs theme-text-muted',
+                    render: (product) => `#${product.id}`,
+                  },
+                  {
+                    key: 'product',
+                    header: 'Producto',
+                    width: '360px',
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+                      const metaItems = getProductCardMetaItems(product, displayVariant);
 
-                  return (
-                    <div
-                      key={product.id}
-                      className={[
-                        'data-list-card rounded-3xl p-5',
-                        product.active ? '' : 'border border-dashed theme-border-soft opacity-90',
-                      ].join(' ')}
-                    >
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-3">
-                              <p className="font-display text-xl font-bold theme-text-strong">{product.name}</p>
-                              <StatusBadge
-                                label={product.active ? 'Activo' : 'Inactivo'}
-                                tone={product.active ? 'success' : 'default'}
-                              />
-                              <StatusBadge
-                                label={product.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
-                                tone={product.productType === 'VARIANT' ? 'info' : 'default'}
-                              />
-                            </div>
+                      return (
+                        <div className="products-table-entity">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-[15px] font-semibold theme-text-strong">
+                              {product.name}
+                            </p>
+                            <StatusBadge
+                              label={product.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
+                              tone={product.productType === 'VARIANT' ? 'info' : 'default'}
+                            />
                           </div>
-                          {canManageCatalog ? (
-                            <div className="flex flex-wrap gap-2 xl:justify-end">
-                              <Button variant="ghost" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
-                                Editar
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() => void handleToggleProductStatus(product)}
-                              >
-                                {product.active ? 'Desactivar' : 'Activar'}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                className="action-soft-danger"
-                                onClick={() => requestProductDelete(product)}
-                              >
-                                Eliminar
-                              </Button>
+                          <p className="products-table-entity__summary">
+                            {getProductTableSummary(product)}
+                          </p>
+                          {metaItems.length > 0 ? (
+                            <div className="products-table-meta">
+                              {metaItems.map((item) => (
+                                <span key={item.label} className="products-table-meta__item">
+                                  <span className="text-[color:var(--text-faint)]">
+                                    {item.label}
+                                  </span>
+                                  <span
+                                    className={clsx(
+                                      'font-medium theme-text-strong',
+                                      item.mono && 'font-mono text-[11px]',
+                                    )}
+                                  >
+                                    {item.value}
+                                  </span>
+                                </span>
+                              ))}
                             </div>
                           ) : null}
                         </div>
-                        {metaItems.length > 0 ? (
-                          <div className="flex flex-wrap gap-2.5">
-                            {metaItems.map((item) => (
-                              <span
-                                key={item.label}
-                                className="soft-pill rounded-full px-3 py-1.5 text-xs"
-                              >
-                                <span className="text-[color:var(--text-faint)]">{item.label}</span>
-                                <span
-                                  className={clsx(
-                                    'ml-2 font-medium theme-text-strong',
-                                    item.mono && 'font-mono text-[11px]',
-                                  )}
-                                >
-                                  {item.value}
-                                </span>
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                          <div>
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-faint)]">
-                              Precio
-                            </p>
-                            <p className="mt-2 metric-accent text-2xl font-semibold tracking-[-0.02em]">
-                              {priceLabel}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {showRecipeModule ? (
+                      );
+                    },
+                  },
+                  {
+                    key: 'operation',
+                    header: 'Operacion',
+                    width: '220px',
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+                      const operationSummary = getProductOperationSummary(product, displayVariant);
+
+                      return (
+                        <div className="products-table-stack">
+                          <p className="products-table-stack__title">{operationSummary.title}</p>
+                          {operationSummary.detail ? (
+                            <p className="products-table-stack__detail">{operationSummary.detail}</p>
+                          ) : null}
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    key: 'price',
+                    header: 'Precio',
+                    width: '116px',
+                    align: 'right',
+                    cellClassName: 'whitespace-nowrap',
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+
+                      return (
+                        <span className="products-table-price">
+                          {getProductCardPriceLabel(product, displayVariant)}
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    key: 'status',
+                    header: 'Estado',
+                    width: '128px',
+                    render: (product) => (
+                      <StatusBadge
+                        label={product.active ? 'Activo' : 'Inactivo'}
+                        tone={product.active ? 'success' : 'default'}
+                        className="min-w-[104px] justify-center"
+                      />
+                    ),
+                  },
+                  ...(showRecipeModule
+                    ? [
+                        {
+                          key: 'recipe',
+                          header: 'Receta',
+                          width: '128px',
+                          render: (product: EnrichedCatalogProduct) => {
+                            const recipeState = getProductCardRecipeState(
+                              product,
+                              recipeStatusByVariant,
+                            );
+
+                            return (
                               <StatusBadge
                                 label={recipeState.label}
                                 tone={recipeState.tone}
+                                className="min-w-[112px] justify-center"
                               />
-                            ) : null}
-                            {product.productType === 'VARIANT' && product.relatedVariants.length > 1 ? (
-                              <span className="text-xs text-[color:var(--text-faint)]">
-                                {product.relatedVariants.length} variantes configuradas
-                              </span>
-                            ) : null}
+                            );
+                          },
+                        },
+                      ]
+                    : []),
+                  {
+                    key: 'actions',
+                    header: 'Acciones',
+                    width: showRecipeModule ? '320px' : '256px',
+                    render: (product) =>
+                      canManageCatalog ? (
+                        <div className="products-table-actions">
+                          <div className="products-table-actions__primary">
+                            <Button
+                              variant="secondary"
+                              className="action-soft-brand products-action-edit"
+                              aria-haspopup="dialog"
+                              aria-controls="product-editor-dialog"
+                              onClick={() => openProductEditor(product)}
+                            >
+                              Editar
+                            </Button>
+                          </div>
+                          <div className="products-table-actions__secondary">
+                            <Button
+                              variant="ghost"
+                              className={product.active ? 'products-action-toggle' : 'action-soft-success'}
+                              onClick={() => void handleToggleProductStatus(product)}
+                            >
+                              {product.active ? 'Desactivar' : 'Activar'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="action-soft-danger products-action-delete"
+                              onClick={() => requestProductDelete(product)}
+                            >
+                              Eliminar
+                            </Button>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </ScrollPanel>
+                      ) : (
+                        <span className="text-xs text-[color:var(--text-faint)]">
+                          Sin acciones disponibles
+                        </span>
+                      ),
+                  },
+                ]}
+              />
             )}
           </Card>
 
-          <Card>
-            <p className="text-sm theme-text-muted">Operacion unificada</p>
-            <h2 className="font-display text-2xl font-bold theme-text-strong">Productos simples</h2>
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--list"
+            contentClassName="products-panel__body"
+          >
+            <div className="products-panel__header">
+              <div className="products-panel__header-copy">
+                <p className="text-sm theme-text-muted">Operacion unificada</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">Productos simples</h2>
+                <p className="products-panel__description">
+                  Vista operativa de productos simples con su registro POS asociado.
+                </p>
+              </div>
+            </div>
             <CatalogListToolbar
               countLabel={visibleSimpleProductsLabel}
               searchValue={simpleProductSearchTerm}
@@ -1346,7 +1544,7 @@ export function ProductsPage() {
             {loadingCatalog ? (
               <div className="mt-6 grid gap-3">
                 {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} className="data-list-card h-20 animate-pulse rounded-3xl" />
+                  <div key={index} className="data-list-card h-20 animate-pulse rounded-lg" />
                 ))}
               </div>
             ) : filteredSimpleProducts.length === 0 ? (
@@ -1397,7 +1595,7 @@ export function ProductsPage() {
                     key: 'product',
                     header: 'Producto',
                     render: (product) => (
-                      <p className="truncate text-[15px] font-semibold tracking-[-0.01em] theme-text-strong">
+                      <p className="truncate text-[15px] font-semibold theme-text-strong">
                         {product.name}
                       </p>
                     ),
@@ -1460,21 +1658,25 @@ export function ProductsPage() {
                     width: '332px',
                     render: (product) =>
                       canManageCatalog && product.operationalVariant ? (
-                        <div className="flex flex-nowrap items-center gap-3 whitespace-nowrap">
-                          <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
-                            Editar producto
-                          </Button>
-                          <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(product.operationalVariant!)}>
-                            Editar operacion
-                          </Button>
-                          {showRecipeModule ? (
-                            <Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(product.operationalVariant!)}>
-                              Gestionar receta
+                        <div className="products-table-actions">
+                          <div className="products-table-actions__primary">
+                            <Button variant="secondary" className="action-soft-brand products-action-edit" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
+                              Editar
                             </Button>
-                          ) : null}
-                          <Button variant="ghost" className={product.operationalVariant.active ? 'action-soft-danger' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}>
-                            {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
-                          </Button>
+                            <Button variant="secondary" className="action-soft-brand products-action-operation" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(product.operationalVariant!)}>
+                              Operacion
+                            </Button>
+                            {showRecipeModule ? (
+                              <Button variant="secondary" className="action-soft-brand products-action-recipe" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(product.operationalVariant!)}>
+                                Receta
+                              </Button>
+                            ) : null}
+                          </div>
+                          <div className="products-table-actions__secondary">
+                            <Button variant="ghost" className={product.operationalVariant.active ? 'products-action-toggle' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}>
+                              {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
+                            </Button>
+                          </div>
                         </div>
                       ) : (
                         <span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>
@@ -1485,9 +1687,21 @@ export function ProductsPage() {
             )}
           </Card>
 
-          <Card>
-            <p className="text-sm theme-text-muted">Listado real</p>
-            <h2 className="font-display text-2xl font-bold theme-text-strong">Variantes</h2>
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--list"
+            contentClassName="products-panel__body"
+          >
+            <div className="products-panel__header">
+              <div className="products-panel__header-copy">
+                <p className="text-sm theme-text-muted">Listado real</p>
+                <h2 className="font-display text-2xl font-bold theme-text-strong">Variantes</h2>
+                <p className="products-panel__description">
+                  Seguimiento de variantes reales, precio, estado comercial y receta.
+                </p>
+              </div>
+            </div>
             <CatalogListToolbar
               countLabel={visibleVariantsLabel}
               searchValue={variantSearchTerm}
@@ -1501,7 +1715,7 @@ export function ProductsPage() {
             {loadingCatalog ? (
               <div className="mt-6 grid gap-3">
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <div key={index} className="data-list-card h-20 animate-pulse rounded-3xl" />
+                  <div key={index} className="data-list-card h-20 animate-pulse rounded-lg" />
                 ))}
               </div>
             ) : realVariants.length === 0 ? (
@@ -1534,7 +1748,22 @@ export function ProductsPage() {
                 tableMinWidthClassName="min-w-[1280px]"
                 columns={[
                   { key: 'id', header: 'ID', width: '64px', cellClassName: 'whitespace-nowrap text-xs theme-text-muted', render: (variant) => `#${variant.id}` },
-                  { key: 'product', header: 'Producto', render: (variant) => (<div className="min-w-0"><p className="truncate text-[15px] font-semibold tracking-[-0.01em] theme-text-strong">{variant.product_name}</p>{!variant.active ? (<p className="mt-1 text-xs text-[color:var(--text-faint)]">Variante inactiva. Sigue disponible aqui para revision o reactivacion.</p>) : null}</div>) },
+                  {
+                    key: 'product',
+                    header: 'Producto',
+                    render: (variant) => (
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-semibold theme-text-strong">
+                          {variant.product_name}
+                        </p>
+                        {!variant.active ? (
+                          <p className="mt-1 text-xs text-[color:var(--text-faint)]">
+                            Variante inactiva. Sigue disponible aqui para revision o reactivacion.
+                          </p>
+                        ) : null}
+                      </div>
+                    ),
+                  },
                   { key: 'size', header: 'Tamano', width: '92px', cellClassName: 'whitespace-nowrap text-sm', render: (variant) => variant.size },
                   { key: 'sku', header: 'SKU', width: '112px', cellClassName: 'font-mono text-[12px]', render: (variant) => variant.sku },
                   { key: 'price', header: 'Precio', width: '104px', align: 'right', cellClassName: 'whitespace-nowrap', render: (variant) => (<span className="metric-accent text-[15px] font-semibold">{formatCurrency(Number(variant.sale_price))}</span>) },
@@ -1563,14 +1792,60 @@ export function ProductsPage() {
                     key: 'actions',
                     header: 'Acciones',
                     width: showRecipeModule ? '372px' : '252px',
-                    render: (variant) => canManageCatalog ? (<div className="flex flex-nowrap items-center gap-3 whitespace-nowrap"><Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(variant)}>Editar variante</Button><Button variant="ghost" className={variant.active ? 'action-soft-danger' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(variant)}>{variant.active ? 'Desactivar' : 'Activar'}</Button>{showRecipeModule ? (<Button variant="secondary" className="action-soft-brand" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(variant)}>Gestionar receta</Button>) : null}<Button variant="ghost" className="action-soft-danger" onClick={() => requestVariantDelete(variant)}>Eliminar</Button></div>) : (<span className="text-xs text-[color:var(--text-faint)]">Sin acciones disponibles</span>)
+                    render: (variant) =>
+                      canManageCatalog ? (
+                        <div className="products-table-actions">
+                          <div className="products-table-actions__primary">
+                            <Button
+                              variant="secondary"
+                              className="action-soft-brand products-action-edit"
+                              aria-haspopup="dialog"
+                              aria-controls="variant-editor-dialog"
+                              onClick={() => openVariantEditor(variant)}
+                            >
+                              Editar
+                            </Button>
+                            {showRecipeModule ? (
+                              <Button
+                                variant="secondary"
+                                className="action-soft-brand products-action-recipe"
+                                aria-haspopup="dialog"
+                                aria-controls="recipe-manager-dialog"
+                                onClick={() => void openRecipeManager(variant)}
+                              >
+                                Receta
+                              </Button>
+                            ) : null}
+                          </div>
+                          <div className="products-table-actions__secondary">
+                            <Button
+                              variant="ghost"
+                              className={variant.active ? 'products-action-toggle' : 'action-soft-success'}
+                              onClick={() => void handleToggleVariantStatus(variant)}
+                            >
+                              {variant.active ? 'Desactivar' : 'Activar'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="action-soft-danger products-action-delete"
+                              onClick={() => requestVariantDelete(variant)}
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[color:var(--text-faint)]">
+                          Sin acciones disponibles
+                        </span>
+                      ),
                   },
                 ]}
               />
             )}
 
             {showRecipeModule && activeVariantsCount > 0 ? (
-              <div className="toolbar-shell mt-4 rounded-2xl px-4 py-3 text-xs text-[color:var(--text-faint)]">
+              <div className="products-inline-note products-inline-note--footer toolbar-shell mt-4 rounded-lg px-4 py-3 text-xs text-[color:var(--text-faint)]">
                 Las operaciones activas sin receta seguiran detectandose aqui para que administracion complete la configuracion antes de vender.
               </div>
             ) : null}
@@ -1756,7 +2031,7 @@ export function ProductsPage() {
         subtitle="Esta acción solo debe usarse cuando el registro ya no deba existir en el catálogo."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
-          <div className="rounded-3xl border border-[color:var(--border-soft)] bg-[color:var(--surface-subtle)] px-4 py-4">
+          <div className="products-delete-summary rounded-lg px-4 py-4">
             <p className="text-sm font-semibold theme-text-strong">
               {deleteTarget?.label ?? 'Registro seleccionado'}
             </p>
@@ -1833,7 +2108,7 @@ export function ProductsPage() {
                 return (
                   <div
                     key={`${item.ingredient_id}-${index}`}
-                    className="data-list-card rounded-3xl p-4"
+                    className="data-list-card rounded-lg p-4"
                   >
                     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_120px_110px_auto] lg:items-end">
                       <Select
@@ -1935,29 +2210,31 @@ function CatalogListToolbar<T extends string>({
   onFilterChange: (value: T) => void;
 }) {
   return (
-    <div className="toolbar-shell mt-4 grid gap-3 rounded-2xl px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-      <p className="text-sm text-[color:var(--text-faint)]">{countLabel}</p>
-      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
-        <Input
-          type="search"
+    <div className="products-list-toolbar toolbar-shell mt-4 grid gap-3 rounded-lg px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+      <div className="products-list-toolbar__summary">
+        <p className="products-list-toolbar__label">Vista activa</p>
+        <p className="products-list-toolbar__count">{countLabel}</p>
+      </div>
+      <div className="products-list-toolbar__controls flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
+        <SearchField
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
+          onClear={() => onSearchChange('')}
           placeholder="Buscar por nombre o SKU"
           aria-label={searchAriaLabel}
-          autoComplete="off"
+          fieldClassName="products-list-toolbar__search-field"
           className="min-h-10"
-          wrapperClassName="w-full sm:max-w-[280px] xl:max-w-[300px]"
+          wrapperClassName="products-list-toolbar__search w-full sm:max-w-[280px] xl:max-w-[320px]"
         />
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="products-list-toolbar__filters flex flex-wrap justify-end gap-2">
           {filters.map((filterOption) => (
-            <Button
+            <FilterChip
               key={filterOption.value}
-              variant={activeFilter === filterOption.value ? 'primary' : 'ghost'}
-              className="min-h-10 min-w-[98px] rounded-xl px-3 py-2 text-xs"
+              active={activeFilter === filterOption.value}
+              className="products-list-toolbar__filter min-w-[90px] justify-center"
+              label={filterOption.label}
               onClick={() => onFilterChange(filterOption.value)}
-            >
-              {filterOption.label}
-            </Button>
+            />
           ))}
         </div>
       </div>
@@ -1980,16 +2257,6 @@ function getProductCardMetaItems(
 
   if (variant?.sku) {
     items.push({ label: 'SKU', value: variant.sku, mono: true });
-  }
-
-  if (variant?.size) {
-    items.push({
-      label: 'Tamano',
-      value:
-        product.productType === 'VARIANT' && product.relatedVariants.length > 1
-          ? 'Varios'
-          : variant.size,
-    });
   }
 
   if (product.brand) {
@@ -2038,6 +2305,72 @@ function getProductCardRecipeState(
     label: hasRecipe ? 'Con receta' : 'Sin receta',
     tone: hasRecipe ? 'info' : 'warning',
   } as const;
+}
+
+function getProductTableSummary(product: EnrichedCatalogProduct) {
+  const description = product.description?.trim();
+  if (description) return description;
+
+  if (product.productType === 'SIMPLE') {
+    return product.operationalVariant
+      ? 'Producto simple listo para operacion unificada.'
+      : 'Producto simple pendiente de operacion en POS.';
+  }
+
+  return product.relatedVariants.length > 0
+    ? `${product.relatedVariants.length} variantes configuradas para venta.`
+    : 'Producto sin variantes reales configuradas.';
+}
+
+function getProductOperationSummary(
+  product: EnrichedCatalogProduct,
+  variant: CatalogVariant | null,
+) {
+  if (product.productType === 'SIMPLE') {
+    if (!variant) {
+      return {
+        title: 'Sin operacion unificada',
+        detail: 'Refresca catalogo para regenerar operacion.',
+      };
+    }
+
+    return {
+      title: 'Operacion unificada',
+      detail: variant.active ? 'Lista para operar en POS.' : 'Operacion POS inactiva.',
+    };
+  }
+
+  const comparableVariants = product.relatedVariants.length > 0
+    ? product.relatedVariants
+    : variant
+      ? [variant]
+      : [];
+  const sizes = Array.from(
+    new Set(
+      comparableVariants
+        .map((candidate) => candidate.size.trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (sizes.length > 0) {
+    return {
+      title: sizes.join(' - '),
+      detail: undefined,
+    };
+  }
+
+  if (comparableVariants.length > 0) {
+    return {
+      title: 'Sin tamano definido',
+      detail: `${comparableVariants.length} variantes configuradas`,
+    };
+  }
+
+  return {
+    title: 'Sin variantes activas',
+    detail: 'Crea una variante para habilitar venta en POS.',
+  };
 }
 
 function getSimpleProductTableStatus(product: EnrichedCatalogProduct) {

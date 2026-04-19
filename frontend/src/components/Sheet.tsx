@@ -3,14 +3,19 @@ import { X } from 'lucide-react';
 import clsx from 'clsx';
 import { IconButton } from '@/components/IconButton';
 
-interface ModalProps {
+interface SheetProps {
   id?: string;
   title: string;
   subtitle?: string;
   open: boolean;
   onClose: () => void;
   children: ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  bodyClassName?: string;
+  showHandle?: boolean;
+  titleVisuallyHidden?: boolean;
+  closeLabel?: string;
+  mobileOnly?: boolean;
 }
 
 const focusableSelector = [
@@ -23,7 +28,9 @@ const focusableSelector = [
 ].join(', ');
 
 function getFocusableElements(container: HTMLElement | null) {
-  if (!container) return [];
+  if (!container) {
+    return [];
+  }
 
   return Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter(
     (element) =>
@@ -33,20 +40,26 @@ function getFocusableElements(container: HTMLElement | null) {
   );
 }
 
-export function Modal({
+export function Sheet({
   id,
   title,
   subtitle,
   open,
   onClose,
   children,
-  size = 'md',
-}: ModalProps) {
+  className,
+  bodyClassName,
+  showHandle = false,
+  titleVisuallyHidden = false,
+  closeLabel = 'Cerrar panel',
+  mobileOnly = false,
+}: SheetProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
+  const lockedScrollYRef = useRef(0);
   const onCloseRef = useRef(onClose);
   const initialFocusFrameRef = useRef<number | null>(null);
   const returnFocusFrameRef = useRef<number | null>(null);
@@ -58,10 +71,24 @@ export function Modal({
   }, [onClose]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
     const isOpening = !wasOpenRef.current;
-    const previousOverflow = document.body.style.overflow;
+    const previousBodyPosition = document.body.style.position;
+    const previousBodyTop = document.body.style.top;
+    const previousBodyLeft = document.body.style.left;
+    const previousBodyRight = document.body.style.right;
+    const previousBodyWidth = document.body.style.width;
+    const previousBodyOverflow = document.body.style.overflow;
+
+    lockedScrollYRef.current = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${lockedScrollYRef.current}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -71,7 +98,9 @@ export function Modal({
         return;
       }
 
-      if (event.key !== 'Tab') return;
+      if (event.key !== 'Tab') {
+        return;
+      }
 
       const focusableElements = getFocusableElements(dialogRef.current);
       if (focusableElements.length === 0) {
@@ -133,13 +162,22 @@ export function Modal({
         window.cancelAnimationFrame(initialFocusFrameRef.current);
         initialFocusFrameRef.current = null;
       }
+
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
+      document.body.style.position = previousBodyPosition;
+      document.body.style.top = previousBodyTop;
+      document.body.style.left = previousBodyLeft;
+      document.body.style.right = previousBodyRight;
+      document.body.style.width = previousBodyWidth;
+      document.body.style.overflow = previousBodyOverflow;
+      window.scrollTo(0, lockedScrollYRef.current);
     };
   }, [open]);
 
   useEffect(() => {
-    if (open || !wasOpenRef.current) return;
+    if (open || !wasOpenRef.current) {
+      return;
+    }
 
     wasOpenRef.current = false;
     const previouslyFocusedElement = previouslyFocusedElementRef.current;
@@ -160,46 +198,64 @@ export function Modal({
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
-    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center px-4 py-4 sm:py-8">
+    <div className={clsx('fixed inset-0 z-40 pointer-events-none', mobileOnly && 'sm:hidden')}>
       <div
-        id={id}
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={subtitle ? subtitleId : undefined}
-        tabIndex={-1}
-        className={clsx(
-          'modal-shell w-full',
-          size === 'sm' && 'max-w-lg',
-          size === 'md' && 'max-w-2xl',
-          size === 'lg' && 'max-w-4xl',
-        )}
-      >
-        <div className="modal-header">
-          <div className="min-w-0">
-            <h2 id={titleId} className="font-display text-2xl font-bold theme-text-strong">
-              {title}
-            </h2>
-            {subtitle ? (
-              <p id={subtitleId} className="mt-2 text-sm leading-6 theme-text-secondary">
-                {subtitle}
-              </p>
-            ) : null}
+        className="sheet-backdrop absolute inset-0 pointer-events-auto"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <div className="absolute inset-0 flex items-end justify-center pointer-events-none">
+        <div
+          id={id}
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={subtitle ? subtitleId : undefined}
+          tabIndex={-1}
+          className={clsx(
+            'sheet-shell pointer-events-auto mx-auto grid min-h-0 w-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden',
+            className,
+          )}
+          data-placement="bottom"
+        >
+          <div className="sheet-header">
+            {showHandle ? <div className="sheet-handle" aria-hidden="true" /> : null}
+            <div className="sheet-header__row">
+              <div className="min-w-0">
+                <h2 id={titleId} className={titleVisuallyHidden ? 'sr-only' : 'font-display text-xl font-bold theme-text-strong'}>
+                  {title}
+                </h2>
+                {subtitle ? (
+                  <p
+                    id={subtitleId}
+                    className={titleVisuallyHidden ? 'sr-only' : 'mt-2 text-sm leading-6 theme-text-secondary'}
+                  >
+                    {subtitle}
+                  </p>
+                ) : null}
+              </div>
+              <IconButton
+                ref={closeButtonRef}
+                type="button"
+                variant="ghost"
+                size="sm"
+                icon={<X size={18} />}
+                label={closeLabel}
+                onClick={onClose}
+              />
+            </div>
           </div>
-          <IconButton
-            ref={closeButtonRef}
-            variant="ghost"
-            icon={<X size={18} />}
-            label="Cerrar modal"
-            onClick={onClose}
-          />
-        </div>
-        <div ref={bodyRef} className="modal-body min-w-0">
-          {children}
+
+          <div ref={bodyRef} className={clsx('sheet-body grid h-full min-h-0 overflow-hidden', bodyClassName)}>
+            {children}
+          </div>
         </div>
       </div>
     </div>

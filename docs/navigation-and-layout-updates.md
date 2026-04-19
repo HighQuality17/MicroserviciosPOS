@@ -6,7 +6,7 @@ Short technical note for the latest authenticated-shell improvements in `Registr
 
 ## Implemented changes
 
-- The mobile hamburger trigger is rendered from `frontend/src/layouts/AppLayout.tsx`, outside `Header.tsx`, so it remains visible while the user scrolls.
+- The mobile hamburger trigger is rendered from `frontend/src/layouts/AppLayout.tsx`, outside `Header.tsx`, but inside the normal page flow, so it scrolls together with the content.
 - Route changes reset the main scroll position through `frontend/src/app/router/ScrollToTop.tsx` using `window.scrollTo(...)`.
 - Mobile navigation closes the sidebar automatically after route changes and after selecting a menu option.
 - Desktop includes a compact sidebar collapse/expand control placed between the navigation rail and the main content area.
@@ -30,7 +30,7 @@ Short technical note for the latest authenticated-shell improvements in `Registr
 
 ## Operational impact
 
-- Mobile navigation remains reachable during long vertical scroll sessions.
+- Mobile navigation trigger stays aligned with the shell and no longer remains fixed to the viewport during scroll.
 - New views start from the top instead of preserving stale scroll positions.
 - Mobile transitions feel cleaner because the sidebar closes immediately after navigation.
 - Desktop keeps a compact navigation mode without losing icon-based usability.

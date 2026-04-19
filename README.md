@@ -372,7 +372,7 @@ Consulta el archivo `LICENSE.md` para más información.
 
 Actualizacion breve de navegacion, layout y sidebar en la interfaz autenticada:
 
-- boton hamburguesa persistente en movil, ahora controlado desde el layout principal y no desde el header;
+- boton hamburguesa movil controlado desde el layout principal, dentro del flujo normal de la pagina y no desde el header;
 - scroll automatico al inicio en cada cambio de ruta mediante `ScrollToTop`;
 - cierre automatico del sidebar movil al navegar entre rutas;
 - control desktop para colapsar o expandir el sidebar sin perder iconografia ni estados activos;
@@ -389,6 +389,15 @@ Actualizacion breve de barras superiores y resumenes de modulos:
 - uso de una base reusable para estandarizar composicion y ayudas contextuales sin recargar la UI.
 
 Detalle tecnico breve: [docs/module-status-header-updates.md](docs/module-status-header-updates.md)
+
+Actualizacion breve de D0, D1, D2A y D3 en frontend:
+
+- D0 dejo la base del sistema visual con tokens, superficies, botones, inputs, sheet, toast, search field, filter chip y `ProductMedia`;
+- D1 aplica esa base al POS con un refresco visual fuerte en header mobile, hero operativo, catalogo, cards, carrito desktop, carrito mobile y resumen de venta;
+- D2A alinea Caja con el lenguaje del POS mediante header operativo, paneles de apertura y cierre mas claros, empty state y resumen de sesion;
+- D3 redirige Productos hacia una UI mas admin/SaaS con header, metricas, rail izquierdo, formularios, tablas y acciones mas sobrias; en la vista general la columna `Operacion` muestra tamanos y ya no repite el SKU;
+- estas fases siguen siendo frontend-only: no agregan backend, reglas nuevas ni imagenes reales de producto conectadas desde datos;
+- detalle tecnico y alcance verificado: [docs/pos-visual-phases.md](docs/pos-visual-phases.md)
 
 Actualizacion breve de Combos:
 

@@ -1,14 +1,31 @@
+import '@/features/pos/pos-d1.css';
 import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { ChevronUp, CircleDot, MapPin, Receipt, Search, ShoppingCart, User } from 'lucide-react';
+import {
+  AlertTriangle,
+  ChevronUp,
+  CircleDot,
+  MapPin,
+  PackageOpen,
+  Receipt,
+  Search,
+  SearchX,
+  ShoppingCart,
+  User,
+} from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
-import { Input } from '@/components/Input';
+import { FilterChip } from '@/components/FilterChip';
 import { LoadingState } from '@/components/LoadingState';
-import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
+import { ModulePageHeader } from '@/components/ModulePageHeader';
+import type {
+  ModulePageHeaderBadge,
+  ModulePageHeaderCard,
+} from '@/components/ModulePageHeader';
 import { PaymentModal } from '@/components/PaymentModal';
+import { SearchField } from '@/components/SearchField';
 import { SectionHeader } from '@/components/SectionHeader';
 import {
   PosCartPanel,
@@ -309,6 +326,80 @@ export function PosPage() {
     visibleCatalogItems.length === catalogEntries.length && catalogFilter === 'ALL' && !search.trim()
       ? 'Catalogo completo activo'
       : `de ${catalogEntries.length} disponibles`;
+  const catalogScopeLabel =
+    catalogFilter === 'ALL' ? 'Todo el catalogo' : resolveCatalogFilterLabel(catalogFilter);
+  const catalogSearchSummary = search.trim()
+    ? `Buscando "${search.trim()}"`
+    : catalogScopeLabel;
+  const saleSummaryLabel = items.length > 0 ? 'Venta activa' : 'Venta actual';
+  const saleSummaryNote = checkoutDisabledReason
+    ? checkoutDisabledReason
+    : `${formatItemCount(totalUnits)} en ${items.length === 1 ? '1 linea' : `${items.length} lineas`} listas para cobrar.`;
+  const posHeaderBadges: ModulePageHeaderBadge[] = [
+    {
+      label: operationStatusLabel,
+      tone: cashStatusTone,
+    },
+    {
+      label: items.length > 0 ? 'Venta en curso' : 'Sin items',
+      tone: items.length > 0 ? ('info' as const) : ('default' as const),
+    },
+  ];
+  const posHeaderCards: ModulePageHeaderCard[] = [
+    {
+      label: 'Caja actual',
+      value: currentCashSession ? `Caja #${currentCashSession.id}` : 'Caja sin abrir',
+      note:
+        currentCashSession
+          ? 'Lista para cobrar'
+          : currentLocation
+            ? 'Abre caja para habilitar cobro'
+            : 'Selecciona un POS',
+      accent: cashStatusTone,
+      icon: <CircleDot size={16} />,
+      iconTone: cashStatusTone,
+      badge: {
+        label: cashStatusLabel,
+        tone: cashStatusTone,
+      },
+    },
+    {
+      label: 'POS actual',
+      value: currentLocation ? currentLocation.name : 'Sin ubicacion',
+      note: currentLocation ? 'Activo en la sesion' : 'Se define en el encabezado',
+      accent: currentLocation ? ('info' as const) : ('default' as const),
+      icon: <MapPin size={16} />,
+      iconTone: currentLocation ? 'info' : 'default',
+      badge: {
+        label: currentLocation ? `POS #${currentLocation.id}` : 'No definido',
+        tone: currentLocation ? 'info' : 'default',
+      },
+    },
+    {
+      label: 'Cajero',
+      value: currentUserName,
+      note: currentUserHandle,
+      accent: currentUser ? ('info' as const) : ('default' as const),
+      icon: <User size={16} />,
+      iconTone: currentUser ? 'info' : 'default',
+      badge: {
+        label: currentUserRole,
+        tone: currentUser ? 'info' : 'default',
+      },
+    },
+    {
+      label: 'Ultima venta',
+      value: latestReceiptId ? `#${latestReceiptId}` : 'Pendiente',
+      note: latestReceiptId ? 'Tambien visible en Ventas' : 'Aparece tras el primer cobro',
+      accent: latestReceiptId ? ('info' as const) : ('default' as const),
+      icon: <Receipt size={16} />,
+      iconTone: latestReceiptId ? 'info' : 'default',
+      badge: {
+        label: latestReceiptId ? 'Emitido' : 'Sin venta',
+        tone: latestReceiptId ? 'info' : 'default',
+      },
+    },
+  ];
 
   function handleDiscountInputChange(rawValue: string) {
     const nextValue = normalizeNumberInput(rawValue, {
@@ -409,188 +500,174 @@ export function PosPage() {
   }
 
   return (
-    <div className="grid min-w-0 gap-4 sm:gap-5">
-      <ModuleStatusHeader
+    <div className="pos-page grid min-w-0 gap-5 sm:gap-6">
+      <ModulePageHeader
+        className="pos-page__hero"
         ariaLabel="Estado operativo del POS"
-        eyebrow="Operacion en curso"
+        eyebrow="Operacion de venta"
         title="POS"
-        statusLabel={operationStatusLabel}
-        statusTone={cashStatusTone}
-        description="Caja, POS activo, operador y ultimo ticket."
-        helpText="Supervisa si el POS esta listo para cobrar, quien opera la sesion y cual fue el ultimo ticket emitido."
-        icon={<CircleDot size={18} />}
-      >
-        <ModuleStatusCard
-          label="Caja actual"
-          value={currentCashSession ? `Caja #${currentCashSession.id}` : 'Caja sin abrir'}
-          icon={<CircleDot size={16} />}
-          iconTone={cashStatusTone}
-          badgeLabel={cashStatusLabel}
-          badgeTone={cashStatusTone}
-          meta={
-            currentCashSession
-              ? 'Lista para cobrar'
-              : currentLocation
-                ? 'Abre caja para cobrar'
-                : 'Selecciona un POS'
-          }
-        />
-        <ModuleStatusCard
-          label="POS actual"
-          value={currentLocation ? currentLocation.name : 'Sin ubicacion'}
-          icon={<MapPin size={16} />}
-          iconTone={currentLocation ? 'info' : 'default'}
-          badgeLabel={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
-          badgeTone={currentLocation ? 'info' : 'default'}
-          meta={currentLocation ? 'Activo en la sesion' : 'Se define en el encabezado'}
-        />
-        <ModuleStatusCard
-          label="Cajero"
-          value={currentUserName}
-          icon={<User size={16} />}
-          iconTone={currentUser ? 'violet' : 'default'}
-          badgeLabel={currentUserRole}
-          badgeTone={currentUser ? 'info' : 'default'}
-          meta={currentUserHandle}
-        />
-        <ModuleStatusCard
-          label="Ultimo ticket"
-          value={latestReceiptId ? `#${latestReceiptId}` : 'Pendiente'}
-          icon={<Receipt size={16} />}
-          iconTone={latestReceiptId ? 'info' : 'default'}
-          badgeLabel={latestReceiptId ? 'Emitido' : 'Sin venta'}
-          badgeTone={latestReceiptId ? 'info' : 'default'}
-          meta={latestReceiptId ? 'Tambien visible en Ventas' : 'Aparece tras el primer cobro'}
-        />
-      </ModuleStatusHeader>
+        icon={<ShoppingCart size={18} />}
+        helpText="Controla estado de caja, POS activo, cajero y ticket mas reciente sin salir del flujo de venta."
+        badges={posHeaderBadges}
+        description="Venta rapida con catalogo operativo, carrito visible y cobro listo dentro del mismo lenguaje visual de Productos y Caja."
+        summary={{
+          label: saleSummaryLabel,
+          value: formatCurrency(totals.total),
+          note: saleSummaryNote,
+        }}
+        cards={posHeaderCards}
+      />
 
-      <div className="grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(24rem,28rem)]">
-        <Card className="self-start">
-          <SectionHeader
-            eyebrow="Catalogo de venta"
-            title="POS principal"
-            description="Explora productos simples, variantes y combos activos sin perder de vista el flujo de venta."
-          />
+      <div className="pos-workspace grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(24rem,28rem)]">
+        <Card padding="none" glow={false} className="self-start pos-workspace__catalog">
+          <div className="pos-catalog-shell">
+            <div className="pos-catalog-shell__header">
+              <SectionHeader
+                eyebrow="Catalogo de venta"
+                title="Catalogo operativo"
+                description="Consulta productos simples, variantes y combos activos con lectura rapida y contexto claro para venta continua."
+                className="pos-catalog-shell__heading"
+              />
 
-          {!currentLocation ? (
-            <FeedbackMessage tone="warning" className="mt-5">
-              Crea o selecciona un POS valido en el encabezado para cargar la operacion.
-            </FeedbackMessage>
-          ) : !currentCashSession ? (
-            <FeedbackMessage tone="warning" className="mt-5">
-              Abre la caja en la pestana Caja antes de cobrar.
-            </FeedbackMessage>
-          ) : null}
+              {!currentLocation ? (
+                <FeedbackMessage tone="warning" className="pos-catalog-shell__alert">
+                  Crea o selecciona un POS valido en el encabezado para cargar la operacion.
+                </FeedbackMessage>
+              ) : !currentCashSession ? (
+                <FeedbackMessage tone="warning" className="pos-catalog-shell__alert">
+                  Abre la caja en la pestana Caja antes de cobrar.
+                </FeedbackMessage>
+              ) : null}
+            </div>
 
-          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_15rem]">
-            <Input
-              label="Buscar en catalogo"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nombre, presentacion o SKU"
-              hint="Filtra por nombre, SKU o presentacion sin salir del teclado."
-            />
-
-            <div className="surface-subtle rounded-[1.5rem] p-4">
-              <div className="flex items-center gap-2 theme-text-secondary">
-                <Search size={16} />
-                <span className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
-                  Mostrando
-                </span>
+            <div className="pos-catalog-toolbar">
+              <div className="pos-catalog-toolbar__search">
+                <SearchField
+                  label="Buscar en catalogo"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onClear={() => setSearch('')}
+                  placeholder="Buscar por nombre, presentacion o SKU"
+                  hint="Filtra por nombre, SKU o presentacion sin salir del teclado."
+                  fieldClassName="pos-catalog-toolbar__search-field"
+                />
               </div>
-              <p className="mt-3 font-display text-3xl font-bold theme-text-strong">
-                {visibleCatalogItems.length}
-              </p>
-              <p className="mt-1 text-sm theme-text-secondary">{catalogSummaryCopy}</p>
-            </div>
-          </div>
 
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-            {filterOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={catalogFilter === option.value}
-                onClick={() => setCatalogFilter(option.value)}
-                className={clsx(
-                  'min-h-11 shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none',
-                  catalogFilter === option.value
-                    ? 'surface-selected'
-                    : 'surface-subtle theme-text-secondary hover:theme-text-strong',
-                )}
-              >
-                <span>{option.label}</span>
-                <span className="ml-2 text-xs theme-text-faint">{option.count}</span>
-              </button>
-            ))}
-          </div>
+              <div className="pos-catalog-toolbar__summary surface-subtle">
+                <div className="pos-catalog-toolbar__summary-icon" aria-hidden="true">
+                  <Search size={16} />
+                </div>
+                <div className="min-w-0">
+                  <p className="pos-catalog-toolbar__summary-label">Vista activa</p>
+                  <p className="pos-catalog-toolbar__summary-value">
+                    {visibleCatalogItems.length}
+                  </p>
+                  <p className="pos-catalog-toolbar__summary-note">{catalogSummaryCopy}</p>
+                  <p className="pos-catalog-toolbar__summary-scope">{catalogSearchSummary}</p>
+                </div>
+              </div>
+            </div>
 
-          {catalogLoading ? (
-            <div className="mt-6">
-              <LoadingState
-                title="Cargando catalogo"
-                description="Estamos trayendo productos operativos y combos activos para esta caja."
-                rows={4}
-              />
-            </div>
-          ) : catalogError ? (
-            <div className="mt-6">
-              <EmptyState
-                title="No fue posible cargar el catalogo"
-                description={catalogError}
-                action={
-                  <Button variant="secondary" onClick={() => window.location.reload()}>
-                    Reintentar
-                  </Button>
-                }
-              />
-            </div>
-          ) : visibleCatalogItems.length === 0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title={search.trim() || catalogFilter !== 'ALL' ? 'Sin coincidencias' : 'Catalogo vacio'}
-                description={
-                  search.trim() || catalogFilter !== 'ALL'
-                    ? `No encontramos items para ${resolveCatalogFilterLabel(catalogFilter).toLowerCase()} con el filtro actual. Ajusta la busqueda o vuelve a mostrar todo el catalogo.`
-                    : 'No hay productos operativos ni combos activos disponibles para esta caja.'
-                }
-                action={
-                  search.trim() || catalogFilter !== 'ALL' ? (
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setSearch('');
-                        setCatalogFilter('ALL');
-                      }}
-                    >
-                      Limpiar filtros
-                    </Button>
-                  ) : undefined
-                }
-              />
-            </div>
-          ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-              {visibleCatalogItems.map((item) => (
-                <PosCatalogCard
-                  key={item.key}
-                  item={item}
-                  kind={item.kind}
-                  badge={item.badge}
-                  eyebrow={item.eyebrow}
-                  description={item.description}
-                  metaRows={item.metaRows}
-                  disabled={!currentLocation}
-                  onAdd={() => handleAddCatalogItem(item)}
+            <div
+              className="pos-catalog-filters"
+              role="toolbar"
+              aria-label="Filtros del catalogo"
+            >
+              {filterOptions.map((option) => (
+                <FilterChip
+                  key={option.value}
+                  onClick={() => setCatalogFilter(option.value)}
+                  active={catalogFilter === option.value}
+                  label={option.label}
+                  count={option.count}
+                  className={clsx(
+                    'pos-catalog-filter shrink-0',
+                    catalogFilter === option.value ? '' : 'theme-text-secondary',
+                  )}
                 />
               ))}
             </div>
-          )}
+
+            {catalogLoading ? (
+              <div className="pos-catalog-state">
+                <LoadingState
+                  title="Cargando catalogo"
+                  description="Estamos trayendo productos operativos y combos activos para esta caja."
+                  rows={4}
+                />
+              </div>
+            ) : catalogError ? (
+              <div className="pos-catalog-state">
+                <EmptyState
+                  icon={<AlertTriangle size={20} />}
+                  title="No fue posible cargar el catalogo"
+                  description={catalogError}
+                  action={
+                    <Button variant="secondary" onClick={() => window.location.reload()}>
+                      Reintentar
+                    </Button>
+                  }
+                />
+              </div>
+            ) : visibleCatalogItems.length === 0 ? (
+              <div className="pos-catalog-state">
+                <EmptyState
+                  icon={
+                    search.trim() || catalogFilter !== 'ALL' ? (
+                      <SearchX size={20} />
+                    ) : (
+                      <PackageOpen size={20} />
+                    )
+                  }
+                  title={search.trim() || catalogFilter !== 'ALL' ? 'Sin coincidencias' : 'Catalogo vacio'}
+                  description={
+                    search.trim() || catalogFilter !== 'ALL'
+                      ? `No encontramos items para ${resolveCatalogFilterLabel(catalogFilter).toLowerCase()} con el filtro actual. Ajusta la busqueda o vuelve a mostrar todo el catalogo.`
+                      : 'No hay productos operativos ni combos activos disponibles para esta caja.'
+                  }
+                  action={
+                    search.trim() || catalogFilter !== 'ALL' ? (
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setSearch('');
+                          setCatalogFilter('ALL');
+                        }}
+                      >
+                        Limpiar filtros
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              </div>
+            ) : (
+              <div className="pos-catalog-grid">
+                {visibleCatalogItems.map((item) => (
+                  <PosCatalogCard
+                    key={item.key}
+                    item={item}
+                    kind={item.kind}
+                    badge={item.badge}
+                    eyebrow={item.eyebrow}
+                    description={item.description}
+                    metaRows={item.metaRows}
+                    disabled={!currentLocation}
+                    onAdd={() => handleAddCatalogItem(item)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </Card>
 
-        <Card className="hidden h-fit self-start lg:sticky lg:top-4 lg:block">
+        <Card
+          padding="none"
+          glow={false}
+          className="hidden self-start lg:sticky lg:top-4 lg:block pos-workspace__cart"
+        >
           <PosCartPanel
             mode="desktop"
+            className="pos-cart-panel--desktop-shell"
             items={items}
             discountType={discountType}
             discountInput={discountInput}
@@ -625,20 +702,28 @@ export function PosPage() {
             aria-controls={cartSheetId}
             className="pos-mobile-cart-button pointer-events-auto mx-auto flex w-full max-w-lg items-center justify-between gap-3 rounded-[1.6rem] px-4 py-3 text-left"
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="pos-mobile-cart-button__content flex min-w-0 items-center gap-3">
               <div className="pos-mobile-cart-button__icon" aria-hidden="true">
                 <ShoppingCart size={18} strokeWidth={2} />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold theme-text-strong">Carrito</p>
                 <p className="truncate text-xs theme-text-secondary">
-                  {totalUnits === 1 ? '1 item' : `${totalUnits} items`} - {formatCurrency(totals.total)}
+                  {totalUnits === 1 ? '1 item' : `${totalUnits} items`} listos para cobrar
                 </p>
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="rounded-full border border-[color:var(--line)] bg-[color:rgb(255_255_255_/_0.04)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] theme-text-secondary">
+            <div className="pos-mobile-cart-button__summary flex shrink-0 items-center gap-2">
+              <div className="pos-mobile-cart-button__amount text-right">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] theme-text-faint">
+                  Total
+                </p>
+                <p className="mt-1 font-display text-lg font-bold theme-text-strong">
+                  {formatCurrency(totals.total)}
+                </p>
+              </div>
+              <span className="pos-mobile-cart-button__pill rounded-full border border-[color:var(--line)] bg-[color:rgb(255_255_255_/_0.04)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] theme-text-secondary">
                 {items.length === 1 ? '1 linea' : `${items.length} lineas`}
               </span>
               <ChevronUp size={18} className="theme-text-secondary" aria-hidden="true" />
@@ -651,12 +736,12 @@ export function PosPage() {
         id={cartSheetId}
         open={mobileCartOpen}
         onClose={() => setMobileCartOpen(false)}
-        title="Carrito"
-        subtitle="El catalogo sigue al frente. Abre, revisa y cierra el carrito sin salir de la venta."
+        title="Panel de venta"
+        subtitle="Revisa items, totales y cobro sin salir del catalogo operativo."
       >
         <PosCartPanel
           mode="mobile"
-          className="min-h-0"
+          className="min-h-0 pos-cart-panel--mobile-shell"
           items={items}
           discountType={discountType}
           discountInput={discountInput}
@@ -698,6 +783,10 @@ function formatUserRole(role: UserRole | undefined) {
     default:
       return 'Sin rol';
   }
+}
+
+function formatItemCount(value: number) {
+  return value === 1 ? '1 item' : `${value} items`;
 }
 
 function resolveCatalogFilterLabel(filter: CatalogFilter) {
