@@ -6,7 +6,11 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
-import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
+import { ModulePageHeader } from '@/components/ModulePageHeader';
+import type {
+  ModulePageHeaderBadge,
+  ModulePageHeaderCard,
+} from '@/components/ModulePageHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
@@ -178,7 +182,7 @@ export function CashPage() {
     {
       label: 'Responsable',
       value: currentUserName,
-      meta: `${currentUserRole} · ${currentUserHandle}`,
+      meta: `${currentUserRole} - ${currentUserHandle}`,
       icon: <User size={16} />,
     },
   ];
@@ -224,10 +228,111 @@ export function CashPage() {
       icon: <Landmark size={16} />,
     },
   ];
+  const cashHeaderBadges: ModulePageHeaderBadge[] = [
+    {
+      label: operationStatusLabel,
+      tone: cashStatusTone,
+    },
+  ];
+  const cashHeroSummaryLabel = currentCashSession
+    ? 'Sesion actual'
+    : currentLocation
+      ? 'Preparacion de turno'
+      : 'Estado operativo';
+  const cashHeroSummaryValue = currentCashSession
+    ? `Caja #${currentCashSession.id}`
+    : currentLocation
+      ? 'Lista para apertura'
+      : 'Sin POS activo';
+  const cashHeroSummaryNote = currentCashSession
+    ? `Abierta ${formatDate(currentCashSession.openedAt)} con cierre disponible en panel derecho.`
+    : currentLocation
+      ? 'Define fondo inicial, responsable y deja lista la operacion de caja.'
+      : 'Selecciona punto de venta para habilitar apertura y control de caja.';
+  const cashHeaderCards: ModulePageHeaderCard[] = [
+    {
+      label: 'Caja activa',
+      value: currentCashSession ? `Caja #${currentCashSession.id}` : 'Sin sesion',
+      note: currentCashSession
+        ? `Abierta ${formatDate(currentCashSession.openedAt)}`
+        : currentLocation
+          ? 'Lista para apertura'
+          : 'Selecciona un POS',
+      accent: cashStatusTone,
+      icon: <CircleDot size={16} />,
+      iconTone: cashStatusTone,
+      badge: {
+        label: cashStatusLabel,
+        tone: cashStatusTone,
+      },
+    },
+    {
+      label: 'Apertura',
+      value: openingValue,
+      note: currentCashSession
+        ? 'Fondo inicial registrado'
+        : openingCashPreview !== null
+          ? 'Listo para abrir'
+          : 'Define el efectivo inicial',
+      accent: openingTone,
+      icon: <Landmark size={16} />,
+      iconTone: openingTone,
+      badge: {
+        label: openingStatusLabel,
+        tone: openingTone,
+      },
+    },
+    {
+      label: 'Ubicacion',
+      value: currentLocation?.name ?? 'Sin POS activo',
+      note: currentLocation ? 'POS activo para la sesion' : 'Selecciona un POS',
+      accent: currentLocation ? ('info' as const) : ('default' as const),
+      icon: <MapPin size={16} />,
+      iconTone: currentLocation ? 'info' : 'default',
+      badge: {
+        label: currentLocation ? `POS #${currentLocation.id}` : 'No definido',
+        tone: currentLocation ? 'info' : 'default',
+      },
+    },
+    {
+      label: 'Responsable',
+      value: currentUserName,
+      note: currentUserHandle,
+      accent: currentUser ? ('info' as const) : ('default' as const),
+      icon: <User size={16} />,
+      iconTone: currentUser ? 'info' : 'default',
+      badge: {
+        label: currentUserRole,
+        tone: currentUser ? 'info' : 'default',
+      },
+    },
+  ];
 
   return (
     <div className="cash-page grid min-w-0 gap-5 sm:gap-6">
-      {/* Hero keeps POS language and surfaces operational context before actions. */}
+      <ModulePageHeader
+        className="cash-page__hero"
+        ariaLabel="Estado operativo de caja"
+        eyebrow="Operacion de caja"
+        title="Caja"
+        icon={<Wallet size={18} />}
+        helpText="Controla apertura, cierre, POS activo, fondo inicial y responsable de la sesion."
+        badges={cashHeaderBadges}
+        description={
+          currentCashSession
+            ? 'Sesion activa para turno actual, con apertura registrada y cierre disponible.'
+            : currentLocation
+              ? 'Prepara apertura de caja, responsable y fondo inicial para empezar turno con control claro.'
+              : 'Selecciona un POS para habilitar apertura, seguimiento de sesion y cierre.'
+        }
+        summary={{
+          label: cashHeroSummaryLabel,
+          value: cashHeroSummaryValue,
+          note: cashHeroSummaryNote,
+        }}
+        cards={cashHeaderCards}
+      />
+      {/* Legacy header retained disabled during shared-header migration.
       <section className="cash-page__hero">
         <ModuleStatusHeader
           ariaLabel="Estado operativo de caja"
@@ -282,13 +387,13 @@ export function CashPage() {
             label="Responsable"
             value={currentUserName}
             icon={<User size={16} />}
-            iconTone={currentUser ? 'violet' : 'default'}
+            iconTone={currentUser ? 'info' : 'default'}
             badgeLabel={currentUserRole}
             badgeTone={currentUser ? 'info' : 'default'}
             meta={currentUserHandle}
           />
         </ModuleStatusHeader>
-      </section>
+      </section> */}
 
       {message ? (
         <FeedbackMessage tone="success" className="cash-feedback">
@@ -305,7 +410,7 @@ export function CashPage() {
       {/* Workspace: left panel drives opening, right panel resolves close or empty state. */}
       <div className="cash-workspace grid min-w-0 gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)]">
         {!currentLocation ? (
-          <Card className="cash-alert-card lg:col-span-2">
+          <Card glow={false} className="cash-alert-card lg:col-span-2">
             <EmptyState
               icon={<MapPin size={20} />}
               title="Sin punto de venta activo"
@@ -316,6 +421,7 @@ export function CashPage() {
 
         <Card
           padding="none"
+          glow={false}
           className="cash-panel cash-panel--open"
           contentClassName="cash-panel__body"
         >
@@ -403,6 +509,7 @@ export function CashPage() {
 
         <Card
           padding="none"
+          glow={false}
           className="cash-panel cash-panel--close"
           contentClassName="cash-panel__body"
         >
@@ -521,6 +628,7 @@ export function CashPage() {
         // Summary keeps same premium system so backend-calculated close data feels part of Caja.
         <Card
           padding="none"
+          glow={false}
           className="cash-summary-card"
           contentClassName="cash-summary-card__body"
         >

@@ -1,4 +1,5 @@
 import { ProductMedia } from '@/components/ProductMedia';
+import { StatusBadge } from '@/components/StatusBadge';
 import type { CartItem as CartItemType } from '@/types/api';
 import { formatCurrency } from '@/utils/format';
 
@@ -41,11 +42,15 @@ export function PosCatalogCard({
       className="pos-catalog-card surface-interactive group rounded-[1.65rem] p-4 text-left sm:p-5"
       data-kind={kind}
     >
-      <div className="pos-catalog-card__body">
-        <div className="pos-catalog-card__topline">
-          <span className="pos-catalog-card__eyebrow">{eyebrow}</span>
-          <span className="pos-catalog-card__badge">{badge}</span>
-        </div>
+        <div className="pos-catalog-card__body">
+          <div className="pos-catalog-card__topline">
+            <span className="pos-catalog-card__eyebrow">{eyebrow}</span>
+            <StatusBadge
+              label={badge}
+              tone={resolveCatalogBadgeTone(kind)}
+              className="pos-catalog-card__badge"
+            />
+          </div>
 
         <div className="pos-catalog-card__hero">
           <div className="pos-catalog-card__media-wrap">
@@ -113,4 +118,15 @@ function createMonogram(value: string) {
     .join('');
 
   return letters || 'POS';
+}
+
+function resolveCatalogBadgeTone(kind: PosCatalogCardKind) {
+  switch (kind) {
+    case 'VARIANT':
+      return 'info';
+    case 'COMBO':
+      return 'success';
+    default:
+      return 'default';
+  }
 }

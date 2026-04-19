@@ -183,6 +183,14 @@ El frontend ya incorpora:
 
 Detalle completo en [`theme-system.md`](theme-system.md).
 
+### Fases visuales verificadas
+
+- D0 consolida la capa base del frontend con tokens, superficies, controles y componentes reutilizables compartidos.
+- D1 aplica esa base al modulo POS con hero operativo, metricas, barra de catalogo, cards, carrito desktop y carrito mobile mas trabajados.
+- D2A extiende el lenguaje visual a Caja con una vista de apertura y cierre mas clara, resumida y consistente con POS.
+- D3 actualiza Productos hacia una direccion mas sobria y administrativa: header propio, metricas compactas, panel izquierdo reorganizado, formularios agrupados y tablas/listados mas limpios.
+- La fuente de verdad para este recorrido visual sigue siendo el estado actual del codigo en `frontend/`. El detalle por fase esta en [`pos-visual-phases.md`](pos-visual-phases.md).
+
 ## Observaciones de estado
 
 Algunas piezas visibles en interfaz indican futuras ampliaciones, pero no implementación completa aún:

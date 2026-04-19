@@ -38,7 +38,7 @@ export function ProductCatalogFieldsSection({
 }: ProductCatalogFieldsSectionProps) {
   return (
     <div className="products-form-sections grid gap-4">
-      <div className="products-form-group products-form-group--strong surface-subtle-strong rounded-3xl p-5">
+      <div className="products-form-group products-form-group--strong surface-subtle-strong rounded-lg p-4 sm:p-5">
         <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
           Datos comerciales
         </p>
@@ -94,7 +94,7 @@ export function ProductCatalogFieldsSection({
         </div>
       </div>
 
-      <div className="products-form-group surface-subtle rounded-3xl p-5">
+      <div className="products-form-group surface-subtle rounded-lg p-4 sm:p-5">
         <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
           Detalle adicional
         </p>

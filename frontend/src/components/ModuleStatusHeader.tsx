@@ -108,7 +108,7 @@ export function ModuleStatusCard({
   );
 }
 
-function ModuleInfoTooltip({ label, content }: ModuleInfoTooltipProps) {
+export function ModuleInfoTooltip({ label, content }: ModuleInfoTooltipProps) {
   const [open, setOpen] = useState(false);
   const tooltipId = useId();
   const rootRef = useRef<HTMLSpanElement>(null);

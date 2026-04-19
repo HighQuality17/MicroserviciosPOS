@@ -46,7 +46,7 @@ export function PosMobileCartToast({
               <p className="truncate text-sm theme-text-secondary">{toast.itemName}</p>
               <div className="pos-mobile-cart-toast__meta">
                 <span>{formatItemCount(toast.itemCount)}</span>
-                <span aria-hidden="true">•</span>
+                <span aria-hidden="true">/</span>
                 <span>
                   Subtotal <strong>{formatCurrency(toast.subtotal)}</strong>
                 </span>

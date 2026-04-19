@@ -63,7 +63,7 @@ export function ProductFiscalFieldsSection({
 
       {open ? (
         <>
-          <div className="products-form-group products-form-group--fiscal grid gap-4 rounded-3xl p-5">
+          <div className="products-form-group products-form-group--fiscal grid gap-4 rounded-lg p-4 sm:p-5">
             <div className="products-form-group__grid grid gap-4 sm:grid-cols-2">
             <Input
               label="Codigo UNSPSC"

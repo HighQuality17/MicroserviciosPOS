@@ -33,7 +33,7 @@ export function CatalogItemsTable<Row>({
   tableMinWidthClassName = 'min-w-[1180px]',
 }: CatalogItemsTableProps<Row>) {
   return (
-    <div className="catalog-items-table mt-5 -mx-1 overflow-hidden rounded-3xl table-shell sm:-mx-2 lg:-mx-3">
+    <div className="catalog-items-table mt-4 overflow-hidden rounded-lg table-shell">
       <div
         tabIndex={0}
         aria-label={ariaLabel}
@@ -61,7 +61,7 @@ export function CatalogItemsTable<Row>({
                   key={column.key}
                   scope="col"
                   className={clsx(
-                    'table-head-cell px-2.5 py-3 text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--text-faint)] backdrop-blur-sm sm:px-3.5',
+                    'table-head-cell px-3 py-3 text-[11px] font-semibold text-[color:var(--text-faint)] sm:px-4',
                     column.align === 'right' ? 'text-right' : 'text-left',
                     column.headerClassName,
                   )}
@@ -85,7 +85,7 @@ export function CatalogItemsTable<Row>({
                   <td
                     key={column.key}
                     className={clsx(
-                      'px-2.5 py-3.5 align-middle sm:px-3.5',
+                      'px-3 py-3.5 align-middle sm:px-4',
                       column.align === 'right' ? 'text-right' : 'text-left',
                       column.cellClassName,
                     )}

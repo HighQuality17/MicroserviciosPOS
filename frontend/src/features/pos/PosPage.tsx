@@ -19,7 +19,11 @@ import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { FilterChip } from '@/components/FilterChip';
 import { LoadingState } from '@/components/LoadingState';
-import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
+import { ModulePageHeader } from '@/components/ModulePageHeader';
+import type {
+  ModulePageHeaderBadge,
+  ModulePageHeaderCard,
+} from '@/components/ModulePageHeader';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SearchField } from '@/components/SearchField';
 import { SectionHeader } from '@/components/SectionHeader';
@@ -327,6 +331,75 @@ export function PosPage() {
   const catalogSearchSummary = search.trim()
     ? `Buscando "${search.trim()}"`
     : catalogScopeLabel;
+  const saleSummaryLabel = items.length > 0 ? 'Venta activa' : 'Venta actual';
+  const saleSummaryNote = checkoutDisabledReason
+    ? checkoutDisabledReason
+    : `${formatItemCount(totalUnits)} en ${items.length === 1 ? '1 linea' : `${items.length} lineas`} listas para cobrar.`;
+  const posHeaderBadges: ModulePageHeaderBadge[] = [
+    {
+      label: operationStatusLabel,
+      tone: cashStatusTone,
+    },
+    {
+      label: items.length > 0 ? 'Venta en curso' : 'Sin items',
+      tone: items.length > 0 ? ('info' as const) : ('default' as const),
+    },
+  ];
+  const posHeaderCards: ModulePageHeaderCard[] = [
+    {
+      label: 'Caja actual',
+      value: currentCashSession ? `Caja #${currentCashSession.id}` : 'Caja sin abrir',
+      note:
+        currentCashSession
+          ? 'Lista para cobrar'
+          : currentLocation
+            ? 'Abre caja para habilitar cobro'
+            : 'Selecciona un POS',
+      accent: cashStatusTone,
+      icon: <CircleDot size={16} />,
+      iconTone: cashStatusTone,
+      badge: {
+        label: cashStatusLabel,
+        tone: cashStatusTone,
+      },
+    },
+    {
+      label: 'POS actual',
+      value: currentLocation ? currentLocation.name : 'Sin ubicacion',
+      note: currentLocation ? 'Activo en la sesion' : 'Se define en el encabezado',
+      accent: currentLocation ? ('info' as const) : ('default' as const),
+      icon: <MapPin size={16} />,
+      iconTone: currentLocation ? 'info' : 'default',
+      badge: {
+        label: currentLocation ? `POS #${currentLocation.id}` : 'No definido',
+        tone: currentLocation ? 'info' : 'default',
+      },
+    },
+    {
+      label: 'Cajero',
+      value: currentUserName,
+      note: currentUserHandle,
+      accent: currentUser ? ('info' as const) : ('default' as const),
+      icon: <User size={16} />,
+      iconTone: currentUser ? 'info' : 'default',
+      badge: {
+        label: currentUserRole,
+        tone: currentUser ? 'info' : 'default',
+      },
+    },
+    {
+      label: 'Ultima venta',
+      value: latestReceiptId ? `#${latestReceiptId}` : 'Pendiente',
+      note: latestReceiptId ? 'Tambien visible en Ventas' : 'Aparece tras el primer cobro',
+      accent: latestReceiptId ? ('info' as const) : ('default' as const),
+      icon: <Receipt size={16} />,
+      iconTone: latestReceiptId ? 'info' : 'default',
+      badge: {
+        label: latestReceiptId ? 'Emitido' : 'Sin venta',
+        tone: latestReceiptId ? 'info' : 'default',
+      },
+    },
+  ];
 
   function handleDiscountInputChange(rawValue: string) {
     const nextValue = normalizeNumberInput(rawValue, {
@@ -428,92 +501,31 @@ export function PosPage() {
 
   return (
     <div className="pos-page grid min-w-0 gap-5 sm:gap-6">
-      <section className="pos-page__hero">
-        <ModuleStatusHeader
-          ariaLabel="Estado operativo del POS"
-          eyebrow="Registry"
-          title="POS"
-          statusLabel={operationStatusLabel}
-          statusTone={cashStatusTone}
-          description="Bienvenido"
-          helpText="Supervisa si el POS esta listo para cobrar, quien opera la sesion y cual fue el ultimo ticket emitido."
-          icon={<CircleDot size={18} />}
-        >
-          <ModuleStatusCard
-            label="Caja actual"
-            value={currentCashSession ? `Caja #${currentCashSession.id}` : 'Caja sin abrir'}
-            icon={<CircleDot size={16} />}
-            iconTone={cashStatusTone}
-            badgeLabel={cashStatusLabel}
-            badgeTone={cashStatusTone}
-            meta={
-              currentCashSession
-                ? 'Lista para cobrar'
-                : currentLocation
-                  ? 'Abre caja para cobrar'
-                  : 'Selecciona un POS'
-            }
-          />
-          <ModuleStatusCard
-            label="POS actual"
-            value={currentLocation ? currentLocation.name : 'Sin ubicacion'}
-            icon={<MapPin size={16} />}
-            iconTone={currentLocation ? 'info' : 'default'}
-            badgeLabel={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
-            badgeTone={currentLocation ? 'info' : 'default'}
-            meta={currentLocation ? 'Activo en la sesion' : 'Se define en el encabezado'}
-          />
-          <ModuleStatusCard
-            label="Cajero"
-            value={currentUserName}
-            icon={<User size={16} />}
-            iconTone={currentUser ? 'violet' : 'default'}
-            badgeLabel={currentUserRole}
-            badgeTone={currentUser ? 'info' : 'default'}
-            meta={currentUserHandle}
-          />
-          <ModuleStatusCard
-            label="Ultima venta"
-            value={latestReceiptId ? `#${latestReceiptId}` : 'Pendiente'}
-            icon={<Receipt size={16} />}
-            iconTone={latestReceiptId ? 'info' : 'default'}
-            badgeLabel={latestReceiptId ? 'Emitido' : 'Sin venta'}
-            badgeTone={latestReceiptId ? 'info' : 'default'}
-            meta={latestReceiptId ? 'Tambien visible en Ventas' : 'Aparece tras el primer cobro'}
-          />
-        </ModuleStatusHeader>
-
-        <div className="pos-page__metrics">
-          <div className="pos-page__metric surface-subtle">
-            <p className="pos-page__metric-label">Catalogo listo</p>
-            <p className="pos-page__metric-value">{catalogEntries.length}</p>
-            <p className="pos-page__metric-note">items activos para venta</p>
-          </div>
-          <div className="pos-page__metric surface-subtle">
-            <p className="pos-page__metric-label">Carrito</p>
-            <p className="pos-page__metric-value">{formatItemCount(totalUnits)}</p>
-            <p className="pos-page__metric-note">
-              {items.length === 1 ? '1 linea abierta' : `${items.length} lineas en curso`}
-            </p>
-          </div>
-          <div className="pos-page__metric surface-subtle-strong">
-            <p className="pos-page__metric-label">Venta actual</p>
-            <p className="pos-page__metric-value metric-accent-strong">
-              {formatCurrency(totals.total)}
-            </p>
-            <p className="pos-page__metric-note">{checkoutDisabledReason ?? 'Lista para cobrar'}</p>
-          </div>
-        </div>
-      </section>
+      <ModulePageHeader
+        className="pos-page__hero"
+        ariaLabel="Estado operativo del POS"
+        eyebrow="Operacion de venta"
+        title="POS"
+        icon={<ShoppingCart size={18} />}
+        helpText="Controla estado de caja, POS activo, cajero y ticket mas reciente sin salir del flujo de venta."
+        badges={posHeaderBadges}
+        description="Venta rapida con catalogo operativo, carrito visible y cobro listo dentro del mismo lenguaje visual de Productos y Caja."
+        summary={{
+          label: saleSummaryLabel,
+          value: formatCurrency(totals.total),
+          note: saleSummaryNote,
+        }}
+        cards={posHeaderCards}
+      />
 
       <div className="pos-workspace grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(24rem,28rem)]">
-        <Card padding="none" className="self-start pos-workspace__catalog">
+        <Card padding="none" glow={false} className="self-start pos-workspace__catalog">
           <div className="pos-catalog-shell">
             <div className="pos-catalog-shell__header">
               <SectionHeader
                 eyebrow="Catalogo de venta"
-                title="POS principal"
-                description="Explora productos simples, variantes y combos activos sin perder de vista el flujo de venta."
+                title="Catalogo operativo"
+                description="Consulta productos simples, variantes y combos activos con lectura rapida y contexto claro para venta continua."
                 className="pos-catalog-shell__heading"
               />
 
@@ -650,6 +662,7 @@ export function PosPage() {
 
         <Card
           padding="none"
+          glow={false}
           className="hidden self-start lg:sticky lg:top-4 lg:block pos-workspace__cart"
         >
           <PosCartPanel
@@ -723,8 +736,8 @@ export function PosPage() {
         id={cartSheetId}
         open={mobileCartOpen}
         onClose={() => setMobileCartOpen(false)}
-        title="Carrito"
-        subtitle="El catalogo sigue al frente. Abre, revisa y cierra el carrito sin salir de la venta."
+        title="Panel de venta"
+        subtitle="Revisa items, totales y cobro sin salir del catalogo operativo."
       >
         <PosCartPanel
           mode="mobile"
