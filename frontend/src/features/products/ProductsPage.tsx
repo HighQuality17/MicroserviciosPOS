@@ -1,6 +1,7 @@
 import '@/features/products/products-d2b.css';
 import clsx from 'clsx';
 import { useEffect, useMemo, useState } from 'react';
+import { Boxes, CircleDot, Layers3, Package2, PackageSearch } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AccessState } from '@/components/AccessState';
@@ -927,6 +928,8 @@ export function ProductsPage() {
           ? `${activeProductsCount} activos y ${inactiveProductsCount} inactivos`
           : `${activeProductsCount} activos en catalogo`,
       accent: catalogStatusTone,
+      icon: <PackageSearch size={16} />,
+      iconTone: catalogStatusTone,
     },
     {
       label: 'Productos simples',
@@ -936,6 +939,8 @@ export function ProductsPage() {
           ? `${activeSimpleProductsCount} activos con operacion unificada`
           : 'Aun no hay productos simples configurados',
       accent: 'default' as const,
+      icon: <Package2 size={16} />,
+      iconTone: 'default',
     },
     {
       label: 'Variantes reales',
@@ -945,6 +950,8 @@ export function ProductsPage() {
           ? `${activeRealVariantsCount} listas para venta`
           : 'Sin variantes reales configuradas',
       accent: 'info' as const,
+      icon: <Layers3 size={16} />,
+      iconTone: 'info',
     },
     {
       label: showRecipeModule ? 'Cobertura receta' : 'Operaciones activas',
@@ -959,6 +966,8 @@ export function ProductsPage() {
           : 'Sin cobertura pendiente por medir'
         : `${activeSimpleOperationalCount} simples y ${activeRealVariantsCount} variantes activas`,
       accent: showRecipeModule ? recipeCoverageTone : ('success' as const),
+      icon: <CircleDot size={16} />,
+      iconTone: showRecipeModule ? recipeCoverageTone : 'success',
     },
   ];
   const productsHeaderBadges: ModulePageHeaderBadge[] = [
@@ -978,6 +987,8 @@ export function ProductsPage() {
         ariaLabel="Estado operativo de productos"
         eyebrow="Administracion de catalogo"
         title="Productos"
+        icon={<Boxes size={18} />}
+        helpText="Controla estado del catalogo, productos simples, variantes activas y cobertura de recetas dentro del mismo flujo administrativo."
         badges={productsHeaderBadges}
         description="Catalogo comercial, operaciones de venta y control administrativo para mantener producto y receta en orden."
         summary={{
