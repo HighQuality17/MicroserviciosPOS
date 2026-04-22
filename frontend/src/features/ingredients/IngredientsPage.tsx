@@ -780,7 +780,6 @@ export function IngredientsPage() {
   return (
     <div className="products-page ingredients-page grid min-w-0 gap-5 sm:gap-6">
       <ModulePageHeader
-        className="products-page__hero"
         ariaLabel="Estado operativo de ingredientes"
         eyebrow="Administracion de inventario"
         title="Ingredientes"

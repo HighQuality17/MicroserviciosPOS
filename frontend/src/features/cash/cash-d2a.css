@@ -64,7 +64,7 @@
   line-height: 1.55;
 }
 
-.cash-page .status-badge {
+.cash-page .status-badge:not(.module-page-header__badge):not(.module-page-header__card-badge) {
   min-height: 1.55rem;
   border-radius: 0.42rem;
   padding-inline: 0.55rem;
@@ -74,10 +74,10 @@
   box-shadow: none;
 }
 
-.cash-page .status-badge[data-tone='success'],
-.cash-page .status-badge[data-tone='warning'],
-.cash-page .status-badge[data-tone='danger'],
-.cash-page .status-badge[data-tone='info'] {
+.cash-page .status-badge:not(.module-page-header__badge):not(.module-page-header__card-badge)[data-tone='success'],
+.cash-page .status-badge:not(.module-page-header__badge):not(.module-page-header__card-badge)[data-tone='warning'],
+.cash-page .status-badge:not(.module-page-header__badge):not(.module-page-header__card-badge)[data-tone='danger'],
+.cash-page .status-badge:not(.module-page-header__badge):not(.module-page-header__card-badge)[data-tone='info'] {
   box-shadow: none;
 }
 

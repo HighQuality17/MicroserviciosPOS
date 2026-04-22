@@ -1,19 +1,11 @@
 import clsx from 'clsx';
 import { MapPin } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatUserRole } from '@/utils/copy';
 
-interface HeaderProps {
-  compactForPosMobile?: boolean;
-}
-
-export function Header({ compactForPosMobile = false }: HeaderProps) {
-  const { pathname } = useLocation();
-  const isOpsAdminRoute =
-    pathname.startsWith('/products') || pathname.startsWith('/cash');
+export function Header() {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
   const availableLocations = useAppStore((state) => state.availableLocations);
@@ -25,8 +17,6 @@ export function Header({ compactForPosMobile = false }: HeaderProps) {
     <header
       className={clsx(
         'glass-panel app-header rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6',
-        compactForPosMobile && 'app-header--pos-compact',
-        isOpsAdminRoute && 'app-header--ops-admin',
       )}
     >
       <div className="app-header__body flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

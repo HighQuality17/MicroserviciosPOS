@@ -502,7 +502,6 @@ export function SalesPage() {
       ) : null}
 
       <ModulePageHeader
-        className="products-page__hero"
         ariaLabel="Estado operativo de ventas"
         eyebrow="Operacion comercial"
         title="Ventas"

@@ -717,7 +717,6 @@ export function CombosPage() {
     <>
       <div className="products-page combos-page grid min-w-0 gap-5 sm:gap-6">
         <ModulePageHeader
-          className="products-page__hero"
           ariaLabel="Estado operativo de combos"
           eyebrow="Operacion comercial"
           title="Combos"
