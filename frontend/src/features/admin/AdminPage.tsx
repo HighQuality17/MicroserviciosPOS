@@ -563,6 +563,7 @@ export function AdminPage() {
         <Card padding="none" glow={false} className="admin-panel admin-panel--executive">
           <div className="admin-panel__body">
             <SectionHeader
+              className="admin-command-panel__header"
               eyebrow="Resumen ejecutivo"
               title="Panorama del negocio"
               description="Lectura rapida de ventas, caja, catalogo y cobertura."
@@ -639,6 +640,7 @@ export function AdminPage() {
         <Card padding="none" glow={false} className="admin-panel admin-panel--radar">
           <div className="admin-panel__body">
             <SectionHeader
+              className="admin-command-panel__header"
               eyebrow="Radar operativo"
               title="Pulso del negocio"
               description="Estado de caja, stock, catalogo y actividad."

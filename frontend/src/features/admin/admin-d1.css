@@ -678,8 +678,24 @@
   }
 
   .admin-command-grid {
-    grid-template-columns: minmax(0, 1.24fr) minmax(18rem, 0.76fr);
-    align-items: start;
+    grid-template-columns: minmax(0, 1.06fr) minmax(20rem, 0.94fr);
+    align-items: stretch;
+  }
+
+  .admin-command-grid > .admin-panel,
+  .admin-command-grid > .admin-panel > .surface-card__body {
+    height: 100%;
+  }
+
+  .admin-panel--executive .admin-panel__body,
+  .admin-panel--radar .admin-panel__body {
+    height: 100%;
+    gap: 0.72rem;
+    padding: 0.92rem;
+  }
+
+  .admin-command-panel__header {
+    min-height: 4.9rem;
   }
 
   .admin-analytics-grid,
@@ -687,20 +703,60 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .admin-panel--executive .admin-panel__body {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .admin-panel--radar .admin-panel__body {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
   .admin-executive-layout {
-    grid-template-columns: minmax(0, 0.95fr) minmax(17rem, 1.05fr);
+    grid-template-columns: minmax(0, 0.92fr) minmax(16rem, 1.08fr);
+    align-items: stretch;
+    gap: 0.62rem;
+  }
+
+  .admin-executive-focus {
+    min-height: 9.45rem;
+    padding: 0.76rem;
   }
 
   .admin-executive-focus__value {
-    font-size: 2.35rem;
+    font-size: 2.22rem;
+  }
+
+  .admin-metric-grid {
+    gap: 0.5rem;
+  }
+
+  .admin-metric-tile {
+    min-height: 4.45rem;
+    padding: 0.56rem;
   }
 
   .admin-insight-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+    min-height: 5.45rem;
+    padding: 0.48rem;
   }
 
   .admin-radar-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(4.55rem, 1fr);
+    height: 100%;
+  }
+
+  .admin-radar-state {
+    align-items: center;
+    min-height: 3.05rem;
+    padding: 0.48rem;
+  }
+
+  .admin-radar-item {
+    min-height: 4.55rem;
+    padding: 0.54rem;
   }
 
   .admin-chart-card__content {
