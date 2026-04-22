@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import clsx from 'clsx';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { SectionHeader } from '@/components/SectionHeader';
@@ -8,6 +9,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -21,6 +23,7 @@ interface AdminChartDatum {
   label: string;
   value: number;
   color?: string;
+  meta?: string;
 }
 
 interface AdminChartCardProps {
@@ -49,10 +52,11 @@ export function AdminChartCard({
 
   const chartData = data.map((item) => ({
     ...item,
-    shortLabel: truncateLabel(item.label),
+    shortLabel: truncateLabel(item.label, chartType === 'bar' ? 18 : 24),
   }));
   const visibleChartData = chartType === 'bar' ? chartData.slice(0, 5) : chartData;
   const visibleRankData = chartData.slice(0, 5);
+  const leader = visibleRankData[0] ?? null;
   const chartStatusLabel = data.length > 0 ? 'Lectura lista' : 'Sin datos';
   const chartStatusTone = data.length > 0 ? 'success' : 'default';
   const chartSnapshot =
@@ -61,16 +65,23 @@ export function AdminChartCard({
         ? `Top ${visibleRankData.length.toLocaleString('es-CO')}`
         : `${data.length.toLocaleString('es-CO')} metodos`
       : 'Esperando datos reales';
+  const metricLabel = valueFormat === 'currency' ? 'Ventas' : 'Unidades vendidas';
+  const metricUnitLabel = valueFormat === 'currency' ? 'vendido' : 'unidades';
 
   return (
     <Card padding="none" glow={false} className="admin-panel admin-chart-card" data-chart-type={chartType}>
       <div className="admin-panel__body">
-      <SectionHeader
-        eyebrow="Analitica ejecutiva"
-        title={title}
-        description={description}
-        actions={<StatusBadge label={chartStatusLabel} tone={chartStatusTone} />}
-      />
+        <SectionHeader
+          eyebrow="Analitica ejecutiva"
+          title={title}
+          description={description}
+          actions={
+            <div className="admin-chart-card__header-actions">
+              <StatusBadge label={chartSnapshot} tone="default" />
+              <StatusBadge label={chartStatusLabel} tone={chartStatusTone} />
+            </div>
+          }
+        />
 
       {data.length === 0 ? (
         <div className="mt-4">
@@ -78,11 +89,18 @@ export function AdminChartCard({
         </div>
       ) : (
         <div className="admin-chart-card__content">
-          <div className="admin-chart-card__toolbar">
-            <StatusBadge label={chartSnapshot} tone="default" />
-          </div>
-
           <div className="admin-chart-card__visual">
+            <div className="admin-chart-card__visual-heading">
+              <div>
+                <span>{metricLabel}</span>
+                <strong>{leader?.label ?? 'Sin ranking'}</strong>
+              </div>
+              <p>
+                {leader ? formatValue(leader.value) : '0'}
+                <span>{metricUnitLabel}</span>
+              </p>
+            </div>
+
             <div className="admin-chart-card__canvas">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === 'pie' ? (
@@ -107,28 +125,68 @@ export function AdminChartCard({
                   <BarChart
                     data={visibleChartData}
                     layout="vertical"
-                    margin={{ top: 4, right: 12, left: 0, bottom: 0 }}
+                    margin={{ top: 10, right: 48, left: 0, bottom: 8 }}
                   >
-                    <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
+                    <defs>
+                      <linearGradient id="adminTopItemsBarGradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="rgb(var(--theme-primary-rgb))" stopOpacity={0.82} />
+                        <stop offset="58%" stopColor="rgb(var(--theme-secondary-rgb))" stopOpacity={0.95} />
+                        <stop offset="100%" stopColor="rgb(var(--theme-accent-rgb))" stopOpacity={1} />
+                      </linearGradient>
+                      <linearGradient id="adminTopItemsBarLeaderGradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="rgb(var(--theme-secondary-rgb))" stopOpacity={0.98} />
+                        <stop offset="100%" stopColor="rgb(var(--theme-accent-rgb))" stopOpacity={1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      stroke="var(--chart-grid)"
+                      strokeDasharray="4 7"
+                      horizontal={false}
+                    />
                     <XAxis
                       type="number"
-                      tick={{ fill: 'var(--chart-axis)', fontSize: 12 }}
+                      tick={{ fill: 'var(--chart-axis)', fontSize: 11, fontWeight: 600 }}
                       axisLine={false}
                       tickLine={false}
+                      allowDecimals={false}
+                      tickCount={4}
+                      tickFormatter={(value) => Number(value).toLocaleString('es-CO')}
                     />
                     <YAxis
                       type="category"
                       dataKey="shortLabel"
                       width={112}
-                      tick={{ fill: 'var(--chart-axis-strong)', fontSize: 11 }}
+                      tick={{ fill: 'var(--chart-axis-strong)', fontSize: 11, fontWeight: 700 }}
                       axisLine={false}
                       tickLine={false}
+                      interval={0}
+                      tickMargin={8}
                     />
                     <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
-                    <Bar dataKey="value" radius={[0, 9, 9, 0]} maxBarSize={20}>
-                      {visibleChartData.map((entry) => (
-                        <Cell key={entry.label} fill={entry.color ?? 'var(--chart-series-default)'} />
+                    <Bar
+                      dataKey="value"
+                      radius={[0, 10, 10, 0]}
+                      maxBarSize={18}
+                      background={{ fill: 'rgb(var(--theme-primary-rgb) / 0.08)', radius: 10 }}
+                    >
+                      {visibleChartData.map((entry, index) => (
+                        <Cell
+                          key={entry.label}
+                          fill={
+                            index === 0
+                              ? 'url(#adminTopItemsBarLeaderGradient)'
+                              : 'url(#adminTopItemsBarGradient)'
+                          }
+                        />
                       ))}
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        fill="var(--chart-axis-strong)"
+                        fontSize={11}
+                        fontWeight={700}
+                        formatter={(value) => formatValue(Number(value ?? 0))}
+                      />
                     </Bar>
                   </BarChart>
                 )}
@@ -140,29 +198,26 @@ export function AdminChartCard({
             {visibleRankData.map((item, index) => (
               <div
                 key={item.label}
-                className="admin-chart-card__rank-row"
+                className={clsx(
+                  'admin-chart-card__rank-row',
+                  index === 0 && 'admin-chart-card__rank-row--leader',
+                )}
               >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="chart-rank-badge inline-flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold">
+                <div className="admin-chart-card__rank-main">
+                  <span className="admin-chart-card__rank-badge chart-rank-badge">
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.color ?? 'var(--chart-series-default)' }}
-                  />
-                  <span className="admin-chart-card__rank-label truncate theme-text-secondary">
-                    {item.label}
-                  </span>
+                  <div className="admin-chart-card__rank-copy">
+                    <span className="admin-chart-card__rank-label" title={item.label}>
+                      {item.label}
+                    </span>
+                    {item.meta ? <span className="admin-chart-card__rank-meta">{item.meta}</span> : null}
+                  </div>
                 </div>
-                <span
-                  className={
-                    valueFormat === 'currency'
-                      ? 'text-sm font-medium metric-accent'
-                      : 'text-sm font-medium theme-text-strong'
-                  }
-                >
-                  {formatValue(item.value)}
-                </span>
+                <div className="admin-chart-card__rank-value">
+                  <strong>{formatValue(item.value)}</strong>
+                  <span>{metricUnitLabel}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -175,8 +230,8 @@ export function AdminChartCard({
   );
 }
 
-function truncateLabel(value: string) {
-  return value.length > 24 ? `${value.slice(0, 24)}...` : value;
+function truncateLabel(value: string, maxLength = 24) {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
 }
 
 function ChartTooltip({
@@ -201,6 +256,7 @@ function ChartTooltip({
   return (
     <div className="chart-tooltip-surface rounded-2xl px-3 py-2 shadow-2xl">
       <p className="text-sm font-medium theme-text-strong">{item.label}</p>
+      {item.meta ? <p className="theme-text-secondary mt-0.5 text-[11px]">{item.meta}</p> : null}
       <p
         className={
           valueFormat === 'currency'
