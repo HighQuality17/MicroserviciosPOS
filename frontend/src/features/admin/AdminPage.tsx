@@ -528,7 +528,6 @@ export function AdminPage() {
       ) : null}
 
       <ModulePageHeader
-        className="products-page__hero"
         ariaLabel="Estado general del dashboard administrativo"
         eyebrow="Centro de control"
         title="Dashboard administrativo"

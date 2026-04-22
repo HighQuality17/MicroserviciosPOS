@@ -11,11 +11,9 @@ import { useAppStore } from '@/store/appStore';
 
 export function AppLayout() {
   const { pathname } = useLocation();
-  const isPosRoute = pathname.startsWith('/pos');
   const isCashRoute = pathname.startsWith('/cash');
   const isProductsRoute = pathname.startsWith('/products');
   const isOpsAdminRoute = isProductsRoute || isCashRoute;
-  const isCompactMobileRoute = isPosRoute || isCashRoute;
   const setAvailableLocations = useAppStore((state) => state.setAvailableLocations);
   const setLocationsLoading = useAppStore((state) => state.setLocationsLoading);
   const setLocationsError = useAppStore((state) => state.setLocationsError);
@@ -162,9 +160,7 @@ export function AppLayout() {
           <div
             className={clsx(
               'app-layout-shell mx-auto flex min-h-screen w-full max-w-[1680px] flex-col px-3 pb-3 sm:px-4 sm:pb-4 md:px-6 lg:px-8 lg:py-4',
-              isCompactMobileRoute
-                ? 'app-layout-shell--pos pt-[calc(env(safe-area-inset-top,0px)+1rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+1.1rem)]'
-                : 'pt-[calc(env(safe-area-inset-top,0px)+1rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]',
+              'pt-[calc(env(safe-area-inset-top,0px)+1rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]',
             )}
           >
             {shouldShowMobileNavigationButton ? (
@@ -173,8 +169,6 @@ export function AppLayout() {
                 variant="secondary"
                 className={clsx(
                   'mb-3 self-start lg:hidden app-mobile-nav-button',
-                  isCompactMobileRoute && 'app-mobile-nav-button--pos',
-                  isOpsAdminRoute && 'app-mobile-nav-button--ops-admin',
                 )}
                 aria-label="Abrir menu de navegacion"
                 aria-controls={navigationId}
@@ -185,13 +179,10 @@ export function AppLayout() {
                 <span>Menu</span>
               </Button>
             ) : null}
-            <Header compactForPosMobile={isCompactMobileRoute} />
+            <Header />
             <main
               id="main-content"
-              className={clsx(
-                'app-layout-main min-w-0 flex-1',
-                isCompactMobileRoute ? 'mt-3 sm:mt-4' : 'mt-4',
-              )}
+              className="app-layout-main mt-4 min-w-0 flex-1"
               tabIndex={-1}
             >
               <Outlet />

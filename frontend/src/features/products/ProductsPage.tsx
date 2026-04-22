@@ -12,11 +12,11 @@ import { FilterChip } from '@/components/FilterChip';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { Modal } from '@/components/Modal';
-import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type {
   ModulePageHeaderBadge,
   ModulePageHeaderCard,
 } from '@/components/ModulePageHeader';
+import { ModuleInfoTooltip } from '@/components/ModuleStatusHeader';
 import { SearchField } from '@/components/SearchField';
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
@@ -981,31 +981,93 @@ export function ProductsPage() {
     },
   ];
   return (
-    <div className="products-page grid min-w-0 gap-5 sm:gap-6">
-      <ModulePageHeader
-        className="products-page__hero"
-        ariaLabel="Estado operativo de productos"
-        eyebrow="Administracion de catalogo"
-        title="Productos"
-        icon={<Boxes size={18} />}
-        helpText="Controla estado del catalogo, productos simples, variantes activas y cobertura de recetas dentro del mismo flujo administrativo."
-        badges={productsHeaderBadges}
-        description="Catalogo comercial, operaciones de venta y control administrativo para mantener producto y receta en orden."
-        summary={{
-          label: heroSummaryLabel,
-          value: heroSummaryValue,
-          note: heroSummaryNote,
-        }}
-        asideAction={
-          <Button
-            variant="secondary"
-            onClick={() => void refreshCatalog()}
-          >
-            Actualizar catalogo
-          </Button>
-        }
-        cards={productsHeroMetrics}
-      />
+    <div className="products-page grid min-w-0 gap-4 sm:gap-5">
+      <section className="module-page-header" aria-label="Estado operativo de productos">
+        <div className="module-page-header__shell">
+          <div className="module-page-header__main">
+            <div className="module-page-header__copy">
+              <p className="module-page-header__eyebrow">Administracion de catalogo</p>
+              <div className="module-page-header__title-row">
+                <div className="module-page-header__title-wrap">
+                  <span className="module-page-header__title-icon" aria-hidden="true">
+                    <Boxes size={18} />
+                  </span>
+                  <h1 className="module-page-header__title">Productos</h1>
+                  <ModuleInfoTooltip
+                    label="Mas info sobre productos"
+                    content="Controla estado del catalogo, productos simples, variantes activas y cobertura de recetas dentro del mismo flujo administrativo."
+                  />
+                  <div className="module-page-header__badges">
+                    {productsHeaderBadges.map((badge, index) => (
+                      <StatusBadge
+                        key={`${badge.label}-${badge.tone ?? 'default'}-${index}`}
+                        label={badge.label}
+                        tone={badge.tone ?? 'default'}
+                        className={clsx('module-page-header__badge', badge.className)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="module-page-header__description">
+                Catalogo comercial, operaciones de venta y control administrativo para mantener producto y receta en orden.
+              </p>
+            </div>
+
+            <div className="module-page-header__aside">
+              <div className="module-page-header__summary">
+                <p className="module-page-header__summary-label">{heroSummaryLabel}</p>
+                <p className="module-page-header__summary-value">{heroSummaryValue}</p>
+                <p className="module-page-header__summary-note">{heroSummaryNote}</p>
+              </div>
+              <div className="module-page-header__aside-action">
+                <Button
+                  variant="secondary"
+                  onClick={() => void refreshCatalog()}
+                >
+                  Actualizar catalogo
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="module-page-header__cards">
+            {productsHeroMetrics.map((card, index) => (
+              <div
+                key={`module-card-${index}`}
+                className="module-page-header__card"
+                data-accent={card.accent ?? 'default'}
+              >
+                <div className="module-page-header__card-main">
+                  {card.icon ? (
+                    <span
+                      className="module-page-header__card-icon"
+                      aria-hidden="true"
+                      data-tone={card.iconTone ?? 'default'}
+                    >
+                      {card.icon}
+                    </span>
+                  ) : null}
+                  <div className="min-w-0">
+                    <div className="module-page-header__card-top">
+                      <p className="module-page-header__card-label">{card.label}</p>
+                      {card.badge ? (
+                        <StatusBadge
+                          label={card.badge.label}
+                          tone={card.badge.tone ?? 'default'}
+                          className={clsx('module-page-header__card-badge', card.badge.className)}
+                        />
+                      ) : null}
+                    </div>
+                    <p className="module-page-header__card-value">{card.value}</p>
+                    {card.note ? <p className="module-page-header__card-note">{card.note}</p> : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {message ? <FeedbackMessage tone="success" className="products-feedback">{message}</FeedbackMessage> : null}
 
