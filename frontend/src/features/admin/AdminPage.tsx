@@ -258,7 +258,8 @@ export function AdminPage() {
   const topItemsData = useMemo(
     () =>
       topItems.map((item, index) => ({
-        label: `${item.name} - ${item.item_type === 'VARIANT' ? 'Variante' : 'Combo'}`,
+        label: item.name,
+        meta: item.item_type === 'VARIANT' ? 'Variante' : 'Combo',
         value: item.qty_sold,
         color: index % 2 === 0 ? 'var(--chart-series-default)' : 'var(--chart-series-alt)',
       })),
