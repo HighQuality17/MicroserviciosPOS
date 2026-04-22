@@ -1,0 +1,851 @@
+.admin-dashboard {
+  --admin-border: var(--line);
+  --admin-border-strong: var(--line-strong);
+  --admin-surface: var(--bg-panel);
+  --admin-surface-strong: var(--bg-panel-strong);
+  --admin-surface-muted: var(--surface-ghost);
+  --admin-shadow: 0 10px 26px rgb(2 6 23 / 0.14);
+  gap: 0.95rem;
+}
+
+.admin-dashboard .section-kicker,
+.admin-kicker,
+.admin-metric-tile span,
+.admin-insight-tile span,
+.admin-radar-item span {
+  color: var(--text-faint);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.admin-panel {
+  min-width: 0;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 0.875rem;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-panel__body {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem;
+}
+
+.admin-panel .section-note {
+  max-width: 32rem;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.admin-command-grid,
+.admin-analytics-grid,
+.admin-ops-grid {
+  display: grid;
+  gap: 0.95rem;
+  min-width: 0;
+}
+
+.admin-executive-layout {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.admin-executive-focus {
+  display: grid;
+  align-content: space-between;
+  border: 1px solid var(--surface-selected-border);
+  border-left-width: 4px;
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(180deg, rgb(var(--theme-secondary-rgb) / 0.12), transparent 44%),
+    var(--admin-surface-strong);
+  padding: 0.82rem;
+}
+
+.admin-executive-focus__value {
+  margin-top: 0.4rem;
+  color: var(--metric-accent-strong-color);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-executive-focus__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.admin-executive-focus__meta span,
+.admin-chart-card__toolbar .status-badge {
+  border-radius: 999px;
+}
+
+.admin-executive-focus__meta span {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
+  padding: 0.24rem 0.55rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.admin-metric-grid,
+.admin-insight-grid,
+.admin-radar-grid,
+.admin-shortcut-grid {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-metric-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-metric-tile,
+.admin-insight-tile,
+.admin-radar-item,
+.admin-shortcut-card,
+.admin-location-create,
+.admin-location-list,
+.admin-pos-item,
+.admin-activity-item {
+  border: 1px solid var(--admin-border);
+  border-radius: 0.65rem;
+  background: var(--admin-surface-muted);
+}
+
+.admin-metric-tile {
+  display: grid;
+  gap: 0.22rem;
+  min-height: 4.7rem;
+  padding: 0.62rem;
+}
+
+.admin-metric-tile svg {
+  color: rgb(var(--theme-accent-rgb) / 1);
+}
+
+.admin-metric-tile strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-insight-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--admin-border);
+  border-radius: 0.75rem;
+  background: var(--admin-surface-strong);
+  padding: 0.5rem;
+}
+
+.admin-insight-tile,
+.admin-radar-item {
+  display: grid;
+  gap: 0.22rem;
+  padding: 0.55rem;
+}
+
+.admin-insight-tile {
+  border-color: transparent;
+  background: transparent;
+}
+
+.admin-insight-tile strong,
+.admin-radar-item strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-insight-tile p,
+.admin-radar-item p {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-radar-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.65rem;
+  background: var(--admin-surface-strong);
+  padding: 0.52rem;
+}
+
+.admin-radar-grid {
+  gap: 0.5rem;
+}
+
+.admin-radar-item {
+  min-height: 4.15rem;
+}
+
+.admin-chart-card .admin-panel__body {
+  gap: 0.7rem;
+}
+
+.admin-chart-card__content {
+  display: grid;
+  gap: 0.62rem;
+  margin-top: 0;
+}
+
+.admin-chart-card__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: -0.15rem;
+}
+
+.admin-chart-card__visual {
+  min-width: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.06), transparent 42%),
+    var(--admin-surface-strong);
+  padding: 0.55rem;
+}
+
+.admin-chart-card__canvas {
+  height: 11.75rem;
+  width: 100%;
+}
+
+.admin-chart-card[data-chart-type='pie'] .admin-chart-card__canvas {
+  height: 10.75rem;
+}
+
+.admin-chart-card__ranking {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.admin-chart-card__rank-row {
+  display: flex;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.62rem;
+  background: var(--admin-surface-muted);
+  padding: 0.42rem 0.55rem;
+}
+
+.admin-chart-card__rank-row .chart-rank-badge {
+  height: 1.6rem;
+  width: 1.6rem;
+  font-size: 0.65rem;
+}
+
+.admin-chart-card__rank-label {
+  font-size: 0.78rem;
+}
+
+.admin-chart-card__rank-row > span:last-child {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+}
+
+.admin-payment-chart-card .admin-panel__body {
+  gap: 0.72rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-payment-chart-card__body {
+  display: grid;
+  gap: 0.68rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-payment-chart-card__donut-panel {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  justify-items: center;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.06), transparent 44%),
+    var(--admin-surface-strong);
+  padding: 0.58rem;
+}
+
+.admin-payment-chart-card__chart {
+  --admin-payment-chart-size: 12.5rem;
+  display: grid;
+  place-items: center;
+  width: min(100%, var(--admin-payment-chart-size));
+  height: var(--admin-payment-chart-size);
+  min-width: 0;
+  min-height: 0;
+  margin-inline: auto;
+  overflow: hidden;
+  contain: layout paint;
+  touch-action: pan-y;
+}
+
+.admin-payment-chart-card__chart > div,
+.admin-payment-chart-card__chart .apexcharts-canvas,
+.admin-payment-chart-card__chart .apexcharts-svg {
+  width: 100% !important;
+  max-width: 100%;
+  height: 100% !important;
+}
+
+.admin-payment-chart-card__chart .apexcharts-canvas,
+.admin-payment-chart-card__chart .apexcharts-svg {
+  height: 100% !important;
+  margin-inline: auto;
+  overflow: hidden;
+}
+
+.admin-payment-chart-card__chart .apexcharts-tooltip {
+  max-width: 12rem;
+  white-space: normal;
+}
+
+.admin-payment-chart-card__chart-skeleton {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.7rem;
+  background:
+    linear-gradient(90deg, transparent, rgb(var(--theme-primary-rgb) / 0.1), transparent),
+    var(--admin-surface-muted);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.admin-payment-chart-card__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.6rem;
+  background: var(--admin-surface-muted);
+  padding: 0.52rem 0.62rem;
+}
+
+.admin-payment-chart-card__total span,
+.admin-payment-chart-card__summary span,
+.admin-payment-chart-card__method-share {
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.admin-payment-chart-card__total strong {
+  overflow: hidden;
+  color: var(--metric-accent-strong-color);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-payment-chart-card__breakdown,
+.admin-payment-chart-card__method-list {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.admin-payment-chart-card__summary,
+.admin-payment-chart-card__method {
+  border: 1px solid var(--admin-border);
+  border-radius: 0.65rem;
+  background: var(--admin-surface-muted);
+}
+
+.admin-payment-chart-card__summary {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.62rem 0.68rem;
+}
+
+.admin-payment-chart-card__summary strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-payment-chart-card__summary p {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.admin-payment-chart-card__method {
+  display: grid;
+  gap: 0.42rem;
+  padding: 0.58rem 0.62rem;
+}
+
+.admin-payment-chart-card__method-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.admin-payment-chart-card__swatch {
+  height: 0.7rem;
+  width: 0.7rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.04);
+}
+
+.admin-payment-chart-card__method-heading p {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-payment-chart-card__method-heading strong {
+  overflow: hidden;
+  min-width: 0;
+  max-width: 9rem;
+  color: var(--metric-accent-color);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-payment-chart-card__method-track {
+  overflow: hidden;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: rgb(var(--theme-primary-rgb) / 0.1);
+}
+
+.admin-payment-chart-card__method-track span {
+  display: block;
+  height: 100%;
+  min-width: 0.28rem;
+  border-radius: inherit;
+}
+
+.admin-payment-chart-card__method-share {
+  font-size: 0.64rem;
+}
+
+.admin-alert-list {
+  display: grid;
+  gap: 0.48rem;
+}
+
+.admin-dashboard .semantic-card {
+  border-radius: 0.65rem;
+  padding: 0.58rem 0.65rem;
+}
+
+.admin-dashboard .semantic-card > .flex {
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.admin-dashboard .semantic-card__icon {
+  height: 2rem;
+  min-height: 2rem;
+  width: 2rem;
+  min-width: 2rem;
+  border-radius: 0.58rem;
+}
+
+.admin-dashboard .semantic-card p {
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.admin-dashboard .semantic-card p + p {
+  margin-top: 0.12rem;
+  font-size: 0.72rem;
+  line-height: 1.28;
+}
+
+.admin-activity-list {
+  display: grid;
+  gap: 0.42rem;
+  margin-top: 0;
+  padding-right: 0.15rem;
+}
+
+.admin-activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.55rem 0.62rem;
+}
+
+.admin-activity-item__content {
+  min-width: 0;
+}
+
+.admin-activity-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-activity-item__meta span,
+.admin-activity-item time,
+.admin-shortcut-card span,
+.admin-pos-item span {
+  color: var(--text-faint);
+  font-size: 0.68rem;
+}
+
+.admin-activity-item__content p {
+  overflow: hidden;
+  margin-top: 0.26rem;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 740;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-activity-item__content > span {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.08rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-activity-item time {
+  flex-shrink: 0;
+  max-width: 7.5rem;
+  text-align: right;
+}
+
+.admin-shortcut-grid {
+  margin-top: 0;
+}
+
+.admin-shortcut-card {
+  display: flex;
+  min-height: 4.2rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.62rem 0.72rem;
+}
+
+.admin-shortcut-card p {
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 760;
+}
+
+.admin-shortcut-card__action {
+  min-height: 1.85rem;
+  flex-shrink: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: var(--admin-surface-strong);
+  padding: 0.3rem 0.62rem;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 750;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.admin-shortcut-card__action:hover {
+  border-color: var(--surface-selected-border);
+  color: var(--text);
+}
+
+.admin-location-grid {
+  display: grid;
+  gap: 0.72rem;
+  margin-top: 0;
+}
+
+.admin-location-create,
+.admin-location-list {
+  padding: 0.72rem;
+}
+
+.admin-location-create {
+  display: grid;
+  gap: 0.68rem;
+  align-content: start;
+  background: var(--admin-surface-strong);
+}
+
+.admin-location-create h3,
+.admin-location-list h3 {
+  margin-top: 0.15rem;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.admin-location-create__form {
+  display: grid;
+  gap: 0.58rem;
+}
+
+.admin-location-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.admin-pos-list {
+  display: grid;
+  gap: 0.42rem;
+  margin-top: 0.62rem;
+}
+
+.admin-pos-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.55rem 0.62rem;
+}
+
+.admin-pos-item p {
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 760;
+}
+
+.admin-pos-item__status {
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .admin-panel__body {
+    padding: 0.95rem;
+  }
+
+  .admin-shortcut-grid,
+  .admin-location-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-dashboard {
+    gap: 1rem;
+  }
+
+  .admin-command-grid {
+    grid-template-columns: minmax(0, 1.24fr) minmax(18rem, 0.76fr);
+    align-items: start;
+  }
+
+  .admin-analytics-grid,
+  .admin-ops-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-executive-layout {
+    grid-template-columns: minmax(0, 0.95fr) minmax(17rem, 1.05fr);
+  }
+
+  .admin-executive-focus__value {
+    font-size: 2.35rem;
+  }
+
+  .admin-insight-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .admin-radar-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-chart-card__content {
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.72fr);
+    align-items: center;
+  }
+
+  .admin-chart-card__toolbar {
+    grid-column: 1 / -1;
+  }
+
+  .admin-chart-card[data-chart-type='bar'] .admin-chart-card__content {
+    grid-template-columns: minmax(0, 1.1fr) minmax(12rem, 0.76fr);
+  }
+
+  .admin-payment-chart-card__body {
+    grid-template-columns: minmax(0, 0.88fr) minmax(13rem, 0.72fr);
+    align-items: center;
+  }
+
+  .admin-location-grid {
+    grid-template-columns: minmax(17rem, 0.38fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .admin-shortcut-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .admin-chart-card__canvas {
+    height: 11.25rem;
+  }
+
+  .admin-chart-card[data-chart-type='pie'] .admin-chart-card__canvas {
+    height: 10.25rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-payment-chart-card .admin-panel__body {
+    gap: 0.5rem;
+    padding: 0.72rem;
+  }
+
+  .admin-payment-chart-card .section-note {
+    font-size: 0.72rem;
+    line-height: 1.32;
+  }
+
+  .admin-payment-chart-card__body,
+  .admin-payment-chart-card__breakdown,
+  .admin-payment-chart-card__method-list {
+    gap: 0.38rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-payment-chart-card__donut-panel {
+    gap: 0;
+    justify-items: center;
+    border: 0;
+    border-radius: 0.65rem;
+    background: transparent;
+    padding: 0.12rem 0 0.08rem;
+  }
+
+  .admin-payment-chart-card__chart {
+    --admin-payment-chart-size: 8rem;
+    max-width: var(--admin-payment-chart-size);
+  }
+
+  .admin-payment-chart-card__total {
+    display: none;
+  }
+
+  .admin-payment-chart-card__summary {
+    display: none;
+  }
+
+  .admin-payment-chart-card__method-list {
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--admin-border);
+    border-radius: 0.62rem;
+    background: var(--admin-surface-muted);
+  }
+
+  .admin-payment-chart-card__method {
+    gap: 0;
+    min-height: 2rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0.44rem 0.56rem;
+  }
+
+  .admin-payment-chart-card__method + .admin-payment-chart-card__method {
+    border-top: 1px solid var(--admin-border);
+  }
+
+  .admin-payment-chart-card__method-heading {
+    grid-template-columns: auto minmax(0, 1fr) max-content;
+    gap: 0.44rem;
+  }
+
+  .admin-payment-chart-card__swatch {
+    height: 0.5rem;
+    width: 0.5rem;
+    box-shadow: none;
+  }
+
+  .admin-payment-chart-card__method-heading p {
+    font-size: 0.76rem;
+    line-height: 1.1;
+  }
+
+  .admin-payment-chart-card__method-heading strong {
+    grid-column: auto;
+    justify-self: end;
+    max-width: 8.25rem;
+    font-size: 0.74rem;
+    line-height: 1.1;
+    text-align: right;
+  }
+
+  .admin-payment-chart-card__method-track,
+  .admin-payment-chart-card__method-share {
+    display: none;
+  }
+
+  .admin-metric-grid,
+  .admin-insight-grid,
+  .admin-radar-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-activity-item,
+  .admin-pos-item,
+  .admin-shortcut-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-activity-item time {
+    max-width: none;
+    text-align: left;
+  }
+}
