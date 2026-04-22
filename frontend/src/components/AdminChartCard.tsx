@@ -8,7 +8,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -52,16 +51,20 @@ export function AdminChartCard({
     ...item,
     shortLabel: truncateLabel(item.label),
   }));
+  const visibleChartData = chartType === 'bar' ? chartData.slice(0, 5) : chartData;
+  const visibleRankData = chartData.slice(0, 5);
   const chartStatusLabel = data.length > 0 ? 'Lectura lista' : 'Sin datos';
   const chartStatusTone = data.length > 0 ? 'success' : 'default';
   const chartSnapshot =
     data.length > 0
-      ? `${data.length.toLocaleString('es-CO')} fuentes visibles`
+      ? chartType === 'bar'
+        ? `Top ${visibleRankData.length.toLocaleString('es-CO')}`
+        : `${data.length.toLocaleString('es-CO')} metodos`
       : 'Esperando datos reales';
 
   return (
-    <Card className="overflow-hidden xl:min-h-[34rem]">
-      <div className="chart-top-glow absolute inset-x-0 top-0 h-24" />
+    <Card padding="none" glow={false} className="admin-panel admin-chart-card" data-chart-type={chartType}>
+      <div className="admin-panel__body">
       <SectionHeader
         eyebrow="Analitica ejecutiva"
         title={title}
@@ -70,50 +73,41 @@ export function AdminChartCard({
       />
 
       {data.length === 0 ? (
-        <div className="mt-6">
+        <div className="mt-4">
           <EmptyState title={emptyTitle} description={emptyDescription} />
         </div>
       ) : (
-        <div className="mt-6 flex flex-col gap-5">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="admin-chart-card__content">
+          <div className="admin-chart-card__toolbar">
             <StatusBadge label={chartSnapshot} tone="default" />
-            <p className="text-xs theme-text-faint">
-              Lectura respaldada por datos reales del backend.
-            </p>
           </div>
 
-          <div className="surface-subtle-strong rounded-[1.85rem] p-6">
-            <div className="h-72 w-full">
+          <div className="admin-chart-card__visual">
+            <div className="admin-chart-card__canvas">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === 'pie' ? (
                   <PieChart>
                     <Pie
-                      data={chartData}
+                      data={visibleChartData}
                       dataKey="value"
                       nameKey="label"
-                      innerRadius={56}
-                      outerRadius={86}
+                      innerRadius={44}
+                      outerRadius={68}
                       paddingAngle={2}
                       stroke="var(--chart-pie-stroke)"
                       strokeWidth={2}
                     >
-                      {chartData.map((entry) => (
+                      {visibleChartData.map((entry) => (
                         <Cell key={entry.label} fill={entry.color ?? 'var(--chart-series-default)'} />
                       ))}
                     </Pie>
                     <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
-                    <Legend
-                      wrapperStyle={{ color: 'var(--text-secondary)', paddingTop: 12 }}
-                      formatter={(value) => (
-                        <span style={{ color: 'var(--text-secondary)' }}>{String(value)}</span>
-                      )}
-                    />
                   </PieChart>
                 ) : (
                   <BarChart
-                    data={chartData}
+                    data={visibleChartData}
                     layout="vertical"
-                    margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+                    margin={{ top: 4, right: 12, left: 0, bottom: 0 }}
                   >
                     <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
                     <XAxis
@@ -125,14 +119,14 @@ export function AdminChartCard({
                     <YAxis
                       type="category"
                       dataKey="shortLabel"
-                      width={132}
-                      tick={{ fill: 'var(--chart-axis-strong)', fontSize: 12 }}
+                      width={112}
+                      tick={{ fill: 'var(--chart-axis-strong)', fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
-                    <Bar dataKey="value" radius={[0, 10, 10, 0]} maxBarSize={28}>
-                      {chartData.map((entry) => (
+                    <Bar dataKey="value" radius={[0, 9, 9, 0]} maxBarSize={20}>
+                      {visibleChartData.map((entry) => (
                         <Cell key={entry.label} fill={entry.color ?? 'var(--chart-series-default)'} />
                       ))}
                     </Bar>
@@ -142,11 +136,11 @@ export function AdminChartCard({
             </div>
           </div>
 
-          <div className="grid gap-2.5">
-            {chartData.map((item, index) => (
+          <div className="admin-chart-card__ranking">
+            {visibleRankData.map((item, index) => (
               <div
                 key={item.label}
-                className="data-list-card flex min-h-[4.25rem] items-center justify-between rounded-2xl px-4 py-3.5"
+                className="admin-chart-card__rank-row"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="chart-rank-badge inline-flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold">
@@ -156,7 +150,7 @@ export function AdminChartCard({
                     className="h-3 w-3 shrink-0 rounded-full"
                     style={{ backgroundColor: item.color ?? 'var(--chart-series-default)' }}
                   />
-                  <span className="truncate text-sm theme-text-secondary">
+                  <span className="admin-chart-card__rank-label truncate theme-text-secondary">
                     {item.label}
                   </span>
                 </div>
@@ -176,6 +170,7 @@ export function AdminChartCard({
       )}
 
       {footer ? <div className="theme-border-soft mt-5 border-t pt-4">{footer}</div> : null}
+      </div>
     </Card>
   );
 }
