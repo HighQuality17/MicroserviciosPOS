@@ -1,16 +1,17 @@
 import '@/features/cash/cash-d2a.css';
 import { useEffect, useState } from 'react';
+import clsx from 'clsx';
 import { CircleDot, Landmark, MapPin, User, Wallet } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
-import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type {
   ModulePageHeaderBadge,
   ModulePageHeaderCard,
 } from '@/components/ModulePageHeader';
+import { ModuleInfoTooltip } from '@/components/ModuleStatusHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
@@ -309,92 +310,89 @@ export function CashPage() {
   ];
 
   return (
-    <div className="cash-page grid min-w-0 gap-5 sm:gap-6">
-      <ModulePageHeader
-        className="cash-page__hero"
-        ariaLabel="Estado operativo de caja"
-        eyebrow="Operacion de caja"
-        title="Caja"
-        icon={<Wallet size={18} />}
-        helpText="Controla apertura, cierre, POS activo, fondo inicial y responsable de la sesion."
-        badges={cashHeaderBadges}
-        description={
-          currentCashSession
-            ? 'Sesion activa para turno actual, con apertura registrada y cierre disponible.'
-            : currentLocation
-              ? 'Prepara apertura de caja, responsable y fondo inicial para empezar turno con control claro.'
-              : 'Selecciona un POS para habilitar apertura, seguimiento de sesion y cierre.'
-        }
-        summary={{
-          label: cashHeroSummaryLabel,
-          value: cashHeroSummaryValue,
-          note: cashHeroSummaryNote,
-        }}
-        cards={cashHeaderCards}
-      />
-      {/* Legacy header retained disabled during shared-header migration.
-      <section className="cash-page__hero">
-        <ModuleStatusHeader
-          ariaLabel="Estado operativo de caja"
-          eyebrow="Operacion de caja"
-          title="Caja"
-          statusLabel={operationStatusLabel}
-          statusTone={cashStatusTone}
-          description=""
-          helpText="Aqui encontraras el estado de la sesion de caja, el dinero de apertura, la ubicación actúal y el responsable de la operacion."
-          icon={<Wallet size={18} />}
-        >
-          <ModuleStatusCard
-            label="Caja activa"
-            value={currentCashSession ? `Caja #${currentCashSession.id}` : 'Sin sesion'}
-            icon={<CircleDot size={16} />}
-            iconTone={cashStatusTone}
-            badgeLabel={cashStatusLabel}
-            badgeTone={cashStatusTone}
-            meta={
-              currentCashSession
-                ? `Abierta ${formatDate(currentCashSession.openedAt)}`
-                : currentLocation
-                  ? 'Lista para apertura'
-                  : 'Selecciona un POS'
-            }
-          />
-          <ModuleStatusCard
-            label="Apertura"
-            value={openingValue}
-            icon={<Landmark size={16} />}
-            iconTone={openingTone}
-            badgeLabel={openingStatusLabel}
-            badgeTone={openingTone}
-            meta={
-              currentCashSession
-                ? 'Fondo inicial registrado'
-                : openingCashPreview !== null
-                  ? 'Listo para abrir'
-                  : 'Define el efectivo inicial'
-            }
-          />
-          <ModuleStatusCard
-            label="Ubicacion"
-            value={currentLocation?.name ?? 'Sin POS activo'}
-            icon={<MapPin size={16} />}
-            iconTone={currentLocation ? 'info' : 'default'}
-            badgeLabel={currentLocation ? `POS #${currentLocation.id}` : 'No definido'}
-            badgeTone={currentLocation ? 'info' : 'default'}
-            meta={currentLocation ? 'POS activo para la sesion' : 'Selecciona un POS'}
-          />
-          <ModuleStatusCard
-            label="Responsable"
-            value={currentUserName}
-            icon={<User size={16} />}
-            iconTone={currentUser ? 'info' : 'default'}
-            badgeLabel={currentUserRole}
-            badgeTone={currentUser ? 'info' : 'default'}
-            meta={currentUserHandle}
-          />
-        </ModuleStatusHeader>
-      </section> */}
+    <div className="cash-page grid min-w-0 gap-4 sm:gap-5">
+      <section className="module-page-header" aria-label="Estado operativo de caja">
+        <div className="module-page-header__shell">
+          <div className="module-page-header__main">
+            <div className="module-page-header__copy">
+              <p className="module-page-header__eyebrow">Operacion de caja</p>
+              <div className="module-page-header__title-row">
+                <div className="module-page-header__title-wrap">
+                  <span className="module-page-header__title-icon" aria-hidden="true">
+                    <Wallet size={18} />
+                  </span>
+                  <h1 className="module-page-header__title">Caja</h1>
+                  <ModuleInfoTooltip
+                    label="Mas info sobre caja"
+                    content="Controla apertura, cierre, POS activo, fondo inicial y responsable de la sesion."
+                  />
+                  <div className="module-page-header__badges">
+                    {cashHeaderBadges.map((badge, index) => (
+                      <StatusBadge
+                        key={`${badge.label}-${badge.tone ?? 'default'}-${index}`}
+                        label={badge.label}
+                        tone={badge.tone ?? 'default'}
+                        className={clsx('module-page-header__badge', badge.className)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="module-page-header__description">
+                {currentCashSession
+                  ? 'Sesion activa para turno actual, con apertura registrada y cierre disponible.'
+                  : currentLocation
+                    ? 'Prepara apertura de caja, responsable y fondo inicial para empezar turno con control claro.'
+                    : 'Selecciona un POS para habilitar apertura, seguimiento de sesion y cierre.'}
+              </p>
+            </div>
 
+            <div className="module-page-header__aside">
+              <div className="module-page-header__summary">
+                <p className="module-page-header__summary-label">{cashHeroSummaryLabel}</p>
+                <p className="module-page-header__summary-value">{cashHeroSummaryValue}</p>
+                <p className="module-page-header__summary-note">{cashHeroSummaryNote}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="module-page-header__cards">
+            {cashHeaderCards.map((card, index) => (
+              <div
+                key={`module-card-${index}`}
+                className="module-page-header__card"
+                data-accent={card.accent ?? 'default'}
+              >
+                <div className="module-page-header__card-main">
+                  {card.icon ? (
+                    <span
+                      className="module-page-header__card-icon"
+                      aria-hidden="true"
+                      data-tone={card.iconTone ?? 'default'}
+                    >
+                      {card.icon}
+                    </span>
+                  ) : null}
+                  <div className="min-w-0">
+                    <div className="module-page-header__card-top">
+                      <p className="module-page-header__card-label">{card.label}</p>
+                      {card.badge ? (
+                        <StatusBadge
+                          label={card.badge.label}
+                          tone={card.badge.tone ?? 'default'}
+                          className={clsx('module-page-header__card-badge', card.badge.className)}
+                        />
+                      ) : null}
+                    </div>
+                    <p className="module-page-header__card-value">{card.value}</p>
+                    {card.note ? <p className="module-page-header__card-note">{card.note}</p> : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
       {message ? (
         <FeedbackMessage tone="success" className="cash-feedback">
           {message}

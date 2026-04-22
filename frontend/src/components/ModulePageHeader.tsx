@@ -44,6 +44,7 @@ interface ModulePageHeaderProps {
   icon?: ReactNode;
   helpText?: string;
   helpLabel?: string;
+  aside?: ReactNode;
   summary?: ModulePageHeaderSummary;
   asideAction?: ReactNode;
   cards?: ModulePageHeaderCard[];
@@ -59,12 +60,13 @@ export function ModulePageHeader({
   icon,
   helpText,
   helpLabel,
+  aside,
   summary,
   asideAction,
   cards = [],
   className,
 }: ModulePageHeaderProps) {
-  const hasAside = Boolean(summary) || Boolean(asideAction);
+  const hasAside = Boolean(aside) || Boolean(summary) || Boolean(asideAction);
   const normalizedTitle = typeof title === 'string' ? title.toLowerCase() : 'modulo';
 
   return (
@@ -106,6 +108,7 @@ export function ModulePageHeader({
 
           {hasAside ? (
             <div className="module-page-header__aside">
+              {aside}
               {summary ? (
                 <div className="module-page-header__summary">
                   <p className="module-page-header__summary-label">{summary.label}</p>

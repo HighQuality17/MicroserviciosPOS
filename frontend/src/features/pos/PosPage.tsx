@@ -19,14 +19,15 @@ import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { FilterChip } from '@/components/FilterChip';
 import { LoadingState } from '@/components/LoadingState';
-import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type {
   ModulePageHeaderBadge,
   ModulePageHeaderCard,
 } from '@/components/ModulePageHeader';
+import { ModuleInfoTooltip } from '@/components/ModuleStatusHeader';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SearchField } from '@/components/SearchField';
 import { SectionHeader } from '@/components/SectionHeader';
+import { StatusBadge } from '@/components/StatusBadge';
 import {
   PosCartPanel,
 } from '@/features/pos/components/PosCartPanel';
@@ -500,23 +501,85 @@ export function PosPage() {
   }
 
   return (
-    <div className="pos-page grid min-w-0 gap-5 sm:gap-6">
-      <ModulePageHeader
-        className="pos-page__hero"
-        ariaLabel="Estado operativo del POS"
-        eyebrow="Operacion de venta"
-        title="POS"
-        icon={<ShoppingCart size={18} />}
-        helpText="Controla estado de caja, POS activo, cajero y ticket mas reciente sin salir del flujo de venta."
-        badges={posHeaderBadges}
-        description="Venta rapida con catalogo operativo, carrito visible y cobro listo dentro del mismo lenguaje visual de Productos y Caja."
-        summary={{
-          label: saleSummaryLabel,
-          value: formatCurrency(totals.total),
-          note: saleSummaryNote,
-        }}
-        cards={posHeaderCards}
-      />
+    <div className="pos-page grid min-w-0 gap-4 sm:gap-5">
+      <section className="module-page-header" aria-label="Estado operativo del POS">
+        <div className="module-page-header__shell">
+          <div className="module-page-header__main">
+            <div className="module-page-header__copy">
+              <p className="module-page-header__eyebrow">Operacion de venta</p>
+              <div className="module-page-header__title-row">
+                <div className="module-page-header__title-wrap">
+                  <span className="module-page-header__title-icon" aria-hidden="true">
+                    <ShoppingCart size={18} />
+                  </span>
+                  <h1 className="module-page-header__title">POS</h1>
+                  <ModuleInfoTooltip
+                    label="Mas info sobre pos"
+                    content="Controla estado de caja, POS activo, cajero y ticket mas reciente sin salir del flujo de venta."
+                  />
+                  <div className="module-page-header__badges">
+                    {posHeaderBadges.map((badge, index) => (
+                      <StatusBadge
+                        key={`${badge.label}-${badge.tone ?? 'default'}-${index}`}
+                        label={badge.label}
+                        tone={badge.tone ?? 'default'}
+                        className={clsx('module-page-header__badge', badge.className)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="module-page-header__description">
+                Venta rapida con catalogo operativo, carrito visible y cobro listo dentro del mismo lenguaje visual de Productos y Caja.
+              </p>
+            </div>
+
+            <div className="module-page-header__aside">
+              <div className="module-page-header__summary">
+                <p className="module-page-header__summary-label">{saleSummaryLabel}</p>
+                <p className="module-page-header__summary-value">{formatCurrency(totals.total)}</p>
+                <p className="module-page-header__summary-note">{saleSummaryNote}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="module-page-header__cards">
+            {posHeaderCards.map((card, index) => (
+              <div
+                key={`module-card-${index}`}
+                className="module-page-header__card"
+                data-accent={card.accent ?? 'default'}
+              >
+                <div className="module-page-header__card-main">
+                  {card.icon ? (
+                    <span
+                      className="module-page-header__card-icon"
+                      aria-hidden="true"
+                      data-tone={card.iconTone ?? 'default'}
+                    >
+                      {card.icon}
+                    </span>
+                  ) : null}
+                  <div className="min-w-0">
+                    <div className="module-page-header__card-top">
+                      <p className="module-page-header__card-label">{card.label}</p>
+                      {card.badge ? (
+                        <StatusBadge
+                          label={card.badge.label}
+                          tone={card.badge.tone ?? 'default'}
+                          className={clsx('module-page-header__card-badge', card.badge.className)}
+                        />
+                      ) : null}
+                    </div>
+                    <p className="module-page-header__card-value">{card.value}</p>
+                    {card.note ? <p className="module-page-header__card-note">{card.note}</p> : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <div className="pos-workspace grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(24rem,28rem)]">
         <Card padding="none" glow={false} className="self-start pos-workspace__catalog">

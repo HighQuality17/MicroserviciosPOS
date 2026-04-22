@@ -1,3 +1,5 @@
+import "@/features/products/products-d2b.css";
+import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { Boxes, ClipboardList, FlaskConical, Warehouse } from "lucide-react";
 import { AccessState } from "@/components/AccessState";
@@ -5,15 +7,18 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { FeedbackMessage } from "@/components/FeedbackMessage";
+import { FilterChip } from "@/components/FilterChip";
 import { Input } from "@/components/Input";
-import {
-  ModuleStatusCard,
-  ModuleStatusHeader,
-} from "@/components/ModuleStatusHeader";
-import { ScrollPanel } from "@/components/ScrollPanel";
+import { ModulePageHeader } from "@/components/ModulePageHeader";
+import type {
+  ModulePageHeaderBadge,
+  ModulePageHeaderCard,
+} from "@/components/ModulePageHeader";
+import { SearchField } from "@/components/SearchField";
 import { Select } from "@/components/Select";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Textarea } from "@/components/Textarea";
+import { CatalogItemsTable } from "@/features/products/CatalogItemsTable";
 import { posApi } from "@/services/api/posApi";
 import { useAppStore } from "@/store/appStore";
 import { useSessionStore } from "@/store/sessionStore";
@@ -73,6 +78,12 @@ const movementTypeTones: Record<
   ADJUSTMENT: "info",
 };
 
+const movementTypeOptions: IngredientMovementType[] = [
+  "ENTRY",
+  "EXIT",
+  "ADJUSTMENT",
+];
+
 const AUDIT_HISTORY_LIMIT = 12;
 
 const reasonLabels: Record<IngredientMovementReasonCode, string> = {
@@ -129,6 +140,33 @@ function getMovementDelta(item: StockAdjustmentItem) {
   return toNumber(item.qtyBase);
 }
 
+function normalizeIngredientsSearch(value: string) {
+  return value.trim().toLocaleLowerCase();
+}
+
+function matchesIngredientName(name: string, searchTerm: string) {
+  const normalizedSearch = normalizeIngredientsSearch(searchTerm);
+  if (!normalizedSearch) return true;
+
+  return name.toLocaleLowerCase().includes(normalizedSearch);
+}
+
+function matchesAuditSearch(item: StockAdjustmentItem, searchTerm: string) {
+  const normalizedSearch = normalizeIngredientsSearch(searchTerm);
+  if (!normalizedSearch) return true;
+
+  const candidate = [
+    item.ingredient.name,
+    movementTypeLabels[item.movementType],
+    item.reasonCode ? reasonLabels[item.reasonCode] : "",
+    item.adjustedByUser.name,
+  ]
+    .join(" ")
+    .toLocaleLowerCase();
+
+  return candidate.includes(normalizedSearch);
+}
+
 export function IngredientsPage() {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
@@ -178,6 +216,9 @@ export function IngredientsPage() {
   const [batchNumber, setBatchNumber] = useState("");
   const [unitCostInput, setUnitCostInput] = useState("");
   const [notes, setNotes] = useState("");
+  const [catalogSearchTerm, setCatalogSearchTerm] = useState("");
+  const [stockSearchTerm, setStockSearchTerm] = useState("");
+  const [auditSearchTerm, setAuditSearchTerm] = useState("");
 
   const isAdmin = currentUser?.role === "ADMIN";
 
@@ -325,6 +366,18 @@ export function IngredientsPage() {
     } finally {
       setLoadingAdjustments(false);
     }
+  }
+
+  async function refreshIngredientsWorkspace() {
+    await Promise.all([
+      loadIngredients(),
+      selectedLocationId !== null
+        ? loadStock(selectedLocationId)
+        : Promise.resolve(),
+      selectedLocationId !== null
+        ? loadAdjustments(selectedLocationId)
+        : Promise.resolve(),
+    ]);
   }
 
   async function handleCreateIngredient() {
@@ -593,68 +646,179 @@ export function IngredientsPage() {
       : outOfStockCount > 0
         ? "warning"
         : "success";
+  const totalStockBase = useMemo(
+    () =>
+      stockItems.reduce(
+        (total, item) => total + toNumber(item.qtyOnHandBase),
+        0,
+      ),
+    [stockItems],
+  );
+  const filteredCatalogIngredients = useMemo(
+    () =>
+      mergedIngredients.filter((ingredient) =>
+        matchesIngredientName(ingredient.name, catalogSearchTerm),
+      ),
+    [catalogSearchTerm, mergedIngredients],
+  );
+  const filteredStockItems = useMemo(
+    () =>
+      stockItems.filter((item) =>
+        matchesIngredientName(item.ingredient.name, stockSearchTerm),
+      ),
+    [stockItems, stockSearchTerm],
+  );
+  const filteredAdjustmentItems = useMemo(
+    () =>
+      adjustmentItems.filter((item) => matchesAuditSearch(item, auditSearchTerm)),
+    [adjustmentItems, auditSearchTerm],
+  );
+  const dimensionCounts = useMemo(() => {
+    const counts: Record<IngredientDimension, number> = {
+      WEIGHT: 0,
+      VOLUME: 0,
+      COUNT: 0,
+    };
+
+    for (const ingredient of mergedIngredients) {
+      counts[ingredient.dimension] += 1;
+    }
+
+    return counts;
+  }, [mergedIngredients]);
+  const auditTone =
+    loadingAdjustments
+      ? "info"
+      : adjustmentsError
+        ? "warning"
+        : selectedLocation
+          ? adjustmentItems.length > 0
+            ? "success"
+            : "default"
+          : "default";
+  const selectedLocationLabel = selectedLocation
+    ? `#${selectedLocation.id} / ${selectedLocation.name}`
+    : "Sin ubicacion activa";
+  const selectedIngredientSummary = selectedIngredient
+    ? `${selectedIngredient.name} / ${getUnitLabel(selectedIngredient.defaultUnitCode)}`
+    : "Sin ingrediente seleccionado";
+  const inventoryHeaderBadges: ModulePageHeaderBadge[] = [
+    {
+      label: inventoryStatusLabel,
+      tone: inventoryStatusTone,
+    },
+    {
+      label: isAdmin ? "Operacion habilitada" : "Modo consulta",
+      tone: isAdmin ? "info" : "default",
+    },
+  ];
+  const inventoryHeaderCards: ModulePageHeaderCard[] = [
+    {
+      label: "Catalogo base",
+      value: String(mergedIngredients.length),
+      note: loadingCatalog
+        ? "Leyendo ingredientes disponibles."
+        : `${dimensionCounts[dimension]} apuntan a ${getDimensionLabel(dimension).toLocaleLowerCase()}.`,
+      accent: ingredientCatalogTone,
+      icon: <FlaskConical size={16} />,
+      iconTone: ingredientCatalogTone,
+      badge: {
+        label: catalogError ? "Fallback" : "Catalogo",
+        tone: ingredientCatalogTone,
+      },
+    },
+    {
+      label: "Stock visible",
+      value: selectedLocation ? String(stockItems.length) : "--",
+      note: selectedLocation
+        ? `${formatQty(totalStockBase)} unidades base auditadas en esta vista.`
+        : "Selecciona ubicacion para revisar existencias.",
+      accent: stockTone,
+      icon: <Warehouse size={16} />,
+      iconTone: stockTone,
+      badge: {
+        label: selectedLocation ? "Por ubicacion" : "Sin POS",
+        tone: selectedLocation ? "info" : "default",
+      },
+    },
+    {
+      label: "Sin stock",
+      value: loadingStock ? "..." : String(outOfStockCount),
+      note: selectedLocation
+        ? "Ingredientes pendientes de reposicion o conteo."
+        : "Sin contexto operativo seleccionado.",
+      accent: outOfStockTone,
+      icon: <Boxes size={16} />,
+      iconTone: outOfStockTone,
+      badge: {
+        label: selectedLocation ? "Reposicion" : "Sin POS",
+        tone: outOfStockTone,
+      },
+    },
+    {
+      label: "Auditoria reciente",
+      value: selectedLocation ? String(adjustmentItems.length) : "--",
+      note: selectedLocation
+        ? `Ventana reciente de ${AUDIT_HISTORY_LIMIT} movimientos manuales.`
+        : "Activa ubicacion para revisar historial.",
+      accent: auditTone,
+      icon: <ClipboardList size={16} />,
+      iconTone: auditTone,
+      badge: {
+        label: selectedLocation ? "Trazabilidad" : "Sin POS",
+        tone: auditTone,
+      },
+    },
+  ];
+  const workspaceClassName = clsx(
+    "products-workspace grid min-w-0 items-start gap-4 xl:gap-5",
+    isAdmin
+      ? "lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]"
+      : "grid-cols-1",
+  );
 
   return (
-    <div className="grid min-w-0 gap-4 sm:gap-5">
-      <ModuleStatusHeader
+    <div className="products-page ingredients-page grid min-w-0 gap-5 sm:gap-6">
+      <ModulePageHeader
         ariaLabel="Estado operativo de ingredientes"
-        eyebrow="Operacion de inventario"
+        eyebrow="Administracion de inventario"
         title="Ingredientes"
-        statusLabel={inventoryStatusLabel}
-        statusTone={inventoryStatusTone}
-        description="Catalogo base, stock por POS y movimientos auditados."
-        helpText="Resume el catalogo, el stock por ubicacion y el historial reciente de entradas, salidas y ajustes por conteo."
         icon={<FlaskConical size={18} />}
-      >
-        <ModuleStatusCard
-          label="Ingredientes"
-          value={String(mergedIngredients.length)}
-          icon={<FlaskConical size={16} />}
-          iconTone={ingredientCatalogTone}
-          badgeLabel="Catalogo"
-          badgeTone={ingredientCatalogTone}
-          meta={
-            loadingCatalog ? "Leyendo catalogo" : "Base lista para inventario"
-          }
-        />
-        <ModuleStatusCard
-          label="Items con stock"
-          value={String(stockItems.length)}
-          icon={<Warehouse size={16} />}
-          iconTone={stockTone}
-          badgeLabel={
-            selectedLocation ? `POS #${selectedLocation.id}` : "Sin POS"
-          }
-          badgeTone={selectedLocation ? "info" : "default"}
-          meta={
-            selectedLocation
-              ? selectedLocation.name
-              : "Selecciona una ubicacion"
-          }
-        />
-        <ModuleStatusCard
-          label="Sin stock"
-          value={loadingStock ? "..." : String(outOfStockCount)}
-          icon={<Boxes size={16} />}
-          iconTone={outOfStockTone}
-          badgeLabel={selectedLocation ? "Reposicion" : "Sin POS"}
-          badgeTone={outOfStockTone}
-          meta={
-            selectedLocation
-              ? "Pendientes operativos"
-              : "Selecciona una ubicacion"
-          }
-        />
-      </ModuleStatusHeader>
+        helpText="Consolida catalogo base, stock por ubicacion y movimientos auditados dentro de una sola vista administrativa."
+        badges={inventoryHeaderBadges}
+        description="Catalogo base, existencias por POS y auditoria reciente con mismo lenguaje operativo de Productos."
+        summary={{
+          label: "Contexto activo",
+          value: selectedLocationLabel,
+          note: selectedLocation
+            ? `${adjustmentItems.length} movimientos recientes y ${stockItems.length} items visibles en inventario.`
+            : "Selecciona una ubicacion para revisar stock y auditoria.",
+        }}
+        asideAction={
+          <Button variant="secondary" onClick={() => void refreshIngredientsWorkspace()}>
+            Actualizar inventario
+          </Button>
+        }
+        cards={inventoryHeaderCards}
+      />
 
       {message ? (
-        <FeedbackMessage tone="success">{message}</FeedbackMessage>
+        <FeedbackMessage tone="success" className="products-feedback">
+          {message}
+        </FeedbackMessage>
       ) : null}
       {submitError ? (
-        <FeedbackMessage tone="error">{submitError}</FeedbackMessage>
+        <FeedbackMessage tone="error" className="products-feedback">
+          {submitError}
+        </FeedbackMessage>
       ) : null}
       {!currentLocation ? (
-        <Card>
+        <Card
+          padding="none"
+          glow={false}
+          className="products-panel products-panel--list"
+          contentClassName="products-panel__body"
+        >
           <EmptyState
             title="Sin punto de venta activo"
             description="Selecciona una ubicacion real en el encabezado para consultar y registrar inventario."
@@ -672,180 +836,315 @@ export function IngredientsPage() {
         </FeedbackMessage>
       ) : null}
 
-      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[460px_minmax(0,1fr)]">
-        <div className="grid min-w-0 gap-4 sm:gap-5">
-          {isAdmin ? (
-            <Card>
-              <p className="text-sm theme-text-muted">Crear ingrediente</p>
-              <h2 className="font-display text-2xl font-bold theme-text-strong">
-                Gestion base del inventario
-              </h2>
-              <div className="mt-5 grid gap-4">
+      <div className={workspaceClassName}>
+        {isAdmin ? (
+          <div className="products-form-rail grid min-w-0 gap-4 sm:gap-5">
+            <Card
+              padding="none"
+              glow={false}
+              className="products-panel products-panel--form"
+              contentClassName="products-panel__body"
+            >
+              <div className="products-panel__intro">
+                <div className="products-panel__header-copy">
+                  <p className="text-sm theme-text-muted">Administracion base</p>
+                  <h2 className="font-display text-2xl font-bold theme-text-strong">
+                    Crear ingrediente
+                  </h2>
+                  <p className="products-panel__description">
+                    Define nombre, dimension y unidad base sin alterar flujo operativo.
+                  </p>
+                </div>
+              </div>
+              <div className="products-panel__highlights">
+                <div className="products-panel__spotlight products-panel__spotlight--variant">
+                  <p className="products-panel__spotlight-label">Catalogo actual</p>
+                  <p className="products-panel__spotlight-value">
+                    {mergedIngredients.length}
+                  </p>
+                  <p className="products-panel__spotlight-note">
+                    Base disponible para stock, recetas y auditoria manual.
+                  </p>
+                </div>
+                <div className="products-panel__spotlight">
+                  <p className="products-panel__spotlight-label">Dimension activa</p>
+                  <p className="products-panel__spotlight-value">
+                    {getDimensionLabel(dimension)}
+                  </p>
+                  <p className="products-panel__spotlight-note">
+                    {dimensionCounts[dimension]} ingredientes usan esta familia.
+                  </p>
+                </div>
+              </div>
+              <div className="products-form-stack grid gap-4">
                 <Input
                   label="Nombre"
+                  wrapperClassName="products-field"
+                  labelClassName="products-field__label"
+                  className="products-field__control"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
+                  placeholder="Leche entera"
                 />
-                <Select
-                  label="Dimension"
-                  value={dimension}
-                  onChange={(event) =>
-                    setDimension(event.target.value as IngredientDimension)
-                  }
-                >
-                  <option value="WEIGHT">{getDimensionLabel("WEIGHT")}</option>
-                  <option value="VOLUME">{getDimensionLabel("VOLUME")}</option>
-                  <option value="COUNT">{getDimensionLabel("COUNT")}</option>
-                </Select>
-                <Select
-                  label="Unidad por defecto"
-                  value={defaultUnitCode}
-                  onChange={(event) => setDefaultUnitCode(event.target.value)}
-                >
-                  {availableDefaultUnits.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {getUnitLabel(unit)}
-                    </option>
-                  ))}
-                </Select>
-                <Button
-                  disabled={creatingIngredient || !name.trim()}
-                  onClick={handleCreateIngredient}
-                >
-                  {creatingIngredient ? "Guardando..." : "Crear ingrediente"}
-                </Button>
+                <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
+                  <p className="products-form-group__label">Configuracion base</p>
+                  <p className="products-form-group__description">
+                    Usa misma disciplina de ficha tecnica que Productos para catalogo limpio.
+                  </p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <Select
+                      label="Dimension"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      value={dimension}
+                      onChange={(event) =>
+                        setDimension(event.target.value as IngredientDimension)
+                      }
+                    >
+                      <option value="WEIGHT">{getDimensionLabel("WEIGHT")}</option>
+                      <option value="VOLUME">{getDimensionLabel("VOLUME")}</option>
+                      <option value="COUNT">{getDimensionLabel("COUNT")}</option>
+                    </Select>
+                    <Select
+                      label="Unidad por defecto"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      value={defaultUnitCode}
+                      onChange={(event) => setDefaultUnitCode(event.target.value)}
+                    >
+                      {availableDefaultUnits.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {getUnitLabel(unit)}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
+                <p className="products-inline-note">
+                  Ingrediente nuevo queda listo para inventario y consumo en recetas con unidad base consistente.
+                </p>
+                <div className="products-panel__actions flex gap-3">
+                  <Button
+                    className="products-panel__cta"
+                    disabled={creatingIngredient || !name.trim()}
+                    onClick={handleCreateIngredient}
+                  >
+                    {creatingIngredient ? "Guardando..." : "Crear ingrediente"}
+                  </Button>
+                </div>
               </div>
             </Card>
-          ) : null}
 
-          {isAdmin ? (
-            <Card>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm theme-text-muted">
-                    Movimiento de stock
-                  </p>
-                  <h2 className="font-display text-2xl font-bold theme-text-strong">
-                    Registro auditado
-                  </h2>
+            <Card
+              padding="none"
+              glow={false}
+              className="products-panel products-panel--form"
+              contentClassName="products-panel__body"
+            >
+              <div className="products-panel__header">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="products-panel__header-copy">
+                    <p className="text-sm theme-text-muted">Movimiento de stock</p>
+                    <h2 className="font-display text-2xl font-bold theme-text-strong">
+                      Registro auditado
+                    </h2>
+                    <p className="products-panel__description">
+                      Registra entradas, salidas y ajustes con mismo orden administrativo de Productos.
+                    </p>
+                  </div>
+                  <StatusBadge
+                    label={movementTypeLabels[movementType]}
+                    tone={movementTypeTones[movementType]}
+                  />
                 </div>
-                <StatusBadge
-                  label={movementTypeLabels[movementType]}
-                  tone={movementTypeTones[movementType]}
-                />
               </div>
-              <div className="mt-5 grid gap-4">
-                <Select
-                  label="Ubicacion"
-                  value={selectedLocationId ?? ""}
-                  onChange={(event) =>
-                    setSelectedLocationId(
-                      event.currentTarget.value
-                        ? Number(event.currentTarget.value)
-                        : null,
-                    )
-                  }
-                >
-                  <option value="">Selecciona una ubicacion</option>
-                  {availableLocations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      #{location.id} / {location.name}
-                    </option>
-                  ))}
-                </Select>
-                <Select
-                  label="Ingrediente"
-                  value={selectedIngredientId}
-                  onChange={(event) =>
-                    setSelectedIngredientId(event.target.value)
-                  }
-                >
-                  <option value="">Selecciona un ingrediente</option>
-                  {mergedIngredients.map((ingredient) => (
-                    <option key={ingredient.id} value={String(ingredient.id)}>
-                      #{ingredient.id} / {ingredient.name}
-                    </option>
-                  ))}
-                </Select>
+              <div className="products-panel__highlights">
+                <div className="products-panel__spotlight products-panel__spotlight--variant">
+                  <p className="products-panel__spotlight-label">Ubicacion activa</p>
+                  <p className="products-panel__spotlight-value">
+                    {selectedLocation ? `#${selectedLocation.id}` : "--"}
+                  </p>
+                  <p className="products-panel__spotlight-note">
+                    {selectedLocation?.name ?? "Selecciona un POS para continuar."}
+                  </p>
+                </div>
+                <div className="products-panel__spotlight">
+                  <p className="products-panel__spotlight-label">Ingrediente</p>
+                  <p className="products-panel__spotlight-value">
+                    {selectedIngredient ? getUnitLabel(selectedIngredient.defaultUnitCode) : "--"}
+                  </p>
+                  <p className="products-panel__spotlight-note">
+                    {selectedIngredientSummary}
+                  </p>
+                </div>
+              </div>
+              <div className="products-form-stack grid gap-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Select
-                    label="Tipo de movimiento"
-                    value={movementType}
+                    label="Ubicacion"
+                    wrapperClassName="products-field"
+                    labelClassName="products-field__label"
+                    className="products-field__control"
+                    value={selectedLocationId ?? ""}
                     onChange={(event) =>
-                      setMovementType(
-                        event.target.value as IngredientMovementType,
+                      setSelectedLocationId(
+                        event.currentTarget.value
+                          ? Number(event.currentTarget.value)
+                          : null,
                       )
                     }
                   >
-                    <option value="ENTRY">{movementTypeLabels.ENTRY}</option>
-                    <option value="EXIT">{movementTypeLabels.EXIT}</option>
-                    <option value="ADJUSTMENT">
-                      {movementTypeLabels.ADJUSTMENT}
-                    </option>
+                    <option value="">Selecciona una ubicacion</option>
+                    {availableLocations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        #{location.id} / {location.name}
+                      </option>
+                    ))}
                   </Select>
                   <Select
-                    label="Motivo"
-                    value={reasonCode}
+                    label="Ingrediente"
+                    wrapperClassName="products-field"
+                    labelClassName="products-field__label"
+                    className="products-field__control"
+                    value={selectedIngredientId}
                     onChange={(event) =>
-                      setReasonCode(
-                        event.target.value as IngredientMovementReasonCode,
-                      )
+                      setSelectedIngredientId(event.target.value)
                     }
                   >
-                    {movementReasonOptions.map((code) => (
-                      <option key={code} value={code}>
-                        {reasonLabels[code]}
+                    <option value="">Selecciona un ingrediente</option>
+                    {mergedIngredients.map((ingredient) => (
+                      <option key={ingredient.id} value={String(ingredient.id)}>
+                        #{ingredient.id} / {ingredient.name}
                       </option>
                     ))}
                   </Select>
                 </div>
+                <p className="products-inline-note">
+                  Todas las cantidades se convierten a unidad base del ingrediente seleccionado.
+                </p>
+                <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
+                  <p className="products-form-group__label">Tipo de movimiento</p>
+                  <p className="products-form-group__description">
+                    Elige flujo operativo y conserva trazabilidad semantica en la auditoria.
+                  </p>
+                  <div className="products-list-toolbar toolbar-shell mt-4 grid gap-3 rounded-lg px-4 py-3">
+                    <div className="products-list-toolbar__summary">
+                      <p className="products-list-toolbar__label">Flujo activo</p>
+                      <p className="products-list-toolbar__count">
+                        {movementTypeLabels[movementType]}
+                      </p>
+                    </div>
+                    <div className="products-list-toolbar__controls flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
+                      <div className="products-list-toolbar__filters flex flex-wrap justify-end gap-2">
+                        {movementTypeOptions.map((type) => (
+                          <FilterChip
+                            key={type}
+                            active={movementType === type}
+                            className="products-list-toolbar__filter min-w-[118px] justify-center"
+                            label={movementTypeLabels[type]}
+                            onClick={() => setMovementType(type)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Select
+                      label="Motivo"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      value={reasonCode}
+                      onChange={(event) =>
+                        setReasonCode(
+                          event.target.value as IngredientMovementReasonCode,
+                        )
+                      }
+                    >
+                      {movementReasonOptions.map((code) => (
+                        <option key={code} value={code}>
+                          {reasonLabels[code]}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
                 {movementType === "ADJUSTMENT" ? (
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <Input
-                      label="Stock actual"
-                      value={formatQty(
-                        movementPreview?.currentInSelectedUnit ??
-                          currentBaseStock / unitFactor,
-                      )}
-                      readOnly
-                    />
-                    <Input
-                      label="Stock actual base"
-                      value={formatQty(currentBaseStock)}
-                      readOnly
-                    />
-                    <Input
-                      type="number"
-                      label="Stock contado"
-                      value={countedStockInput}
-                      onChange={(event) => {
-                        const nextValue = normalizeNumberInput(
-                          event.target.value,
-                          { allowDecimal: true },
-                        );
-                        if (nextValue !== null) setCountedStockInput(nextValue);
-                      }}
-                    />
+                  <div className="products-form-group rounded-lg p-4 sm:p-5">
+                    <p className="products-form-group__label">Conteo y base</p>
+                    <p className="products-form-group__description">
+                      Compara stock actual contra conteo fisico antes de guardar ajuste.
+                    </p>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                      <Input
+                        label="Stock actual"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={formatQty(
+                          movementPreview?.currentInSelectedUnit ??
+                            currentBaseStock / unitFactor,
+                        )}
+                        readOnly
+                      />
+                      <Input
+                        label="Stock actual base"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={formatQty(currentBaseStock)}
+                        readOnly
+                      />
+                      <Input
+                        type="number"
+                        label="Stock contado"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={countedStockInput}
+                        onChange={(event) => {
+                          const nextValue = normalizeNumberInput(
+                            event.target.value,
+                            { allowDecimal: true },
+                          );
+                          if (nextValue !== null) setCountedStockInput(nextValue);
+                        }}
+                      />
+                    </div>
                   </div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Input
-                      type="number"
-                      label="Cantidad"
-                      value={qtyInput}
-                      onChange={(event) => {
-                        const nextValue = normalizeNumberInput(
-                          event.target.value,
-                          { allowDecimal: true },
-                        );
-                        if (nextValue !== null) setQtyInput(nextValue);
-                      }}
-                    />
-                    <Input
-                      label="Stock actual base"
-                      value={formatQty(currentBaseStock)}
-                      readOnly
-                    />
+                  <div className="products-form-group rounded-lg p-4 sm:p-5">
+                    <p className="products-form-group__label">Cantidad operativa</p>
+                    <p className="products-form-group__description">
+                      Registra variacion manual y valida stock base antes de confirmar.
+                    </p>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <Input
+                        type="number"
+                        label="Cantidad"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={qtyInput}
+                        onChange={(event) => {
+                          const nextValue = normalizeNumberInput(
+                            event.target.value,
+                            { allowDecimal: true },
+                          );
+                          if (nextValue !== null) setQtyInput(nextValue);
+                        }}
+                      />
+                      <Input
+                        label="Stock actual base"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={formatQty(currentBaseStock)}
+                        readOnly
+                      />
+                    </div>
                   </div>
                 )}
                 <Select
@@ -854,6 +1153,9 @@ export function IngredientsPage() {
                       ? "Unidad de conteo"
                       : "Unidad"
                   }
+                  wrapperClassName="products-field"
+                  labelClassName="products-field__label"
+                  className="products-field__control"
                   value={unitCode}
                   onChange={(event) => setUnitCode(event.target.value)}
                 >
@@ -863,90 +1165,118 @@ export function IngredientsPage() {
                     </option>
                   ))}
                 </Select>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Input
-                    label="Documento soporte"
-                    value={supportDocument}
-                    onChange={(event) => setSupportDocument(event.target.value)}
-                    placeholder="Factura, acta o remision"
-                  />
-                  <Input
-                    label="Lote"
-                    value={batchNumber}
-                    onChange={(event) => setBatchNumber(event.target.value)}
-                    placeholder="Opcional"
-                  />
+                <div className="products-form-group rounded-lg p-4 sm:p-5">
+                  <p className="products-form-group__label">Trazabilidad</p>
+                  <p className="products-form-group__description">
+                    Conserva soporte documental, lote y observaciones del movimiento.
+                  </p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <Input
+                      label="Documento soporte"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      value={supportDocument}
+                      onChange={(event) => setSupportDocument(event.target.value)}
+                      placeholder="Factura, acta o remision"
+                    />
+                    <Input
+                      label="Lote"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      value={batchNumber}
+                      onChange={(event) => setBatchNumber(event.target.value)}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                  {movementType === "ENTRY" ? (
+                    <div className="mt-4">
+                      <Input
+                        type="number"
+                        label="Costo unitario"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={unitCostInput}
+                        onChange={(event) => {
+                          const nextValue = normalizeNumberInput(
+                            event.target.value,
+                            { allowDecimal: true },
+                          );
+                          if (nextValue !== null) setUnitCostInput(nextValue);
+                        }}
+                        hint={
+                          parsedUnitCost !== null
+                            ? `Snapshot estimado: ${formatCurrency(parsedUnitCost)}`
+                            : "Opcional para entradas de inventario"
+                        }
+                      />
+                    </div>
+                  ) : null}
+                  <div className="mt-4">
+                    <Textarea
+                      label="Observaciones"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control min-h-[7rem]"
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                      hint={
+                        movementType === "ENTRY"
+                          ? "Opcional para entradas."
+                          : "Obligatorio para salidas y ajustes por conteo."
+                      }
+                    />
+                  </div>
                 </div>
-                {movementType === "ENTRY" ? (
-                  <Input
-                    type="number"
-                    label="Costo unitario"
-                    value={unitCostInput}
-                    onChange={(event) => {
-                      const nextValue = normalizeNumberInput(
-                        event.target.value,
-                        { allowDecimal: true },
-                      );
-                      if (nextValue !== null) setUnitCostInput(nextValue);
-                    }}
-                    hint={
-                      parsedUnitCost !== null
-                        ? `Snapshot estimado: ${formatCurrency(parsedUnitCost)}`
-                        : "Opcional para entradas de inventario"
-                    }
-                  />
-                ) : null}
-                <Textarea
-                  label="Observaciones"
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  hint={
-                    movementType === "ENTRY"
-                      ? "Opcional para entradas."
-                      : "Obligatorio para salidas y ajustes por conteo."
-                  }
-                />
-                <div className="data-list-card rounded-3xl p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium theme-text-strong">
-                      Preview del impacto
-                    </p>
+                <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="products-form-group__label">Preview de impacto</p>
+                      <p className="products-form-group__description">
+                        Valida variacion base antes de guardar movimiento manual.
+                      </p>
+                    </div>
                     <StatusBadge
                       label={movementPreview?.invalid ? "Bloqueado" : "Listo"}
                       tone={movementPreview?.invalid ? "danger" : "info"}
                     />
                   </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="toolbar-shell rounded-2xl px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.24em] text-[color:var(--text-faint)]">
-                        Actual
-                      </p>
-                      <p className="mt-2 font-display text-2xl font-bold theme-text-strong">
+                    <div className="products-panel__spotlight">
+                      <p className="products-panel__spotlight-label">Actual</p>
+                      <p className="products-panel__spotlight-value">
                         {formatQty(
                           movementPreview?.currentBaseStock ?? currentBaseStock,
                         )}
                       </p>
-                    </div>
-                    <div className="toolbar-shell rounded-2xl px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.24em] text-[color:var(--text-faint)]">
-                        Diferencia
+                      <p className="products-panel__spotlight-note">
+                        Base registrada antes del movimiento.
                       </p>
-                      <p className="mt-2 font-display text-2xl font-bold theme-text-strong">
+                    </div>
+                    <div className="products-panel__spotlight products-panel__spotlight--variant">
+                      <p className="products-panel__spotlight-label">Diferencia</p>
+                      <p className="products-panel__spotlight-value">
                         {movementPreview?.deltaBase === null ||
                         movementPreview?.deltaBase === undefined
                           ? "--"
                           : `${movementPreview.deltaBase >= 0 ? "+" : ""}${formatQty(movementPreview.deltaBase)}`}
                       </p>
-                    </div>
-                    <div className="toolbar-shell rounded-2xl px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.24em] text-[color:var(--text-faint)]">
-                        Nuevo
+                      <p className="products-panel__spotlight-note">
+                        Variacion que se aplicara en unidad base.
                       </p>
-                      <p className="mt-2 font-display text-2xl font-bold theme-text-strong">
+                    </div>
+                    <div className="products-panel__spotlight">
+                      <p className="products-panel__spotlight-label">Nuevo</p>
+                      <p className="products-panel__spotlight-value">
                         {movementPreview?.nextBaseStock === null ||
                         movementPreview?.nextBaseStock === undefined
                           ? "--"
                           : formatQty(movementPreview.nextBaseStock)}
+                      </p>
+                      <p className="products-panel__spotlight-note">
+                        Resultado esperado despues del ajuste.
                       </p>
                     </div>
                   </div>
@@ -956,51 +1286,81 @@ export function IngredientsPage() {
                     </p>
                   ) : null}
                 </div>
-                <div className="toolbar-shell rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)]">
+                <div className="products-inline-note">
                   Usuario responsable:{" "}
                   <span className="font-medium theme-text-strong">
                     {currentUser?.name ?? "Sin sesion"}
                   </span>
                 </div>
-                <Button
-                  disabled={
-                    submittingMovement ||
-                    selectedLocationId === null ||
-                    !selectedIngredient
-                  }
-                  onClick={handleSubmitMovement}
-                >
-                  {submittingMovement ? "Guardando..." : "Registrar movimiento"}
-                </Button>
+                <div className="products-panel__actions flex gap-3">
+                  <Button
+                    className="products-panel__cta"
+                    disabled={
+                      submittingMovement ||
+                      selectedLocationId === null ||
+                      !selectedIngredient
+                    }
+                    onClick={handleSubmitMovement}
+                  >
+                    {submittingMovement ? "Guardando..." : "Registrar movimiento"}
+                  </Button>
+                </div>
               </div>
             </Card>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
-        <div className="grid min-w-0 gap-4 sm:gap-5">
-          <Card>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm theme-text-muted">
-                  Listado de ingredientes
-                </p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">
-                  Catalogo base
-                </h2>
+        <div className="products-data-rail grid min-w-0 gap-4 sm:gap-5">
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--list"
+            contentClassName="products-panel__body"
+          >
+            <div className="products-panel__header">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="products-panel__header-copy">
+                  <p className="text-sm theme-text-muted">Listado de ingredientes</p>
+                  <h2 className="font-display text-2xl font-bold theme-text-strong">
+                    Catalogo base
+                  </h2>
+                  <p className="products-panel__description">
+                    Vista tecnica del catalogo con dimension, unidad base y estado operativo por POS.
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  className="products-panel__secondary"
+                  onClick={() => void loadIngredients()}
+                >
+                  Refrescar
+                </Button>
               </div>
-              <Button
-                variant="secondary"
-                onClick={() => void loadIngredients()}
-              >
-                Refrescar
-              </Button>
             </div>
+            <IngredientsPanelToolbar
+              label="Vista activa"
+              value={`${filteredCatalogIngredients.length} de ${mergedIngredients.length} ingredientes`}
+              badges={[
+                {
+                  label: catalogError ? "Sesion + stock" : "Catalogo principal",
+                  tone: ingredientCatalogTone,
+                },
+                {
+                  label: selectedLocation ? `POS #${selectedLocation.id}` : "Sin POS",
+                  tone: selectedLocation ? "info" : "default",
+                },
+              ]}
+              searchValue={catalogSearchTerm}
+              onSearchChange={setCatalogSearchTerm}
+              searchPlaceholder="Buscar ingrediente"
+              searchAriaLabel="Buscar en catalogo base de ingredientes"
+            />
             {loadingCatalog ? (
               <div className="mt-6 grid gap-3">
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="data-list-card h-20 animate-pulse rounded-3xl"
+                    className="data-list-card h-20 animate-pulse rounded-lg"
                   />
                 ))}
               </div>
@@ -1011,34 +1371,128 @@ export function IngredientsPage() {
                   description="Crea el primer ingrediente para comenzar a controlar inventario."
                 />
               </div>
+            ) : filteredCatalogIngredients.length === 0 ? (
+              <div className="mt-6">
+                <EmptyState
+                  title="Sin coincidencias para esta busqueda"
+                  description="No encontramos ingredientes que coincidan con el nombre ingresado."
+                />
+              </div>
             ) : (
-              <ScrollPanel
-                className="mt-6 grid gap-3"
-                tabIndex={0}
-                aria-label="Catalogo de ingredientes"
-              >
-                {mergedIngredients.map((ingredient) => (
-                  <div
-                    key={ingredient.id}
-                    className="data-list-card rounded-3xl p-4"
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="font-medium theme-text-strong">
-                          {ingredient.name}
-                        </p>
-                        <p className="mt-1 text-sm theme-text-muted">
-                          {getDimensionLabel(ingredient.dimension)} -{" "}
-                          {getUnitLabel(ingredient.defaultUnitCode)}
-                        </p>
-                      </div>
-                      <p className="text-sm text-[color:var(--text-faint)]">
-                        ID {ingredient.id}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </ScrollPanel>
+              <CatalogItemsTable
+                ariaLabel="Catalogo de ingredientes"
+                caption="Tabla base de ingredientes"
+                rows={filteredCatalogIngredients}
+                rowKey={(ingredient) => ingredient.id}
+                rowClassName={(ingredient) =>
+                  selectedLocation &&
+                  (stockQtyByIngredientId.get(ingredient.id) ?? 0) <= 0
+                    ? "opacity-85"
+                    : undefined
+                }
+                maxHeightClassName="max-h-[24rem]"
+                tableMinWidthClassName="min-w-[980px]"
+                columns={[
+                  {
+                    key: "id",
+                    header: "ID",
+                    width: "72px",
+                    cellClassName: "whitespace-nowrap text-xs theme-text-muted",
+                    render: (ingredient) => `#${ingredient.id}`,
+                  },
+                  {
+                    key: "ingredient",
+                    header: "Ingrediente",
+                    width: "420px",
+                    render: (ingredient) => {
+                      const stockOnHand =
+                        stockQtyByIngredientId.get(ingredient.id) ?? 0;
+                      return (
+                        <div className="products-table-entity">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-[15px] font-semibold theme-text-strong">
+                              {ingredient.name}
+                            </p>
+                            <StatusBadge
+                              label={getDimensionLabel(ingredient.dimension)}
+                              tone={getIngredientDimensionTone(ingredient.dimension)}
+                            />
+                          </div>
+                          <p className="products-table-entity__summary">
+                            Unidad base {getUnitLabel(ingredient.defaultUnitCode)}
+                          </p>
+                          {selectedLocation ? (
+                            <div className="products-table-meta">
+                              <span className="products-table-meta__item">
+                                <span className="theme-text-muted">POS</span>
+                                <span className="font-medium theme-text-strong">
+                                  {selectedLocation.name}
+                                </span>
+                              </span>
+                              <span className="products-table-meta__item">
+                                <span className="theme-text-muted">Stock</span>
+                                <span className="font-medium theme-text-strong">
+                                  {formatQty(stockOnHand)} base
+                                </span>
+                              </span>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    key: "unit",
+                    header: "Unidad base",
+                    width: "124px",
+                    cellClassName: "whitespace-nowrap",
+                    render: (ingredient) => getUnitLabel(ingredient.defaultUnitCode),
+                  },
+                  {
+                    key: "stock",
+                    header: "Stock monitoreado",
+                    width: "136px",
+                    align: "right",
+                    cellClassName: "whitespace-nowrap",
+                    render: (ingredient) => (
+                      <span className="products-table-price">
+                        {selectedLocation
+                          ? formatQty(stockQtyByIngredientId.get(ingredient.id) ?? 0)
+                          : "--"}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "status",
+                    header: "Estado",
+                    width: "132px",
+                    render: (ingredient) => {
+                      const stockOnHand =
+                        stockQtyByIngredientId.get(ingredient.id) ?? 0;
+                      const hasContext = Boolean(selectedLocation);
+                      return (
+                        <StatusBadge
+                          label={
+                            !hasContext
+                              ? "Sin contexto"
+                              : stockOnHand > 0
+                                ? "Con stock"
+                                : "Sin stock"
+                          }
+                          tone={
+                            !hasContext
+                              ? "default"
+                              : stockOnHand > 0
+                                ? "success"
+                                : "warning"
+                          }
+                          className="min-w-[104px] justify-center"
+                        />
+                      );
+                    },
+                  },
+                ]}
+              />
             )}
             {catalogError ? (
               <FeedbackMessage tone="info" className="mt-4">
@@ -1049,30 +1503,64 @@ export function IngredientsPage() {
             ) : null}
           </Card>
 
-          <Card>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm theme-text-muted">Existencias reales</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">
-                  Stock por ubicacion
-                </h2>
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--list"
+            contentClassName="products-panel__body"
+          >
+            <div className="products-panel__header">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="products-panel__header-copy">
+                  <p className="text-sm theme-text-muted">Existencias reales</p>
+                  <h2 className="font-display text-2xl font-bold theme-text-strong">
+                    Stock por ubicacion
+                  </h2>
+                  <p className="products-panel__description">
+                    Lectura operativa por POS con foco en cantidad base y reposicion inmediata.
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  className="products-panel__secondary"
+                  onClick={() =>
+                    selectedLocationId !== null && void loadStock(selectedLocationId)
+                  }
+                >
+                  Refrescar
+                </Button>
               </div>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  selectedLocationId !== null &&
-                  void loadStock(selectedLocationId)
-                }
-              >
-                Refrescar
-              </Button>
             </div>
+            <IngredientsPanelToolbar
+              label="Contexto de stock"
+              value={
+                selectedLocation
+                  ? `${filteredStockItems.length} de ${stockItems.length} items en ${selectedLocation.name}`
+                  : "Selecciona una ubicacion para revisar existencias"
+              }
+              badges={[
+                {
+                  label: selectedLocation ? `POS #${selectedLocation.id}` : "Sin POS",
+                  tone: selectedLocation ? "info" : "default",
+                },
+                {
+                  label: selectedLocation
+                    ? `${formatQty(totalStockBase)} base`
+                    : "Sin lectura",
+                  tone: stockTone,
+                },
+              ]}
+              searchValue={stockSearchTerm}
+              onSearchChange={setStockSearchTerm}
+              searchPlaceholder="Buscar ingrediente"
+              searchAriaLabel="Buscar en stock por ubicacion"
+            />
             {loadingStock ? (
               <div className="mt-6 grid gap-3">
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="data-list-card h-24 animate-pulse rounded-3xl"
+                    className="data-list-card h-24 animate-pulse rounded-lg"
                   />
                 ))}
               </div>
@@ -1083,39 +1571,98 @@ export function IngredientsPage() {
                   description="Registra una entrada o ajuste para empezar a ver existencias por ubicacion."
                 />
               </div>
+            ) : filteredStockItems.length === 0 ? (
+              <div className="mt-6">
+                <EmptyState
+                  title="Sin coincidencias para esta busqueda"
+                  description="No encontramos existencias que coincidan con el nombre del ingrediente."
+                />
+              </div>
             ) : (
-              <ScrollPanel
-                className="mt-6 grid gap-3"
-                tabIndex={0}
-                aria-label="Stock por ubicacion"
-              >
-                {stockItems.map((item) => (
-                  <div
-                    key={`${item.ingredientId}-${item.locationId}`}
-                    className="data-list-card rounded-3xl p-4"
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="font-medium theme-text-strong">
-                          {item.ingredient.name}
-                        </p>
-                        <p className="mt-1 text-sm theme-text-muted">
-                          {item.location.name} -{" "}
-                          {getDimensionLabel(item.ingredient.dimension)}
+              <CatalogItemsTable
+                ariaLabel="Stock por ubicacion"
+                caption="Tabla de stock por ubicacion"
+                rows={filteredStockItems}
+                rowKey={(item) => `${item.ingredientId}-${item.locationId}`}
+                rowClassName={(item) =>
+                  toNumber(item.qtyOnHandBase) <= 0 ? "opacity-85" : undefined
+                }
+                maxHeightClassName="max-h-[24rem]"
+                tableMinWidthClassName="min-w-[960px]"
+                columns={[
+                  {
+                    key: "id",
+                    header: "ID",
+                    width: "72px",
+                    cellClassName: "whitespace-nowrap text-xs theme-text-muted",
+                    render: (item) => `#${item.ingredientId}`,
+                  },
+                  {
+                    key: "ingredient",
+                    header: "Ingrediente",
+                    width: "380px",
+                    render: (item) => (
+                      <div className="products-table-entity">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-[15px] font-semibold theme-text-strong">
+                            {item.ingredient.name}
+                          </p>
+                          <StatusBadge
+                            label={getDimensionLabel(item.ingredient.dimension)}
+                            tone={getIngredientDimensionTone(item.ingredient.dimension)}
+                          />
+                        </div>
+                        <p className="products-table-entity__summary">
+                          Unidad base {getUnitLabel(item.ingredient.defaultUnitCode)}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="metric-accent font-display text-2xl font-bold">
-                          {formatQty(item.qtyOnHandBase)}
-                        </p>
-                        <p className="text-xs text-[color:var(--text-faint)]">
-                          unidad base
+                    ),
+                  },
+                  {
+                    key: "location",
+                    header: "Ubicacion",
+                    width: "220px",
+                    render: (item) => (
+                      <div className="products-table-stack">
+                        <p className="products-table-stack__title">{item.location.name}</p>
+                        <p className="products-table-stack__detail">
+                          POS #{item.location.id}
                         </p>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </ScrollPanel>
+                    ),
+                  },
+                  {
+                    key: "stock",
+                    header: "Stock base",
+                    width: "128px",
+                    align: "right",
+                    cellClassName: "whitespace-nowrap",
+                    render: (item) => (
+                      <span className="products-table-price">
+                        {formatQty(item.qtyOnHandBase)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "status",
+                    header: "Estado",
+                    width: "124px",
+                    render: (item) => (
+                      <StatusBadge
+                        label={
+                          toNumber(item.qtyOnHandBase) > 0
+                            ? "Disponible"
+                            : "Sin stock"
+                        }
+                        tone={
+                          toNumber(item.qtyOnHandBase) > 0 ? "success" : "warning"
+                        }
+                        className="min-w-[104px] justify-center"
+                      />
+                    ),
+                  },
+                ]}
+              />
             )}
             {stockError ? (
               <FeedbackMessage tone="error" className="mt-4">
@@ -1124,31 +1671,64 @@ export function IngredientsPage() {
             ) : null}
           </Card>
 
-          <Card>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm theme-text-muted">Movimientos</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">
-                  Historial auditado
-                </h2>
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--list"
+            contentClassName="products-panel__body"
+          >
+            <div className="products-panel__header">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="products-panel__header-copy">
+                  <p className="text-sm theme-text-muted">Movimientos</p>
+                  <h2 className="font-display text-2xl font-bold theme-text-strong">
+                    Historial auditado
+                  </h2>
+                  <p className="products-panel__description">
+                    Ventana reciente con trazabilidad por tipo, responsable y resultado en base.
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  className="products-panel__secondary"
+                  onClick={() =>
+                    selectedLocationId !== null &&
+                    void loadAdjustments(selectedLocationId)
+                  }
+                >
+                  <ClipboardList size={16} />
+                  Refrescar
+                </Button>
               </div>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  selectedLocationId !== null &&
-                  void loadAdjustments(selectedLocationId)
-                }
-              >
-                <ClipboardList size={16} />
-                Refrescar
-              </Button>
             </div>
+            <IngredientsPanelToolbar
+              label="Ventana auditada"
+              value={
+                selectedLocation
+                  ? `${filteredAdjustmentItems.length} de ${adjustmentItems.length} movimientos recientes`
+                  : "Selecciona una ubicacion para revisar auditoria"
+              }
+              badges={[
+                {
+                  label: selectedLocation ? `POS #${selectedLocation.id}` : "Sin POS",
+                  tone: selectedLocation ? "info" : "default",
+                },
+                {
+                  label: `Limite ${AUDIT_HISTORY_LIMIT}`,
+                  tone: auditTone,
+                },
+              ]}
+              searchValue={auditSearchTerm}
+              onSearchChange={setAuditSearchTerm}
+              searchPlaceholder="Buscar movimiento o ingrediente"
+              searchAriaLabel="Buscar en historial auditado"
+            />
             {loadingAdjustments ? (
               <div className="mt-6 grid gap-3">
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="data-list-card h-28 animate-pulse rounded-3xl"
+                    className="data-list-card h-28 animate-pulse rounded-lg"
                   />
                 ))}
               </div>
@@ -1159,83 +1739,141 @@ export function IngredientsPage() {
                   description="Aqui se mostraran entradas, salidas y ajustes manuales con trazabilidad por usuario y ubicacion."
                 />
               </div>
+            ) : filteredAdjustmentItems.length === 0 ? (
+              <div className="mt-6">
+                <EmptyState
+                  title="Sin coincidencias para esta busqueda"
+                  description="No encontramos movimientos que coincidan con ingrediente, tipo o responsable."
+                />
+              </div>
             ) : (
-              <ScrollPanel
-                className="mt-6 grid gap-3"
-                tabIndex={0}
-                aria-label="Historial de movimientos de stock"
-              >
-                {adjustmentItems.map((item) => {
-                  const delta = getMovementDelta(item);
-                  return (
-                    <div
-                      key={item.id}
-                      className="data-list-card rounded-3xl p-4"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <StatusBadge
-                              label={movementTypeLabels[item.movementType]}
-                              tone={movementTypeTones[item.movementType]}
-                            />
-                            {item.reasonCode ? (
-                              <StatusBadge
-                                label={reasonLabels[item.reasonCode]}
-                                tone="info"
-                              />
-                            ) : null}
-                          </div>
-                          <p className="mt-3 font-medium theme-text-strong">
+              <CatalogItemsTable
+                ariaLabel="Historial de movimientos de stock"
+                caption="Tabla de movimientos auditados"
+                rows={filteredAdjustmentItems}
+                rowKey={(item) => item.id}
+                maxHeightClassName="max-h-[28rem]"
+                tableMinWidthClassName="min-w-[1180px]"
+                columns={[
+                  {
+                    key: "id",
+                    header: "ID",
+                    width: "72px",
+                    cellClassName: "whitespace-nowrap text-xs theme-text-muted",
+                    render: (item) => `#${item.id}`,
+                  },
+                  {
+                    key: "movement",
+                    header: "Movimiento",
+                    width: "420px",
+                    render: (item) => (
+                      <div className="products-table-entity">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-[15px] font-semibold theme-text-strong">
                             {item.ingredient.name}
                           </p>
-                          <p className="mt-1 text-sm theme-text-muted">
-                            {item.location.name} - {formatDate(item.createdAt)}{" "}
-                            - {item.adjustedByUser.name}
-                          </p>
-                          {item.notes ? (
-                            <p className="mt-3 text-sm text-[color:var(--text-secondary)]">
-                              {item.notes}
-                            </p>
+                          {item.reasonCode ? (
+                            <StatusBadge
+                              label={reasonLabels[item.reasonCode]}
+                              tone="info"
+                            />
                           ) : null}
-                          <div className="mt-3 flex flex-wrap gap-4 text-xs text-[color:var(--text-faint)]">
-                            <span>
-                              Antes: {formatQty(item.previousStock)} base
-                            </span>
-                            <span>Nuevo: {formatQty(item.newStock)} base</span>
-                            {item.countedStock !== null ? (
-                              <span>
-                                Contado: {formatQty(item.countedStock)} base
+                        </div>
+                        <p className="products-table-entity__summary">
+                          {item.location.name} / {formatDate(item.createdAt)} /{" "}
+                          {item.adjustedByUser.name}
+                        </p>
+                        {item.notes ? (
+                          <p className="products-table-entity__summary">
+                            {item.notes}
+                          </p>
+                        ) : null}
+                        <div className="products-table-meta">
+                          {item.supportDocument ? (
+                            <span className="products-table-meta__item">
+                              <span className="theme-text-muted">Doc</span>
+                              <span className="font-medium theme-text-strong">
+                                {item.supportDocument}
                               </span>
-                            ) : null}
-                            {item.supportDocument ? (
-                              <span>Doc: {item.supportDocument}</span>
-                            ) : null}
-                            {item.batchNumber ? (
-                              <span>Lote: {item.batchNumber}</span>
-                            ) : null}
-                            {item.unitCostAtTime !== null ? (
-                              <span>
-                                Costo:{" "}
+                            </span>
+                          ) : null}
+                          {item.batchNumber ? (
+                            <span className="products-table-meta__item">
+                              <span className="theme-text-muted">Lote</span>
+                              <span className="font-medium theme-text-strong">
+                                {item.batchNumber}
+                              </span>
+                            </span>
+                          ) : null}
+                          {item.unitCostAtTime !== null ? (
+                            <span className="products-table-meta__item">
+                              <span className="theme-text-muted">Costo</span>
+                              <span className="font-medium theme-text-strong">
                                 {formatCurrency(toNumber(item.unitCostAtTime))}
                               </span>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="metric-accent font-display text-2xl font-bold">
-                            {delta >= 0 ? "+" : ""}
-                            {formatQty(delta)}
-                          </p>
-                          <p className="text-xs text-[color:var(--text-faint)]">
-                            diferencia base
-                          </p>
+                            </span>
+                          ) : null}
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </ScrollPanel>
+                    ),
+                  },
+                  {
+                    key: "type",
+                    header: "Tipo",
+                    width: "132px",
+                    render: (item) => (
+                      <StatusBadge
+                        label={movementTypeLabels[item.movementType]}
+                        tone={movementTypeTones[item.movementType]}
+                        className="min-w-[108px] justify-center"
+                      />
+                    ),
+                  },
+                  {
+                    key: "user",
+                    header: "Responsable",
+                    width: "164px",
+                    render: (item) => (
+                      <div className="products-table-stack">
+                        <p className="products-table-stack__title">
+                          {item.adjustedByUser.name}
+                        </p>
+                        <p className="products-table-stack__detail">
+                          {item.adjustedByUser.role}
+                        </p>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "delta",
+                    header: "Delta base",
+                    width: "132px",
+                    align: "right",
+                    cellClassName: "whitespace-nowrap",
+                    render: (item) => {
+                      const delta = getMovementDelta(item);
+                      return (
+                        <span className="products-table-price">
+                          {delta >= 0 ? "+" : ""}
+                          {formatQty(delta)}
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    key: "next",
+                    header: "Stock final",
+                    width: "132px",
+                    align: "right",
+                    cellClassName: "whitespace-nowrap",
+                    render: (item) => (
+                      <span className="products-table-price">
+                        {item.newStock === null ? "--" : formatQty(item.newStock)}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
             )}
             {adjustmentsError ? (
               <FeedbackMessage tone="error" className="mt-4">
@@ -1247,6 +1885,73 @@ export function IngredientsPage() {
       </div>
     </div>
   );
+}
+
+type IngredientsToolbarBadge = {
+  label: string;
+  tone?: "default" | "success" | "warning" | "danger" | "info";
+};
+
+function IngredientsPanelToolbar({
+  label,
+  value,
+  badges = [],
+  searchValue,
+  onSearchChange,
+  searchPlaceholder = "Buscar",
+  searchAriaLabel,
+}: {
+  label: string;
+  value: string;
+  badges?: IngredientsToolbarBadge[];
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
+  searchAriaLabel?: string;
+}) {
+  const showControls = badges.length > 0 || typeof searchValue === "string";
+
+  return (
+    <div className="products-list-toolbar toolbar-shell mt-4 grid gap-3 rounded-lg px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+      <div className="products-list-toolbar__summary">
+        <p className="products-list-toolbar__label">{label}</p>
+        <p className="products-list-toolbar__count">{value}</p>
+      </div>
+      {showControls ? (
+        <div className="products-list-toolbar__controls flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
+          {typeof searchValue === "string" && onSearchChange ? (
+            <SearchField
+              value={searchValue}
+              onChange={(event) => onSearchChange(event.target.value)}
+              onClear={() => onSearchChange("")}
+              placeholder={searchPlaceholder}
+              aria-label={searchAriaLabel ?? searchPlaceholder}
+              fieldClassName="products-list-toolbar__search-field"
+              className="min-h-10"
+              wrapperClassName="products-list-toolbar__search w-full sm:max-w-[280px] xl:max-w-[320px]"
+            />
+          ) : null}
+          {badges.length > 0 ? (
+            <div className="products-list-toolbar__filters flex flex-wrap justify-end gap-2">
+              {badges.map((badge) => (
+                <StatusBadge
+                  key={`${badge.label}-${badge.tone ?? "default"}`}
+                  label={badge.label}
+                  tone={badge.tone ?? "default"}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function getIngredientDimensionTone(dimension: IngredientDimension) {
+  if (dimension === "VOLUME") return "info";
+  if (dimension === "COUNT") return "success";
+  return "default";
 }
 
 

@@ -15,7 +15,8 @@ import { CheckboxField } from '@/components/CheckboxField';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
-import { ModuleStatusCard, ModuleStatusHeader } from '@/components/ModuleStatusHeader';
+import { ModulePageHeader } from '@/components/ModulePageHeader';
+import type { ModulePageHeaderCard } from '@/components/ModulePageHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -348,47 +349,56 @@ export function AdminConfigPage() {
   );
   const enabledModules = countEnabledModules(form.modules);
   const presetModules = getPresetModules(form.businessType);
+  const configHeaderStatusLabel = saving ? 'Guardando' : isLoadingConfig ? 'Sincronizando' : 'Editable';
+  const configHeaderStatusTone = saving ? 'info' : isLoadingConfig ? 'info' : 'success';
+  const configHeaderCards: ModulePageHeaderCard[] = [
+    {
+      label: 'Negocio',
+      value: form.businessName || 'Sin nombre',
+      icon: <Building2 size={16} />,
+      iconTone: 'info',
+      badge: {
+        label: 'Base editable',
+        tone: 'info',
+      },
+      note: form.legalName || 'Sin razon social registrada',
+    },
+    {
+      label: 'Tipo actual',
+      value: selectedBusinessType?.label ?? form.businessType,
+      icon: <Store size={16} />,
+      iconTone: 'success',
+      badge: {
+        label: form.applyPreset ? 'Preset listo' : 'Manual',
+        tone: form.applyPreset ? 'success' : 'default',
+      },
+      note: selectedBusinessType?.description ?? 'Configuracion personalizada',
+    },
+    {
+      label: 'Modulos activos',
+      value: `${enabledModules}/6`,
+      icon: <ShieldCheck size={16} />,
+      iconTone: enabledModules >= 4 ? 'success' : 'default',
+      badge: {
+        label: updatedAt ? 'Sincronizado' : 'Pendiente',
+        tone: updatedAt ? 'success' : 'warning',
+      },
+      note: updatedAt ? `Ultima actualizacion ${formatDate(updatedAt)}` : 'Sin fecha registrada',
+    },
+  ];
 
   return (
     <div className="grid min-w-0 gap-5 sm:gap-6">
-      <ModuleStatusHeader
+      <ModulePageHeader
         ariaLabel="Estado de la configuracion del negocio"
         eyebrow="BusinessConfig"
         title="Configuracion del negocio"
-        statusLabel={saving ? 'Guardando' : isLoadingConfig ? 'Sincronizando' : 'Editable'}
-        statusTone={saving ? 'info' : isLoadingConfig ? 'info' : 'success'}
+        badges={[{ label: configHeaderStatusLabel, tone: configHeaderStatusTone }]}
         description="Define datos base, tipo de negocio y modulos activos desde una vista administrativa limpia y aislada."
         helpText="Esta pantalla solo administra BusinessConfig. Todavia no oculta modulos, no bloquea rutas y no cambia la navegacion global."
         icon={<Sparkles size={18} />}
-      >
-        <ModuleStatusCard
-          label="Negocio"
-          value={form.businessName || 'Sin nombre'}
-          icon={<Building2 size={16} />}
-          iconTone="info"
-          badgeLabel="Base editable"
-          badgeTone="info"
-          meta={form.legalName || 'Sin razon social registrada'}
-        />
-        <ModuleStatusCard
-          label="Tipo actual"
-          value={selectedBusinessType?.label ?? form.businessType}
-          icon={<Store size={16} />}
-          iconTone="success"
-          badgeLabel={form.applyPreset ? 'Preset listo' : 'Manual'}
-          badgeTone={form.applyPreset ? 'success' : 'default'}
-          meta={selectedBusinessType?.description ?? 'Configuracion personalizada'}
-        />
-        <ModuleStatusCard
-          label="Modulos activos"
-          value={`${enabledModules}/6`}
-          icon={<ShieldCheck size={16} />}
-          iconTone={enabledModules >= 4 ? 'success' : 'default'}
-          badgeLabel={updatedAt ? 'Sincronizado' : 'Pendiente'}
-          badgeTone={updatedAt ? 'success' : 'warning'}
-          meta={updatedAt ? `Ultima actualizacion ${formatDate(updatedAt)}` : 'Sin fecha registrada'}
-        />
-      </ModuleStatusHeader>
+        cards={configHeaderCards}
+      />
 
       {configError && form ? (
         <FeedbackMessage tone="warning">

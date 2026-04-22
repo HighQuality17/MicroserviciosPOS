@@ -1,19 +1,12 @@
 import clsx from 'clsx';
 import { MapPin } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { formatUserRole } from '@/utils/copy';
+import registryMark from '@/assets/branding/registry-pos-mark.png';
 
-interface HeaderProps {
-  compactForPosMobile?: boolean;
-}
-
-export function Header({ compactForPosMobile = false }: HeaderProps) {
-  const { pathname } = useLocation();
-  const isOpsAdminRoute =
-    pathname.startsWith('/products') || pathname.startsWith('/cash');
+export function Header() {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
   const availableLocations = useAppStore((state) => state.availableLocations);
@@ -25,18 +18,26 @@ export function Header({ compactForPosMobile = false }: HeaderProps) {
     <header
       className={clsx(
         'glass-panel app-header rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6',
-        compactForPosMobile && 'app-header--pos-compact',
-        isOpsAdminRoute && 'app-header--ops-admin',
       )}
     >
       <div className="app-header__body flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="app-header__identity min-w-0">
-          <p className="app-header__eyebrow text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
-            Operacion comercial conectada
-          </p>
-          <h1 className="app-header__title font-display text-2xl font-bold text-[color:var(--text)] sm:text-3xl">
-            Registry POS
-          </h1>
+        <div className="app-header__identity flex min-w-0 items-center gap-3">
+          <span className="app-header__brand-mark" aria-hidden="true">
+            <img
+              src={registryMark}
+              alt=""
+              className="app-header__brand-mark-image"
+              draggable={false}
+            />
+          </span>
+          <div className="app-header__identity-copy min-w-0">
+            <p className="app-header__eyebrow text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
+              Operacion comercial conectada
+            </p>
+            <h1 className="app-header__title font-display text-2xl font-bold text-[color:var(--text)] sm:text-3xl">
+              Registry POS
+            </h1>
+          </div>
         </div>
 
         <div className="app-header__controls flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">

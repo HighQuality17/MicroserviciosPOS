@@ -21,9 +21,6 @@
 .app-header--pos-compact .app-header__control--location,
 .app-header--pos-compact .app-header__control--user,
 .app-header--pos-compact .surface-inline-select,
-.pos-page__hero .module-page-header__shell,
-.pos-page__hero .module-page-header__summary,
-.pos-page__hero .module-page-header__card,
 .pos-workspace__catalog,
 .pos-workspace__cart,
 .pos-catalog-toolbar,
@@ -98,39 +95,12 @@
   border-radius: 0.5rem;
 }
 
-.pos-page .status-badge {
+.pos-page .status-badge:not(.module-page-header__badge):not(.module-page-header__card-badge) {
   min-height: 1.55rem;
   border-radius: 0.42rem;
   padding-inline: 0.55rem;
   font-size: 0.67rem;
   box-shadow: none;
-}
-
-.pos-page__hero {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.pos-page__hero .module-page-header__shell {
-  border-color: var(--pos-v2-border-strong);
-  background: var(--pos-v2-panel-background);
-  box-shadow: var(--pos-v2-shadow);
-}
-
-.pos-page__hero .module-page-header__summary {
-  border-color: var(--pos-v2-border);
-  background: var(--pos-v2-card-background-strong);
-  box-shadow: var(--pos-v2-card-shadow);
-}
-
-.pos-page__hero .module-page-header__card {
-  border-color: var(--pos-v2-border);
-  background: var(--pos-v2-card-background);
-  box-shadow: var(--pos-v2-card-shadow);
-}
-
-.pos-page__hero .module-page-header__title-icon {
-  border-radius: 0.45rem;
 }
 
 .pos-workspace__catalog,
@@ -856,9 +826,6 @@
 
   .pos-workspace__catalog:hover,
   .pos-workspace__cart:hover,
-  .pos-page__hero .module-page-header__shell:hover,
-  .pos-page__hero .module-page-header__summary:hover,
-  .pos-page__hero .module-page-header__card:hover,
   .pos-catalog-toolbar:hover,
   .pos-catalog-toolbar__summary:hover,
   .pos-page .pos-cart-panel__stat:hover,
@@ -874,7 +841,6 @@
 }
 
 @media (min-width: 640px) {
-  .pos-page__hero .module-page-header__shell,
   .pos-catalog-shell,
   .pos-cart-panel--desktop-shell,
   .pos-cart-panel--mobile-shell {
@@ -898,10 +864,6 @@
 @media (min-width: 1024px) {
   .pos-catalog-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .pos-page__hero .module-page-header__title {
-    font-size: 1.9rem;
   }
 
   .pos-cart-panel__section-title {
@@ -986,12 +948,6 @@
     gap: 0.72rem;
   }
 
-  .pos-page__hero {
-    gap: 0.55rem;
-  }
-
-  .pos-page__hero .module-page-header__shell,
-  .pos-page__hero .module-page-header__card,
   .pos-workspace__catalog,
   .pos-workspace__cart,
   .pos-catalog-toolbar,
@@ -1016,7 +972,6 @@
     border-radius: 0.5rem;
   }
 
-  .pos-page__hero .module-page-header__shell,
   .pos-catalog-shell,
   .pos-cart-panel--desktop-shell,
   .pos-cart-panel--mobile-shell {
@@ -1092,9 +1047,6 @@
   .app-header--pos-compact .app-header__control--location,
   .app-header--pos-compact .app-header__control--user,
   .app-header--pos-compact .surface-inline-select,
-  .pos-page__hero .module-page-header__shell,
-  .pos-page__hero .module-page-header__summary,
-  .pos-page__hero .module-page-header__card,
   .pos-workspace__catalog,
   .pos-workspace__cart,
   .pos-catalog-toolbar,

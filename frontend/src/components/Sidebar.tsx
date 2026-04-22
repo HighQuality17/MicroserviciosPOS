@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { Layers3, LogOut, X } from 'lucide-react';
+import { LogOut, X } from 'lucide-react';
 import clsx from 'clsx';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { getNavigationByRole } from '@/app/permissions';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { useSessionStore } from '@/store/sessionStore';
+import registryLogo from '@/assets/branding/registry-pos-logo.png';
+import registryMark from '@/assets/branding/registry-pos-mark.png';
 
 interface SidebarProps {
   variant?: 'desktop' | 'mobile';
@@ -73,27 +75,30 @@ export function Sidebar({
       >
         <div
           className={clsx(
-            'app-sidebar__brand flex min-w-0 items-center gap-3',
+            'app-sidebar__brand flex min-w-0 items-center',
             isDesktopCollapsed && 'justify-center',
           )}
         >
-          <div className="app-brand-badge app-sidebar__brand-badge rounded-3xl p-3 text-[color:var(--text)]">
-            <Layers3 size={22} />
-          </div>
-          <div
-            aria-hidden={isDesktopCollapsed}
+          <span
             className={clsx(
-              'app-sidebar__brand-copy min-w-0 overflow-hidden whitespace-nowrap transition-all duration-300',
-              isDesktopCollapsed ? 'max-w-0 opacity-0' : 'max-w-[12rem] opacity-100',
+              'app-sidebar__brand-logo-panel',
+              isDesktopCollapsed
+                ? 'app-sidebar__brand-logo-panel--mark'
+                : 'app-sidebar__brand-logo-panel--full',
             )}
           >
-            <p className="app-sidebar__brand-title font-display text-lg font-bold text-[color:var(--text)]">
-              Registry POS
-            </p>
-            <p className="app-sidebar__brand-subtitle text-xs text-[color:var(--text-faint)]">
-              Operacion centralizada
-            </p>
-          </div>
+            <img
+              src={isDesktopCollapsed ? registryMark : registryLogo}
+              alt="Registry POS"
+              className={clsx(
+                'app-sidebar__brand-logo',
+                isDesktopCollapsed
+                  ? 'app-sidebar__brand-logo--mark'
+                  : 'app-sidebar__brand-logo--full',
+              )}
+              draggable={false}
+            />
+          </span>
         </div>
 
         {isMobile ? (
