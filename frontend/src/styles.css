@@ -66,6 +66,11 @@
     radial-gradient(circle at bottom right, rgb(var(--theme-accent-rgb) / 0.04), transparent 24%);
   --app-brand-badge-background: var(--button-primary-background);
   --app-brand-badge-shadow: 0 16px 36px rgb(var(--theme-primary-rgb) / 0.35);
+  --brand-logo-plate-background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(242, 247, 255, 0.92) 100%);
+  --brand-logo-plate-border: rgba(141, 155, 255, 0.18);
+  --brand-logo-plate-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 12px 26px rgba(2, 6, 23, 0.14);
   --app-nav-link-hover-background: rgba(255, 255, 255, 0.05);
   --app-nav-link-active-background: var(--button-primary-background);
   --app-nav-link-active-shadow: 0 16px 34px rgb(var(--theme-primary-rgb) / 0.28);
@@ -1263,6 +1268,8 @@ body {
 .app-sidebar-shell,
 .app-sidebar__brand,
 .app-sidebar__brand-badge,
+.app-sidebar__brand-logo-panel,
+.app-header__brand-mark,
 .app-sidebar__nav-link,
 .app-sidebar__logout {
   transition:
@@ -1288,6 +1295,7 @@ body {
 .app-sidebar__brand {
   min-height: 4.1rem;
   flex: 1 1 auto;
+  justify-content: center;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
   background: var(--surface-ghost);
@@ -1301,6 +1309,71 @@ body {
   border-radius: 0.5rem;
   background: var(--surface-selected-background);
   box-shadow: none;
+}
+
+.app-sidebar__brand-logo-panel,
+.app-header__brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--brand-logo-plate-border);
+  border-radius: 0.5rem;
+  background: var(--brand-logo-plate-background);
+  box-shadow: var(--brand-logo-plate-shadow);
+}
+
+.app-sidebar__brand-logo-panel--full {
+  min-height: 3rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+}
+
+.app-sidebar__brand-logo-panel--mark {
+  height: 3.1rem;
+  width: 3.1rem;
+  flex: 0 0 3.1rem;
+  padding: 0.35rem;
+}
+
+.app-sidebar__brand-logo,
+.app-header__brand-mark-image {
+  display: block;
+  user-select: none;
+  object-fit: contain;
+}
+
+.app-sidebar__brand-logo--full {
+  width: min(100%, 10.75rem);
+  max-height: 2.25rem;
+}
+
+.app-sidebar__brand-logo--mark {
+  width: 100%;
+  height: 100%;
+}
+
+.app-header__brand-mark {
+  height: 2.7rem;
+  width: 2.7rem;
+  flex: 0 0 2.7rem;
+  padding: 0.35rem;
+}
+
+.app-header__brand-mark-image {
+  height: 100%;
+  width: 100%;
+}
+
+.app-header__identity-copy {
+  flex: 1 1 auto;
+}
+
+.app-header__eyebrow,
+.app-header__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-sidebar__brand-copy {
@@ -1416,9 +1489,29 @@ body {
     padding: 0.74rem 0.78rem;
   }
 
+  .app-sidebar__brand-logo-panel--full {
+    min-height: 2.85rem;
+    padding: 0.5rem 0.6rem;
+  }
+
   .app-sidebar__footer {
     margin-top: 1rem;
     padding-top: 1rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .app-header__brand-mark {
+    height: 2.35rem;
+    width: 2.35rem;
+    flex-basis: 2.35rem;
+    padding: 0.3rem;
+  }
+}
+
+@media (max-width: 359px) {
+  .app-header__brand-mark {
+    display: none;
   }
 }
 
