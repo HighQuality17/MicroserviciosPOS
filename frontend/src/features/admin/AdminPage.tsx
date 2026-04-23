@@ -1174,7 +1174,8 @@ function formatActivityType(activityType: AdminActivityListItem['activity_type']
 
 function getActivityTone(activityType: AdminActivityListItem['activity_type']): BadgeTone {
   if (activityType === 'SALE_COMPLETED') return 'info';
-  if (activityType === 'CASH_OPENED' || activityType === 'CASH_CLOSED') return 'success';
+  if (activityType === 'CASH_OPENED') return 'success';
+  if (activityType === 'CASH_CLOSED') return 'danger';
   return 'warning';
 }
 
