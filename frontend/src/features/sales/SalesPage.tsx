@@ -7,6 +7,7 @@ import {
   ReceiptText,
   Search,
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { AccessState } from '@/components/AccessState';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -71,6 +72,7 @@ function SkeletonCard({ height = 'h-40' }: { height?: string }) {
 }
 
 export function SalesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const recentReceipts = useAppStore((state) => state.recentReceipts);
   const addRecentReceipt = useAppStore((state) => state.addRecentReceipt);
   const availableLocations = useAppStore((state) => state.availableLocations);
@@ -109,6 +111,13 @@ export function SalesPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [pendingDetailScroll, setPendingDetailScroll] = useState(false);
   const [detailAnnouncement, setDetailAnnouncement] = useState('');
+  const saleIdFromQuery = useMemo(() => {
+    const rawValue = searchParams.get('saleId');
+    if (!rawValue) return null;
+
+    const parsed = Number(rawValue);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [searchParams]);
 
   const canOperateSales = can('canOperateSales');
   const visibleReceipt = useMemo(() => {
@@ -152,6 +161,13 @@ export function SalesPage() {
     setSelectedSaleId(recentReceipts[0].sale_id);
     setSelectedReceipt((current) => current ?? recentReceipts[0]);
   }, [recentReceipts, selectedSaleId]);
+
+  useEffect(() => {
+    if (saleIdFromQuery === null || saleIdFromQuery === selectedSaleId) return;
+
+    setSaleIdInput(String(saleIdFromQuery));
+    void handleSelectReceipt(saleIdFromQuery);
+  }, [saleIdFromQuery, selectedSaleId]);
 
   useEffect(() => {
     if (!pendingDetailScroll || selectedSaleId === null) return;
@@ -441,6 +457,9 @@ export function SalesPage() {
     setPendingDetailScroll(true);
     setReceiptError(null);
     setMessage(null);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set('saleId', String(saleId));
+    setSearchParams(nextSearchParams, { replace: true });
 
     if (options?.receipt) {
       addRecentReceipt(options.receipt);

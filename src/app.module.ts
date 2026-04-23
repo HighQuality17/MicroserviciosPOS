@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuditModule } from './audit/audit.module';
+import { BusinessActivityModule } from './business-activity/business-activity.module';
 import { LocationsModule } from './locations/locations.module';
 import { UnitTypesModule } from './unit-types/unit-types.module';
 import { IngredientsModule } from './ingredients/ingredients.module';
@@ -23,6 +24,7 @@ import { ConfigModule } from './config/config.module';
     AuthModule,
     ConfigModule,
     AuditModule,
+    BusinessActivityModule,
     LocationsModule,
     UnitTypesModule,
     IngredientsModule,
