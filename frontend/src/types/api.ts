@@ -424,6 +424,178 @@ export interface AdminRecentActivityResponse {
   items: AdminRecentActivityItem[];
 }
 
+export type AdminActivityType =
+  | "CASH_OPENED"
+  | "CASH_CLOSED"
+  | "SALE_COMPLETED"
+  | "STOCK_MOVEMENT";
+
+export type AdminActivityEntityType =
+  | "CASH_SESSION"
+  | "SALE"
+  | "INGREDIENT_MOVEMENT";
+
+export interface AdminActivityActor {
+  user_id: number | null;
+  user_name: string | null;
+}
+
+export interface AdminActivityLocation {
+  location_id: number | null;
+  location_name: string | null;
+}
+
+export interface AdminActivityNavigation {
+  label: string;
+  path: string;
+  query?: Record<string, string>;
+}
+
+export interface AdminCashOpenedActivitySummary {
+  cash_session_id: number;
+  opened_at: string;
+  opening_cash: number;
+  responsible_name: string;
+  location_name: string;
+}
+
+export interface AdminCashOpenedActivityDetail extends AdminCashOpenedActivitySummary {
+  location_id: number;
+  responsible_id: number;
+}
+
+export interface AdminCashClosedActivitySummary {
+  cash_session_id: number;
+  opened_at: string;
+  closed_at: string;
+  opening_cash: number;
+  expected: number;
+  counted: number;
+  difference: number;
+  responsible_name: string;
+  location_name: string;
+}
+
+export interface AdminCashClosedActivityDetail extends AdminCashClosedActivitySummary {
+  location_id: number;
+  opened_by_id: number;
+  opened_by_name: string;
+  closed_by_id: number;
+  closed_by_name: string;
+  cash_sales_total: number;
+  transfer_sales_total: number;
+  total_change_given: number;
+  summary_snapshot: {
+    opening_cash: number;
+    cash_sales_total: number;
+    transfer_sales_total: number;
+    total_change_given: number;
+    closing_cash_expected: number;
+    closing_cash_counted: number;
+    difference: number;
+  };
+}
+
+export interface AdminSaleCompletedActivityLineItem {
+  id: number;
+  item_type: SaleItemType;
+  ref_id: number;
+  description: string;
+  qty: number;
+  unit_price: number;
+  line_total: number;
+}
+
+export interface AdminSaleCompletedActivitySummary {
+  sale_id: number;
+  created_at: string;
+  total: number;
+  status: string;
+  payment_method: PaymentMethod | null;
+  responsible_name: string;
+  location_name: string;
+}
+
+export interface AdminSaleCompletedActivityDetail
+  extends AdminSaleCompletedActivitySummary {
+  location_id: number;
+  cashier_id: number;
+  subtotal: number;
+  discount_type: string;
+  discount_value: number;
+  discount_amount: number;
+  amount_received: number | null;
+  change_given: number | null;
+  items: AdminSaleCompletedActivityLineItem[];
+}
+
+export interface AdminStockMovementActivitySummary {
+  movement_id: number;
+  ingredient_id: number;
+  ingredient_name: string;
+  movement_type: IngredientMovementType;
+  reason_code: IngredientMovementReasonCode | null;
+  qty_delta: number;
+  location_name: string;
+  responsible_name: string;
+  created_at: string;
+}
+
+export interface AdminStockMovementActivityDetail
+  extends AdminStockMovementActivitySummary {
+  location_id: number;
+  responsible_id: number;
+  reference_type: IngredientMovementReferenceType | null;
+  reference_id: number | null;
+  notes: string | null;
+  support_document: string | null;
+  batch_number: string | null;
+  unit_cost_at_time: number | null;
+  previous_stock: number | null;
+  new_stock: number | null;
+  counted_stock: number | null;
+}
+
+export type AdminActivitySummary =
+  | AdminCashOpenedActivitySummary
+  | AdminCashClosedActivitySummary
+  | AdminSaleCompletedActivitySummary
+  | AdminStockMovementActivitySummary;
+
+export type AdminActivityDetail =
+  | AdminCashOpenedActivityDetail
+  | AdminCashClosedActivityDetail
+  | AdminSaleCompletedActivityDetail
+  | AdminStockMovementActivityDetail;
+
+export interface AdminActivityListItem {
+  id: number;
+  activity_type: AdminActivityType;
+  entity_type: AdminActivityEntityType;
+  entity_id: number;
+  occurred_at: string;
+  title: string;
+  subtitle: string;
+  actor: AdminActivityActor | null;
+  location: AdminActivityLocation | null;
+  summary: AdminActivitySummary;
+  navigation: AdminActivityNavigation | null;
+}
+
+export interface AdminActivityDetailResponse extends AdminActivityListItem {
+  detail: AdminActivityDetail;
+}
+
+export interface AdminActivityFeedResponse {
+  items: AdminActivityListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  has_previous_page: boolean;
+  has_next_page: boolean;
+}
+
 export interface BusinessModules {
   ingredients: boolean;
   recipes: boolean;

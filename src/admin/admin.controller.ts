@@ -1,8 +1,9 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { GetAdminActivityQueryDto } from './dto/get-admin-activity-query.dto';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -29,6 +30,16 @@ export class AdminController {
   @Get('low-stock')
   lowStock() {
     return this.adminService.getLowStock();
+  }
+
+  @Get('activity')
+  activity(@Query() query: GetAdminActivityQueryDto) {
+    return this.adminService.getActivity(query);
+  }
+
+  @Get('activity/:id')
+  activityDetail(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.getActivityDetail(id);
   }
 
   @Get('recent-activity')

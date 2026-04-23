@@ -1,6 +1,8 @@
 import { api, unwrap } from "@/services/api/client";
 import type { ThemeName } from "@/theme/theme";
 import type {
+  AdminActivityDetailResponse,
+  AdminActivityFeedResponse,
   AdminLowStockItem,
   AdminRecentActivityResponse,
   AdminSalesByPaymentResponse,
@@ -119,6 +121,10 @@ export const posApi = {
     unwrap<AdminTopItemsResponse>(api.get("/admin/top-items")),
   getAdminLowStock: () =>
     unwrap<AdminLowStockItem[]>(api.get("/admin/low-stock")),
+  getAdminActivity: (params?: { page?: number; limit?: number }) =>
+    unwrap<AdminActivityFeedResponse>(api.get("/admin/activity", { params })),
+  getAdminActivityDetail: (activityId: number) =>
+    unwrap<AdminActivityDetailResponse>(api.get(`/admin/activity/${activityId}`)),
   getAdminRecentActivity: () =>
     unwrap<AdminRecentActivityResponse>(api.get("/admin/recent-activity")),
   getBusinessConfig: () => unwrap<BusinessConfig>(api.get("/config")),
@@ -310,7 +316,9 @@ export const posApi = {
   }) =>
     unwrap<StockAdjustmentsResponse>(api.get(buildStockAdjustmentsUrl(params))),
   getStockAdjustmentById: (movementId: number) =>
-    unwrap(api.get(`/stock/adjustments/${movementId}`)),
+    unwrap<StockAdjustmentMutationResponse['movement']>(
+      api.get(`/stock/adjustments/${movementId}`),
+    ),
   createCombo: (payload: {
     name: string;
     sale_price: number;

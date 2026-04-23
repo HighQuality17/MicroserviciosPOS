@@ -95,6 +95,19 @@ enum PaymentMethod {
   TRANSFER
 }
 
+enum BusinessActivityType {
+  CASH_OPENED
+  CASH_CLOSED
+  SALE_COMPLETED
+  STOCK_MOVEMENT
+}
+
+enum BusinessActivityEntityType {
+  CASH_SESSION
+  SALE
+  INGREDIENT_MOVEMENT
+}
+
 model User {
   id                     Int                  @id @default(autoincrement())
   name                   String
@@ -105,6 +118,7 @@ model User {
   themePreference        String               @default("midnight-indigo")
   ingredientMovements    IngredientMovement[]
   openedSessions         CashSession[]        @relation("OpenedSessions")
+  closedSessions         CashSession[]        @relation("ClosedSessions")
   sales                  Sale[]
   auditLogs              AuditLog[]
   updatedBusinessConfigs BusinessConfig[]
@@ -256,6 +270,7 @@ model CashSession {
   id                  Int       @id @default(autoincrement())
   locationId          Int
   openedBy            Int
+  closedById          Int?
   openedAt            DateTime  @default(now())
   openingCash         Decimal
   closedAt            DateTime?
@@ -263,7 +278,57 @@ model CashSession {
   closingCashCounted  Decimal?
   location            Location  @relation(fields: [locationId], references: [id])
   opener              User      @relation("OpenedSessions", fields: [openedBy], references: [id])
+  closer              User?     @relation("ClosedSessions", fields: [closedById], references: [id])
+  closureSnapshot     CashClosureSnapshot?
   sales               Sale[]
+}
+
+model CashClosureSnapshot {
+  id                  Int       @id @default(autoincrement())
+  cashSessionId       Int       @unique
+  locationId          Int
+  locationName        String
+  openedById          Int
+  openedByName        String
+  closedById          Int
+  closedByName        String
+  openedAt            DateTime
+  closedAt            DateTime
+  openingCash         Decimal
+  cashSalesTotal      Decimal
+  transferSalesTotal  Decimal
+  totalChangeGiven    Decimal
+  closingCashExpected Decimal
+  closingCashCounted  Decimal
+  difference          Decimal
+  summaryJson         Json?
+  createdAt           DateTime  @default(now())
+  cashSession         CashSession @relation(fields: [cashSessionId], references: [id], onDelete: Cascade)
+
+  @@index([closedAt])
+  @@index([locationId, closedAt])
+}
+
+model BusinessActivity {
+  id            Int                        @id @default(autoincrement())
+  eventKey      String                     @unique
+  type          BusinessActivityType
+  entityType    BusinessActivityEntityType
+  entityId      Int
+  occurredAt    DateTime
+  actorUserId   Int?
+  actorUserName String?
+  locationId    Int?
+  locationName  String?
+  title         String
+  subtitle      String
+  summaryJson   Json
+  detailJson    Json
+  createdAt     DateTime                   @default(now())
+
+  @@index([occurredAt])
+  @@index([type, occurredAt])
+  @@index([entityType, entityId])
 }
 
 model Sale {

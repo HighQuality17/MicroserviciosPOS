@@ -13,6 +13,7 @@ import {
   SaleStatus,
 } from "@prisma/client";
 import { round } from "../common/utils/number.util";
+import { BusinessActivityService } from "../business-activity/business-activity.service";
 import { StockService } from "../stock/stock.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateSaleDto } from "./dto/create-sale.dto";
@@ -118,6 +119,7 @@ export class SalesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stockService: StockService,
+    private readonly businessActivityService: BusinessActivityService,
   ) {}
 
   async create(dto: CreateSaleDto) {
@@ -263,6 +265,8 @@ export class SalesService {
           }),
         },
       });
+
+      await this.businessActivityService.recordSaleCompleted(tx, sale.id);
 
       return {
         sale_id: sale.id,
