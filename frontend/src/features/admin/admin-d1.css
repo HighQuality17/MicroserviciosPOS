@@ -906,6 +906,27 @@
   justify-content: flex-end;
 }
 
+.admin-activity-detail-sheet__body {
+  grid-template-rows: minmax(0, 1fr) auto;
+  padding: 0;
+}
+
+.admin-activity-detail-sheet__scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 1rem 1rem;
+}
+
+.admin-activity-detail__footer--sheet {
+  border-top: 1px solid var(--admin-border);
+  background:
+    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.06), transparent 100%),
+    var(--admin-surface);
+  padding: 0.78rem 1rem calc(0.82rem + env(safe-area-inset-bottom, 0px));
+}
+
 .admin-shortcut-grid {
   margin-top: 0;
 }
@@ -1313,6 +1334,40 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .admin-activity-detail-sheet.sheet-shell[data-placement='bottom'] {
+    height: min(calc(100dvh - 0.35rem), 44rem);
+    border-radius: 1rem 1rem 0 0;
+  }
+
+  .admin-activity-detail-sheet .sheet-header {
+    gap: 0.45rem;
+    border-bottom: 1px solid var(--admin-border);
+    background:
+      linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.08), transparent 100%),
+      var(--admin-surface-strong);
+    padding: 0.58rem 0.85rem 0.7rem;
+  }
+
+  .admin-activity-detail-sheet .sheet-header__row {
+    gap: 0.7rem;
+  }
+
+  .admin-activity-detail-sheet .sheet-header h2 {
+    font-size: 1rem;
+    line-height: 1.15;
+  }
+
+  .admin-activity-detail-sheet .sheet-header p {
+    margin-top: 0.18rem;
+    font-size: 0.74rem;
+    line-height: 1.32;
+  }
+
+  .admin-activity-detail-sheet .sheet-handle {
+    width: 2.8rem;
+    height: 0.28rem;
+  }
+
   .admin-activity-item,
   .admin-pos-item,
   .admin-shortcut-card {
@@ -1354,7 +1409,118 @@
   }
 
   .admin-activity-detail__metrics {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .admin-activity-detail--sheet {
+    gap: 0.5rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__stack {
+    gap: 0.5rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__hero {
+    gap: 0.38rem;
+    border-radius: 0.76rem;
+    padding: 0.68rem 0.72rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__hero-badges,
+  .admin-activity-detail--sheet .admin-activity-detail__hero-meta {
+    gap: 0.28rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__hero-title {
+    font-size: 0.95rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__hero-subtitle {
+    font-size: 0.74rem;
+    line-height: 1.28;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__hero-meta span {
+    border: 1px solid var(--admin-border);
+    border-radius: 999px;
+    background: rgb(var(--theme-primary-rgb) / 0.05);
+    padding: 0.18rem 0.44rem;
+    font-size: 0.66rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__metric {
+    min-height: 3.4rem;
+    border-radius: 0.74rem;
+    padding: 0.48rem 0.52rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__metric span {
+    font-size: 0.64rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__metric strong {
+    margin-top: 0.16rem;
+    font-size: 0.83rem;
+    line-height: 1.18;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__split {
+    gap: 0.5rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__card {
+    border-radius: 0.76rem;
+    padding: 0.62rem 0.68rem;
+  }
+
+  .admin-activity-detail--sheet .admin-kicker {
+    font-size: 0.57rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__card-header {
+    gap: 0.45rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__card-header h3 {
+    margin-top: 0.08rem;
+    font-size: 0.84rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__rows,
+  .admin-activity-detail--sheet .admin-activity-detail__list {
+    gap: 0.34rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__row + .admin-activity-detail__row,
+  .admin-activity-detail--sheet .admin-activity-detail__list-item + .admin-activity-detail__list-item {
+    padding-top: 0.36rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__row span,
+  .admin-activity-detail--sheet .admin-activity-detail__list-item span,
+  .admin-activity-detail--sheet .admin-activity-detail__note {
+    font-size: 0.68rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__row strong,
+  .admin-activity-detail--sheet .admin-activity-detail__list-item strong {
+    font-size: 0.8rem;
+  }
+
+  .admin-activity-detail--sheet .admin-activity-detail__list-item p {
+    font-size: 0.8rem;
+  }
+
+  .admin-activity-detail__footer--sheet {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .admin-activity-detail__footer--sheet .ui-button-base {
+    width: 100%;
+    min-height: 2.6rem;
+    justify-content: center;
   }
 
   .admin-activity-detail__row strong,

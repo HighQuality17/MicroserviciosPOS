@@ -42,35 +42,29 @@ export function AdminActivityDetailDialog({
     ? `${formatAdminActivityType(current.activity_type)} · ${formatDate(current.occurred_at)}`
     : 'Consulta operacional';
   const navigation = current?.navigation ?? null;
-  const body = (
-    <div className="admin-activity-detail">
-      {loading ? (
-        <div className="admin-activity-detail__stack">
-          <div className="admin-activity-detail__hero animate-pulse" />
-          <div className="admin-activity-detail__metrics">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="admin-activity-detail__metric animate-pulse" />
-            ))}
-          </div>
-        </div>
-      ) : error ? (
-        <FeedbackMessage tone="error">{error}</FeedbackMessage>
-      ) : !detail ? (
-        <FeedbackMessage tone="error">
-          No fue posible cargar detalle de actividad.
-        </FeedbackMessage>
-      ) : (
-        <DetailBody detail={detail} onNavigate={onNavigate} />
-      )}
-      {navigation ? (
-        <div className="admin-activity-detail__footer">
-          <Button variant="secondary" onClick={() => onNavigate(navigation)}>
-            {navigation.label}
-          </Button>
-        </div>
-      ) : null}
+  const content = loading ? (
+    <div className="admin-activity-detail__stack">
+      <div className="admin-activity-detail__hero animate-pulse" />
+      <div className="admin-activity-detail__metrics">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="admin-activity-detail__metric animate-pulse" />
+        ))}
+      </div>
     </div>
+  ) : error ? (
+    <FeedbackMessage tone="error">{error}</FeedbackMessage>
+  ) : !detail ? (
+    <FeedbackMessage tone="error">
+      No fue posible cargar detalle de actividad.
+    </FeedbackMessage>
+  ) : (
+    <DetailBody detail={detail} />
   );
+  const footerAction = navigation ? (
+    <Button variant="secondary" onClick={() => onNavigate(navigation)}>
+      {navigation.label}
+    </Button>
+  ) : null;
 
   if (!open) {
     return null;
@@ -79,15 +73,25 @@ export function AdminActivityDetailDialog({
   if (isMobileViewport) {
     return (
       <Sheet
+        className="admin-activity-detail-sheet"
         title={title}
         subtitle={subtitle}
         open={open}
         onClose={onClose}
         mobileOnly
         showHandle
-        bodyClassName="overflow-y-auto"
+        bodyClassName="admin-activity-detail-sheet__body"
       >
-        {body}
+        <div className="admin-activity-detail-sheet__scroll">
+          <div className="admin-activity-detail admin-activity-detail--sheet">
+            {content}
+          </div>
+        </div>
+        {footerAction ? (
+          <div className="admin-activity-detail__footer admin-activity-detail__footer--sheet">
+            {footerAction}
+          </div>
+        ) : null}
       </Sheet>
     );
   }
@@ -100,17 +104,22 @@ export function AdminActivityDetailDialog({
       onClose={onClose}
       size="lg"
     >
-      {body}
+      <div className="admin-activity-detail">
+        {content}
+        {footerAction ? (
+          <div className="admin-activity-detail__footer">
+            {footerAction}
+          </div>
+        ) : null}
+      </div>
     </Modal>
   );
 }
 
 function DetailBody({
   detail,
-  onNavigate,
 }: {
   detail: AdminActivityDetailResponse;
-  onNavigate: (navigation: AdminActivityNavigation) => void;
 }) {
   return (
     <div className="admin-activity-detail__stack">
@@ -140,18 +149,10 @@ function DetailBody({
         <CashClosedDetail detail={detail.detail as AdminCashClosedActivityDetail} />
       ) : null}
       {detail.activity_type === 'SALE_COMPLETED' ? (
-        <SaleCompletedDetail
-          detail={detail.detail as AdminSaleCompletedActivityDetail}
-          navigation={detail.navigation}
-          onNavigate={onNavigate}
-        />
+        <SaleCompletedDetail detail={detail.detail as AdminSaleCompletedActivityDetail} />
       ) : null}
       {detail.activity_type === 'STOCK_MOVEMENT' ? (
-        <StockMovementDetail
-          detail={detail.detail as AdminStockMovementActivityDetail}
-          navigation={detail.navigation}
-          onNavigate={onNavigate}
-        />
+        <StockMovementDetail detail={detail.detail as AdminStockMovementActivityDetail} />
       ) : null}
     </div>
   );
@@ -217,12 +218,8 @@ function CashClosedDetail({ detail }: { detail: AdminCashClosedActivityDetail })
 
 function SaleCompletedDetail({
   detail,
-  navigation,
-  onNavigate,
 }: {
   detail: AdminSaleCompletedActivityDetail;
-  navigation: AdminActivityNavigation | null;
-  onNavigate: (navigation: AdminActivityNavigation) => void;
 }) {
   return (
     <>
@@ -270,13 +267,6 @@ function SaleCompletedDetail({
               String(detail.items.reduce((total, item) => total + item.qty, 0)),
             ],
           ]}
-          action={
-            navigation ? (
-              <Button variant="secondary" size="sm" onClick={() => onNavigate(navigation)}>
-                {navigation.label}
-              </Button>
-            ) : null
-          }
         />
       </div>
       <div className="admin-activity-detail__card">
@@ -312,12 +302,8 @@ function SaleCompletedDetail({
 
 function StockMovementDetail({
   detail,
-  navigation,
-  onNavigate,
 }: {
   detail: AdminStockMovementActivityDetail;
-  navigation: AdminActivityNavigation | null;
-  onNavigate: (navigation: AdminActivityNavigation) => void;
 }) {
   return (
     <>
@@ -378,13 +364,6 @@ function StockMovementDetail({
             ['Lote', detail.batch_number ?? 'No aplica'],
             ['Documento', detail.support_document ?? 'No aplica'],
           ]}
-          action={
-            navigation ? (
-              <Button variant="secondary" size="sm" onClick={() => onNavigate(navigation)}>
-                {navigation.label}
-              </Button>
-            ) : null
-          }
         />
       </div>
       {detail.notes ? (
