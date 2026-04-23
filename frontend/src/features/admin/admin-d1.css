@@ -1335,7 +1335,8 @@
   }
 
   .admin-activity-detail-sheet.sheet-shell[data-placement='bottom'] {
-    height: min(calc(100dvh - 0.35rem), 44rem);
+    height: calc(100dvh - 0.125rem);
+    max-height: calc(100dvh - 0.125rem);
     border-radius: 1rem 1rem 0 0;
   }
 
