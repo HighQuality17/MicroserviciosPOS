@@ -4,6 +4,7 @@ import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Modal } from '@/components/Modal';
 import { Sheet } from '@/components/Sheet';
 import { StatusBadge } from '@/components/StatusBadge';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type {
   AdminActivityDetailResponse,
   AdminActivityListItem,
@@ -34,6 +35,7 @@ export function AdminActivityDetailDialog({
   onClose,
   onNavigate,
 }: AdminActivityDetailDialogProps) {
+  const isMobileViewport = useMediaQuery('(max-width: 639px)');
   const current = detail ?? activity;
   const title = current?.title ?? 'Detalle de actividad';
   const subtitle = current
@@ -74,19 +76,8 @@ export function AdminActivityDetailDialog({
     return null;
   }
 
-  return (
-    <>
-      <div className="hidden sm:block">
-        <Modal
-          title={title}
-          subtitle={subtitle}
-          open={open}
-          onClose={onClose}
-          size="lg"
-        >
-          {body}
-        </Modal>
-      </div>
+  if (isMobileViewport) {
+    return (
       <Sheet
         title={title}
         subtitle={subtitle}
@@ -98,7 +89,19 @@ export function AdminActivityDetailDialog({
       >
         {body}
       </Sheet>
-    </>
+    );
+  }
+
+  return (
+    <Modal
+      title={title}
+      subtitle={subtitle}
+      open={open}
+      onClose={onClose}
+      size="lg"
+    >
+      {body}
+    </Modal>
   );
 }
 

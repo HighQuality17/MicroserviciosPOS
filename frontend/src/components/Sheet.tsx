@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
 import { IconButton } from '@/components/IconButton';
+import { useDocumentScrollLock } from '@/hooks/useDocumentScrollLock';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 interface SheetProps {
   id?: string;
@@ -59,37 +61,26 @@ export function Sheet({
   const bodyRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
-  const lockedScrollYRef = useRef(0);
   const onCloseRef = useRef(onClose);
   const initialFocusFrameRef = useRef<number | null>(null);
   const returnFocusFrameRef = useRef<number | null>(null);
   const titleId = useId();
   const subtitleId = useId();
+  const isMobileViewport = useMediaQuery('(max-width: 639px)');
+  const isRendered = open && (!mobileOnly || isMobileViewport);
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  useDocumentScrollLock(isRendered);
+
   useEffect(() => {
-    if (!open) {
+    if (!isRendered) {
       return;
     }
 
     const isOpening = !wasOpenRef.current;
-    const previousBodyPosition = document.body.style.position;
-    const previousBodyTop = document.body.style.top;
-    const previousBodyLeft = document.body.style.left;
-    const previousBodyRight = document.body.style.right;
-    const previousBodyWidth = document.body.style.width;
-    const previousBodyOverflow = document.body.style.overflow;
-
-    lockedScrollYRef.current = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${lockedScrollYRef.current}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -164,18 +155,11 @@ export function Sheet({
       }
 
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.position = previousBodyPosition;
-      document.body.style.top = previousBodyTop;
-      document.body.style.left = previousBodyLeft;
-      document.body.style.right = previousBodyRight;
-      document.body.style.width = previousBodyWidth;
-      document.body.style.overflow = previousBodyOverflow;
-      window.scrollTo(0, lockedScrollYRef.current);
     };
-  }, [open]);
+  }, [isRendered]);
 
   useEffect(() => {
-    if (open || !wasOpenRef.current) {
+    if (isRendered || !wasOpenRef.current) {
       return;
     }
 
@@ -196,9 +180,9 @@ export function Sheet({
         returnFocusFrameRef.current = null;
       }
     };
-  }, [open]);
+  }, [isRendered]);
 
-  if (!open) {
+  if (!isRendered) {
     return null;
   }
 

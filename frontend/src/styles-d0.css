@@ -661,6 +661,8 @@ body {
 .modal-body {
   max-height: min(74vh, 42rem);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 0 1.25rem 1.25rem;
 }
 
@@ -674,6 +676,7 @@ body {
 .sheet-shell[data-placement='bottom'] {
   width: min(100%, 42rem);
   max-width: 100%;
+  max-height: min(calc(100dvh - 0.5rem), calc(100vh - 0.5rem));
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
 }
 
@@ -701,6 +704,8 @@ body {
 .sheet-body {
   min-height: 0;
   overflow: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 0 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
