@@ -94,7 +94,7 @@ export function ProductImageField({
             {label}
           </p>
           <p className="products-form-group__description mt-2 text-sm theme-text-muted">
-            Preview comercial lista para futura integracion de media. La seleccion actual es solo visual por ahora.
+            Preview principal persistida para Productos y POS. Puedes subir, reemplazar o quitar imagen segun estado actual.
           </p>
         </div>
         <span className="product-image-field__status" data-state={previewState}>
@@ -252,11 +252,11 @@ function resolvePreviewNote(state: 'empty' | 'current' | 'pending' | 'marked') {
 function resolveCaption(state: 'empty' | 'current' | 'pending' | 'marked') {
   switch (state) {
     case 'pending':
-      return 'Vista previa local seleccionada. Queda lista para futura conexion con guardado real.';
+      return 'Vista previa local lista para guardarse cuando confirmes cambios del producto.';
     case 'marked':
-      return 'La imagen actual queda senalada para retiro. Puedes conservarla o elegir un reemplazo.';
+      return 'Imagen actual marcada para quitar. Puedes conservarla o elegir un reemplazo antes de guardar.';
     case 'current':
-      return 'La imagen actual se muestra aqui para revisarla, reemplazarla o dejarla sin cambios.';
+      return 'Imagen actual guardada y lista para revisarla, reemplazarla o dejarla sin cambios.';
     default:
       return 'Sube una portada limpia y bien recortada para reforzar catalogo y POS.';
   }

@@ -7,13 +7,21 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreateProductDto } from './dto/create-product.dto';
+import {
+  PRODUCT_IMAGE_MAX_BYTES,
+  type ProductImageUploadFile,
+} from './product-image.util';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductStatusDto } from './dto/update-product-status.dto';
 import { ProductsService } from './products.service';
@@ -51,6 +59,28 @@ export class ProductsController {
     @Body() dto: UpdateProductStatusDto,
   ) {
     return this.productsService.updateStatus(id, dto);
+  }
+
+  @Put(':id/image')
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      limits: {
+        fileSize: PRODUCT_IMAGE_MAX_BYTES,
+      },
+    }),
+  )
+  updateImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file?: ProductImageUploadFile,
+  ) {
+    return this.productsService.updateImage(id, file);
+  }
+
+  @Delete(':id/image')
+  @Roles(UserRole.ADMIN)
+  removeImage(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.removeImage(id);
   }
 
   @Delete(':id')

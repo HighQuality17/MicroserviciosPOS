@@ -7,6 +7,10 @@ import {
 import { Prisma, SaleItemType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { isOperationalVariantProduct } from '../products/operational-variant.util';
+import {
+  buildProductImageAlt,
+  buildProductImagePublicUrl,
+} from '../products/product-image.util';
 import { CreateComboDto } from './dto/create-combo.dto';
 import { ComboListStatus } from './dto/get-combos-query.dto';
 import { UpdateComboDto } from './dto/update-combo.dto';
@@ -263,6 +267,10 @@ export class CombosService {
           size: item.variant.size,
           sku: item.variant.sku,
           sale_price: Number(item.variant.salePrice),
+          image_url: buildProductImagePublicUrl(item.variant.product.imagePath),
+          image_alt: item.variant.product.imagePath
+            ? buildProductImageAlt(item.variant.product.name)
+            : null,
           active: item.variant.active,
         },
       })),

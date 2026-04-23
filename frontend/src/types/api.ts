@@ -86,6 +86,8 @@ export interface Product {
   supplierReference: string | null;
   description: string | null;
   brand: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
   productType: ProductType;
   unspscCode: string | null;
   vatType: VatType | null;
@@ -94,7 +96,7 @@ export interface Product {
   isService: boolean;
   applyInc: boolean;
   active: boolean;
-  variants?: CatalogVariant[];
+  variants: CatalogVariant[];
 }
 
 export type Variant = CatalogVariant;
@@ -301,6 +303,8 @@ export interface CatalogVariant {
   size: string;
   sku: string;
   sale_price: number;
+  image_url: string | null;
+  image_alt: string | null;
   active: boolean;
 }
 
@@ -348,6 +352,8 @@ export interface CatalogProduct {
   supplierReference: string | null;
   description: string | null;
   brand: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
   productType: ProductType;
   unspscCode: string | null;
   vatType: VatType | null;

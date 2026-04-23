@@ -213,6 +213,14 @@ export const posApi = {
   ) => unwrap<Product>(api.patch(`/products/${productId}`, payload)),
   updateProductStatus: (productId: number, payload: { active: boolean }) =>
     unwrap<Product>(api.patch(`/products/${productId}/status`, payload)),
+  uploadProductImage: (productId: number, file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    return unwrap<Product>(api.put(`/products/${productId}/image`, formData));
+  },
+  deleteProductImage: (productId: number) =>
+    unwrap<Product>(api.delete(`/products/${productId}/image`)),
   deleteProduct: (productId: number) =>
     unwrap<{ id: number; deleted: boolean; message: string }>(
       api.delete(`/products/${productId}`),
