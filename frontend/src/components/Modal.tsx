@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
 import { IconButton } from '@/components/IconButton';
+import { useDocumentScrollLock } from '@/hooks/useDocumentScrollLock';
 
 interface ModalProps {
   id?: string;
@@ -57,12 +58,12 @@ export function Modal({
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  useDocumentScrollLock(open);
+
   useEffect(() => {
     if (!open) return;
 
     const isOpening = !wasOpenRef.current;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -134,7 +135,6 @@ export function Modal({
         initialFocusFrameRef.current = null;
       }
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 

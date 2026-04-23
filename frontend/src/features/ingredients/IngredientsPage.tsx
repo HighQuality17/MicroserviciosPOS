@@ -2,6 +2,7 @@ import "@/features/products/products-d2b.css";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { Boxes, ClipboardList, FlaskConical, Warehouse } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { AccessState } from "@/components/AccessState";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -168,6 +169,7 @@ function matchesAuditSearch(item: StockAdjustmentItem, searchTerm: string) {
 }
 
 export function IngredientsPage() {
+  const [searchParams] = useSearchParams();
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentLocation = useAppStore((state) => state.currentLocation);
   const availableLocations = useAppStore((state) => state.availableLocations);
@@ -181,6 +183,8 @@ export function IngredientsPage() {
   const [adjustmentItems, setAdjustmentItems] = useState<StockAdjustmentItem[]>(
     [],
   );
+  const [focusedAdjustment, setFocusedAdjustment] =
+    useState<StockAdjustmentItem | null>(null);
   const [adjustmentItemsLocationId, setAdjustmentItemsLocationId] = useState<
     number | null
   >(null);
@@ -221,6 +225,20 @@ export function IngredientsPage() {
   const [auditSearchTerm, setAuditSearchTerm] = useState("");
 
   const isAdmin = currentUser?.role === "ADMIN";
+  const movementIdFromQuery = useMemo(() => {
+    const rawValue = searchParams.get("movementId");
+    if (!rawValue) return null;
+
+    const parsed = Number(rawValue);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [searchParams]);
+  const locationIdFromQuery = useMemo(() => {
+    const rawValue = searchParams.get("locationId");
+    if (!rawValue) return null;
+
+    const parsed = Number(rawValue);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [searchParams]);
 
   const mergedIngredients = useMemo(() => {
     const stockIngredients = stockItems.map((item) => item.ingredient);
@@ -249,6 +267,15 @@ export function IngredientsPage() {
   useEffect(() => {
     setSelectedLocationId(currentLocation?.id ?? null);
   }, [currentLocation]);
+
+  useEffect(() => {
+    if (
+      locationIdFromQuery !== null &&
+      locationIdFromQuery !== selectedLocationId
+    ) {
+      setSelectedLocationId(locationIdFromQuery);
+    }
+  }, [locationIdFromQuery, selectedLocationId]);
 
   useEffect(() => {
     setDefaultUnitCode(availableDefaultUnits[0]);
@@ -284,6 +311,7 @@ export function IngredientsPage() {
       setStockItems([]);
       setAdjustmentItems([]);
       setAdjustmentItemsLocationId(null);
+      setFocusedAdjustment(null);
       setAdjustmentsError(null);
       setLoadingStock(false);
       setLoadingAdjustments(false);
@@ -293,6 +321,38 @@ export function IngredientsPage() {
     void loadStock(selectedLocationId);
     void loadAdjustments(selectedLocationId);
   }, [selectedLocationId]);
+
+  useEffect(() => {
+    if (movementIdFromQuery === null) {
+      setFocusedAdjustment(null);
+      return;
+    }
+
+    const targetMovementId = movementIdFromQuery;
+    let cancelled = false;
+
+    async function loadFocusedAdjustment() {
+      try {
+        const movement = await posApi.getStockAdjustmentById(targetMovementId);
+        if (cancelled) return;
+
+        setFocusedAdjustment(movement);
+        if (movement.locationId !== selectedLocationId) {
+          setSelectedLocationId(movement.locationId);
+        }
+      } catch {
+        if (!cancelled) {
+          setFocusedAdjustment(null);
+        }
+      }
+    }
+
+    void loadFocusedAdjustment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [movementIdFromQuery, selectedLocationId]);
 
   async function loadIngredients() {
     try {
@@ -668,10 +728,25 @@ export function IngredientsPage() {
       ),
     [stockItems, stockSearchTerm],
   );
+  const mergedAdjustmentItems = useMemo(() => {
+    const map = new Map<number, StockAdjustmentItem>();
+
+    if (focusedAdjustment) {
+      map.set(focusedAdjustment.id, focusedAdjustment);
+    }
+
+    for (const item of adjustmentItems) {
+      map.set(item.id, item);
+    }
+
+    return Array.from(map.values());
+  }, [adjustmentItems, focusedAdjustment]);
   const filteredAdjustmentItems = useMemo(
     () =>
-      adjustmentItems.filter((item) => matchesAuditSearch(item, auditSearchTerm)),
-    [adjustmentItems, auditSearchTerm],
+      mergedAdjustmentItems.filter((item) =>
+        matchesAuditSearch(item, auditSearchTerm),
+      ),
+    [mergedAdjustmentItems, auditSearchTerm],
   );
   const dimensionCounts = useMemo(() => {
     const counts: Record<IngredientDimension, number> = {
@@ -692,7 +767,7 @@ export function IngredientsPage() {
       : adjustmentsError
         ? "warning"
         : selectedLocation
-          ? adjustmentItems.length > 0
+          ? adjustmentItems.length > 0 || focusedAdjustment !== null
             ? "success"
             : "default"
           : "default";
@@ -1705,7 +1780,7 @@ export function IngredientsPage() {
               label="Ventana auditada"
               value={
                 selectedLocation
-                  ? `${filteredAdjustmentItems.length} de ${adjustmentItems.length} movimientos recientes`
+                  ? `${filteredAdjustmentItems.length} de ${mergedAdjustmentItems.length} movimientos recientes`
                   : "Selecciona una ubicacion para revisar auditoria"
               }
               badges={[
@@ -1752,6 +1827,11 @@ export function IngredientsPage() {
                 caption="Tabla de movimientos auditados"
                 rows={filteredAdjustmentItems}
                 rowKey={(item) => item.id}
+                rowClassName={(item) =>
+                  movementIdFromQuery === item.id
+                    ? "table-row table-row-selected theme-text-strong"
+                    : undefined
+                }
                 maxHeightClassName="max-h-[28rem]"
                 tableMinWidthClassName="min-w-[1180px]"
                 columns={[

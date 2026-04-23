@@ -10,6 +10,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { round } from "../common/utils/number.util";
+import { BusinessActivityService } from "../business-activity/business-activity.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdjustStockDto } from "./dto/adjust-stock.dto";
 import { CreateStockAdjustmentDto } from "./dto/create-stock-adjustment.dto";
@@ -62,7 +63,10 @@ const movementDetailInclude = {
 
 @Injectable()
 export class StockService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly businessActivityService: BusinessActivityService,
+  ) {}
 
   async adjust(dto: AdjustStockDto) {
     const context = await this.ensureMovementContext(
@@ -94,6 +98,11 @@ export class StockService {
         notes: this.normalizeOptionalText(dto.reason),
         referenceType: IngredientMovementReferenceType.MANUAL,
       });
+
+      await this.businessActivityService.recordManualStockMovement(
+        tx,
+        result.movement.id,
+      );
 
       return {
         stock: result.stock,
@@ -187,6 +196,11 @@ export class StockService {
             : round(dto.unit_cost_at_time, 2),
         referenceType: IngredientMovementReferenceType.MANUAL,
       });
+
+      await this.businessActivityService.recordManualStockMovement(
+        tx,
+        result.movement.id,
+      );
 
       return {
         stock: result.stock,

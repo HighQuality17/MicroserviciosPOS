@@ -1,26 +1,15 @@
 import { Injectable } from "@nestjs/common";
-import {
-  Dimension,
-  IngredientMovementReferenceType,
-  IngredientMovementType,
-  PaymentMethod,
-  SaleItemType,
-  SaleStatus,
-} from "@prisma/client";
+import { Dimension, PaymentMethod, SaleItemType, SaleStatus } from "@prisma/client";
+import { BusinessActivityService } from "../business-activity/business-activity.service";
 import { PrismaService } from "../prisma/prisma.service";
-
-interface ActivityItem {
-  activity_type: "SALE" | "CASH_SESSION" | "STOCK_ADJUSTMENT";
-  action: string;
-  created_at: Date;
-  entity_id: number;
-  title: string;
-  subtitle: string;
-}
+import { GetAdminActivityQueryDto } from "./dto/get-admin-activity-query.dto";
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly businessActivityService: BusinessActivityService,
+  ) {}
 
   async getSummary() {
     const startOfToday = this.getStartOfToday();
@@ -197,106 +186,16 @@ export class AdminService {
       }));
   }
 
+  async getActivity(query: GetAdminActivityQueryDto) {
+    return this.businessActivityService.getFeed(query.page, query.limit);
+  }
+
+  async getActivityDetail(id: number) {
+    return this.businessActivityService.getDetail(id);
+  }
+
   async getRecentActivity() {
-    const [recentSales, recentSessions, recentMovements] = await Promise.all([
-      this.prisma.sale.findMany({
-        take: 10,
-        orderBy: { createdAt: "desc" },
-        include: {
-          location: true,
-          cashier: true,
-        },
-      }),
-      this.prisma.cashSession.findMany({
-        take: 10,
-        orderBy: { openedAt: "desc" },
-        include: {
-          location: true,
-          opener: true,
-        },
-      }),
-      this.prisma.ingredientMovement.findMany({
-        take: 10,
-        where: {
-          OR: [
-            { referenceType: IngredientMovementReferenceType.MANUAL },
-            { referenceType: null },
-          ],
-        },
-        orderBy: { createdAt: "desc" },
-        include: {
-          ingredient: true,
-          location: true,
-          adjustedByUser: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    const salesActivity: ActivityItem[] = recentSales.map((sale) => ({
-      activity_type: "SALE",
-      action: sale.status === SaleStatus.PAID ? "SALE_PAID" : "SALE_CREATED",
-      created_at: sale.createdAt,
-      entity_id: sale.id,
-      title: `Venta #${sale.id}`,
-      subtitle: `${sale.location.name} · ${sale.cashier.name} · ${Number(sale.total)}`,
-    }));
-
-    const sessionActivity: ActivityItem[] = recentSessions.flatMap(
-      (session) => {
-        const items: ActivityItem[] = [
-          {
-            activity_type: "CASH_SESSION",
-            action: "CASH_OPENED",
-            created_at: session.openedAt,
-            entity_id: session.id,
-            title: `Caja #${session.id} abierta`,
-            subtitle: `${session.location.name} · ${session.opener.name}`,
-          },
-        ];
-
-        if (session.closedAt) {
-          items.push({
-            activity_type: "CASH_SESSION",
-            action: "CASH_CLOSED",
-            created_at: session.closedAt,
-            entity_id: session.id,
-            title: `Caja #${session.id} cerrada`,
-            subtitle: `${session.location.name} · esperado ${Number(session.closingCashExpected ?? 0)}`,
-          });
-        }
-
-        return items;
-      },
-    );
-
-    const stockActivity: ActivityItem[] = recentMovements.map((movement) => ({
-      activity_type: "STOCK_ADJUSTMENT",
-      action: this.resolveMovementAction(movement.movementType),
-      created_at: movement.createdAt,
-      entity_id: movement.id,
-      title: this.resolveMovementTitle(
-        movement.movementType,
-        movement.ingredient.name,
-      ),
-      subtitle: `${movement.location.name} · ${movement.adjustedByUser.name} · ${this.formatMovementDelta(movement.movementType, Number(movement.qtyBase))}`,
-    }));
-
-    return {
-      items: [...salesActivity, ...sessionActivity, ...stockActivity]
-        .sort(
-          (left, right) =>
-            right.created_at.getTime() - left.created_at.getTime(),
-        )
-        .slice(0, 20)
-        .map((item) => ({
-          ...item,
-          created_at: item.created_at,
-        })),
-    };
+    return this.businessActivityService.getLegacyRecentActivity(20);
   }
 
   private getStartOfToday() {
@@ -319,45 +218,7 @@ export class AdminService {
   ) {
     const variant = variants.get(variantId);
     return variant
-      ? [variant.product.name, variant.size].filter(Boolean).join(' ').trim()
+      ? [variant.product.name, variant.size].filter(Boolean).join(" ").trim()
       : `Variant ${variantId}`;
-  }
-
-  private resolveMovementAction(movementType: IngredientMovementType) {
-    if (movementType === IngredientMovementType.ENTRY) {
-      return "STOCK_ENTRY_CREATED";
-    }
-
-    if (movementType === IngredientMovementType.EXIT) {
-      return "STOCK_EXIT_CREATED";
-    }
-
-    return "STOCK_ADJUSTED";
-  }
-
-  private resolveMovementTitle(
-    movementType: IngredientMovementType,
-    ingredientName: string,
-  ) {
-    if (movementType === IngredientMovementType.ENTRY) {
-      return `Entrada de ${ingredientName}`;
-    }
-
-    if (movementType === IngredientMovementType.EXIT) {
-      return `Salida de ${ingredientName}`;
-    }
-
-    return `Ajuste de ${ingredientName}`;
-  }
-
-  private formatMovementDelta(
-    movementType: IngredientMovementType,
-    qtyBase: number,
-  ) {
-    if (movementType === IngredientMovementType.ADJUSTMENT) {
-      return `${qtyBase >= 0 ? "+" : ""}${qtyBase}`;
-    }
-
-    return `${movementType === IngredientMovementType.EXIT ? "-" : "+"}${qtyBase}`;
   }
 }
