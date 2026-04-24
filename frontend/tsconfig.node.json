@@ -3,6 +3,8 @@
     "composite": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "types": ["node"],
+    "lib": ["ES2020"],
     "allowSyntheticDefaultImports": true
   },
   "include": ["vite.config.ts"]
