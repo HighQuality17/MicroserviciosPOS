@@ -342,6 +342,14 @@ export const posApi = {
   ) => unwrap<Combo>(api.patch(`/combos/${comboId}`, payload)),
   updateComboStatus: (comboId: number, payload: { active: boolean }) =>
     unwrap<Combo>(api.patch(`/combos/${comboId}/status`, payload)),
+  uploadComboImage: (comboId: number, file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    return unwrap<Combo>(api.put(`/combos/${comboId}/image`, formData));
+  },
+  deleteComboImage: (comboId: number) =>
+    unwrap<Combo>(api.delete(`/combos/${comboId}/image`)),
   deleteCombo: (comboId: number) =>
     unwrap<{ id: number; deleted: boolean; message: string }>(
       api.delete(`/combos/${comboId}`),

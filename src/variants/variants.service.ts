@@ -11,9 +11,9 @@ import {
   isOperationalVariantProduct,
 } from '../products/operational-variant.util';
 import {
-  buildProductImageAlt,
-  buildProductImagePublicUrl,
-} from '../products/product-image.util';
+  buildCatalogImageAlt,
+  buildCatalogImagePublicUrl,
+} from '../common/media/catalog-image.util';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { VariantListStatus } from './dto/get-variants-query.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
@@ -242,8 +242,8 @@ export class VariantsService {
     active: boolean;
     product: { name: string; productType: ProductType; imagePath: string | null };
   }) {
-    const imageUrl = buildProductImagePublicUrl(variant.product.imagePath);
-    const imageAlt = imageUrl ? buildProductImageAlt(variant.product.name) : null;
+    const imageUrl = buildCatalogImagePublicUrl(variant.product.imagePath);
+    const imageAlt = imageUrl ? buildCatalogImageAlt(variant.product.name) : null;
 
     return {
       id: variant.id,

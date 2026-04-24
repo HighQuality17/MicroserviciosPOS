@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { ImagePlus, RotateCcw, Trash2 } from 'lucide-react';
 import { type ChangeEvent, useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/Button';
-import { ProductMedia } from '@/components/ProductMedia';
+import { ProductMedia, type ProductMediaKind } from '@/components/ProductMedia';
 import type { ProductType } from '@/types/api';
 
 const acceptedProductImageTypes = '.webp,.png,.jpg,.jpeg,image/webp,image/png,image/jpeg';
@@ -11,6 +11,7 @@ interface ProductImageFieldProps {
   label?: string;
   productName?: string;
   productType?: ProductType;
+  mediaKind?: ProductMediaKind;
   imageUrl?: string | null;
   imageAlt?: string | null;
   pendingImageFile?: File | null;
@@ -26,6 +27,7 @@ export function ProductImageField({
   label = 'Imagen del producto',
   productName,
   productType = 'SIMPLE',
+  mediaKind,
   imageUrl,
   imageAlt,
   pendingImageFile,
@@ -49,6 +51,8 @@ export function ProductImageField({
     hasPendingImage,
     markedForRemoval,
   });
+  const resolvedMediaKind =
+    mediaKind ?? (productType === 'VARIANT' ? 'VARIANT' : 'SIMPLE');
   const previewSrc = hasPendingImage ? pendingPreviewUrl : imageUrl ?? null;
   const resolvedLabel = productName?.trim() || 'Producto';
   const resolvedAlt = imageAlt?.trim() || `Imagen de ${resolvedLabel}`;
@@ -94,7 +98,7 @@ export function ProductImageField({
             {label}
           </p>
           <p className="products-form-group__description mt-2 text-sm theme-text-muted">
-            Preview principal persistida para Productos y POS. Puedes subir, reemplazar o quitar imagen segun estado actual.
+            Preview principal persistida para catalogo y POS. Puedes subir, reemplazar o quitar imagen segun estado actual.
           </p>
         </div>
         <span className="product-image-field__status" data-state={previewState}>
@@ -108,7 +112,7 @@ export function ProductImageField({
             label={resolvedLabel}
             src={previewSrc}
             alt={resolvedAlt}
-            kind={productType === 'VARIANT' ? 'VARIANT' : 'SIMPLE'}
+            kind={resolvedMediaKind}
             className="product-image-field__preview"
           />
           <span className="product-image-field__preview-note" data-state={previewState}>
@@ -252,7 +256,7 @@ function resolvePreviewNote(state: 'empty' | 'current' | 'pending' | 'marked') {
 function resolveCaption(state: 'empty' | 'current' | 'pending' | 'marked') {
   switch (state) {
     case 'pending':
-      return 'Vista previa local lista para guardarse cuando confirmes cambios del producto.';
+      return 'Vista previa local lista para guardarse cuando confirmes cambios.';
     case 'marked':
       return 'Imagen actual marcada para quitar. Puedes conservarla o elegir un reemplazo antes de guardar.';
     case 'current':

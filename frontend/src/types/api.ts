@@ -112,6 +112,8 @@ export interface Combo {
   id: number;
   name: string;
   salePrice: number | string;
+  imageUrl: string | null;
+  imageAlt: string | null;
   active: boolean;
   items?: CatalogComboItem[];
 }
@@ -288,6 +290,10 @@ export interface CartItem {
   ref_id: number;
   name: string;
   subtitle?: string;
+  detailLabel?: string;
+  metadataLabel?: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
   unit_price: number;
   qty: number;
   product_type?: ProductType;
@@ -340,6 +346,8 @@ export interface CatalogCombo {
   id: number;
   name: string;
   sale_price: number;
+  imageUrl: string | null;
+  imageAlt: string | null;
   active: boolean;
   items: CatalogComboItem[];
 }

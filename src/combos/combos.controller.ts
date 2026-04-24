@@ -7,13 +7,21 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import {
+  CATALOG_IMAGE_MAX_BYTES,
+  type CatalogImageUploadFile,
+} from '../common/media/catalog-image.util';
 import { CombosService } from './combos.service';
 import { CreateComboDto } from './dto/create-combo.dto';
 import { ComboListStatus, GetCombosQueryDto } from './dto/get-combos-query.dto';
@@ -54,6 +62,28 @@ export class CombosController {
     @Body() dto: UpdateComboStatusDto,
   ) {
     return this.combosService.updateStatus(id, dto);
+  }
+
+  @Put(':id/image')
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      limits: {
+        fileSize: CATALOG_IMAGE_MAX_BYTES,
+      },
+    }),
+  )
+  updateImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file?: CatalogImageUploadFile,
+  ) {
+    return this.combosService.updateImage(id, file);
+  }
+
+  @Delete(':id/image')
+  @Roles(UserRole.ADMIN)
+  removeImage(@Param('id', ParseIntPipe) id: number) {
+    return this.combosService.removeImage(id);
   }
 
   @Delete(':id')
