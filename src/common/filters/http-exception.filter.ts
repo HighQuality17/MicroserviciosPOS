@@ -13,6 +13,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
+    const isComboImageRequest =
+      request.url.includes('/combos/') && request.url.includes('/image');
+    const uploadEntityLabel = isComboImageRequest ? 'Combo' : 'Product';
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
@@ -33,8 +36,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         status = HttpStatus.BAD_REQUEST;
         message =
           maybeUploadError.code === 'LIMIT_FILE_SIZE'
-            ? 'Product image must be 3 MB or smaller'
-            : 'Product image upload is invalid';
+            ? `${uploadEntityLabel} image must be 3 MB or smaller`
+            : `${uploadEntityLabel} image upload is invalid`;
       }
     }
 

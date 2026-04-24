@@ -17,11 +17,11 @@ import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { CreateProductDto } from './dto/create-product.dto';
 import {
-  PRODUCT_IMAGE_MAX_BYTES,
-  type ProductImageUploadFile,
-} from './product-image.util';
+  CATALOG_IMAGE_MAX_BYTES,
+  type CatalogImageUploadFile,
+} from '../common/media/catalog-image.util';
+import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductStatusDto } from './dto/update-product-status.dto';
 import { ProductsService } from './products.service';
@@ -66,13 +66,13 @@ export class ProductsController {
   @UseInterceptors(
     FileInterceptor('image', {
       limits: {
-        fileSize: PRODUCT_IMAGE_MAX_BYTES,
+        fileSize: CATALOG_IMAGE_MAX_BYTES,
       },
     }),
   )
   updateImage(
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file?: ProductImageUploadFile,
+    @UploadedFile() file?: CatalogImageUploadFile,
   ) {
     return this.productsService.updateImage(id, file);
   }
