@@ -19,6 +19,7 @@ export function Header() {
       className={clsx(
         'glass-panel app-header rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6',
       )}
+      aria-label="Barra superior del sistema"
     >
       <div className="app-header__body flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="app-header__identity flex min-w-0 items-center gap-3">
@@ -48,14 +49,21 @@ export function Header() {
           <div className="app-header__control app-header__control--location surface-subtle flex w-full min-w-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto sm:max-w-full">
             <MapPin size={16} className="theme-accent-icon shrink-0" />
             <div className="min-w-0 flex-1">
+              <p className="app-header__control-label text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
+                Punto de venta
+              </p>
               {locationsLoading ? (
-                <span>Cargando puntos de venta...</span>
+                <span className="app-header__control-value mt-1 block truncate">
+                  Cargando puntos de venta...
+                </span>
               ) : availableLocations.length === 0 || !currentLocation ? (
-                <span className="text-[color:var(--warning)]">
+                <span className="app-header__control-value mt-1 block truncate text-[color:var(--warning)]">
                   {locationsError ? 'Sin POS disponibles' : 'Sin ubicaciones creadas'}
                 </span>
               ) : availableLocations.length <= 1 ? (
-                <span className="block truncate text-[color:var(--text)]">{currentLocation.name}</span>
+                <span className="app-header__control-value mt-1 block truncate text-[color:var(--text)]">
+                  {currentLocation.name}
+                </span>
               ) : (
                 <select
                   aria-label="Punto de venta activo"
@@ -68,7 +76,7 @@ export function Header() {
                       setCurrentLocation(nextLocation);
                     }
                   }}
-                  className="surface-inline-select w-full min-w-0 rounded-xl text-sm sm:min-w-[12rem]"
+                  className="surface-inline-select mt-1 w-full min-w-0 rounded-xl text-sm sm:min-w-[12rem]"
                 >
                   {availableLocations.map((item) => (
                     <option key={item.id} value={String(item.id)}>
@@ -81,8 +89,14 @@ export function Header() {
           </div>
 
           <div className="app-header__control app-header__control--user surface-subtle w-full rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto">
-            <span className="block truncate text-[color:var(--text)]">
-              {currentUser?.name} / {formatUserRole(currentUser?.role)}
+            <p className="app-header__control-label text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
+              Sesion
+            </p>
+            <span className="app-header__control-value mt-1 flex min-w-0 items-center gap-2 text-[color:var(--text)]">
+              <span className="min-w-0 truncate">{currentUser?.name}</span>
+              <span className="app-header__role-pill shrink-0">
+                {formatUserRole(currentUser?.role)}
+              </span>
             </span>
           </div>
         </div>

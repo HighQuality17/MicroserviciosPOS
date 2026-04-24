@@ -104,7 +104,7 @@ export function AppLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen">
+    <div className="app-shell-root min-h-screen">
       <a href="#main-content" className="skip-link">
         Saltar al contenido principal
       </a>
@@ -120,7 +120,7 @@ export function AppLayout() {
 
       <div
         className={clsx(
-          'relative min-h-screen lg:grid',
+          'app-shell-grid relative min-h-screen lg:grid',
           isDesktopSidebarCollapsed
             ? 'lg:grid-cols-[104px_minmax(0,1fr)]'
             : 'lg:grid-cols-[260px_minmax(0,1fr)]',
@@ -141,7 +141,7 @@ export function AppLayout() {
             type="button"
             variant="secondary"
             className={clsx(
-              'surface-subtle-strong h-11 w-11 px-0 shadow-[0_18px_38px_rgba(10,14,28,0.18)] transition-all duration-300 hover:-translate-y-px',
+              'app-sidebar-toggle surface-subtle-strong h-11 w-11 px-0 shadow-[0_18px_38px_rgba(10,14,28,0.18)] transition-all duration-300 hover:-translate-y-px',
               isOpsAdminRoute && 'app-sidebar-toggle--ops-admin',
             )}
             aria-label={
@@ -156,7 +156,7 @@ export function AppLayout() {
           </Button>
         </div>
 
-        <div className="min-w-0">
+        <div className="app-shell-content min-w-0">
           <div
             className={clsx(
               'app-layout-shell mx-auto flex min-h-screen w-full max-w-[1680px] flex-col px-3 pb-3 sm:px-4 sm:pb-4 md:px-6 lg:px-8 lg:py-4',

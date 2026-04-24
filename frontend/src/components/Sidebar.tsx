@@ -65,6 +65,8 @@ export function Sidebar({
               isDesktopCollapsed ? 'lg:px-3' : 'lg:px-6',
             ),
       )}
+      data-collapsed={isDesktopCollapsed || undefined}
+      data-variant={isMobile ? 'mobile' : 'desktop'}
       aria-label="Navegacion principal"
     >
       <div
