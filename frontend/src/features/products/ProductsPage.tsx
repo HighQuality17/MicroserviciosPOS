@@ -21,9 +21,17 @@ import { SearchField } from '@/components/SearchField';
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
+import {
+  createEmptyCatalogImageDraft as createEmptyProductImageDraft,
+  getCatalogEntityImageDraft,
+  removeCatalogImage as removeProductImage,
+  resolveCatalogImageMutationAction as resolveProductImageMutationAction,
+  restoreCatalogImage as restoreProductImage,
+  selectCatalogImage as selectProductImage,
+  type CatalogImageDraft as ProductImageDraft,
+} from '@/features/shared/catalogImageDraft';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { usePermissions } from '@/hooks/usePermissions';
-import { resolveApiAssetUrl } from '@/services/api/assets';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
@@ -74,14 +82,6 @@ type DeleteConfirmationTarget = {
 type EnrichedCatalogProduct = CatalogProduct & {
   operationalVariant: CatalogVariant | null;
   relatedVariants: CatalogVariant[];
-};
-
-type ProductImageDraft = {
-  imageUrl: string | null;
-  imageAlt: string;
-  pendingImageFile: File | null;
-  markedForRemoval: boolean;
-  error: string | null;
 };
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
@@ -2625,54 +2625,8 @@ function createEmptyProductCatalogDraft(): ProductCatalogDraft {
   };
 }
 
-const productImageUrlKeys = [
-  'image_url',
-  'imageUrl',
-  'thumbnail_url',
-  'thumbnailUrl',
-  'photo_url',
-  'photoUrl',
-  'image_src',
-  'imageSrc',
-] as const;
-
-const productImageAltKeys = [
-  'image_alt',
-  'imageAlt',
-  'alt_text',
-  'altText',
-] as const;
-
-const allowedProductImageMimeTypes = new Set([
-  'image/webp',
-  'image/png',
-  'image/jpeg',
-]);
-
-const maxProductImageFileBytes = 3 * 1024 * 1024;
-
-function createEmptyProductImageDraft(): ProductImageDraft {
-  return {
-    imageUrl: null,
-    imageAlt: '',
-    pendingImageFile: null,
-    markedForRemoval: false,
-    error: null,
-  };
-}
-
 function getProductImageDraft(product: CatalogProduct): ProductImageDraft {
-  const imageUrl = resolveApiAssetUrl(
-    readOptionalProductMediaValue(product, productImageUrlKeys),
-  );
-
-  return {
-    imageUrl,
-    imageAlt: readOptionalProductMediaValue(product, productImageAltKeys) ?? product.name,
-    pendingImageFile: null,
-    markedForRemoval: false,
-    error: null,
-  };
+  return getCatalogEntityImageDraft(product, product.name);
 }
 
 async function persistProductImageDraft(productId: number, draft: ProductImageDraft) {
@@ -2687,18 +2641,6 @@ async function persistProductImageDraft(productId: number, draft: ProductImageDr
   return null;
 }
 
-function resolveProductImageMutationAction(draft: ProductImageDraft) {
-  if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
-    return 'quitarse';
-  }
-
-  if (draft.pendingImageFile && draft.imageUrl && !draft.markedForRemoval) {
-    return 'reemplazarse';
-  }
-
-  return 'guardarse';
-}
-
 function buildProductUpdateSuccessMessage(productId: number, draft: ProductImageDraft) {
   if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
     return `Producto #${productId} actualizado sin imagen.`;
@@ -2709,110 +2651,6 @@ function buildProductUpdateSuccessMessage(productId: number, draft: ProductImage
   }
 
   return `Producto #${productId} actualizado correctamente.`;
-}
-
-function selectProductImage(current: ProductImageDraft, file: File | null): ProductImageDraft {
-  if (!file) {
-    return {
-      ...current,
-      error: null,
-    };
-  }
-
-  const validationError = validateProductImageFile(file);
-
-  if (validationError) {
-    return {
-      ...current,
-      error: validationError,
-    };
-  }
-
-  return {
-    ...current,
-    pendingImageFile: file,
-    markedForRemoval: false,
-    error: null,
-  };
-}
-
-function removeProductImage(current: ProductImageDraft): ProductImageDraft {
-  if (current.pendingImageFile) {
-    return {
-      ...current,
-      pendingImageFile: null,
-      error: null,
-    };
-  }
-
-  if (current.imageUrl && !current.markedForRemoval) {
-    return {
-      ...current,
-      markedForRemoval: true,
-      error: null,
-    };
-  }
-
-  return {
-    ...current,
-    error: null,
-  };
-}
-
-function restoreProductImage(current: ProductImageDraft): ProductImageDraft {
-  if (!current.imageUrl) {
-    return {
-      ...current,
-      error: null,
-    };
-  }
-
-  return {
-    ...current,
-    pendingImageFile: null,
-    markedForRemoval: false,
-    error: null,
-  };
-}
-
-function validateProductImageFile(file: File) {
-  const normalizedName = file.name.trim().toLowerCase();
-  const hasAllowedMimeType =
-    !file.type || allowedProductImageMimeTypes.has(file.type.toLowerCase());
-  const hasAllowedExtension = ['.webp', '.png', '.jpg', '.jpeg'].some((extension) =>
-    normalizedName.endsWith(extension),
-  );
-
-  if (!hasAllowedMimeType && !hasAllowedExtension) {
-    return 'Usa una imagen WebP, PNG, JPG o JPEG.';
-  }
-
-  if (file.size > maxProductImageFileBytes) {
-    return 'La imagen no puede superar 3 MB.';
-  }
-
-  return null;
-}
-
-function readOptionalProductMediaValue(
-  candidate: unknown,
-  keys: readonly string[],
-) {
-  if (!candidate || typeof candidate !== 'object') {
-    return null;
-  }
-
-  const record = candidate as Record<string, unknown>;
-
-  for (const key of keys) {
-    const value = record[key];
-
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return null;
 }
 
 function getProductCatalogDraft(product: {

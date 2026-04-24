@@ -244,6 +244,7 @@ model Combo {
   id        Int         @id @default(autoincrement())
   name      String      @unique
   salePrice Decimal
+  imagePath String?
   active    Boolean     @default(true)
   items     ComboItem[]
 }

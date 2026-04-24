@@ -15,10 +15,22 @@ import type {
   ModulePageHeaderBadge,
   ModulePageHeaderCard,
 } from '@/components/ModulePageHeader';
+import { ProductMedia } from '@/components/ProductMedia';
 import { SearchField } from '@/components/SearchField';
 import { Select } from '@/components/Select';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CatalogItemsTable } from '@/features/products/CatalogItemsTable';
+import { ProductImageField } from '@/features/products/ProductImageField';
+import {
+  createEmptyCatalogImageDraft as createEmptyComboImageDraft,
+  getCatalogEntityImageDraft,
+  removeCatalogImage as removeComboImage,
+  resolveCatalogImageMutationAction as resolveComboImageMutationAction,
+  restoreCatalogImage as restoreComboImage,
+  selectCatalogImage as selectComboImage,
+  type CatalogImageDraft as ComboImageDraft,
+} from '@/features/shared/catalogImageDraft';
+import { resolveApiAssetUrl } from '@/services/api/assets';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import type { CatalogCombo, CatalogVariant } from '@/types/api';
@@ -85,6 +97,9 @@ export function CombosPage() {
 
   const [comboName, setComboName] = useState('');
   const [comboPriceInput, setComboPriceInput] = useState('');
+  const [comboImageDraft, setComboImageDraft] = useState<ComboImageDraft>(
+    createEmptyComboImageDraft(),
+  );
   const [comboActive, setComboActive] = useState(true);
   const [selectedComboId, setSelectedComboId] = useState('');
   const [selectedVariantId, setSelectedVariantId] = useState('');
@@ -97,6 +112,9 @@ export function CombosPage() {
   );
   const [editComboName, setEditComboName] = useState('');
   const [editComboPriceInput, setEditComboPriceInput] = useState('');
+  const [editComboImageDraft, setEditComboImageDraft] = useState<ComboImageDraft>(
+    createEmptyComboImageDraft(),
+  );
   const [editComboActive, setEditComboActive] = useState(true);
   const [compositionEditorOpen, setCompositionEditorOpen] = useState(false);
   const [editingCompositionCombo, setEditingCompositionCombo] =
@@ -149,6 +167,13 @@ export function CombosPage() {
   useEffect(() => {
     void refreshCatalog();
   }, []);
+
+  function resetCreateComboForm() {
+    setComboName('');
+    setComboPriceInput('');
+    setComboImageDraft(createEmptyComboImageDraft());
+    setComboActive(true);
+  }
 
   async function refreshCatalog(options?: { background?: boolean }) {
     const background = options?.background ?? false;
@@ -220,6 +245,7 @@ export function CombosPage() {
     setEditingComboTarget(combo);
     setEditComboName(combo.name);
     setEditComboPriceInput(String(Number(combo.sale_price)));
+    setEditComboImageDraft(getComboImageDraft(combo));
     setEditComboActive(combo.active);
     setComboEditorOpen(true);
     setSubmitError(null);
@@ -348,7 +374,7 @@ export function CombosPage() {
     } catch (error) {
       setSubmitError(
         error instanceof Error
-          ? error.message
+          ? translateComboError(error.message)
           : 'No se pudo guardar la composicion del combo.',
       );
     } finally {
@@ -359,6 +385,10 @@ export function CombosPage() {
   async function handleCreateCombo() {
     if (!comboName.trim()) {
       setSubmitError('El nombre del combo es obligatorio.');
+      return;
+    }
+    if (comboImageDraft.error) {
+      setSubmitError(comboImageDraft.error);
       return;
     }
 
@@ -373,22 +403,48 @@ export function CombosPage() {
       setSubmitError(null);
       setMessage(null);
 
-      const combo = await posApi.createCombo({
+      const createdCombo = await posApi.createCombo({
         name: comboName.trim(),
         sale_price: comboPrice,
         active: comboActive,
       });
 
-      addSessionCombo(combo);
-      setComboName('');
-      setComboPriceInput('');
-      setComboActive(true);
-      setSelectedComboId(String(combo.id));
-      setMessage(`Combo #${combo.id} creado correctamente.`);
+      let persistedCombo = createdCombo;
+
+      try {
+        const imageCombo = await persistComboImageDraft(createdCombo.id, comboImageDraft);
+
+        if (imageCombo) {
+          persistedCombo = imageCombo;
+        }
+      } catch (imageError) {
+        addSessionCombo(createdCombo);
+        resetCreateComboForm();
+        setSelectedComboId(String(createdCombo.id));
+        setMessage(`Combo #${createdCombo.id} creado correctamente.`);
+        setSubmitError(
+          `Combo #${createdCombo.id} creado, pero imagen no pudo ${resolveComboImageMutationAction(comboImageDraft)}. Abre editar para reintentar. ${translateComboError(
+            imageError instanceof Error ? imageError.message : 'No se pudo guardar la imagen.',
+          )}`,
+        );
+        await refreshCatalog({ background: true });
+        return;
+      }
+
+      addSessionCombo(persistedCombo);
+      resetCreateComboForm();
+      setSelectedComboId(String(persistedCombo.id));
+      setMessage(
+        comboImageDraft.pendingImageFile
+          ? `Combo #${persistedCombo.id} creado con imagen.`
+          : `Combo #${persistedCombo.id} creado correctamente.`,
+      );
       await refreshCatalog({ background: true });
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : 'No se pudo crear el combo',
+        error instanceof Error
+          ? translateComboError(error.message)
+          : 'No se pudo crear el combo',
       );
     } finally {
       setCreatingCombo(false);
@@ -400,6 +456,10 @@ export function CombosPage() {
 
     if (!editComboName.trim()) {
       setSubmitError('El nombre del combo es obligatorio.');
+      return;
+    }
+    if (editComboImageDraft.error) {
+      setSubmitError(editComboImageDraft.error);
       return;
     }
 
@@ -414,18 +474,54 @@ export function CombosPage() {
       setSubmitError(null);
       setMessage(null);
 
-      await posApi.updateCombo(editingComboTarget.id, {
+      const updatedCombo = await posApi.updateCombo(editingComboTarget.id, {
         name: editComboName.trim(),
         sale_price: comboPrice,
         active: editComboActive,
       });
 
+      let persistedCombo = updatedCombo;
+
+      try {
+        const imageCombo = await persistComboImageDraft(
+          editingComboTarget.id,
+          editComboImageDraft,
+        );
+
+        if (imageCombo) {
+          persistedCombo = imageCombo;
+        }
+      } catch (imageError) {
+        setEditingComboTarget((current) =>
+          current
+            ? {
+                ...current,
+                name: editComboName.trim(),
+                sale_price: comboPrice,
+                active: editComboActive,
+              }
+            : current,
+        );
+        setMessage(`Combo #${editingComboTarget.id} actualizado correctamente.`);
+        setSubmitError(
+          `Combo #${editingComboTarget.id} actualizado, pero imagen no pudo ${resolveComboImageMutationAction(editComboImageDraft)}. ${translateComboError(
+            imageError instanceof Error ? imageError.message : 'No se pudo actualizar la imagen.',
+          )}`,
+        );
+        await refreshCatalog({ background: true });
+        return;
+      }
+
       setComboEditorOpen(false);
-      setMessage(`Combo #${editingComboTarget.id} actualizado correctamente.`);
+      setEditComboImageDraft(createEmptyComboImageDraft());
+      setMessage(buildComboUpdateSuccessMessage(editingComboTarget.id, editComboImageDraft));
+      addSessionCombo(persistedCombo);
       await refreshCatalog({ background: true });
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : 'No se pudo actualizar el combo',
+        error instanceof Error
+          ? translateComboError(error.message)
+          : 'No se pudo actualizar el combo',
       );
     } finally {
       setSavingCombo(false);
@@ -449,7 +545,7 @@ export function CombosPage() {
     } catch (error) {
       setSubmitError(
         error instanceof Error
-          ? error.message
+          ? translateComboError(error.message)
           : 'No se pudo cambiar el estado del combo seleccionado.',
       );
     } finally {
@@ -492,7 +588,7 @@ export function CombosPage() {
       setDeleteTarget(null);
       setSubmitError(
         error instanceof Error
-          ? error.message
+          ? translateComboError(error.message)
           : 'No se pudo eliminar el combo seleccionado.',
       );
     } finally {
@@ -556,7 +652,7 @@ export function CombosPage() {
     } catch (error) {
       setSubmitError(
         error instanceof Error
-          ? error.message
+          ? translateComboError(error.message)
           : 'No se pudieron agregar items al combo',
       );
     } finally {
@@ -814,6 +910,26 @@ export function CombosPage() {
                   onChange={(event) => setComboName(event.target.value)}
                   placeholder="Combo desayuno"
                 />
+                <ProductImageField
+                  label="Imagen del combo"
+                  productName={comboName}
+                  mediaKind="COMBO"
+                  imageUrl={comboImageDraft.imageUrl}
+                  imageAlt={comboImageDraft.imageAlt}
+                  pendingImageFile={comboImageDraft.pendingImageFile}
+                  markedForRemoval={comboImageDraft.markedForRemoval}
+                  error={comboImageDraft.error}
+                  disabled={creatingCombo || refreshingCatalog}
+                  onSelectImage={(file) =>
+                    setComboImageDraft((current) => selectComboImage(current, file))
+                  }
+                  onRemoveImage={() =>
+                    setComboImageDraft((current) => removeComboImage(current))
+                  }
+                  onRestoreImage={() =>
+                    setComboImageDraft((current) => restoreComboImage(current))
+                  }
+                />
                 <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
                   <p className="products-form-group__label">Definicion comercial</p>
                   <p className="products-form-group__description">
@@ -1062,34 +1178,44 @@ export function CombosPage() {
                     header: 'Combo',
                     width: '360px',
                     render: (combo) => (
-                      <div className="products-table-entity">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate text-[15px] font-semibold theme-text-strong">
-                            {combo.name}
+                      <div className="products-table-entity flex items-start gap-3">
+                        <ProductMedia
+                          label={combo.name}
+                          src={resolveApiAssetUrl(combo.imageUrl)}
+                          alt={combo.imageAlt ?? `Imagen de ${combo.name}`}
+                          kind="COMBO"
+                          size="sm"
+                          className="shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-[15px] font-semibold theme-text-strong">
+                              {combo.name}
+                            </p>
+                            <StatusBadge
+                              label={`${combo.items.length} item(s)`}
+                              tone={combo.items.length > 0 ? 'info' : 'default'}
+                            />
+                          </div>
+                          <p className="products-table-entity__summary">
+                            {combo.active
+                              ? 'Combo habilitado para gestion y venta agrupada.'
+                              : 'Combo desactivado, disponible para revision administrativa.'}
                           </p>
-                          <StatusBadge
-                            label={`${combo.items.length} item(s)`}
-                            tone={combo.items.length > 0 ? 'info' : 'default'}
-                          />
-                        </div>
-                        <p className="products-table-entity__summary">
-                          {combo.active
-                            ? 'Combo habilitado para gestion y venta agrupada.'
-                            : 'Combo desactivado, disponible para revision administrativa.'}
-                        </p>
-                        <div className="products-table-meta">
-                          <span className="products-table-meta__item">
-                            <span className="text-[color:var(--text-faint)]">Precio</span>
-                            <span className="font-medium theme-text-strong">
-                              {formatCurrency(Number(combo.sale_price))}
+                          <div className="products-table-meta">
+                            <span className="products-table-meta__item">
+                              <span className="text-[color:var(--text-faint)]">Precio</span>
+                              <span className="font-medium theme-text-strong">
+                                {formatCurrency(Number(combo.sale_price))}
+                              </span>
                             </span>
-                          </span>
-                          <span className="products-table-meta__item">
-                            <span className="text-[color:var(--text-faint)]">Cobertura</span>
-                            <span className="font-medium theme-text-strong">
-                              {getComboCoverageState(combo).label}
+                            <span className="products-table-meta__item">
+                              <span className="text-[color:var(--text-faint)]">Cobertura</span>
+                              <span className="font-medium theme-text-strong">
+                                {getComboCoverageState(combo).label}
+                              </span>
                             </span>
-                          </span>
+                          </div>
                         </div>
                       </div>
                     ),
@@ -1242,6 +1368,26 @@ export function CombosPage() {
             value={editComboName}
             onChange={(event) => setEditComboName(event.target.value)}
             placeholder="Nombre del combo"
+          />
+          <ProductImageField
+            label="Imagen del combo"
+            productName={editComboName || editingComboTarget?.name}
+            mediaKind="COMBO"
+            imageUrl={editComboImageDraft.imageUrl}
+            imageAlt={editComboImageDraft.imageAlt}
+            pendingImageFile={editComboImageDraft.pendingImageFile}
+            markedForRemoval={editComboImageDraft.markedForRemoval}
+            error={editComboImageDraft.error}
+            disabled={savingCombo}
+            onSelectImage={(file) =>
+              setEditComboImageDraft((current) => selectComboImage(current, file))
+            }
+            onRemoveImage={() =>
+              setEditComboImageDraft((current) => removeComboImage(current))
+            }
+            onRestoreImage={() =>
+              setEditComboImageDraft((current) => restoreComboImage(current))
+            }
           />
           <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
             <p className="products-form-group__label">Ajuste comercial</p>
@@ -1541,6 +1687,69 @@ function getComboCoverageState(combo: CatalogCombo): {
   }
 
   return { label: 'Pendiente', tone: 'warning' };
+}
+
+function getComboImageDraft(combo: CatalogCombo): ComboImageDraft {
+  return getCatalogEntityImageDraft(combo, combo.name);
+}
+
+async function persistComboImageDraft(comboId: number, draft: ComboImageDraft) {
+  if (draft.pendingImageFile) {
+    return posApi.uploadComboImage(comboId, draft.pendingImageFile);
+  }
+
+  if (draft.markedForRemoval && draft.imageUrl) {
+    return posApi.deleteComboImage(comboId);
+  }
+
+  return null;
+}
+
+function buildComboUpdateSuccessMessage(comboId: number, draft: ComboImageDraft) {
+  if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
+    return `Combo #${comboId} actualizado sin imagen.`;
+  }
+
+  if (draft.pendingImageFile) {
+    return `Combo #${comboId} actualizado con imagen.`;
+  }
+
+  return `Combo #${comboId} actualizado correctamente.`;
+}
+
+function translateComboError(message: string) {
+  if (message === 'Combo name already exists') {
+    return 'Ya existe un combo con ese nombre.';
+  }
+  if (message === 'Combo not found') {
+    return 'El combo seleccionado ya no existe.';
+  }
+  if (message === 'Combo image file is required') {
+    return 'Selecciona una imagen valida antes de guardar.';
+  }
+  if (message === 'Combo image must be WebP, PNG, JPG or JPEG') {
+    return 'Usa una imagen WebP, PNG, JPG o JPEG.';
+  }
+  if (message === 'Combo image must be 3 MB or smaller') {
+    return 'La imagen no puede superar 3 MB.';
+  }
+  if (message === 'Combo image upload is invalid') {
+    return 'La imagen seleccionada no es valida. Prueba con otro archivo.';
+  }
+  if (message === 'Combo image could not be stored') {
+    return 'No se pudo guardar la imagen en servidor. Intenta de nuevo.';
+  }
+  if (message.includes('historical sales')) {
+    return 'No se puede eliminar porque ya tiene ventas historicas. Desactivalo en su lugar.';
+  }
+  if (message.includes('Duplicate variant items')) {
+    return 'No se permiten items duplicados dentro de la composicion del combo.';
+  }
+  if (message.includes('invalid/inactive')) {
+    return 'Uno de los items seleccionados ya no esta disponible para composicion.';
+  }
+
+  return message;
 }
 
 function getComboCompositionSummary(combo: CatalogCombo) {

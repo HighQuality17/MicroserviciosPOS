@@ -220,13 +220,7 @@ export function PosPage() {
     });
 
     const comboCards: PosCatalogEntry[] = catalog.combos.map((combo: CatalogCombo) => {
-      const leadVariant = combo.items[0]?.variant;
-      const image = resolveCatalogEntryImage(
-        combo.name,
-        combo,
-        leadVariant,
-        leadVariant ? productsById.get(leadVariant.product_id) : null,
-      );
+      const image = resolveCatalogEntryImage(combo.name, combo);
 
       return {
         key: `catalog-combo-${combo.id}`,

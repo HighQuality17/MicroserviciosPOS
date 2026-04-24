@@ -5,18 +5,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ProductType, SaleItemType, TaxCategory, VatType } from '@prisma/client';
+import { CatalogImageStorageService } from '../common/media/catalog-image-storage.service';
+import {
+  buildCatalogImageAlt,
+  buildCatalogImagePublicUrl,
+  type CatalogImageUploadFile,
+} from '../common/media/catalog-image.util';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ensureOperationalVariantForSimpleProduct,
   ensureOperationalVariantsForSimpleProducts,
   isOperationalVariantProduct,
 } from './operational-variant.util';
-import { ProductImageStorageService } from './product-image-storage.service';
-import {
-  buildProductImageAlt,
-  buildProductImagePublicUrl,
-  type ProductImageUploadFile,
-} from './product-image.util';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductStatusDto } from './dto/update-product-status.dto';
@@ -25,7 +25,7 @@ import { UpdateProductStatusDto } from './dto/update-product-status.dto';
 export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly productImageStorageService: ProductImageStorageService,
+    private readonly catalogImageStorageService: CatalogImageStorageService,
   ) {}
 
   async create(dto: CreateProductDto) {
@@ -178,7 +178,7 @@ export class ProductsService {
     return this.mapProduct(product);
   }
 
-  async updateImage(id: number, file?: ProductImageUploadFile) {
+  async updateImage(id: number, file?: CatalogImageUploadFile) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
@@ -196,9 +196,17 @@ export class ProductsService {
       throw new BadRequestException('Product image file is required');
     }
 
-    this.productImageStorageService.validateProductImageFile(file);
+    this.catalogImageStorageService.validateImageFile(file, 'Product');
 
-    const nextImagePath = await this.productImageStorageService.storeProductImage(id, file);
+    const nextImagePath = await this.catalogImageStorageService.storeImage(
+      {
+        directory: 'products',
+        entityLabel: 'Product',
+        fileNamePrefix: 'product',
+      },
+      id,
+      file,
+    );
 
     try {
       const updatedProduct = await this.prisma.product.update({
@@ -213,11 +221,11 @@ export class ProductsService {
         },
       });
 
-      await this.productImageStorageService.deleteProductImage(product.imagePath);
+      await this.catalogImageStorageService.deleteImage(product.imagePath);
 
       return this.mapProduct(updatedProduct);
     } catch (error) {
-      await this.productImageStorageService.deleteProductImage(nextImagePath);
+      await this.catalogImageStorageService.deleteImage(nextImagePath);
       this.handleProductWriteError(error);
     }
   }
@@ -252,7 +260,7 @@ export class ProductsService {
       },
     });
 
-    await this.productImageStorageService.deleteProductImage(product.imagePath);
+    await this.catalogImageStorageService.deleteImage(product.imagePath);
 
     return this.mapProduct(updatedProduct);
   }
@@ -312,7 +320,7 @@ export class ProductsService {
           });
         });
 
-        await this.productImageStorageService.deleteProductImage(product.imagePath);
+        await this.catalogImageStorageService.deleteImage(product.imagePath);
 
         return {
           id,
@@ -336,7 +344,7 @@ export class ProductsService {
       where: { id },
     });
 
-    await this.productImageStorageService.deleteProductImage(product.imagePath);
+    await this.catalogImageStorageService.deleteImage(product.imagePath);
 
     return {
       id,
@@ -469,8 +477,8 @@ export class ProductsService {
       active: boolean;
     }>;
   }) {
-    const imageUrl = buildProductImagePublicUrl(product.imagePath);
-    const imageAlt = imageUrl ? buildProductImageAlt(product.name) : null;
+    const imageUrl = buildCatalogImagePublicUrl(product.imagePath);
+    const imageAlt = imageUrl ? buildCatalogImageAlt(product.name) : null;
 
     return {
       id: product.id,
