@@ -26,6 +26,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         typeof errorResponse === 'string'
           ? errorResponse
           : errorResponse.message ?? exception.message;
+    } else if (typeof exception === 'object' && exception !== null) {
+      const maybeUploadError = exception as { name?: string; code?: string };
+
+      if (maybeUploadError.name === 'MulterError') {
+        status = HttpStatus.BAD_REQUEST;
+        message =
+          maybeUploadError.code === 'LIMIT_FILE_SIZE'
+            ? 'Product image must be 3 MB or smaller'
+            : 'Product image upload is invalid';
+      }
     }
 
     response.status(status).json({

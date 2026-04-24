@@ -10,8 +10,13 @@ export interface PosCatalogCardMetaRow {
   value: string;
 }
 
+interface PosCatalogCardItem extends CartItemType {
+  imageUrl?: string | null;
+  imageAlt?: string;
+}
+
 interface PosCatalogCardProps {
-  item: CartItemType;
+  item: PosCatalogCardItem;
   kind: PosCatalogCardKind;
   badge: string;
   eyebrow: string;
@@ -31,78 +36,95 @@ export function PosCatalogCard({
   disabled,
   onAdd,
 }: PosCatalogCardProps) {
-  const detailLine = item.subtitle && item.subtitle !== description ? item.subtitle : null;
+  const hasImage = Boolean(item.imageUrl?.trim());
+  const supportingText = resolveSupportingText(item.subtitle, description);
 
   return (
     <button
       type="button"
       onClick={onAdd}
       disabled={disabled}
-      aria-label={`Agregar ${badge.toLowerCase()} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''}, precio ${formatCurrency(item.unit_price)}`}
-      className="pos-catalog-card surface-interactive group rounded-[1.65rem] p-4 text-left sm:p-5"
+      aria-label={`Agregar ${badge.toLowerCase()} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''} al carrito, precio ${formatCurrency(item.unit_price)}`}
+      className="pos-catalog-card surface-interactive group text-left"
       data-kind={kind}
     >
-        <div className="pos-catalog-card__body">
-          <div className="pos-catalog-card__topline">
-            <span className="pos-catalog-card__eyebrow">{eyebrow}</span>
-            <StatusBadge
-              label={badge}
-              tone={resolveCatalogBadgeTone(kind)}
-              className="pos-catalog-card__badge"
-            />
-          </div>
-
+      <div className="pos-catalog-card__body">
         <div className="pos-catalog-card__hero">
           <div className="pos-catalog-card__media-wrap">
             <ProductMedia
               label={item.name}
+              src={item.imageUrl}
+              alt={item.imageAlt ?? `Imagen de ${item.name}`}
               kind={kind}
-              size="lg"
               className="pos-catalog-card__media-frame"
               monogram={createMonogram(item.name)}
             />
-          </div>
-
-          <div className="pos-catalog-card__title-block min-w-0">
-            <p className="pos-catalog-card__title font-display">{item.name}</p>
-            {detailLine ? (
-              <p className="pos-catalog-card__subtitle theme-text-secondary">{detailLine}</p>
+            {!hasImage ? (
+              <span className="pos-catalog-card__media-note" aria-hidden="true">
+                Sin imagen
+              </span>
             ) : null}
           </div>
-        </div>
 
-        <p className="pos-catalog-card__description theme-text-secondary">{description}</p>
+          <div className="pos-catalog-card__content">
+            <div className="pos-catalog-card__topline">
+              <span className="pos-catalog-card__eyebrow">{eyebrow}</span>
+              <StatusBadge
+                label={badge}
+                tone={resolveCatalogBadgeTone(kind)}
+                className="pos-catalog-card__badge"
+              />
+            </div>
 
-        <div className="pos-catalog-card__meta">
-          {metaRows.map((row) => (
-            <div
-              key={`${row.label}-${row.value}`}
-              className="pos-catalog-card__meta-row"
-            >
-              <span className="pos-catalog-card__meta-label theme-text-faint">{row.label}</span>
-              <span className="pos-catalog-card__meta-value font-medium theme-text-secondary">
-                {row.value}
+            <div className="pos-catalog-card__title-block min-w-0">
+              <p className="pos-catalog-card__title font-display">{item.name}</p>
+              {supportingText ? (
+                <p className="pos-catalog-card__description theme-text-secondary">{supportingText}</p>
+              ) : null}
+            </div>
+
+            <div className="pos-catalog-card__meta" role="list" aria-label={`Datos de ${item.name}`}>
+              {metaRows.map((row) => (
+                <div
+                  key={`${row.label}-${row.value}`}
+                  className="pos-catalog-card__meta-row"
+                  role="listitem"
+                >
+                  <span className="pos-catalog-card__meta-label theme-text-faint">{row.label}</span>
+                  <span
+                    className={[
+                      'pos-catalog-card__meta-value',
+                      row.label.trim().toUpperCase() === 'SKU'
+                        ? 'pos-catalog-card__meta-value--mono'
+                        : '',
+                      'font-medium',
+                      'theme-text-secondary',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pos-catalog-card__footer">
+              <div className="pos-catalog-card__price-block">
+                <p className="pos-catalog-card__price-label theme-text-faint">Precio</p>
+                <span className="pos-catalog-card__price metric-accent font-display">
+                  {formatCurrency(item.unit_price)}
+                </span>
+              </div>
+
+              <span className="pos-catalog-card__cta" aria-hidden="true">
+                <span>Agregar</span>
+                <span className="pos-catalog-card__cta-mark" aria-hidden="true">
+                  +
+                </span>
               </span>
             </div>
-          ))}
-        </div>
-
-        <div className="pos-catalog-card__footer">
-          <div className="pos-catalog-card__price-block">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
-              Precio
-            </p>
-            <span className="pos-catalog-card__price metric-accent font-display">
-              {formatCurrency(item.unit_price)}
-            </span>
           </div>
-
-          <span className="pos-catalog-card__cta">
-            <span>Agregar</span>
-            <span className="pos-catalog-card__cta-mark" aria-hidden="true">
-              +
-            </span>
-          </span>
         </div>
       </div>
     </button>
@@ -129,4 +151,18 @@ function resolveCatalogBadgeTone(kind: PosCatalogCardKind) {
     default:
       return 'default';
   }
+}
+
+function resolveSupportingText(subtitle: string | undefined, description: string) {
+  const normalizedDescription = description.trim();
+
+  if (!normalizedDescription) {
+    return null;
+  }
+
+  if (subtitle?.trim().toLowerCase() === normalizedDescription.toLowerCase()) {
+    return null;
+  }
+
+  return normalizedDescription;
 }

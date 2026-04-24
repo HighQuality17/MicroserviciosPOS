@@ -23,6 +23,7 @@ import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { usePermissions } from '@/hooks/usePermissions';
+import { resolveApiAssetUrl } from '@/services/api/assets';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
@@ -51,6 +52,7 @@ import {
   ProductFiscalFieldsSection,
   type ProductFiscalDraft,
 } from './ProductFiscalFieldsSection';
+import { ProductImageField } from './ProductImageField';
 
 
 type RecipeDraftItem = {
@@ -72,6 +74,14 @@ type DeleteConfirmationTarget = {
 type EnrichedCatalogProduct = CatalogProduct & {
   operationalVariant: CatalogVariant | null;
   relatedVariants: CatalogVariant[];
+};
+
+type ProductImageDraft = {
+  imageUrl: string | null;
+  imageAlt: string;
+  pendingImageFile: File | null;
+  markedForRemoval: boolean;
+  error: string | null;
 };
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
@@ -123,6 +133,9 @@ export function ProductsPage() {
   const [productFiscalDraft, setProductFiscalDraft] = useState<ProductFiscalDraft>(
     createEmptyProductFiscalDraft(),
   );
+  const [productImageDraft, setProductImageDraft] = useState<ProductImageDraft>(
+    createEmptyProductImageDraft(),
+  );
   const [productActive, setProductActive] = useState(true);
   const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
   const [productListFilter, setProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
@@ -154,6 +167,9 @@ export function ProductsPage() {
   );
   const [editProductFiscalDraft, setEditProductFiscalDraft] = useState<ProductFiscalDraft>(
     createEmptyProductFiscalDraft(),
+  );
+  const [editProductImageDraft, setEditProductImageDraft] = useState<ProductImageDraft>(
+    createEmptyProductImageDraft(),
   );
   const [editProductActive, setEditProductActive] = useState(true);
   const [editProductFiscalSectionOpen, setEditProductFiscalSectionOpen] = useState(false);
@@ -315,6 +331,15 @@ export function ProductsPage() {
     setEditProductFiscalSectionOpen(nextOpen);
   }
 
+  function resetCreateProductForm() {
+    setProductName('');
+    setProductCatalogDraft(createEmptyProductCatalogDraft());
+    setProductFiscalDraft(createEmptyProductFiscalDraft());
+    setProductImageDraft(createEmptyProductImageDraft());
+    setProductActive(true);
+    setProductFiscalSectionOpen(false);
+  }
+
   async function refreshCatalog() {
     try {
       setLoadingCatalog(true);
@@ -372,13 +397,17 @@ export function ProductsPage() {
       setSubmitError('El nombre del producto es obligatorio.');
       return;
     }
+    if (productImageDraft.error) {
+      setSubmitError(productImageDraft.error);
+      return;
+    }
 
     try {
       setCreatingProduct(true);
       setSubmitError(null);
       setMessage(null);
 
-      const product = await posApi.createProduct({
+      const createdProduct = await posApi.createProduct({
         name: productName.trim(),
         ...serializeProductCatalogDraft(productCatalogDraft),
         ...serializeProductFiscalDraft(
@@ -387,13 +416,37 @@ export function ProductsPage() {
         active: productActive,
       });
 
-      addSessionProduct(product);
-      setProductName('');
-      setProductCatalogDraft(createEmptyProductCatalogDraft());
-      setProductFiscalDraft(createEmptyProductFiscalDraft());
-      setProductActive(true);
-      setProductFiscalSectionOpen(false);
-      setMessage(`Producto #${product.id} creado correctamente.`);
+      let persistedProduct = createdProduct;
+
+      try {
+        const imageProduct = await persistProductImageDraft(
+          createdProduct.id,
+          productImageDraft,
+        );
+
+        if (imageProduct) {
+          persistedProduct = imageProduct;
+        }
+      } catch (imageError) {
+        addSessionProduct(createdProduct);
+        resetCreateProductForm();
+        setMessage(`Producto #${createdProduct.id} creado correctamente.`);
+        setSubmitError(
+          `Producto #${createdProduct.id} creado, pero imagen no pudo ${resolveProductImageMutationAction(productImageDraft)}. Abre editar para reintentar. ${translateCatalogError(
+            imageError instanceof Error ? imageError.message : 'No se pudo guardar la imagen.',
+          )}`,
+        );
+        await refreshCatalog();
+        return;
+      }
+
+      addSessionProduct(persistedProduct);
+      resetCreateProductForm();
+      setMessage(
+        productImageDraft.pendingImageFile
+          ? `Producto #${persistedProduct.id} creado con imagen.`
+          : `Producto #${persistedProduct.id} creado correctamente.`,
+      );
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -469,6 +522,7 @@ export function ProductsPage() {
     setEditProductName(product.name);
     setEditProductCatalogDraft(getProductCatalogDraft(product));
     setEditProductFiscalDraft(getProductFiscalDraft(product));
+    setEditProductImageDraft(getProductImageDraft(product));
     setEditProductActive(product.active);
     setEditProductFiscalSectionOpen(showFiscalFields && hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
@@ -481,11 +535,17 @@ export function ProductsPage() {
       setSubmitError('El nombre del producto es obligatorio.');
       return;
     }
+    if (editProductImageDraft.error) {
+      setSubmitError(editProductImageDraft.error);
+      return;
+    }
 
     try {
       setEditingProduct(true);
       setSubmitError(null);
-      await posApi.updateProduct(selectedProduct.id, {
+      setMessage(null);
+
+      const updatedProduct = await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
         ...serializeProductCatalogDraft(editProductCatalogDraft),
         ...serializeProductFiscalDraft(
@@ -493,8 +553,34 @@ export function ProductsPage() {
         ),
         active: editProductActive,
       });
+
+      let persistedProduct = updatedProduct;
+
+      try {
+        const imageProduct = await persistProductImageDraft(
+          selectedProduct.id,
+          editProductImageDraft,
+        );
+
+        if (imageProduct) {
+          persistedProduct = imageProduct;
+        }
+      } catch (imageError) {
+        setSelectedProduct(updatedProduct);
+        setMessage(`Producto #${selectedProduct.id} actualizado correctamente.`);
+        setSubmitError(
+          `Producto #${selectedProduct.id} actualizado, pero imagen no pudo ${resolveProductImageMutationAction(editProductImageDraft)}. ${translateCatalogError(
+            imageError instanceof Error ? imageError.message : 'No se pudo actualizar la imagen.',
+          )}`,
+        );
+        await refreshCatalog();
+        return;
+      }
+
+      setSelectedProduct(persistedProduct);
       setProductEditorOpen(false);
-      setMessage(`Producto #${selectedProduct.id} actualizado correctamente.`);
+      setEditProductImageDraft(createEmptyProductImageDraft());
+      setMessage(buildProductUpdateSuccessMessage(selectedProduct.id, editProductImageDraft));
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -1125,6 +1211,25 @@ export function ProductsPage() {
                 value={productName}
                 onChange={(event) => setProductName(event.target.value)}
                 placeholder="Latte avellana"
+              />
+              <ProductImageField
+                productName={productName}
+                productType={productCatalogDraft.productType}
+                imageUrl={productImageDraft.imageUrl}
+                imageAlt={productImageDraft.imageAlt}
+                pendingImageFile={productImageDraft.pendingImageFile}
+                markedForRemoval={productImageDraft.markedForRemoval}
+                error={productImageDraft.error}
+                disabled={!canManageCatalog || creatingProduct}
+                onSelectImage={(file) =>
+                  setProductImageDraft((current) => selectProductImage(current, file))
+                }
+                onRemoveImage={() =>
+                  setProductImageDraft((current) => removeProductImage(current))
+                }
+                onRestoreImage={() =>
+                  setProductImageDraft((current) => restoreProductImage(current))
+                }
               />
               <ProductCatalogFieldsSection
                 draft={productCatalogDraft}
@@ -1939,6 +2044,25 @@ export function ProductsPage() {
             onChange={(event) => setEditProductName(event.target.value)}
             placeholder="Nombre del producto"
           />
+          <ProductImageField
+            productName={editProductName || selectedProduct?.name}
+            productType={editProductCatalogDraft.productType}
+            imageUrl={editProductImageDraft.imageUrl}
+            imageAlt={editProductImageDraft.imageAlt}
+            pendingImageFile={editProductImageDraft.pendingImageFile}
+            markedForRemoval={editProductImageDraft.markedForRemoval}
+            error={editProductImageDraft.error}
+            disabled={editingProduct}
+            onSelectImage={(file) =>
+              setEditProductImageDraft((current) => selectProductImage(current, file))
+            }
+            onRemoveImage={() =>
+              setEditProductImageDraft((current) => removeProductImage(current))
+            }
+            onRestoreImage={() =>
+              setEditProductImageDraft((current) => restoreProductImage(current))
+            }
+          />
           <ProductCatalogFieldsSection
             draft={editProductCatalogDraft}
             onInternalCodeChange={(value) =>
@@ -2501,6 +2625,196 @@ function createEmptyProductCatalogDraft(): ProductCatalogDraft {
   };
 }
 
+const productImageUrlKeys = [
+  'image_url',
+  'imageUrl',
+  'thumbnail_url',
+  'thumbnailUrl',
+  'photo_url',
+  'photoUrl',
+  'image_src',
+  'imageSrc',
+] as const;
+
+const productImageAltKeys = [
+  'image_alt',
+  'imageAlt',
+  'alt_text',
+  'altText',
+] as const;
+
+const allowedProductImageMimeTypes = new Set([
+  'image/webp',
+  'image/png',
+  'image/jpeg',
+]);
+
+const maxProductImageFileBytes = 3 * 1024 * 1024;
+
+function createEmptyProductImageDraft(): ProductImageDraft {
+  return {
+    imageUrl: null,
+    imageAlt: '',
+    pendingImageFile: null,
+    markedForRemoval: false,
+    error: null,
+  };
+}
+
+function getProductImageDraft(product: CatalogProduct): ProductImageDraft {
+  const imageUrl = resolveApiAssetUrl(
+    readOptionalProductMediaValue(product, productImageUrlKeys),
+  );
+
+  return {
+    imageUrl,
+    imageAlt: readOptionalProductMediaValue(product, productImageAltKeys) ?? product.name,
+    pendingImageFile: null,
+    markedForRemoval: false,
+    error: null,
+  };
+}
+
+async function persistProductImageDraft(productId: number, draft: ProductImageDraft) {
+  if (draft.pendingImageFile) {
+    return posApi.uploadProductImage(productId, draft.pendingImageFile);
+  }
+
+  if (draft.markedForRemoval && draft.imageUrl) {
+    return posApi.deleteProductImage(productId);
+  }
+
+  return null;
+}
+
+function resolveProductImageMutationAction(draft: ProductImageDraft) {
+  if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
+    return 'quitarse';
+  }
+
+  if (draft.pendingImageFile && draft.imageUrl && !draft.markedForRemoval) {
+    return 'reemplazarse';
+  }
+
+  return 'guardarse';
+}
+
+function buildProductUpdateSuccessMessage(productId: number, draft: ProductImageDraft) {
+  if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
+    return `Producto #${productId} actualizado sin imagen.`;
+  }
+
+  if (draft.pendingImageFile) {
+    return `Producto #${productId} actualizado con imagen.`;
+  }
+
+  return `Producto #${productId} actualizado correctamente.`;
+}
+
+function selectProductImage(current: ProductImageDraft, file: File | null): ProductImageDraft {
+  if (!file) {
+    return {
+      ...current,
+      error: null,
+    };
+  }
+
+  const validationError = validateProductImageFile(file);
+
+  if (validationError) {
+    return {
+      ...current,
+      error: validationError,
+    };
+  }
+
+  return {
+    ...current,
+    pendingImageFile: file,
+    markedForRemoval: false,
+    error: null,
+  };
+}
+
+function removeProductImage(current: ProductImageDraft): ProductImageDraft {
+  if (current.pendingImageFile) {
+    return {
+      ...current,
+      pendingImageFile: null,
+      error: null,
+    };
+  }
+
+  if (current.imageUrl && !current.markedForRemoval) {
+    return {
+      ...current,
+      markedForRemoval: true,
+      error: null,
+    };
+  }
+
+  return {
+    ...current,
+    error: null,
+  };
+}
+
+function restoreProductImage(current: ProductImageDraft): ProductImageDraft {
+  if (!current.imageUrl) {
+    return {
+      ...current,
+      error: null,
+    };
+  }
+
+  return {
+    ...current,
+    pendingImageFile: null,
+    markedForRemoval: false,
+    error: null,
+  };
+}
+
+function validateProductImageFile(file: File) {
+  const normalizedName = file.name.trim().toLowerCase();
+  const hasAllowedMimeType =
+    !file.type || allowedProductImageMimeTypes.has(file.type.toLowerCase());
+  const hasAllowedExtension = ['.webp', '.png', '.jpg', '.jpeg'].some((extension) =>
+    normalizedName.endsWith(extension),
+  );
+
+  if (!hasAllowedMimeType && !hasAllowedExtension) {
+    return 'Usa una imagen WebP, PNG, JPG o JPEG.';
+  }
+
+  if (file.size > maxProductImageFileBytes) {
+    return 'La imagen no puede superar 3 MB.';
+  }
+
+  return null;
+}
+
+function readOptionalProductMediaValue(
+  candidate: unknown,
+  keys: readonly string[],
+) {
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const record = candidate as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
 function getProductCatalogDraft(product: {
   internalCode: string | null;
   barcode: string | null;
@@ -2603,6 +2917,19 @@ function translateCatalogError(message: string) {
   if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
   if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
   if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';
+  if (message === 'Product image file is required') return 'Selecciona una imagen valida antes de guardar.';
+  if (message === 'Product image must be WebP, PNG, JPG or JPEG') {
+    return 'Usa una imagen WebP, PNG, JPG o JPEG.';
+  }
+  if (message === 'Product image must be 3 MB or smaller') {
+    return 'La imagen no puede superar 3 MB.';
+  }
+  if (message === 'Product image upload is invalid') {
+    return 'La imagen seleccionada no es valida. Prueba con otro archivo.';
+  }
+  if (message === 'Product image could not be stored') {
+    return 'No se pudo guardar la imagen en servidor. Intenta de nuevo.';
+  }
   if (message === 'Product type does not support variants') {
     return 'Solo los productos configurados como tipo variante pueden recibir variantes.';
   }

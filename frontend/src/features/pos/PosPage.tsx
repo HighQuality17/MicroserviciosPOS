@@ -41,6 +41,7 @@ import {
   PosMobileCartToast,
   type PosMobileCartToastData,
 } from '@/features/pos/components/PosMobileCartToast';
+import { resolveApiAssetUrl } from '@/services/api/assets';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useCartStore } from '@/store/cartStore';
@@ -75,6 +76,8 @@ interface PosCatalogEntry extends CartItemType {
   description: string;
   metaRows: PosCatalogCardMetaRow[];
   searchText: string;
+  imageUrl?: string | null;
+  imageAlt?: string;
 }
 
 export function PosPage() {
@@ -175,15 +178,23 @@ export function PosPage() {
   }, [mobileCartOpen, setPosMobileOverlayOpen]);
 
   const catalogEntries = useMemo(() => {
+    const productsById = new Map(catalog.products.map((product) => [product.id, product]));
+
     const variantCards: PosCatalogEntry[] = catalog.variants.map((variant: CatalogVariant) => {
       const isSimple = isSimpleOperationalVariant(variant);
       const subtitle = formatVariantSubtitle(variant, { includeSkuPrefix: true }) || undefined;
+      const name = formatVariantDisplayName(variant);
+      const image = resolveCatalogEntryImage(
+        name,
+        variant,
+        productsById.get(variant.product_id),
+      );
 
       return {
         key: `catalog-variant-${variant.id}`,
         item_type: 'VARIANT',
         ref_id: variant.id,
-        name: formatVariantDisplayName(variant),
+        name,
         subtitle,
         unit_price: Number(variant.sale_price),
         qty: 1,
@@ -194,8 +205,10 @@ export function PosPage() {
         eyebrow: isSimple ? 'Venta directa' : 'Presentacion operativa',
         description: subtitle || (isSimple ? 'Producto simple listo para venta inmediata.' : 'Variante activa lista para vender.'),
         metaRows: buildVariantMetaRows(variant),
+        imageUrl: image.imageUrl,
+        imageAlt: image.imageAlt,
         searchText: [
-          formatVariantDisplayName(variant),
+          name,
           subtitle ?? '',
           variant.product_name,
           variant.size,
@@ -206,35 +219,47 @@ export function PosPage() {
       };
     });
 
-    const comboCards: PosCatalogEntry[] = catalog.combos.map((combo: CatalogCombo) => ({
-      key: `catalog-combo-${combo.id}`,
-      item_type: 'COMBO',
-      ref_id: combo.id,
-      name: combo.name,
-      subtitle: combo.items.length ? `${combo.items.length} items configurados` : 'Combo',
-      unit_price: Number(combo.sale_price),
-      qty: 1,
-      kind: 'COMBO',
-      badge: 'Combo',
-      eyebrow: 'Combo listo',
-      description: combo.items.length
-        ? `${combo.items.length} items configurados para venta conjunta.`
-        : 'Combo operativo listo para vender en una sola accion.',
-      metaRows: [
-        {
-          label: 'Items',
-          value: combo.items.length ? `${combo.items.length} configurados` : 'Sin detalle',
-        },
-        {
-          label: 'Tipo',
-          value: 'Venta agrupada',
-        },
-      ],
-      searchText: `${combo.name} ${combo.items.length} combo`.toLowerCase(),
-    }));
+    const comboCards: PosCatalogEntry[] = catalog.combos.map((combo: CatalogCombo) => {
+      const leadVariant = combo.items[0]?.variant;
+      const image = resolveCatalogEntryImage(
+        combo.name,
+        combo,
+        leadVariant,
+        leadVariant ? productsById.get(leadVariant.product_id) : null,
+      );
+
+      return {
+        key: `catalog-combo-${combo.id}`,
+        item_type: 'COMBO',
+        ref_id: combo.id,
+        name: combo.name,
+        subtitle: combo.items.length ? `${combo.items.length} items configurados` : 'Combo',
+        unit_price: Number(combo.sale_price),
+        qty: 1,
+        kind: 'COMBO',
+        badge: 'Combo',
+        eyebrow: 'Combo listo',
+        description: combo.items.length
+          ? `${combo.items.length} items configurados para venta conjunta.`
+          : 'Combo operativo listo para vender en una sola accion.',
+        metaRows: [
+          {
+            label: 'Items',
+            value: combo.items.length ? `${combo.items.length} configurados` : 'Sin detalle',
+          },
+          {
+            label: 'Tipo',
+            value: 'Venta agrupada',
+          },
+        ],
+        imageUrl: image.imageUrl,
+        imageAlt: image.imageAlt,
+        searchText: `${combo.name} ${combo.items.length} combo`.toLowerCase(),
+      };
+    });
 
     return [...variantCards, ...comboCards];
-  }, [catalog.combos, catalog.variants]);
+  }, [catalog.combos, catalog.products, catalog.variants]);
 
   const visibleCatalogItems = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -896,6 +921,69 @@ function formatPosPaymentError(error: unknown, variantNameById: Map<number, stri
   }
 
   return 'El item seleccionado no tiene receta configurada. Revisalo en administracion antes de cobrar esta venta.';
+}
+
+const catalogImageUrlKeys = [
+  'image_url',
+  'imageUrl',
+  'thumbnail_url',
+  'thumbnailUrl',
+  'photo_url',
+  'photoUrl',
+  'image_src',
+  'imageSrc',
+] as const;
+
+const catalogImageAltKeys = [
+  'image_alt',
+  'imageAlt',
+  'alt_text',
+  'altText',
+] as const;
+
+function resolveCatalogEntryImage(label: string, ...candidates: unknown[]) {
+  const imageUrl = resolveApiAssetUrl(
+    candidates
+    .map((candidate) => readOptionalCatalogString(candidate, catalogImageUrlKeys))
+    .find(Boolean) ?? null,
+  );
+
+  if (!imageUrl) {
+    return {
+      imageUrl: null,
+      imageAlt: undefined,
+    };
+  }
+
+  const imageAlt = candidates
+    .map((candidate) => readOptionalCatalogString(candidate, catalogImageAltKeys))
+    .find(Boolean);
+
+  return {
+    imageUrl,
+    imageAlt: imageAlt ?? `Imagen de ${label}`,
+  };
+}
+
+function readOptionalCatalogString(
+  candidate: unknown,
+  keys: readonly string[],
+) {
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const record = candidate as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
 }
 
 
