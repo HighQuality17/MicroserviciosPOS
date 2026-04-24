@@ -11,13 +11,22 @@ import {
   ensureOperationalVariantsForSimpleProducts,
   isOperationalVariantProduct,
 } from './operational-variant.util';
+import { ProductImageStorageService } from './product-image-storage.service';
+import {
+  buildProductImageAlt,
+  buildProductImagePublicUrl,
+  type ProductImageUploadFile,
+} from './product-image.util';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductStatusDto } from './dto/update-product-status.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly productImageStorageService: ProductImageStorageService,
+  ) {}
 
   async create(dto: CreateProductDto) {
     try {
@@ -169,6 +178,85 @@ export class ProductsService {
     return this.mapProduct(product);
   }
 
+  async updateImage(id: number, file?: ProductImageUploadFile) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: {
+          orderBy: [{ size: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (!file) {
+      throw new BadRequestException('Product image file is required');
+    }
+
+    this.productImageStorageService.validateProductImageFile(file);
+
+    const nextImagePath = await this.productImageStorageService.storeProductImage(id, file);
+
+    try {
+      const updatedProduct = await this.prisma.product.update({
+        where: { id },
+        data: {
+          imagePath: nextImagePath,
+        },
+        include: {
+          variants: {
+            orderBy: [{ size: 'asc' }, { id: 'asc' }],
+          },
+        },
+      });
+
+      await this.productImageStorageService.deleteProductImage(product.imagePath);
+
+      return this.mapProduct(updatedProduct);
+    } catch (error) {
+      await this.productImageStorageService.deleteProductImage(nextImagePath);
+      this.handleProductWriteError(error);
+    }
+  }
+
+  async removeImage(id: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: {
+          orderBy: [{ size: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (!product.imagePath) {
+      return this.mapProduct(product);
+    }
+
+    const updatedProduct = await this.prisma.product.update({
+      where: { id },
+      data: {
+        imagePath: null,
+      },
+      include: {
+        variants: {
+          orderBy: [{ size: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
+
+    await this.productImageStorageService.deleteProductImage(product.imagePath);
+
+    return this.mapProduct(updatedProduct);
+  }
+
   async remove(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
@@ -224,6 +312,8 @@ export class ProductsService {
           });
         });
 
+        await this.productImageStorageService.deleteProductImage(product.imagePath);
+
         return {
           id,
           deleted: true,
@@ -245,6 +335,8 @@ export class ProductsService {
     await this.prisma.product.delete({
       where: { id },
     });
+
+    await this.productImageStorageService.deleteProductImage(product.imagePath);
 
     return {
       id,
@@ -359,6 +451,7 @@ export class ProductsService {
     supplierReference: string | null;
     description: string | null;
     brand: string | null;
+    imagePath: string | null;
     productType: ProductType;
     unspscCode: string | null;
     vatType: VatType | null;
@@ -376,6 +469,9 @@ export class ProductsService {
       active: boolean;
     }>;
   }) {
+    const imageUrl = buildProductImagePublicUrl(product.imagePath);
+    const imageAlt = imageUrl ? buildProductImageAlt(product.name) : null;
+
     return {
       id: product.id,
       name: product.name,
@@ -384,6 +480,8 @@ export class ProductsService {
       supplierReference: product.supplierReference,
       description: product.description,
       brand: product.brand,
+      imageUrl,
+      imageAlt,
       productType: product.productType,
       unspscCode: product.unspscCode,
       vatType: product.vatType,
@@ -402,6 +500,8 @@ export class ProductsService {
           size: variant.size,
           sku: variant.sku,
           sale_price: Number(variant.salePrice),
+          image_url: imageUrl,
+          image_alt: imageAlt,
           active: variant.active,
         })) ?? [],
     };

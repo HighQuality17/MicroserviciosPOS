@@ -216,6 +216,7 @@ model Product {
   supplierReference String?
   description       String?
   brand             String?
+  imagePath         String?
   productType       ProductType      @default(SIMPLE)
   unspscCode        String?
   vatType           VatType?

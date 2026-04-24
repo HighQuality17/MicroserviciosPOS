@@ -9,3 +9,4 @@ prisma/dev.db
 vite.config.js
 vite.config.d.ts
 .codex/
+uploads/

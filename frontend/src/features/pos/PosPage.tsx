@@ -41,6 +41,7 @@ import {
   PosMobileCartToast,
   type PosMobileCartToastData,
 } from '@/features/pos/components/PosMobileCartToast';
+import { resolveApiAssetUrl } from '@/services/api/assets';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { useCartStore } from '@/store/cartStore';
@@ -941,9 +942,11 @@ const catalogImageAltKeys = [
 ] as const;
 
 function resolveCatalogEntryImage(label: string, ...candidates: unknown[]) {
-  const imageUrl = candidates
+  const imageUrl = resolveApiAssetUrl(
+    candidates
     .map((candidate) => readOptionalCatalogString(candidate, catalogImageUrlKeys))
-    .find(Boolean) ?? null;
+    .find(Boolean) ?? null,
+  );
 
   if (!imageUrl) {
     return {

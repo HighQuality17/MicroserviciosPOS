@@ -10,6 +10,10 @@ import {
   ensureOperationalVariantsForSimpleProducts,
   isOperationalVariantProduct,
 } from '../products/operational-variant.util';
+import {
+  buildProductImageAlt,
+  buildProductImagePublicUrl,
+} from '../products/product-image.util';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { VariantListStatus } from './dto/get-variants-query.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
@@ -236,8 +240,11 @@ export class VariantsService {
     sku: string;
     salePrice: unknown;
     active: boolean;
-    product: { name: string; productType: ProductType };
+    product: { name: string; productType: ProductType; imagePath: string | null };
   }) {
+    const imageUrl = buildProductImagePublicUrl(variant.product.imagePath);
+    const imageAlt = imageUrl ? buildProductImageAlt(variant.product.name) : null;
+
     return {
       id: variant.id,
       product_id: variant.productId,
@@ -247,6 +254,8 @@ export class VariantsService {
       size: variant.size,
       sku: variant.sku,
       sale_price: Number(variant.salePrice),
+      image_url: imageUrl,
+      image_alt: imageAlt,
       active: variant.active,
     };
   }

@@ -23,6 +23,7 @@ import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { usePermissions } from '@/hooks/usePermissions';
+import { resolveApiAssetUrl } from '@/services/api/assets';
 import { posApi } from '@/services/api/posApi';
 import { useAppStore } from '@/store/appStore';
 import { isAccessDeniedError, translateProtectedError } from '@/utils/apiError';
@@ -330,6 +331,15 @@ export function ProductsPage() {
     setEditProductFiscalSectionOpen(nextOpen);
   }
 
+  function resetCreateProductForm() {
+    setProductName('');
+    setProductCatalogDraft(createEmptyProductCatalogDraft());
+    setProductFiscalDraft(createEmptyProductFiscalDraft());
+    setProductImageDraft(createEmptyProductImageDraft());
+    setProductActive(true);
+    setProductFiscalSectionOpen(false);
+  }
+
   async function refreshCatalog() {
     try {
       setLoadingCatalog(true);
@@ -387,13 +397,17 @@ export function ProductsPage() {
       setSubmitError('El nombre del producto es obligatorio.');
       return;
     }
+    if (productImageDraft.error) {
+      setSubmitError(productImageDraft.error);
+      return;
+    }
 
     try {
       setCreatingProduct(true);
       setSubmitError(null);
       setMessage(null);
 
-      const product = await posApi.createProduct({
+      const createdProduct = await posApi.createProduct({
         name: productName.trim(),
         ...serializeProductCatalogDraft(productCatalogDraft),
         ...serializeProductFiscalDraft(
@@ -402,14 +416,37 @@ export function ProductsPage() {
         active: productActive,
       });
 
-      addSessionProduct(product);
-      setProductName('');
-      setProductCatalogDraft(createEmptyProductCatalogDraft());
-      setProductFiscalDraft(createEmptyProductFiscalDraft());
-      setProductImageDraft(createEmptyProductImageDraft());
-      setProductActive(true);
-      setProductFiscalSectionOpen(false);
-      setMessage(`Producto #${product.id} creado correctamente.`);
+      let persistedProduct = createdProduct;
+
+      try {
+        const imageProduct = await persistProductImageDraft(
+          createdProduct.id,
+          productImageDraft,
+        );
+
+        if (imageProduct) {
+          persistedProduct = imageProduct;
+        }
+      } catch (imageError) {
+        addSessionProduct(createdProduct);
+        resetCreateProductForm();
+        setMessage(`Producto #${createdProduct.id} creado correctamente.`);
+        setSubmitError(
+          `Producto #${createdProduct.id} creado, pero imagen no pudo ${resolveProductImageMutationAction(productImageDraft)}. Abre editar para reintentar. ${translateCatalogError(
+            imageError instanceof Error ? imageError.message : 'No se pudo guardar la imagen.',
+          )}`,
+        );
+        await refreshCatalog();
+        return;
+      }
+
+      addSessionProduct(persistedProduct);
+      resetCreateProductForm();
+      setMessage(
+        productImageDraft.pendingImageFile
+          ? `Producto #${persistedProduct.id} creado con imagen.`
+          : `Producto #${persistedProduct.id} creado correctamente.`,
+      );
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -498,11 +535,17 @@ export function ProductsPage() {
       setSubmitError('El nombre del producto es obligatorio.');
       return;
     }
+    if (editProductImageDraft.error) {
+      setSubmitError(editProductImageDraft.error);
+      return;
+    }
 
     try {
       setEditingProduct(true);
       setSubmitError(null);
-      await posApi.updateProduct(selectedProduct.id, {
+      setMessage(null);
+
+      const updatedProduct = await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
         ...serializeProductCatalogDraft(editProductCatalogDraft),
         ...serializeProductFiscalDraft(
@@ -510,9 +553,34 @@ export function ProductsPage() {
         ),
         active: editProductActive,
       });
+
+      let persistedProduct = updatedProduct;
+
+      try {
+        const imageProduct = await persistProductImageDraft(
+          selectedProduct.id,
+          editProductImageDraft,
+        );
+
+        if (imageProduct) {
+          persistedProduct = imageProduct;
+        }
+      } catch (imageError) {
+        setSelectedProduct(updatedProduct);
+        setMessage(`Producto #${selectedProduct.id} actualizado correctamente.`);
+        setSubmitError(
+          `Producto #${selectedProduct.id} actualizado, pero imagen no pudo ${resolveProductImageMutationAction(editProductImageDraft)}. ${translateCatalogError(
+            imageError instanceof Error ? imageError.message : 'No se pudo actualizar la imagen.',
+          )}`,
+        );
+        await refreshCatalog();
+        return;
+      }
+
+      setSelectedProduct(persistedProduct);
       setProductEditorOpen(false);
       setEditProductImageDraft(createEmptyProductImageDraft());
-      setMessage(`Producto #${selectedProduct.id} actualizado correctamente.`);
+      setMessage(buildProductUpdateSuccessMessage(selectedProduct.id, editProductImageDraft));
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -2594,13 +2662,53 @@ function createEmptyProductImageDraft(): ProductImageDraft {
 }
 
 function getProductImageDraft(product: CatalogProduct): ProductImageDraft {
+  const imageUrl = resolveApiAssetUrl(
+    readOptionalProductMediaValue(product, productImageUrlKeys),
+  );
+
   return {
-    imageUrl: readOptionalProductMediaValue(product, productImageUrlKeys),
+    imageUrl,
     imageAlt: readOptionalProductMediaValue(product, productImageAltKeys) ?? product.name,
     pendingImageFile: null,
     markedForRemoval: false,
     error: null,
   };
+}
+
+async function persistProductImageDraft(productId: number, draft: ProductImageDraft) {
+  if (draft.pendingImageFile) {
+    return posApi.uploadProductImage(productId, draft.pendingImageFile);
+  }
+
+  if (draft.markedForRemoval && draft.imageUrl) {
+    return posApi.deleteProductImage(productId);
+  }
+
+  return null;
+}
+
+function resolveProductImageMutationAction(draft: ProductImageDraft) {
+  if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
+    return 'quitarse';
+  }
+
+  if (draft.pendingImageFile && draft.imageUrl && !draft.markedForRemoval) {
+    return 'reemplazarse';
+  }
+
+  return 'guardarse';
+}
+
+function buildProductUpdateSuccessMessage(productId: number, draft: ProductImageDraft) {
+  if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
+    return `Producto #${productId} actualizado sin imagen.`;
+  }
+
+  if (draft.pendingImageFile) {
+    return `Producto #${productId} actualizado con imagen.`;
+  }
+
+  return `Producto #${productId} actualizado correctamente.`;
 }
 
 function selectProductImage(current: ProductImageDraft, file: File | null): ProductImageDraft {
@@ -2809,6 +2917,19 @@ function translateCatalogError(message: string) {
   if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
   if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
   if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';
+  if (message === 'Product image file is required') return 'Selecciona una imagen valida antes de guardar.';
+  if (message === 'Product image must be WebP, PNG, JPG or JPEG') {
+    return 'Usa una imagen WebP, PNG, JPG o JPEG.';
+  }
+  if (message === 'Product image must be 3 MB or smaller') {
+    return 'La imagen no puede superar 3 MB.';
+  }
+  if (message === 'Product image upload is invalid') {
+    return 'La imagen seleccionada no es valida. Prueba con otro archivo.';
+  }
+  if (message === 'Product image could not be stored') {
+    return 'No se pudo guardar la imagen en servidor. Intenta de nuevo.';
+  }
   if (message === 'Product type does not support variants') {
     return 'Solo los productos configurados como tipo variante pueden recibir variantes.';
   }
