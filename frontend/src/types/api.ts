@@ -290,6 +290,10 @@ export interface CartItem {
   ref_id: number;
   name: string;
   subtitle?: string;
+  detailLabel?: string;
+  metadataLabel?: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
   unit_price: number;
   qty: number;
   product_type?: ProductType;
