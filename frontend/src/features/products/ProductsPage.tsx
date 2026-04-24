@@ -51,6 +51,7 @@ import {
   ProductFiscalFieldsSection,
   type ProductFiscalDraft,
 } from './ProductFiscalFieldsSection';
+import { ProductImageField } from './ProductImageField';
 
 
 type RecipeDraftItem = {
@@ -72,6 +73,14 @@ type DeleteConfirmationTarget = {
 type EnrichedCatalogProduct = CatalogProduct & {
   operationalVariant: CatalogVariant | null;
   relatedVariants: CatalogVariant[];
+};
+
+type ProductImageDraft = {
+  imageUrl: string | null;
+  imageAlt: string;
+  pendingImageFile: File | null;
+  markedForRemoval: boolean;
+  error: string | null;
 };
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
@@ -123,6 +132,9 @@ export function ProductsPage() {
   const [productFiscalDraft, setProductFiscalDraft] = useState<ProductFiscalDraft>(
     createEmptyProductFiscalDraft(),
   );
+  const [productImageDraft, setProductImageDraft] = useState<ProductImageDraft>(
+    createEmptyProductImageDraft(),
+  );
   const [productActive, setProductActive] = useState(true);
   const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
   const [productListFilter, setProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
@@ -154,6 +166,9 @@ export function ProductsPage() {
   );
   const [editProductFiscalDraft, setEditProductFiscalDraft] = useState<ProductFiscalDraft>(
     createEmptyProductFiscalDraft(),
+  );
+  const [editProductImageDraft, setEditProductImageDraft] = useState<ProductImageDraft>(
+    createEmptyProductImageDraft(),
   );
   const [editProductActive, setEditProductActive] = useState(true);
   const [editProductFiscalSectionOpen, setEditProductFiscalSectionOpen] = useState(false);
@@ -391,6 +406,7 @@ export function ProductsPage() {
       setProductName('');
       setProductCatalogDraft(createEmptyProductCatalogDraft());
       setProductFiscalDraft(createEmptyProductFiscalDraft());
+      setProductImageDraft(createEmptyProductImageDraft());
       setProductActive(true);
       setProductFiscalSectionOpen(false);
       setMessage(`Producto #${product.id} creado correctamente.`);
@@ -469,6 +485,7 @@ export function ProductsPage() {
     setEditProductName(product.name);
     setEditProductCatalogDraft(getProductCatalogDraft(product));
     setEditProductFiscalDraft(getProductFiscalDraft(product));
+    setEditProductImageDraft(getProductImageDraft(product));
     setEditProductActive(product.active);
     setEditProductFiscalSectionOpen(showFiscalFields && hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
@@ -494,6 +511,7 @@ export function ProductsPage() {
         active: editProductActive,
       });
       setProductEditorOpen(false);
+      setEditProductImageDraft(createEmptyProductImageDraft());
       setMessage(`Producto #${selectedProduct.id} actualizado correctamente.`);
       await refreshCatalog();
     } catch (error) {
@@ -1125,6 +1143,25 @@ export function ProductsPage() {
                 value={productName}
                 onChange={(event) => setProductName(event.target.value)}
                 placeholder="Latte avellana"
+              />
+              <ProductImageField
+                productName={productName}
+                productType={productCatalogDraft.productType}
+                imageUrl={productImageDraft.imageUrl}
+                imageAlt={productImageDraft.imageAlt}
+                pendingImageFile={productImageDraft.pendingImageFile}
+                markedForRemoval={productImageDraft.markedForRemoval}
+                error={productImageDraft.error}
+                disabled={!canManageCatalog || creatingProduct}
+                onSelectImage={(file) =>
+                  setProductImageDraft((current) => selectProductImage(current, file))
+                }
+                onRemoveImage={() =>
+                  setProductImageDraft((current) => removeProductImage(current))
+                }
+                onRestoreImage={() =>
+                  setProductImageDraft((current) => restoreProductImage(current))
+                }
               />
               <ProductCatalogFieldsSection
                 draft={productCatalogDraft}
@@ -1939,6 +1976,25 @@ export function ProductsPage() {
             onChange={(event) => setEditProductName(event.target.value)}
             placeholder="Nombre del producto"
           />
+          <ProductImageField
+            productName={editProductName || selectedProduct?.name}
+            productType={editProductCatalogDraft.productType}
+            imageUrl={editProductImageDraft.imageUrl}
+            imageAlt={editProductImageDraft.imageAlt}
+            pendingImageFile={editProductImageDraft.pendingImageFile}
+            markedForRemoval={editProductImageDraft.markedForRemoval}
+            error={editProductImageDraft.error}
+            disabled={editingProduct}
+            onSelectImage={(file) =>
+              setEditProductImageDraft((current) => selectProductImage(current, file))
+            }
+            onRemoveImage={() =>
+              setEditProductImageDraft((current) => removeProductImage(current))
+            }
+            onRestoreImage={() =>
+              setEditProductImageDraft((current) => restoreProductImage(current))
+            }
+          />
           <ProductCatalogFieldsSection
             draft={editProductCatalogDraft}
             onInternalCodeChange={(value) =>
@@ -2499,6 +2555,156 @@ function createEmptyProductCatalogDraft(): ProductCatalogDraft {
     brand: '',
     productType: 'SIMPLE',
   };
+}
+
+const productImageUrlKeys = [
+  'image_url',
+  'imageUrl',
+  'thumbnail_url',
+  'thumbnailUrl',
+  'photo_url',
+  'photoUrl',
+  'image_src',
+  'imageSrc',
+] as const;
+
+const productImageAltKeys = [
+  'image_alt',
+  'imageAlt',
+  'alt_text',
+  'altText',
+] as const;
+
+const allowedProductImageMimeTypes = new Set([
+  'image/webp',
+  'image/png',
+  'image/jpeg',
+]);
+
+const maxProductImageFileBytes = 3 * 1024 * 1024;
+
+function createEmptyProductImageDraft(): ProductImageDraft {
+  return {
+    imageUrl: null,
+    imageAlt: '',
+    pendingImageFile: null,
+    markedForRemoval: false,
+    error: null,
+  };
+}
+
+function getProductImageDraft(product: CatalogProduct): ProductImageDraft {
+  return {
+    imageUrl: readOptionalProductMediaValue(product, productImageUrlKeys),
+    imageAlt: readOptionalProductMediaValue(product, productImageAltKeys) ?? product.name,
+    pendingImageFile: null,
+    markedForRemoval: false,
+    error: null,
+  };
+}
+
+function selectProductImage(current: ProductImageDraft, file: File | null): ProductImageDraft {
+  if (!file) {
+    return {
+      ...current,
+      error: null,
+    };
+  }
+
+  const validationError = validateProductImageFile(file);
+
+  if (validationError) {
+    return {
+      ...current,
+      error: validationError,
+    };
+  }
+
+  return {
+    ...current,
+    pendingImageFile: file,
+    markedForRemoval: false,
+    error: null,
+  };
+}
+
+function removeProductImage(current: ProductImageDraft): ProductImageDraft {
+  if (current.pendingImageFile) {
+    return {
+      ...current,
+      pendingImageFile: null,
+      error: null,
+    };
+  }
+
+  if (current.imageUrl && !current.markedForRemoval) {
+    return {
+      ...current,
+      markedForRemoval: true,
+      error: null,
+    };
+  }
+
+  return {
+    ...current,
+    error: null,
+  };
+}
+
+function restoreProductImage(current: ProductImageDraft): ProductImageDraft {
+  if (!current.imageUrl) {
+    return {
+      ...current,
+      error: null,
+    };
+  }
+
+  return {
+    ...current,
+    pendingImageFile: null,
+    markedForRemoval: false,
+    error: null,
+  };
+}
+
+function validateProductImageFile(file: File) {
+  const normalizedName = file.name.trim().toLowerCase();
+  const hasAllowedMimeType =
+    !file.type || allowedProductImageMimeTypes.has(file.type.toLowerCase());
+  const hasAllowedExtension = ['.webp', '.png', '.jpg', '.jpeg'].some((extension) =>
+    normalizedName.endsWith(extension),
+  );
+
+  if (!hasAllowedMimeType && !hasAllowedExtension) {
+    return 'Usa una imagen WebP, PNG, JPG o JPEG.';
+  }
+
+  if (file.size > maxProductImageFileBytes) {
+    return 'La imagen no puede superar 3 MB.';
+  }
+
+  return null;
+}
+
+function readOptionalProductMediaValue(
+  candidate: unknown,
+  keys: readonly string[],
+) {
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const record = candidate as Record<string, unknown>;
+
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
 }
 
 function getProductCatalogDraft(product: {
