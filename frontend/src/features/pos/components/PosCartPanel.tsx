@@ -1,5 +1,14 @@
 import clsx from 'clsx';
-import { ShoppingCart } from 'lucide-react';
+import {
+  AlertTriangle,
+  BadgePercent,
+  CheckCircle2,
+  CreditCard,
+  ReceiptText,
+  ShoppingCart,
+  Trash2,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Button } from '@/components/Button';
 import { CartItem } from '@/components/CartItem';
 import { EmptyState } from '@/components/EmptyState';
@@ -51,266 +60,225 @@ export function PosCartPanel({
   const activeDiscountLabel = resolveDiscountLabel(discountType, discountInput);
   const isMobile = mode === 'mobile';
   const lineCountLabel = items.length === 1 ? '1 linea' : `${items.length} lineas`;
-
-  if (isMobile) {
-    return (
-      <div
-        className={clsx(
-          'pos-cart-panel pos-cart-panel--mobile grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden',
-          className,
-        )}
-      >
-        <div className="pos-cart-panel__hero grid gap-4 pb-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="section-kicker">Operacion de venta</p>
-              <h2 className="font-display mt-2 text-2xl font-bold theme-text-strong">Panel de venta</h2>
-              <p className="mt-2 text-sm leading-6 theme-text-secondary">
-                {locationName
-                  ? `POS activo en ${locationName}. Revisa items, descuento y cobro.`
-                  : 'Revisa items, descuento y cobro sin salir de la operacion.'}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearCart}
-              disabled={items.length === 0}
-              className="pos-cart-panel__clear shrink-0"
-            >
-              Limpiar
-            </Button>
-          </div>
-
-          <div className="pos-cart-panel__stats-grid grid grid-cols-2 gap-2">
-            <div className="pos-cart-panel__stat surface-subtle rounded-[1.2rem] p-3.5">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] theme-text-faint">
-                Items
-              </p>
-              <p className="mt-2 font-display text-xl font-bold theme-text-strong">
-                {formatItemCount(totalUnits)}
-              </p>
-              <p className="mt-1 text-xs theme-text-secondary">{lineCountLabel}</p>
-            </div>
-
-            <div className="pos-cart-panel__stat surface-subtle rounded-[1.2rem] p-3.5">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] theme-text-faint">
-                Total actual
-              </p>
-              <p className="mt-2 font-display text-xl font-bold metric-accent-strong">
-                {formatCurrency(totals.total)}
-              </p>
-              <p className="mt-1 text-xs theme-text-secondary">{activeDiscountLabel}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="pos-cart-panel__scroll min-h-0 overflow-y-auto pr-1">
-          <div className="pos-cart-panel__body grid content-start gap-5 pb-4">
-            <section className="pos-cart-panel__list-shell">
-              <div className="pos-cart-panel__section-head">
-                <div>
-                  <p className="pos-cart-panel__section-kicker">Items cargados</p>
-                  <p className="pos-cart-panel__section-title">Detalle de venta</p>
-                </div>
-                <span className="pos-cart-panel__section-pill">{lineCountLabel}</span>
-              </div>
-              {renderCartItemsList(items, onChangeQty, onRemove)}
-            </section>
-
-            <section className="pos-cart-panel__discount-shell grid gap-4">
-              <div className="grid gap-4">
-                <Select
-                  label="Descuento"
-                  value={discountType}
-                  onChange={(event) => onDiscountTypeChange(event.target.value as DiscountType)}
-                >
-                  <option value="NONE">Sin descuento</option>
-                  <option value="PERCENT">Porcentaje</option>
-                  <option value="FIXED">Valor fijo</option>
-                </Select>
-
-                <Input
-                  type="number"
-                  min={0}
-                  label="Valor"
-                  placeholder={discountType === 'PERCENT' ? 'Ej: 10' : 'Ej: 2000'}
-                  hint={
-                    discountType === 'PERCENT'
-                      ? 'Ingresa el porcentaje a descontar sobre el subtotal.'
-                      : 'Ingresa el monto del descuento si aplica.'
-                  }
-                  value={discountInput}
-                  onChange={(event) => onDiscountInputChange(event.target.value)}
-                />
-              </div>
-
-              <div className="pos-cart-summary surface-subtle-strong rounded-[1.6rem] p-4">
-                <div className="pos-cart-summary__row flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-                  <span>Subtotal</span>
-                  <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>
-                </div>
-                <div className="pos-cart-summary__row mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-                  <span>Descuento</span>
-                  <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
-                </div>
-                <div className="pos-cart-summary__row mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-                  <span>Items</span>
-                  <span className="metric-accent">{formatItemCount(totalUnits)}</span>
-                </div>
-                <div className="pos-cart-summary__total mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
-                  <span className="font-display text-xl font-bold theme-text-strong">Total</span>
-                  <span className="metric-accent-strong font-display text-3xl font-bold">
-                    {formatCurrency(totals.total)}
-                  </span>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        <div className="pos-cart-panel__footer grid gap-3 border-t border-[color:var(--line)] pt-4">
-          <p className="pos-cart-panel__footnote text-xs leading-5 theme-text-muted">
-            {checkoutDisabledReason ?? 'Listo para cobrar con el flujo actual del POS.'}
-          </p>
-
-          <Button
-            size="lg"
-            disabled={Boolean(checkoutDisabledReason)}
-            aria-haspopup="dialog"
-            aria-controls="payment-dialog"
-            onClick={onCheckout}
-            className="pos-cart-panel__checkout-button w-full"
-          >
-            Cobrar
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const checkoutBlocked = Boolean(checkoutDisabledReason);
+  const discountApplied = totals.discountAmount > 0;
 
   return (
-        <div className={clsx('pos-cart-panel pos-cart-panel--desktop flex min-h-0 flex-col overflow-hidden', className)}>
-      <div className="pos-cart-panel__hero flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="section-kicker">Operacion de venta</p>
-          <h2 className="font-display mt-2 text-2xl font-bold theme-text-strong">Panel de venta</h2>
-          <p className="mt-2 text-sm leading-6 theme-text-secondary">
+    <div
+      className={clsx(
+        'pos-cart-panel',
+        isMobile
+          ? 'pos-cart-panel--mobile grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden'
+          : 'pos-cart-panel--desktop flex min-h-0 flex-col overflow-hidden',
+        className,
+      )}
+    >
+      <header className="pos-cart-panel__hero">
+        <div className="pos-cart-panel__hero-copy">
+          <p className="section-kicker">Carrito</p>
+          <h2 className="pos-cart-panel__title theme-text-strong">Venta actual</h2>
+          <p className="pos-cart-panel__subtitle theme-text-secondary">
             {locationName
-              ? `POS activo en ${locationName}. Ajusta cantidades, descuentos y cobro sin salir del flujo.`
-              : 'Ajusta cantidades, descuentos y cobro sin salir de la operacion.'}
+              ? `${locationName} listo para revisar items, descuento y cobro.`
+              : 'Selecciona POS, carga items y prepara el cobro.'}
           </p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClearCart}
-          disabled={items.length === 0}
-          className="pos-cart-panel__clear shrink-0"
-        >
-          Limpiar
-        </Button>
-      </div>
-
-      <div className="pos-cart-panel__stats-grid mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="pos-cart-panel__stat surface-subtle rounded-[1.35rem] p-4">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
-            Items cargados
-          </p>
-          <p className="mt-2 font-display text-2xl font-bold theme-text-strong">
-            {formatItemCount(totalUnits)}
-          </p>
-          <p className="mt-1 text-xs theme-text-secondary">{lineCountLabel} en la venta</p>
         </div>
 
-        <div className="pos-cart-panel__stat surface-subtle rounded-[1.35rem] p-4">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] theme-text-faint">
-            Total actual
-          </p>
-          <p className="mt-2 font-display text-2xl font-bold metric-accent-strong">
-            {formatCurrency(totals.total)}
-          </p>
-          <p className="mt-1 text-xs theme-text-secondary">{activeDiscountLabel}</p>
-        </div>
-      </div>
-
-      <section className="pos-cart-panel__list-shell mt-5 min-h-0 flex-1 overflow-hidden">
-        <div className="pos-cart-panel__section-head">
-          <div>
-            <p className="pos-cart-panel__section-kicker">Venta activa</p>
-            <p className="pos-cart-panel__section-title">Items del carrito</p>
-          </div>
-          <span className="pos-cart-panel__section-pill">{lineCountLabel}</span>
-        </div>
-        <div className="pos-cart-panel__scroll max-h-[min(24rem,38vh)] overflow-y-auto xl:max-h-[calc(100vh-31rem)]">
-          {renderCartItemsList(items, onChangeQty, onRemove)}
-        </div>
-      </section>
-
-      <div className="pos-cart-panel__discount-shell mt-5 grid gap-4 border-t border-[color:var(--line)] pt-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            label="Descuento"
-            value={discountType}
-            onChange={(event) => onDiscountTypeChange(event.target.value as DiscountType)}
+        <div className="pos-cart-panel__hero-actions">
+          <span className="pos-cart-panel__count-chip" aria-label={`${lineCountLabel} en carrito`}>
+            {lineCountLabel}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClearCart}
+            disabled={items.length === 0}
+            className="pos-cart-panel__clear"
           >
-            <option value="NONE">Sin descuento</option>
-            <option value="PERCENT">Porcentaje</option>
-            <option value="FIXED">Valor fijo</option>
-          </Select>
-
-          <Input
-            type="number"
-            min={0}
-            label="Valor"
-            placeholder={discountType === 'PERCENT' ? 'Ej: 10' : 'Ej: 2000'}
-            hint={
-              discountType === 'PERCENT'
-                ? 'Ingresa el porcentaje a descontar sobre el subtotal.'
-                : 'Ingresa el monto del descuento si aplica.'
-            }
-            value={discountInput}
-            onChange={(event) => onDiscountInputChange(event.target.value)}
-          />
+            <Trash2 size={14} aria-hidden="true" />
+            <span>Limpiar</span>
+          </Button>
         </div>
+      </header>
 
-        <div className="pos-cart-summary surface-subtle-strong rounded-[1.6rem] p-4 sm:p-5">
-          <div className="pos-cart-summary__row flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-            <span>Subtotal</span>
-            <span className="metric-accent">{formatCurrency(totals.subtotal)}</span>
+      <div className="pos-cart-panel__stats-grid" aria-label="Resumen rapido del carrito">
+        <CartStatCard
+          variant="items"
+          icon={<ShoppingCart size={15} />}
+          label="Items"
+          value={formatItemCount(totalUnits)}
+          note={lineCountLabel}
+        />
+        <CartStatCard
+          variant="total"
+          icon={<ReceiptText size={15} />}
+          label="Total actual"
+          value={formatCurrency(totals.total)}
+          note="Venta actual"
+          strong
+        />
+        <CartStatCard
+          variant="discount"
+          icon={<BadgePercent size={15} />}
+          label="Descuento"
+          value={discountApplied ? formatCurrency(totals.discountAmount) : 'Sin descuento'}
+          note={activeDiscountLabel}
+        />
+      </div>
+
+      <div className={clsx('pos-cart-panel__content', isMobile && 'pos-cart-panel__content--mobile')}>
+        <section className="pos-cart-panel__list-shell" aria-label="Items cargados">
+          <div className="pos-cart-panel__section-head">
+            <div>
+              <p className="pos-cart-panel__section-kicker">Items cargados</p>
+              <p className="pos-cart-panel__section-title">Detalle de venta</p>
+            </div>
+            <span className="pos-cart-panel__section-pill">{formatItemCount(totalUnits)}</span>
           </div>
-          <div className="pos-cart-summary__row mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-            <span>Descuento</span>
-            <span className="metric-accent">{formatCurrency(totals.discountAmount)}</span>
+
+          <div className="pos-cart-panel__list-scroll">
+            {renderCartItemsList(items, onChangeQty, onRemove)}
           </div>
-          <div className="pos-cart-summary__row mt-2 flex items-center justify-between text-sm text-[color:var(--text-secondary)]">
-            <span>Items</span>
-            <span className="metric-accent">{formatItemCount(totalUnits)}</span>
-          </div>
-          <div className="pos-cart-summary__total mt-4 flex items-center justify-between border-t border-[color:var(--line)] pt-4">
-            <span className="font-display text-xl font-bold theme-text-strong">Total</span>
-            <span className="metric-accent-strong font-display text-3xl font-bold">
-              {formatCurrency(totals.total)}
+        </section>
+
+        <section className="pos-cart-panel__discount-shell" aria-label="Descuento de venta">
+          <div className="pos-cart-panel__discount-head">
+            <div>
+              <p className="pos-cart-panel__section-kicker">Descuento</p>
+              <p className="pos-cart-panel__section-title">Ajuste comercial</p>
+            </div>
+            <span
+              className={clsx(
+                'pos-cart-panel__discount-state',
+                discountApplied && 'pos-cart-panel__discount-state--active',
+              )}
+            >
+              {discountApplied ? 'Aplicado' : 'Opcional'}
             </span>
           </div>
-        </div>
 
-        <p className="pos-cart-panel__footnote text-xs leading-5 theme-text-muted">
-          {checkoutDisabledReason ?? 'Listo para cobrar con el flujo actual del POS.'}
-        </p>
+          <div className="pos-cart-panel__discount-controls">
+            <Select
+              label="Tipo"
+              value={discountType}
+              onChange={(event) => onDiscountTypeChange(event.target.value as DiscountType)}
+            >
+              <option value="NONE">Sin descuento</option>
+              <option value="PERCENT">Porcentaje</option>
+              <option value="FIXED">Valor fijo</option>
+            </Select>
+
+            <Input
+              type="number"
+              min={0}
+              label="Valor"
+              placeholder={discountType === 'PERCENT' ? 'Ej: 10' : 'Ej: 2000'}
+              hint={resolveDiscountHint(discountType)}
+              value={discountInput}
+              onChange={(event) => onDiscountInputChange(event.target.value)}
+            />
+          </div>
+        </section>
+
+        <FinancialSummary totals={totals} totalUnits={totalUnits} />
+      </div>
+
+      <footer className="pos-cart-panel__footer">
+        <div
+          className={clsx(
+            'pos-cart-panel__checkout-status',
+            checkoutBlocked && 'pos-cart-panel__checkout-status--blocked',
+          )}
+          role="status"
+        >
+          <span className="pos-cart-panel__checkout-status-icon" aria-hidden="true">
+            {checkoutBlocked ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />}
+          </span>
+          <span>{checkoutDisabledReason ?? 'Caja lista para cobrar.'}</span>
+        </div>
 
         <Button
           size="lg"
-          disabled={Boolean(checkoutDisabledReason)}
+          disabled={checkoutBlocked}
           aria-haspopup="dialog"
           aria-controls="payment-dialog"
           onClick={onCheckout}
-          className="pos-cart-panel__checkout-button w-full"
+          className="pos-cart-panel__checkout-button"
         >
-          Cobrar
+          <CreditCard size={18} aria-hidden="true" />
+          <span>Cobrar {formatCurrency(totals.total)}</span>
         </Button>
+      </footer>
+    </div>
+  );
+}
+
+function CartStatCard({
+  variant,
+  icon,
+  label,
+  value,
+  note,
+  strong = false,
+}: {
+  variant: 'items' | 'total' | 'discount';
+  icon: ReactNode;
+  label: string;
+  value: string;
+  note: string;
+  strong?: boolean;
+}) {
+  return (
+    <div
+      className={clsx(
+        'pos-cart-panel__stat surface-subtle',
+        `pos-cart-panel__stat--${variant}`,
+        strong && 'pos-cart-panel__stat--strong',
+      )}
+    >
+      <span className="pos-cart-panel__stat-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="pos-cart-panel__stat-label">{label}</p>
+        <p className={clsx('pos-cart-panel__stat-value', strong && 'metric-accent-strong')}>
+          {value}
+        </p>
+        <p className="pos-cart-panel__stat-note theme-text-secondary">{note}</p>
       </div>
     </div>
+  );
+}
+
+function FinancialSummary({
+  totals,
+  totalUnits,
+}: {
+  totals: CartTotals;
+  totalUnits: number;
+}) {
+  return (
+    <section className="pos-cart-summary surface-subtle-strong" aria-label="Resumen financiero">
+      <div className="pos-cart-summary__rows">
+        <div className="pos-cart-summary__row">
+          <span>Subtotal</span>
+          <span>{formatCurrency(totals.subtotal)}</span>
+        </div>
+        <div className="pos-cart-summary__row">
+          <span>Descuento</span>
+          <span>{formatCurrency(totals.discountAmount)}</span>
+        </div>
+        <div className="pos-cart-summary__row">
+          <span>Items</span>
+          <span>{formatItemCount(totalUnits)}</span>
+        </div>
+      </div>
+
+      <div className="pos-cart-summary__total">
+        <span>Total final</span>
+        <span>{formatCurrency(totals.total)}</span>
+      </div>
+    </section>
   );
 }
 
@@ -330,7 +298,7 @@ function renderCartItemsList(
   }
 
   return (
-    <div className="pos-cart-panel__items-grid grid content-start gap-3">
+    <div className="pos-cart-panel__items-grid">
       {items.map((item) => (
         <CartItem
           key={item.key}
@@ -350,13 +318,25 @@ function resolveDiscountLabel(discountType: DiscountType, discountInput: string)
 
   if (!discountInput.trim()) {
     return discountType === 'PERCENT'
-      ? 'Descuento porcentual listo para configurar'
-      : 'Descuento fijo listo para configurar';
+      ? 'Porcentaje pendiente'
+      : 'Valor fijo pendiente';
   }
 
   return discountType === 'PERCENT'
     ? `${discountInput}% sobre subtotal`
     : `${formatCurrency(Number(discountInput))} de descuento`;
+}
+
+function resolveDiscountHint(discountType: DiscountType) {
+  if (discountType === 'NONE') {
+    return 'Sin ajuste aplicado al total.';
+  }
+
+  if (discountType === 'PERCENT') {
+    return 'Porcentaje sobre subtotal.';
+  }
+
+  return 'Monto fijo a descontar.';
 }
 
 function formatItemCount(value: number) {
