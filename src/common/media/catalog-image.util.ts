@@ -1,3 +1,5 @@
+import { UPLOADS_PUBLIC_PREFIX } from './uploads-path.util';
+
 export interface CatalogImageUploadFile {
   buffer: Buffer;
   mimetype: string;
@@ -36,7 +38,7 @@ export function buildCatalogImagePublicUrl(imagePath: string | null | undefined)
   }
 
   const normalizedImagePath = imagePath.replace(/\\/g, '/').replace(/^\/+/, '');
-  return `/uploads/${normalizedImagePath}`;
+  return `${UPLOADS_PUBLIC_PREFIX}${normalizedImagePath}`;
 }
 
 export function buildCatalogImageAlt(name: string) {

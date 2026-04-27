@@ -27,6 +27,9 @@ FROM base AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV UPLOADS_DIR=/app/uploads
+
+RUN mkdir -p /app/uploads
 
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
