@@ -27,8 +27,11 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      UPLOADS_DIR: /app/uploads
     ports:
       - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - ./uploads:/app/uploads
     healthcheck:
       test:
         [

@@ -1,23 +1,28 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { join, resolve, sep } from 'path';
+import { resolve, sep } from 'path';
 import {
   CATALOG_IMAGE_MAX_BYTES,
   isSupportedCatalogImageMimeType,
   type CatalogImageUploadFile,
   resolveCatalogImageExtension,
 } from './catalog-image.util';
+import {
+  type CatalogUploadsDirectory,
+  resolveUploadsDirectory,
+  resolveUploadsRoot,
+} from './uploads-path.util';
 
 type CatalogImageEntityConfig = {
-  directory: string;
+  directory: CatalogUploadsDirectory;
   entityLabel: 'Product' | 'Combo';
   fileNamePrefix: string;
 };
 
 @Injectable()
 export class CatalogImageStorageService {
-  private readonly uploadsRoot = resolve(process.cwd(), 'uploads');
+  private readonly uploadsRoot = resolveUploadsRoot();
 
   validateImageFile(
     file: CatalogImageUploadFile | undefined | null,
@@ -55,7 +60,7 @@ export class CatalogImageStorageService {
     const storageKey = `${config.directory}/${config.fileNamePrefix}-${entityId}-${Date.now()}-${randomUUID()}.${extension}`;
     const absolutePath = this.resolveAbsoluteImagePath(storageKey);
 
-    await mkdir(join(this.uploadsRoot, config.directory), { recursive: true });
+    await mkdir(resolveUploadsDirectory(config.directory), { recursive: true });
 
     try {
       await writeFile(absolutePath, file.buffer);
