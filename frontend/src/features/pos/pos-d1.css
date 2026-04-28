@@ -1287,6 +1287,7 @@
 }
 
 .pos-sale-success-toast {
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   animation: pos-toast-in 0.24s ease;
 }
 

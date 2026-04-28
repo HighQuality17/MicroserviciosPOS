@@ -227,11 +227,13 @@
   border-radius: 999px;
   background: rgb(5 10 24 / 0.74);
   padding: 0.12rem 0.5rem;
+  max-width: calc(100% - 1.5rem);
   color: rgb(230 236 255 / 0.84);
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
   backdrop-filter: blur(8px);
 }
 
@@ -797,6 +799,7 @@
 .products-table-stack {
   display: grid;
   gap: 0.28rem;
+  min-width: 0;
 }
 
 .products-table-entity__summary,
@@ -815,6 +818,7 @@
 
 .products-table-meta__item {
   display: inline-flex;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
