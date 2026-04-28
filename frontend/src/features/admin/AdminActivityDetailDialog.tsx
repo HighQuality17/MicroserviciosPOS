@@ -4,6 +4,11 @@ import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Modal } from '@/components/Modal';
 import { Sheet } from '@/components/Sheet';
 import { StatusBadge } from '@/components/StatusBadge';
+import {
+  getAdminActivityNavigation,
+  getAdminActivityNavigationCapability,
+} from '@/features/admin/admin-activity-navigation';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type {
   AdminActivityDetailResponse,
@@ -36,12 +41,17 @@ export function AdminActivityDetailDialog({
   onNavigate,
 }: AdminActivityDetailDialogProps) {
   const isMobileViewport = useMediaQuery('(max-width: 639px)');
+  const { can } = usePermissions();
   const current = detail ?? activity;
   const title = current?.title ?? 'Detalle de actividad';
   const subtitle = current
     ? `${formatAdminActivityType(current.activity_type)} · ${formatDate(current.occurred_at)}`
     : 'Consulta operacional';
-  const navigation = current?.navigation ?? null;
+  const navigation = current ? getAdminActivityNavigation(current) : null;
+  const canShowNavigation =
+    current !== null &&
+    navigation !== null &&
+    can(getAdminActivityNavigationCapability(current.activity_type));
   const content = loading ? (
     <div className="admin-activity-detail__stack">
       <div className="admin-activity-detail__hero animate-pulse" />
@@ -60,7 +70,7 @@ export function AdminActivityDetailDialog({
   ) : (
     <DetailBody detail={detail} />
   );
-  const footerAction = navigation ? (
+  const footerAction = canShowNavigation && navigation ? (
     <Button variant="secondary" onClick={() => onNavigate(navigation)}>
       {navigation.label}
     </Button>
