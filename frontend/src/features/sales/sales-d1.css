@@ -258,11 +258,13 @@
 }
 
 .sales-total-card__amount {
+  min-width: 0;
   color: var(--metric-accent-strong-color);
   font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
   font-size: 2rem;
   font-weight: 800;
   line-height: 1;
+  overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
   text-shadow: var(--metric-accent-strong-shadow);
 }
@@ -402,6 +404,7 @@
 
 .sales-ledger__row {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -410,9 +413,11 @@
 }
 
 .sales-ledger__row strong {
+  min-width: 0;
   color: var(--text);
   font-weight: 700;
   text-align: right;
+  overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
 
@@ -566,6 +571,7 @@
 @media (max-width: 767px) {
   .sales-receipt-title {
     font-size: 1.6rem;
+    overflow-wrap: anywhere;
   }
 
   .sales-receipt-meta,
@@ -576,5 +582,31 @@
 
   .sales-total-card__amount {
     font-size: 1.7rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .sales-receipt-hero,
+  .sales-items-card,
+  .sales-ledger-card {
+    padding: 0.85rem;
+  }
+
+  .sales-receipt-title {
+    font-size: 1.38rem;
+  }
+
+  .sales-total-card__amount {
+    font-size: 1.48rem;
+  }
+
+  .sales-ledger__row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.28rem;
+  }
+
+  .sales-ledger__row strong {
+    text-align: left;
   }
 }

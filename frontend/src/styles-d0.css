@@ -1655,6 +1655,7 @@ body {
 }
 
 .product-media__image {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1675,6 +1676,8 @@ body {
   display: grid;
   justify-items: center;
   gap: 0.3rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .product-media__icon,
@@ -1686,10 +1689,13 @@ body {
 
 .product-media__monogram,
 .pos-catalog-card__monogram {
+  max-width: 100%;
+  overflow: hidden;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  text-overflow: ellipsis;
   color: rgb(255 255 255 / 0.8);
 }
 
