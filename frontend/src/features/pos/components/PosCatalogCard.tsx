@@ -49,7 +49,7 @@ export function PosCatalogCard({
       data-kind={kind}
     >
       <div className="pos-catalog-card__body">
-        <div className="pos-catalog-card__hero">
+        <div className="pos-catalog-card__header">
           <div className="pos-catalog-card__media-wrap">
             <ProductMedia
               label={item.name}
@@ -66,65 +66,65 @@ export function PosCatalogCard({
             ) : null}
           </div>
 
-          <div className="pos-catalog-card__content">
-            <div className="pos-catalog-card__topline">
-              <span className="pos-catalog-card__eyebrow">{eyebrow}</span>
-              <StatusBadge
-                label={badge}
-                tone={resolveCatalogBadgeTone(kind)}
-                className="pos-catalog-card__badge"
-              />
-            </div>
+          <div className="pos-catalog-card__topline">
+            <span className="pos-catalog-card__eyebrow">{eyebrow}</span>
+            <StatusBadge
+              label={badge}
+              tone={resolveCatalogBadgeTone(kind)}
+              className="pos-catalog-card__badge"
+            />
+          </div>
+        </div>
 
-            <div className="pos-catalog-card__title-block min-w-0">
-              <p className="pos-catalog-card__title font-display">{item.name}</p>
-              {supportingText ? (
-                <p className="pos-catalog-card__description theme-text-secondary">{supportingText}</p>
-              ) : null}
-            </div>
+        <div className="pos-catalog-card__content">
+          <div className="pos-catalog-card__title-block min-w-0">
+            <p className="pos-catalog-card__title font-display">{item.name}</p>
+            {supportingText ? (
+              <p className="pos-catalog-card__description theme-text-secondary">{supportingText}</p>
+            ) : null}
+          </div>
 
-            <div className="pos-catalog-card__meta" role="list" aria-label={`Datos de ${item.name}`}>
-              {metaRows.map((row) => (
-                <div
-                  key={`${row.label}-${row.value}`}
-                  className="pos-catalog-card__meta-row"
-                  role="listitem"
+          <div className="pos-catalog-card__meta" role="list" aria-label={`Datos de ${item.name}`}>
+            {metaRows.map((row) => (
+              <div
+                key={`${row.label}-${row.value}`}
+                className="pos-catalog-card__meta-row"
+                role="listitem"
+              >
+                <span className="pos-catalog-card__meta-label theme-text-faint">{row.label}</span>
+                <span
+                  className={[
+                    'pos-catalog-card__meta-value',
+                    row.label.trim().toUpperCase() === 'SKU'
+                      ? 'pos-catalog-card__meta-value--mono'
+                      : '',
+                    'font-medium',
+                    'theme-text-secondary',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
-                  <span className="pos-catalog-card__meta-label theme-text-faint">{row.label}</span>
-                  <span
-                    className={[
-                      'pos-catalog-card__meta-value',
-                      row.label.trim().toUpperCase() === 'SKU'
-                        ? 'pos-catalog-card__meta-value--mono'
-                        : '',
-                      'font-medium',
-                      'theme-text-secondary',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    {row.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="pos-catalog-card__footer">
-              <div className="pos-catalog-card__price-block">
-                <p className="pos-catalog-card__price-label theme-text-faint">Precio</p>
-                <span className="pos-catalog-card__price metric-accent font-display">
-                  {formatCurrency(item.unit_price)}
+                  {row.value}
                 </span>
               </div>
-
-              <span className="pos-catalog-card__cta" aria-hidden="true">
-                <span>Agregar</span>
-                <span className="pos-catalog-card__cta-mark" aria-hidden="true">
-                  +
-                </span>
-              </span>
-            </div>
+            ))}
           </div>
+        </div>
+
+        <div className="pos-catalog-card__footer">
+          <div className="pos-catalog-card__price-block">
+            <p className="pos-catalog-card__price-label theme-text-faint">Precio</p>
+            <span className="pos-catalog-card__price metric-accent font-display">
+              {formatCurrency(item.unit_price)}
+            </span>
+          </div>
+
+          <span className="pos-catalog-card__cta" aria-hidden="true">
+            <span>Agregar</span>
+            <span className="pos-catalog-card__cta-mark" aria-hidden="true">
+              +
+            </span>
+          </span>
         </div>
       </div>
     </button>
