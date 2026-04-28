@@ -15,6 +15,10 @@ import { AdminChartCard } from '@/components/AdminChartCard';
 import { AlertCard } from '@/components/AlertCard';
 import { AccessState } from '@/components/AccessState';
 import { AdminActivityDetailDialog } from '@/features/admin/AdminActivityDetailDialog';
+import {
+  getAdminActivityNavigation,
+  getAdminActivityNavigationCapability,
+} from '@/features/admin/admin-activity-navigation';
 import { AdminPaymentMethodChartCard } from '@/features/admin/AdminPaymentMethodChartCard';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -928,58 +932,65 @@ export function AdminPage() {
           ) : (
             <>
               <ScrollPanel className="admin-activity-list" maxHeightClassName="max-h-[22rem]" tabIndex={0} aria-label="Actividad reciente">
-                {recentActivity.map((item) => (
-                  <div
-                    key={`${item.id}-${item.activity_type}-${item.entity_id}`}
-                    className="admin-activity-item admin-activity-item--rich"
-                    data-tone={getActivityTone(item.activity_type)}
-                  >
-                    <div className="admin-activity-item__content">
-                      <div className="admin-activity-item__meta">
-                        <StatusBadge
-                          label={formatActivityType(item.activity_type)}
-                          tone={getActivityTone(item.activity_type)}
-                        />
-                        <span>#{item.entity_id}</span>
-                        {item.location?.location_name ? (
-                          <span>{item.location.location_name}</span>
-                        ) : null}
+                {recentActivity.map((item) => {
+                  const activityNavigation = getAdminActivityNavigation(item);
+                  const canShowNavigation =
+                    activityNavigation !== null &&
+                    can(getAdminActivityNavigationCapability(item.activity_type));
+
+                  return (
+                    <div
+                      key={`${item.id}-${item.activity_type}-${item.entity_id}`}
+                      className="admin-activity-item admin-activity-item--rich"
+                      data-tone={getActivityTone(item.activity_type)}
+                    >
+                      <div className="admin-activity-item__content">
+                        <div className="admin-activity-item__meta">
+                          <StatusBadge
+                            label={formatActivityType(item.activity_type)}
+                            tone={getActivityTone(item.activity_type)}
+                          />
+                          <span>#{item.entity_id}</span>
+                          {item.location?.location_name ? (
+                            <span>{item.location.location_name}</span>
+                          ) : null}
+                        </div>
+                        <p>{item.title}</p>
+                        <span>{item.subtitle}</span>
+                        <div className="admin-activity-item__chips">
+                          {getActivityHighlights(item).map((highlight) => (
+                            <span key={`${item.id}-${highlight}`}>{highlight}</span>
+                          ))}
+                        </div>
                       </div>
-                      <p>{item.title}</p>
-                      <span>{item.subtitle}</span>
-                      <div className="admin-activity-item__chips">
-                        {getActivityHighlights(item).map((highlight) => (
-                          <span key={`${item.id}-${highlight}`}>{highlight}</span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="admin-activity-item__aside">
-                      <time>{formatDate(item.occurred_at)}</time>
-                      <div className="admin-activity-item__actions">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => void handleOpenActivityDetail(item)}
-                        >
-                          Mas detalles
-                        </Button>
-                        {item.navigation ? (
+                      <div className="admin-activity-item__aside">
+                        <time>{formatDate(item.occurred_at)}</time>
+                        <div className="admin-activity-item__actions">
                           <Button
-                            variant="ghost"
+                            className="admin-activity-item__details-button"
+                            variant="secondary"
                             size="sm"
-                            onClick={() => {
-                              if (item.navigation) {
-                                handleActivityNavigation(item.navigation);
-                              }
-                            }}
+                            onClick={() => void handleOpenActivityDetail(item)}
                           >
-                            {item.navigation.label}
+                            Mas detalles
                           </Button>
-                        ) : null}
+                          {canShowNavigation && activityNavigation ? (
+                            <Button
+                              className="admin-activity-item__nav-button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                handleActivityNavigation(activityNavigation);
+                              }}
+                            >
+                              {activityNavigation.label}
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </ScrollPanel>
               <div className="admin-activity-pagination">
                 <span>
