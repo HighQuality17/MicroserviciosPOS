@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { LogOut, X } from 'lucide-react';
 import clsx from 'clsx';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
-import { getNavigationByRole } from '@/app/permissions';
+import { getAdminSubnavigationByRole, getNavigationByRole } from '@/app/permissions';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { useSessionStore } from '@/store/sessionStore';
 import registryLogo from '@/assets/branding/registry-pos-logo.png';
@@ -25,6 +25,7 @@ export function Sidebar({
   onClose,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const currentUser = useSessionStore((state) => state.currentUser);
   const clearSession = useSessionStore((state) => state.clearSession);
   const { isModuleEnabled } = useBusinessModules();
@@ -39,9 +40,12 @@ export function Sidebar({
 
     return true;
   });
+  const adminSubLinks = getAdminSubnavigationByRole(currentUser?.role);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const isMobile = variant === 'mobile';
   const isDesktopCollapsed = !isMobile && isCollapsed;
+  const canShowSubnav = !isDesktopCollapsed && adminSubLinks.length > 0;
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
 
   useEffect(() => {
     if (isMobile && isOpen) {
@@ -124,35 +128,71 @@ export function Sidebar({
         )}
         aria-label="Secciones del sistema"
       >
-        {links.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onClose}
-            aria-label={isDesktopCollapsed ? label : undefined}
-            title={isDesktopCollapsed ? label : undefined}
-            className={({ isActive }) =>
-              clsx(
-                'app-nav-link app-sidebar__nav-link flex min-h-11 items-center rounded-2xl py-3 text-sm font-medium transition',
-                isDesktopCollapsed ? 'w-[3.25rem] justify-center px-3' : 'gap-3 px-4',
-                isActive && 'app-nav-link-active',
-              )
-            }
-          >
-            <span className="app-nav-link__icon shrink-0" aria-hidden="true">
-              <Icon size={18} />
-            </span>
-            <span
-              aria-hidden={isDesktopCollapsed}
+        {links.map(({ to, label, icon: Icon }) => {
+          const isAdminLink = to === '/admin';
+
+          return (
+            <div
+              key={to}
               className={clsx(
-                'app-nav-link__label overflow-hidden whitespace-nowrap transition-all duration-300',
-                isDesktopCollapsed ? 'max-w-0 opacity-0' : 'max-w-[12rem] opacity-100',
+                'app-sidebar__nav-group',
+                isDesktopCollapsed && 'app-sidebar__nav-group--collapsed',
               )}
             >
-              {label}
-            </span>
-          </NavLink>
-        ))}
+              <NavLink
+                to={to}
+                onClick={onClose}
+                aria-label={isDesktopCollapsed ? label : undefined}
+                title={isDesktopCollapsed ? label : undefined}
+                aria-expanded={isAdminLink && canShowSubnav ? isAdminRoute : undefined}
+                className={({ isActive }) =>
+                  clsx(
+                    'app-nav-link app-sidebar__nav-link flex min-h-11 items-center rounded-2xl py-3 text-sm font-medium transition',
+                    isDesktopCollapsed ? 'w-[3.25rem] justify-center px-3' : 'gap-3 px-4',
+                    (isActive || (isAdminLink && isAdminRoute)) && 'app-nav-link-active',
+                  )
+                }
+              >
+                <span className="app-nav-link__icon shrink-0" aria-hidden="true">
+                  <Icon size={18} />
+                </span>
+                <span
+                  aria-hidden={isDesktopCollapsed}
+                  className={clsx(
+                    'app-nav-link__label overflow-hidden whitespace-nowrap transition-all duration-300',
+                    isDesktopCollapsed ? 'max-w-0 opacity-0' : 'max-w-[12rem] opacity-100',
+                  )}
+                >
+                  {label}
+                </span>
+              </NavLink>
+
+              {isAdminLink && canShowSubnav ? (
+                <div className="app-sidebar__subnav" aria-label="Submodulos Admin">
+                  {adminSubLinks.map(({ to: childTo, label: childLabel, icon: ChildIcon }) => (
+                    <NavLink
+                      key={childTo}
+                      to={childTo}
+                      end={childTo === '/admin'}
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        clsx(
+                          'app-sidebar__subnav-link',
+                          isActive && 'app-sidebar__subnav-link--active',
+                        )
+                      }
+                    >
+                      <span className="app-sidebar__subnav-icon" aria-hidden="true">
+                        <ChildIcon size={14} />
+                      </span>
+                      <span className="app-sidebar__subnav-label">{childLabel}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="app-sidebar__footer mt-6 border-t border-[color:var(--line)] pt-6 lg:mt-auto">

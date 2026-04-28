@@ -20,11 +20,11 @@ import {
   getAdminActivityNavigationCapability,
 } from '@/features/admin/admin-activity-navigation';
 import { AdminPaymentMethodChartCard } from '@/features/admin/AdminPaymentMethodChartCard';
+import { AdminSubmoduleNav } from '@/features/admin/AdminSubmoduleNav';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
-import { Input } from '@/components/Input';
 import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type {
   ModulePageHeaderBadge,
@@ -91,10 +91,6 @@ export function AdminPage() {
   const { isModuleEnabled } = useBusinessModules();
   const availableLocations = useAppStore((state) => state.availableLocations);
   const locationsLoading = useAppStore((state) => state.locationsLoading);
-  const locationsError = useAppStore((state) => state.locationsError);
-  const setAvailableLocations = useAppStore((state) => state.setAvailableLocations);
-  const setLocationsLoading = useAppStore((state) => state.setLocationsLoading);
-  const setLocationsError = useAppStore((state) => state.setLocationsError);
   const [summary, setSummary] = useState<AdminSummary | null>(null);
   const [salesByPayment, setSalesByPayment] = useState<AdminSalesByPaymentItem[]>([]);
   const [topItems, setTopItems] = useState<AdminTopItem[]>([]);
@@ -123,10 +119,6 @@ export function AdminPage() {
   const [topItemsError, setTopItemsError] = useState<string | null>(null);
   const [lowStockError, setLowStockError] = useState<string | null>(null);
   const [recentActivityError, setRecentActivityError] = useState<string | null>(null);
-  const [locationName, setLocationName] = useState('');
-  const [locationMessage, setLocationMessage] = useState<string | null>(null);
-  const [locationSubmitError, setLocationSubmitError] = useState<string | null>(null);
-  const [creatingLocation, setCreatingLocation] = useState(false);
   const [summaryAccessDenied, setSummaryAccessDenied] = useState(false);
 
   useEffect(() => {
@@ -142,48 +134,6 @@ export function AdminPage() {
     void loadSalesByPayment();
     void loadTopItems();
     void loadLowStock();
-  }
-
-  async function refreshLocations() {
-    try {
-      setLocationsLoading(true);
-      setLocationsError(null);
-      const locations = await posApi.getLocations();
-      setAvailableLocations(locations);
-    } catch (error) {
-      setLocationsError(
-        error instanceof Error
-          ? error.message
-          : 'No fue posible cargar los puntos de venta',
-      );
-    } finally {
-      setLocationsLoading(false);
-    }
-  }
-
-  async function handleCreateLocation() {
-    if (!locationName.trim()) {
-      setLocationSubmitError('Escribe el nombre del punto de venta.');
-      return;
-    }
-
-    try {
-      setCreatingLocation(true);
-      setLocationSubmitError(null);
-      setLocationMessage(null);
-      const location = await posApi.createLocation({ name: locationName.trim() });
-      setLocationName('');
-      setLocationMessage(`Punto de venta ${location.name} creado correctamente.`);
-      await refreshLocations();
-    } catch (error) {
-      setLocationSubmitError(
-        error instanceof Error
-          ? error.message
-          : 'No fue posible crear el punto de venta',
-      );
-    } finally {
-      setCreatingLocation(false);
-    }
   }
 
   async function loadSummary() {
@@ -535,6 +485,20 @@ export function AdminPage() {
       ? `Metodo dominante: ${formatPaymentMethod(leadingPayment.method)}`
       : 'Ventas, caja e inventario en una vista.';
   const optionalAdminCards = [
+    {
+      key: 'config',
+      title: 'Configuracion',
+      description: 'Identidad, tipo y modulos.',
+      actionLabel: 'Abrir',
+      path: '/admin/config',
+    },
+    {
+      key: 'locations',
+      title: 'Puntos de venta',
+      description: 'Ubicaciones operativas.',
+      actionLabel: 'Gestionar',
+      path: '/admin/locations',
+    },
     isModuleEnabled('ingredients')
       ? {
           key: 'ingredients',
@@ -602,6 +566,8 @@ export function AdminPage() {
 
   return (
     <div className="admin-dashboard grid min-w-0 gap-4 sm:gap-5">
+      <AdminSubmoduleNav />
+
       {isAuditor ? (
         <RoleModeBanner
           title="Panel en modo auditoria"
@@ -625,12 +591,20 @@ export function AdminPage() {
         }}
         asideAction={
           isAdmin ? (
-            <Button
-              variant="secondary"
-              onClick={() => navigate('/admin/config')}
-            >
-              Configurar negocio
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/admin/locations')}
+              >
+                Puntos de venta
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/admin/config')}
+              >
+                Configurar negocio
+              </Button>
+            </div>
           ) : null
         }
         cards={adminHeaderCards}
@@ -1078,102 +1052,6 @@ export function AdminPage() {
         </Card>
       ) : null}
 
-      {can('canManageLocations') ? (
-        <Card padding="none" glow={false} className="admin-panel admin-panel--locations">
-          <div className="admin-panel__body">
-          <SectionHeader
-            eyebrow="Ubicaciones"
-            title="Puntos de venta"
-            description="Gestiona cobertura operativa POS."
-            actions={<StatusBadge label={locationsLabel} tone={locationsTone} />}
-          />
-
-          {locationMessage ? (
-            <FeedbackMessage tone="success" className="mt-4">
-              {locationMessage}
-            </FeedbackMessage>
-          ) : null}
-
-          {locationSubmitError ? (
-            <FeedbackMessage tone="error" className="mt-4">
-              {locationSubmitError}
-            </FeedbackMessage>
-          ) : null}
-
-          {locationsError ? (
-            <div className="mt-4">
-              <BlockError message={locationsError} />
-            </div>
-          ) : null}
-
-          <div className="admin-location-grid">
-            <div className="admin-location-create">
-              <div>
-                <p className="admin-kicker">Crear ubicacion</p>
-                <h3>Nuevo POS</h3>
-              </div>
-
-              <div className="admin-location-create__form">
-                <Input
-                  label="Nombre del POS"
-                  placeholder="Ej: POS Centro"
-                  value={locationName}
-                  onChange={(event) => setLocationName(event.target.value)}
-                />
-                <Button
-                  disabled={creatingLocation || !locationName.trim()}
-                  onClick={handleCreateLocation}
-                >
-                  {creatingLocation ? 'Guardando...' : 'Crear punto de venta'}
-                </Button>
-              </div>
-            </div>
-
-            <div className="admin-location-list">
-              <div className="admin-location-list__header">
-                <div>
-                  <p className="admin-kicker">Ubicaciones reales</p>
-                  <h3>POS disponibles</h3>
-                </div>
-                <Button variant="secondary" onClick={() => void refreshLocations()}>
-                  Refrescar
-                </Button>
-              </div>
-
-              {locationsLoading ? (
-                <div className="mt-6">
-                  <SkeletonRows rows={3} />
-                </div>
-              ) : availableLocations.length === 0 ? (
-                <div className="mt-6">
-                  <EmptyState
-                    title="Sin puntos de venta"
-                description="Crea la primera ubicacion operativa."
-                  />
-                </div>
-              ) : (
-                <ScrollPanel className="admin-pos-list" maxHeightClassName="max-h-[16rem]" tabIndex={0} aria-label="Puntos de venta disponibles">
-                  {availableLocations.map((location) => (
-                    <div
-                      key={location.id}
-                      className="admin-pos-item"
-                    >
-                      <div>
-                        <p>{location.name}</p>
-                        <span>ID {location.id}</span>
-                      </div>
-                      <div className="admin-pos-item__status">
-                        <StatusBadge label="POS activo" tone="info" />
-                      </div>
-                    </div>
-                  ))}
-                </ScrollPanel>
-              )}
-            </div>
-          </div>
-          </div>
-        </Card>
-      ) : null}
       <AdminActivityDetailDialog
         open={selectedActivity !== null}
         activity={selectedActivity}
