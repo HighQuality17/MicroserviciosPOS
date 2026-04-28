@@ -2151,7 +2151,7 @@ export function ProductsPage() {
             checked={editProductActive}
             onChange={(event) => setEditProductActive(event.target.checked)}
           />
-          <div className="flex justify-end gap-3">
+          <div className="modal-action-row">
             <Button variant="ghost" onClick={() => setProductEditorOpen(false)}>
               Cancelar
             </Button>
@@ -2205,7 +2205,7 @@ export function ProductsPage() {
             checked={editVariantActive}
             onChange={(event) => setEditVariantActive(event.target.checked)}
           />
-          <div className="flex justify-end gap-3">
+          <div className="modal-action-row">
             <Button variant="ghost" onClick={() => setVariantEditorOpen(false)}>
               Cancelar
             </Button>
@@ -2241,7 +2241,7 @@ export function ProductsPage() {
           <p className="text-sm text-[color:var(--text-secondary)]">
             ¿Deseas continuar con la eliminación? Si el registro tiene ventas históricas o relaciones activas, el sistema bloqueará la operación y te pedirá desactivarlo o limpiar dependencias primero.
           </p>
-          <div className="flex justify-end gap-3">
+          <div className="modal-action-row">
             <Button
               variant="ghost"
               disabled={deletingRecord}
@@ -2363,11 +2363,11 @@ export function ProductsPage() {
               })}
             </ScrollPanel>
 
-            <div className="flex flex-wrap justify-between gap-3">
+            <div className="modal-action-row modal-action-row--split">
               <Button variant="secondary" onClick={handleAddRecipeRow}>
                 Agregar ingrediente
               </Button>
-              <div className="flex gap-3">
+              <div className="modal-action-row__group">
                 <Button variant="ghost" onClick={() => setRecipeModalOpen(false)}>
                   Cancelar
                 </Button>
