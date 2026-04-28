@@ -1,6 +1,5 @@
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
-import clsx from 'clsx';
 import { IconButton } from '@/components/IconButton';
 import { useDocumentScrollLock } from '@/hooks/useDocumentScrollLock';
 
@@ -172,12 +171,8 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={subtitle ? subtitleId : undefined}
         tabIndex={-1}
-        className={clsx(
-          'modal-shell w-full',
-          size === 'sm' && 'max-w-lg',
-          size === 'md' && 'max-w-2xl',
-          size === 'lg' && 'max-w-4xl',
-        )}
+        className="modal-shell w-full"
+        data-size={size}
       >
         <div className="modal-header">
           <div className="min-w-0">
@@ -193,6 +188,7 @@ export function Modal({
           <IconButton
             ref={closeButtonRef}
             variant="ghost"
+            className="modal-close-button"
             icon={<X size={18} />}
             label="Cerrar modal"
             onClick={onClose}

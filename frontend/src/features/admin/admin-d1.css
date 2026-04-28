@@ -1156,6 +1156,9 @@
 
 .admin-activity-detail__footer {
   justify-content: flex-end;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--admin-border);
+  padding-top: 0.85rem;
 }
 
 .admin-activity-detail-sheet__body {
@@ -1167,11 +1170,14 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
-  padding: 0 1rem 1rem;
+  padding: 0 1rem 1.15rem;
 }
 
 .admin-activity-detail__footer--sheet {
+  flex-shrink: 0;
+  margin-top: 0;
   border-top: 1px solid var(--admin-border);
   background:
     linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.06), transparent 100%),
@@ -1628,8 +1634,16 @@
     flex-direction: column;
   }
 
+  .admin-activity-item {
+    min-height: auto;
+    overflow: visible;
+    gap: 0.72rem;
+    padding: 0.78rem;
+  }
+
   .admin-activity-item--rich {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0.72rem;
   }
 
   .admin-activity-item__aside,
@@ -1647,8 +1661,28 @@
     justify-content: flex-start;
   }
 
+  .admin-activity-item__aside {
+    align-content: start;
+    gap: 0.62rem;
+  }
+
+  .admin-activity-item time {
+    width: max-content;
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .admin-activity-item__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
   .admin-activity-item__actions .ui-button-base {
+    width: 100%;
+    min-height: 2.7rem;
     flex: 1 1 0;
+    justify-content: center;
   }
 
   .admin-activity-pagination,
