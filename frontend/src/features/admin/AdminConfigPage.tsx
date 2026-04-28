@@ -1,3 +1,4 @@
+import '@/features/admin/admin-d1.css';
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
@@ -9,6 +10,7 @@ import {
   Store,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AdminSubmoduleNav } from '@/features/admin/AdminSubmoduleNav';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { CheckboxField } from '@/components/CheckboxField';
@@ -388,14 +390,16 @@ export function AdminConfigPage() {
   ];
 
   return (
-    <div className="grid min-w-0 gap-5 sm:gap-6">
+    <div className="admin-dashboard grid min-w-0 gap-5 sm:gap-6">
+      <AdminSubmoduleNav />
+
       <ModulePageHeader
         ariaLabel="Estado de la configuracion del negocio"
         eyebrow="BusinessConfig"
         title="Configuracion del negocio"
         badges={[{ label: configHeaderStatusLabel, tone: configHeaderStatusTone }]}
         description="Define datos base, tipo de negocio y modulos activos desde una vista administrativa limpia y aislada."
-        helpText="Esta pantalla solo administra BusinessConfig. Todavia no oculta modulos, no bloquea rutas y no cambia la navegacion global."
+        helpText="Esta pantalla solo administra BusinessConfig. No altera ventas, caja ni contratos API."
         icon={<Sparkles size={18} />}
         cards={configHeaderCards}
       />
