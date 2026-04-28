@@ -6,6 +6,8 @@ import {
   Package2,
   ReceiptText,
   ShoppingCart,
+  Settings2,
+  Store,
   TestTube2,
 } from 'lucide-react';
 import type { UserRole } from '@/types/api';
@@ -17,9 +19,11 @@ export type AppRoutePath =
   | '/ingredients'
   | '/combos'
   | '/sales'
-  | '/admin';
+  | '/admin'
+  | '/admin/config'
+  | '/admin/locations';
 
-interface NavigationItem {
+export interface NavigationItem {
   to: AppRoutePath;
   label: string;
   icon: LucideIcon;
@@ -45,8 +49,24 @@ const navigationItems: NavigationItem[] = [
   { to: '/admin', label: 'Admin', icon: LayoutDashboard },
 ];
 
+const adminSubnavigationItems: NavigationItem[] = [
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/admin/config', label: 'Configuracion', icon: Settings2 },
+  { to: '/admin/locations', label: 'Puntos de venta', icon: Store },
+];
+
 const allowedRoutesByRole: Record<UserRole, AppRoutePath[]> = {
-  ADMIN: ['/pos', '/cash', '/products', '/ingredients', '/combos', '/sales', '/admin'],
+  ADMIN: [
+    '/pos',
+    '/cash',
+    '/products',
+    '/ingredients',
+    '/combos',
+    '/sales',
+    '/admin',
+    '/admin/config',
+    '/admin/locations',
+  ],
   CASHIER: ['/pos', '/cash', '/sales'],
   AUDITOR: ['/sales', '/admin'],
 };
@@ -97,6 +117,15 @@ export function getNavigationByRole(role?: UserRole | null) {
 
   const allowedRoutes = new Set(allowedRoutesByRole[role]);
   return navigationItems.filter((item) => allowedRoutes.has(item.to));
+}
+
+export function getAdminSubnavigationByRole(role?: UserRole | null) {
+  if (!role) {
+    return [];
+  }
+
+  const allowedRoutes = new Set(allowedRoutesByRole[role]);
+  return adminSubnavigationItems.filter((item) => allowedRoutes.has(item.to));
 }
 
 export function getAllowedRolesForRoute(route: AppRoutePath) {

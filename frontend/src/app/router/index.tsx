@@ -41,6 +41,11 @@ const AdminConfigPage = lazy(() =>
     default: module.AdminConfigPage,
   })),
 );
+const AdminLocationsPage = lazy(() =>
+  import('@/features/admin/AdminLocationsPage').then((module) => ({
+    default: module.AdminLocationsPage,
+  })),
+);
 
 function HomeRedirect() {
   const currentUser = useSessionStore((state) => state.currentUser);
@@ -156,9 +161,19 @@ export const router = createBrowserRouter([
       {
         path: '/admin/config',
         element: (
-          <ProtectedRoute allowedRoles={['ADMIN']}>
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/admin/config')}>
             <LazyRoute>
               <AdminConfigPage />
+            </LazyRoute>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/locations',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/admin/locations')}>
+            <LazyRoute>
+              <AdminLocationsPage />
             </LazyRoute>
           </ProtectedRoute>
         ),
