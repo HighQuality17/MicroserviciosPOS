@@ -639,7 +639,7 @@ export function PosPage() {
                   Crea o selecciona un POS valido en el encabezado para cargar la operacion.
                 </FeedbackMessage>
               ) : !currentCashSession ? (
-                <FeedbackMessage tone="warning" className="pos-catalog-shell__alert">
+                <FeedbackMessage tone="warning" className="pos-catalog-shell__alert pos-catalog-shell__alert--cash-closed">
                   Abre la caja en la pestana Caja antes de cobrar.
                 </FeedbackMessage>
               ) : null}
