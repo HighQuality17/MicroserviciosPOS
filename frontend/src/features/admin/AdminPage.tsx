@@ -57,6 +57,13 @@ type OptionalAdminCard = {
   path: string | null;
 };
 
+const adminChartPalette = [
+  'var(--admin-chart-cyan)',
+  'var(--admin-chart-emerald)',
+  'var(--admin-chart-amber)',
+  'var(--admin-chart-rose)',
+];
+
 function BlockError({ message }: { message: string }) {
   return <FeedbackMessage tone="error">{message}</FeedbackMessage>;
 }
@@ -322,7 +329,7 @@ export function AdminPage() {
         .map((item) => ({
           label: item.method === 'CASH' ? 'Efectivo' : 'Transferencia',
           value: item.total,
-          color: item.method === 'CASH' ? 'var(--success)' : 'var(--info)',
+          color: item.method === 'CASH' ? 'var(--admin-chart-emerald)' : 'var(--admin-chart-cyan)',
         })),
     [salesByPayment],
   );
@@ -333,7 +340,7 @@ export function AdminPage() {
         label: item.name,
         meta: item.item_type === 'VARIANT' ? 'Variante' : 'Combo',
         value: item.qty_sold,
-        color: index % 2 === 0 ? 'var(--chart-series-default)' : 'var(--chart-series-alt)',
+        color: adminChartPalette[index % adminChartPalette.length],
       })),
     [topItems],
   );
@@ -655,22 +662,22 @@ export function AdminPage() {
               </div>
 
               <div className="admin-metric-grid">
-                <div className="admin-metric-tile">
+                <div className="admin-metric-tile" data-tone={salesHeaderTone}>
                   <Receipt size={17} />
                   <span>Ventas</span>
                   <strong>{summaryLoading ? '...' : String(summary?.sales_count ?? 0)}</strong>
                 </div>
-                <div className="admin-metric-tile">
+                <div className="admin-metric-tile" data-tone="info">
                   <Boxes size={17} />
                   <span>Productos</span>
                   <strong>{summaryLoading ? '...' : String(summary?.active_products_count ?? 0)}</strong>
                 </div>
-                <div className="admin-metric-tile">
+                <div className="admin-metric-tile" data-tone={locationsTone}>
                   <CreditCard size={17} />
                   <span>POS</span>
                   <strong>{locationsLoading ? '...' : String(totalLocations)}</strong>
                 </div>
-                <div className="admin-metric-tile">
+                <div className="admin-metric-tile" data-tone={cashHeaderTone}>
                   <Wallet size={17} />
                   <span>Caja base</span>
                   <strong>
@@ -726,22 +733,25 @@ export function AdminPage() {
             </div>
 
             <div className="admin-radar-grid">
-              <div className="admin-radar-item">
+              <div className="admin-radar-item" data-tone={cashHeaderTone}>
                 <span>Caja</span>
                 <strong>{summary?.current_cash_session ? summary.current_cash_session.location_name : 'Sin caja abierta'}</strong>
                 <p>{summary?.current_cash_session ? `Por ${summary.current_cash_session.opened_by_name}` : 'Abrir caja'}</p>
               </div>
-              <div className="admin-radar-item">
+              <div className="admin-radar-item" data-tone={stockHeaderTone}>
                 <span>Stock</span>
                 <strong>{(summary?.low_stock_count ?? 0) > 0 ? 'Atencion' : 'Controlado'}</strong>
                 <p>{lowStock.length > 0 ? `${lowStock.length} por revisar` : 'Sin alertas'}</p>
               </div>
-              <div className="admin-radar-item">
+              <div className="admin-radar-item" data-tone="info">
                 <span>Catalogo</span>
                 <strong>{summaryLoading ? '...' : `${summary?.active_products_count ?? 0} activos`}</strong>
                 <p>Base comercial</p>
               </div>
-              <div className="admin-radar-item">
+              <div
+                className="admin-radar-item"
+                data-tone={latestActivity ? getActivityTone(latestActivity.activity_type) : 'default'}
+              >
                 <span>Actividad</span>
                 <strong>{latestActivity ? formatActivityType(latestActivity.activity_type) : 'Sin eventos'}</strong>
                 <p>{latestActivity ? latestActivity.subtitle : 'Sin movimiento'}</p>
@@ -922,6 +932,7 @@ export function AdminPage() {
                   <div
                     key={`${item.id}-${item.activity_type}-${item.entity_id}`}
                     className="admin-activity-item admin-activity-item--rich"
+                    data-tone={getActivityTone(item.activity_type)}
                   >
                     <div className="admin-activity-item__content">
                       <div className="admin-activity-item__meta">

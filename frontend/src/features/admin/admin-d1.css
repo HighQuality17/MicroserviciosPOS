@@ -4,8 +4,30 @@
   --admin-surface: var(--bg-panel);
   --admin-surface-strong: var(--bg-panel-strong);
   --admin-surface-muted: var(--surface-ghost);
-  --admin-shadow: 0 10px 26px rgb(2 6 23 / 0.14);
+  --admin-panel-highlight: rgb(255 255 255 / 0.07);
+  --admin-shadow: 0 18px 44px rgb(2 6 23 / 0.24);
+  --admin-shadow-soft: 0 12px 28px rgb(2 6 23 / 0.18);
+  --admin-chart-cyan: #38bdf8;
+  --admin-chart-emerald: #34d399;
+  --admin-chart-amber: #fbbf24;
+  --admin-chart-rose: #fb7185;
   gap: 0.95rem;
+}
+
+.admin-dashboard .module-page-header__card {
+  border-color: rgb(var(--theme-primary-rgb) / 0.28);
+  background:
+    linear-gradient(135deg, rgb(var(--theme-primary-rgb) / 0.2), transparent 42%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.045), transparent 52%),
+    var(--admin-surface);
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-dashboard .module-page-header__summary {
+  border-color: rgb(var(--theme-accent-rgb) / 0.24);
+  background:
+    linear-gradient(135deg, rgb(var(--theme-secondary-rgb) / 0.14), transparent 58%),
+    var(--admin-surface-strong);
 }
 
 .admin-dashboard .section-kicker,
@@ -21,11 +43,42 @@
 }
 
 .admin-panel {
+  position: relative;
   min-width: 0;
   border: 1px solid var(--admin-border-strong);
   border-radius: 0.875rem;
-  background: var(--admin-surface);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, var(--admin-panel-highlight), transparent 34%),
+    linear-gradient(135deg, rgb(var(--theme-primary-rgb) / 0.08), transparent 48%),
+    var(--admin-surface);
   box-shadow: var(--admin-shadow);
+}
+
+.admin-panel::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
+}
+
+.admin-panel > .surface-card__body {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-panel--executive {
+  border-color: rgb(var(--theme-accent-rgb) / 0.24);
+}
+
+.admin-panel--radar {
+  border-color: rgb(var(--theme-secondary-rgb) / 0.24);
+  background:
+    linear-gradient(180deg, var(--admin-panel-highlight), transparent 34%),
+    linear-gradient(135deg, rgb(var(--theme-secondary-rgb) / 0.1), transparent 48%),
+    var(--admin-surface);
 }
 
 .admin-panel__body {
@@ -54,15 +107,42 @@
 }
 
 .admin-executive-focus {
+  position: relative;
   display: grid;
   align-content: space-between;
   border: 1px solid var(--surface-selected-border);
   border-left-width: 4px;
   border-radius: 0.75rem;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgb(var(--theme-secondary-rgb) / 0.12), transparent 44%),
+    linear-gradient(135deg, rgb(var(--theme-accent-rgb) / 0.16), transparent 46%),
+    linear-gradient(180deg, rgb(var(--theme-secondary-rgb) / 0.14), transparent 58%),
     var(--admin-surface-strong);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    var(--admin-shadow-soft);
   padding: 0.82rem;
+}
+
+.admin-executive-focus::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgb(var(--theme-accent-rgb) / 0.12), transparent 56%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 1.6rem,
+      rgb(255 255 255 / 0.018) 1.6rem,
+      rgb(255 255 255 / 0.018) 1.65rem
+    );
+}
+
+.admin-executive-focus > * {
+  position: relative;
+  z-index: 1;
 }
 
 .admin-executive-focus__value {
@@ -120,14 +200,74 @@
 }
 
 .admin-metric-tile {
+  --tile-accent: var(--admin-chart-cyan);
+  --tile-accent-chip: rgb(56 189 248 / 0.1);
+  --tile-accent-glow: rgb(56 189 248 / 0.26);
+  --tile-accent-soft: rgb(56 189 248 / 0.16);
+  position: relative;
   display: grid;
   gap: 0.22rem;
   min-height: 4.7rem;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, var(--tile-accent-soft), transparent 58%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.045), transparent 62%),
+    var(--admin-surface-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
   padding: 0.62rem;
 }
 
+.admin-metric-tile::before,
+.admin-radar-item::before,
+.admin-activity-item::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  pointer-events: none;
+  content: "";
+  background: var(--tile-accent, var(--admin-chart-cyan));
+  opacity: 0.9;
+}
+
+.admin-metric-tile[data-tone='success'],
+.admin-radar-item[data-tone='success'],
+.admin-activity-item[data-tone='success'] {
+  --tile-accent: var(--admin-chart-emerald);
+  --tile-accent-chip: rgb(52 211 153 / 0.1);
+  --tile-accent-glow: rgb(52 211 153 / 0.26);
+  --tile-accent-soft: rgb(52 211 153 / 0.16);
+}
+
+.admin-metric-tile[data-tone='warning'],
+.admin-radar-item[data-tone='warning'],
+.admin-activity-item[data-tone='warning'] {
+  --tile-accent: var(--admin-chart-amber);
+  --tile-accent-chip: rgb(251 191 36 / 0.12);
+  --tile-accent-glow: rgb(251 191 36 / 0.26);
+  --tile-accent-soft: rgb(251 191 36 / 0.17);
+}
+
+.admin-metric-tile[data-tone='danger'],
+.admin-radar-item[data-tone='danger'],
+.admin-activity-item[data-tone='danger'] {
+  --tile-accent: var(--admin-chart-rose);
+  --tile-accent-chip: rgb(251 113 133 / 0.1);
+  --tile-accent-glow: rgb(251 113 133 / 0.26);
+  --tile-accent-soft: rgb(251 113 133 / 0.16);
+}
+
+.admin-metric-tile[data-tone='info'],
+.admin-radar-item[data-tone='info'],
+.admin-activity-item[data-tone='info'] {
+  --tile-accent: var(--admin-chart-cyan);
+  --tile-accent-chip: rgb(56 189 248 / 0.1);
+  --tile-accent-glow: rgb(56 189 248 / 0.26);
+  --tile-accent-soft: rgb(56 189 248 / 0.16);
+}
+
 .admin-metric-tile svg {
-  color: rgb(var(--theme-accent-rgb) / 1);
+  color: var(--tile-accent);
+  filter: drop-shadow(0 0 10px var(--tile-accent-glow));
 }
 
 .admin-metric-tile strong {
@@ -143,7 +283,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border: 1px solid var(--admin-border);
   border-radius: 0.75rem;
-  background: var(--admin-surface-strong);
+  background:
+    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.08), transparent 70%),
+    var(--admin-surface-strong);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045);
   padding: 0.5rem;
 }
 
@@ -156,7 +299,8 @@
 
 .admin-insight-tile {
   border-color: transparent;
-  background: transparent;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 100%);
 }
 
 .admin-insight-tile strong,
@@ -185,7 +329,10 @@
   gap: 0.4rem;
   border: 1px solid var(--admin-border);
   border-radius: 0.65rem;
-  background: var(--admin-surface-strong);
+  background:
+    linear-gradient(90deg, rgb(var(--theme-secondary-rgb) / 0.11), transparent 62%),
+    var(--admin-surface-strong);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045);
   padding: 0.52rem;
 }
 
@@ -194,7 +341,17 @@
 }
 
 .admin-radar-item {
+  --tile-accent: var(--admin-chart-cyan);
+  --tile-accent-chip: rgb(56 189 248 / 0.1);
+  --tile-accent-glow: rgb(56 189 248 / 0.26);
+  --tile-accent-soft: rgb(56 189 248 / 0.15);
+  position: relative;
   min-height: 4.15rem;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, var(--tile-accent-soft), transparent 62%),
+    var(--admin-surface-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045);
 }
 
 .admin-chart-card .admin-panel__body {
@@ -226,9 +383,12 @@
   border: 1px solid var(--admin-border);
   border-radius: 0.8rem;
   background:
-    radial-gradient(circle at 8% 0%, rgb(var(--theme-primary-rgb) / 0.14), transparent 36%),
-    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.08), transparent 42%),
+    linear-gradient(135deg, rgb(var(--theme-primary-rgb) / 0.18), transparent 45%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.045), transparent 54%),
     var(--admin-surface-strong);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.055),
+    0 12px 26px rgb(2 6 23 / 0.16);
   padding: 0.68rem 0.7rem 0.52rem;
 }
 
@@ -238,8 +398,15 @@
   pointer-events: none;
   content: "";
   background:
-    linear-gradient(90deg, transparent 0%, rgb(var(--theme-accent-rgb) / 0.1) 52%, transparent 100%);
-  opacity: 0.55;
+    linear-gradient(90deg, transparent 0%, rgb(var(--theme-accent-rgb) / 0.12) 52%, transparent 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 2rem,
+      rgb(255 255 255 / 0.018) 2rem,
+      rgb(255 255 255 / 0.018) 2.05rem
+    );
+  opacity: 0.7;
 }
 
 .admin-chart-card__visual-heading {
@@ -324,17 +491,21 @@
   border: 1px solid var(--admin-border);
   border-radius: 0.72rem;
   background:
-    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.04), transparent 100%),
+    linear-gradient(135deg, rgb(var(--theme-primary-rgb) / 0.08), transparent 58%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 100%),
     var(--admin-surface-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   padding: 0.48rem 0.58rem;
 }
 
 .admin-chart-card__rank-row--leader {
-  border-color: rgb(var(--theme-secondary-rgb) / 0.34);
+  border-color: rgb(var(--theme-accent-rgb) / 0.38);
   background:
-    linear-gradient(135deg, rgb(var(--theme-primary-rgb) / 0.18), rgb(var(--theme-accent-rgb) / 0.08)),
+    linear-gradient(135deg, rgb(var(--theme-primary-rgb) / 0.22), rgb(var(--theme-accent-rgb) / 0.12)),
     var(--admin-surface-strong);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.065),
+    0 10px 20px rgb(2 6 23 / 0.14);
 }
 
 .admin-chart-card__rank-main {
@@ -363,7 +534,7 @@
 .admin-chart-card__rank-row--leader .admin-chart-card__rank-badge {
   border-color: rgb(var(--theme-accent-rgb) / 0.42);
   background:
-    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.55), rgb(var(--theme-secondary-rgb) / 0.3));
+    linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.44), rgb(var(--theme-primary-rgb) / 0.58));
   color: var(--text);
 }
 
@@ -428,8 +599,12 @@
   border: 1px solid var(--admin-border);
   border-radius: 0.75rem;
   background:
-    linear-gradient(180deg, rgb(var(--theme-primary-rgb) / 0.06), transparent 44%),
+    linear-gradient(135deg, rgb(var(--theme-secondary-rgb) / 0.16), transparent 52%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.045), transparent 62%),
     var(--admin-surface-strong);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.055),
+    0 12px 26px rgb(2 6 23 / 0.16);
   padding: 0.58rem;
 }
 
@@ -486,7 +661,9 @@
   min-width: 0;
   border: 1px solid var(--admin-border);
   border-radius: 0.6rem;
-  background: var(--admin-surface-muted);
+  background:
+    linear-gradient(90deg, rgb(var(--theme-accent-rgb) / 0.08), transparent 68%),
+    var(--admin-surface-muted);
   padding: 0.52rem 0.62rem;
 }
 
@@ -522,7 +699,10 @@
 .admin-payment-chart-card__method {
   border: 1px solid var(--admin-border);
   border-radius: 0.65rem;
-  background: var(--admin-surface-muted);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 100%),
+    var(--admin-surface-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
 .admin-payment-chart-card__summary {
@@ -592,7 +772,7 @@
   overflow: hidden;
   height: 0.38rem;
   border-radius: 999px;
-  background: rgb(var(--theme-primary-rgb) / 0.1);
+  background: rgb(var(--theme-primary-rgb) / 0.14);
 }
 
 .admin-payment-chart-card__method-track span {
@@ -612,7 +792,12 @@
 }
 
 .admin-dashboard .semantic-card {
+  border-color: rgb(var(--theme-primary-rgb) / 0.22);
   border-radius: 0.65rem;
+  background:
+    linear-gradient(135deg, rgb(var(--theme-primary-rgb) / 0.08), transparent 62%),
+    var(--admin-surface-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045);
   padding: 0.58rem 0.65rem;
 }
 
@@ -642,20 +827,33 @@
 
 .admin-activity-list {
   display: grid;
-  gap: 0.42rem;
+  gap: 0.5rem;
   margin-top: 0;
   padding-right: 0.15rem;
 }
 
 .admin-activity-item {
+  --tile-accent: var(--admin-chart-cyan);
+  --tile-accent-chip: rgb(56 189 248 / 0.1);
+  --tile-accent-glow: rgb(56 189 248 / 0.26);
+  --tile-accent-soft: rgb(56 189 248 / 0.13);
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
-  padding: 0.55rem 0.62rem;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, var(--tile-accent-soft), transparent 60%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 100%),
+    var(--admin-surface-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045);
+  padding: 0.62rem 0.7rem 0.62rem 0.76rem;
 }
 
 .admin-activity-item__content {
+  position: relative;
+  z-index: 1;
   min-width: 0;
 }
 
@@ -697,8 +895,14 @@
 }
 
 .admin-activity-item time {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
   max-width: 7.5rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: rgb(2 6 23 / 0.12);
+  padding: 0.2rem 0.5rem;
   text-align: right;
 }
 
@@ -709,6 +913,8 @@
 .admin-activity-item__aside {
   display: grid;
   gap: 0.5rem;
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
   justify-items: end;
 }
@@ -746,7 +952,9 @@
 .admin-activity-item__chips span {
   border: 1px solid var(--admin-border);
   border-radius: 999px;
-  background: var(--admin-surface-strong);
+  background:
+    linear-gradient(90deg, var(--tile-accent-chip), transparent 76%),
+    var(--admin-surface-strong);
   padding: 0.22rem 0.52rem;
 }
 
@@ -758,7 +966,10 @@
   margin-top: 0.55rem;
   border: 1px solid var(--admin-border);
   border-radius: 0.72rem;
-  background: var(--admin-surface-muted);
+  background:
+    linear-gradient(90deg, rgb(var(--theme-primary-rgb) / 0.08), transparent 66%),
+    var(--admin-surface-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   padding: 0.58rem 0.68rem;
 }
 
