@@ -79,12 +79,18 @@ export function SalesPage() {
   const { can, isAuditor, isCashier } = usePermissions();
 
   const detailSectionRef = useRef<HTMLElement | null>(null);
+  const receiptRequestSequenceRef = useRef(0);
+  const saleIdFromQuery = getSaleIdFromSearchParams(searchParams);
+  const initialSelectedReceipt =
+    saleIdFromQuery !== null
+      ? recentReceipts.find((item) => item.sale_id === saleIdFromQuery) ?? null
+      : recentReceipts[0] ?? null;
   const [saleIdInput, setSaleIdInput] = useState('');
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(
-    recentReceipts[0]?.sale_id ?? null,
+    saleIdFromQuery ?? initialSelectedReceipt?.sale_id ?? null,
   );
   const [selectedReceipt, setSelectedReceipt] = useState<SelectableReceipt | null>(
-    recentReceipts[0] ?? null,
+    initialSelectedReceipt,
   );
   const [latestSale, setLatestSale] = useState<LatestSaleResponse | null>(null);
   const [recentSales, setRecentSales] = useState<SaleRecentItem[]>([]);
@@ -111,37 +117,31 @@ export function SalesPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [pendingDetailScroll, setPendingDetailScroll] = useState(false);
   const [detailAnnouncement, setDetailAnnouncement] = useState('');
-  const saleIdFromQuery = useMemo(() => {
-    const rawValue = searchParams.get('saleId');
-    if (!rawValue) return null;
-
-    const parsed = Number(rawValue);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  }, [searchParams]);
 
   const canOperateSales = can('canOperateSales');
+  const fallbackReceipt = latestSale ?? recentReceipts[0] ?? null;
+  const cachedSelectedReceipt = useMemo(
+    () =>
+      selectedSaleId === null
+        ? null
+        : recentReceipts.find((item) => item.sale_id === selectedSaleId) ?? null,
+    [recentReceipts, selectedSaleId],
+  );
   const visibleReceipt = useMemo(() => {
     if (selectedSaleId !== null) {
       if (selectedReceipt?.sale_id === selectedSaleId) {
         return selectedReceipt;
       }
 
-      const cachedReceipt = recentReceipts.find(
-        (item) => item.sale_id === selectedSaleId,
-      );
-      if (cachedReceipt) {
-        return cachedReceipt;
-      }
-
-      if (latestSale?.sale_id === selectedSaleId) {
-        return latestSale;
+      if (cachedSelectedReceipt) {
+        return cachedSelectedReceipt;
       }
 
       return null;
     }
 
-    return selectedReceipt ?? latestSale ?? recentReceipts[0] ?? null;
-  }, [latestSale, recentReceipts, selectedReceipt, selectedSaleId]);
+    return fallbackReceipt;
+  }, [cachedSelectedReceipt, fallbackReceipt, selectedReceipt, selectedSaleId]);
   const visibleSaleId = visibleReceipt?.sale_id ?? null;
   const isDetailPending =
     receiptLoading && selectedSaleId !== null && visibleSaleId !== selectedSaleId;
@@ -156,18 +156,36 @@ export function SalesPage() {
   }, [historyPage, appliedFilters]);
 
   useEffect(() => {
-    if (selectedSaleId !== null || recentReceipts.length === 0) return;
+    if (saleIdFromQuery !== null || selectedSaleId !== null || recentReceipts.length === 0) {
+      return;
+    }
 
     setSelectedSaleId(recentReceipts[0].sale_id);
     setSelectedReceipt((current) => current ?? recentReceipts[0]);
-  }, [recentReceipts, selectedSaleId]);
+  }, [recentReceipts, saleIdFromQuery, selectedSaleId]);
 
   useEffect(() => {
-    if (saleIdFromQuery === null || saleIdFromQuery === selectedSaleId) return;
-
+    if (saleIdFromQuery === null) return;
     setSaleIdInput(String(saleIdFromQuery));
-    void handleSelectReceipt(saleIdFromQuery);
-  }, [saleIdFromQuery, selectedSaleId]);
+    if (
+      selectedSaleId === saleIdFromQuery &&
+      (selectedReceipt?.sale_id === saleIdFromQuery ||
+        cachedSelectedReceipt?.sale_id === saleIdFromQuery ||
+        receiptLoading ||
+        receiptError !== null)
+    ) {
+      return;
+    }
+
+    void handleSelectReceipt(saleIdFromQuery, { syncQueryParam: false });
+  }, [
+    cachedSelectedReceipt,
+    receiptError,
+    receiptLoading,
+    saleIdFromQuery,
+    selectedReceipt,
+    selectedSaleId,
+  ]);
 
   useEffect(() => {
     if (!pendingDetailScroll || selectedSaleId === null) return;
@@ -397,8 +415,10 @@ export function SalesPage() {
       setLatestSale(sale);
       if (sale) {
         addRecentReceipt(sale);
-        setSelectedReceipt((current) => current ?? sale);
-        setSelectedSaleId((current) => current ?? sale.sale_id);
+        if (saleIdFromQuery === null) {
+          setSelectedReceipt((current) => current ?? sale);
+          setSelectedSaleId((current) => current ?? sale.sale_id);
+        }
       }
     } catch (error) {
       setLatestAccessDenied(isAccessDeniedError(error));
@@ -445,31 +465,46 @@ export function SalesPage() {
 
   async function handleSelectReceipt(
     saleId: number,
-    options?: { receipt?: SelectableReceipt | null },
+    options?: {
+      receipt?: SelectableReceipt | null;
+      syncQueryParam?: boolean;
+    },
   ) {
     if (saleId <= 0) {
       setReceiptError('Ingresa un ID de venta valido.');
       return;
     }
 
+    const requestSequence = ++receiptRequestSequenceRef.current;
+
     setDetailAnnouncement('');
+    setSaleIdInput(String(saleId));
     setSelectedSaleId(saleId);
+    setSelectedReceipt((current) => (current?.sale_id === saleId ? current : null));
     setPendingDetailScroll(true);
     setReceiptError(null);
     setMessage(null);
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.set('saleId', String(saleId));
-    setSearchParams(nextSearchParams, { replace: true });
+    if (options?.syncQueryParam !== false) {
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.set('saleId', String(saleId));
+      setSearchParams(nextSearchParams, { replace: true });
+    }
 
     if (options?.receipt) {
       addRecentReceipt(options.receipt);
-      setSelectedReceipt(options.receipt);
+      if (receiptRequestSequenceRef.current === requestSequence) {
+        setReceiptLoading(false);
+        setSelectedReceipt(options.receipt);
+      }
       return;
     }
 
     const cachedReceipt = recentReceipts.find((item) => item.sale_id === saleId);
     if (cachedReceipt) {
-      setSelectedReceipt(cachedReceipt);
+      if (receiptRequestSequenceRef.current === requestSequence) {
+        setReceiptLoading(false);
+        setSelectedReceipt(cachedReceipt);
+      }
       return;
     }
 
@@ -477,16 +512,26 @@ export function SalesPage() {
       setReceiptLoading(true);
 
       const receipt = await posApi.getSaleReceipt(saleId);
+      if (receiptRequestSequenceRef.current !== requestSequence) {
+        return;
+      }
+
       addRecentReceipt(receipt);
       setSelectedReceipt(receipt);
       setMessage(`Comprobante de la venta #${receipt.sale_id} cargado correctamente.`);
     } catch (error) {
+      if (receiptRequestSequenceRef.current !== requestSequence) {
+        return;
+      }
+
       setPendingDetailScroll(false);
       setReceiptError(
         error instanceof Error ? error.message : 'No se pudo consultar el comprobante',
       );
     } finally {
-      setReceiptLoading(false);
+      if (receiptRequestSequenceRef.current === requestSequence) {
+        setReceiptLoading(false);
+      }
     }
   }
 
@@ -1348,4 +1393,12 @@ function formatStatus(status: string) {
   if (status === 'PENDING') return 'Pendiente';
   if (status === 'VOID') return 'Anulada';
   return status;
+}
+
+function getSaleIdFromSearchParams(searchParams: URLSearchParams) {
+  const rawValue = searchParams.get('saleId');
+  if (!rawValue) return null;
+
+  const parsed = Number(rawValue);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
