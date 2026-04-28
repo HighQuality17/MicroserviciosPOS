@@ -38,7 +38,7 @@ export function CatalogItemsTable<Row>({
         tabIndex={0}
         aria-label={ariaLabel}
         className={clsx(
-          'overflow-x-auto overflow-y-auto [scrollbar-gutter:stable] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]',
+          'catalog-items-table__scroll overflow-x-auto overflow-y-auto overscroll-x-contain pb-1 touch-pan-x [scrollbar-gutter:stable] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]',
           maxHeightClassName,
         )}
       >
