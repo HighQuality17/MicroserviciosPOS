@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import {
   AlertTriangle,
   ChevronUp,
+  CheckCircle2,
   CircleDot,
   MapPin,
   PackageOpen,
@@ -28,6 +29,7 @@ import { PaymentModal } from '@/components/PaymentModal';
 import { SearchField } from '@/components/SearchField';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
+import { Toast } from '@/components/Toast';
 import {
   PosCartPanel,
 } from '@/features/pos/components/PosCartPanel';
@@ -113,6 +115,7 @@ export function PosPage() {
   const [lastReceiptId, setLastReceiptId] = useState<number | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [mobileCartToast, setMobileCartToast] = useState<PosMobileCartToastData | null>(null);
+  const [saleSuccessMessage, setSaleSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadCurrentCash() {
@@ -168,6 +171,20 @@ export function PosPage() {
       window.clearTimeout(timeoutId);
     };
   }, [mobileCartToast]);
+
+  useEffect(() => {
+    if (!saleSuccessMessage) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSaleSuccessMessage(null);
+    }, 4200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [saleSuccessMessage]);
 
   useEffect(() => {
     setPosMobileOverlayOpen(mobileCartOpen);
@@ -470,6 +487,7 @@ export function PosPage() {
 
   function handleOpenPayment() {
     setPaymentError(null);
+    setSaleSuccessMessage(null);
     setMobileCartOpen(false);
     setPaymentOpen(true);
   }
@@ -515,6 +533,7 @@ export function PosPage() {
       setLastReceiptId(receipt.sale_id);
       clearCart();
       setMobileCartToast(null);
+      setSaleSuccessMessage('Venta registrada correctamente.');
       setPaymentOpen(false);
     } catch (error) {
       setPaymentError(formatPosPaymentError(error, variantNameById));
@@ -778,6 +797,27 @@ export function PosPage() {
         cartSheetId={cartSheetId}
         onOpenCart={handleOpenMobileCart}
       />
+
+      {saleSuccessMessage ? (
+        <div className="pos-sale-success-toast pointer-events-none fixed inset-x-4 bottom-4 z-40 mx-auto max-w-lg lg:inset-x-auto lg:bottom-auto lg:right-6 lg:top-6">
+          <Toast
+            tone="success"
+            role="status"
+            aria-live="polite"
+            className="pointer-events-auto rounded-[1.45rem] px-4 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <span className="pos-sale-success-toast__icon" aria-hidden="true">
+                <CheckCircle2 size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold theme-text-strong">{saleSuccessMessage}</p>
+                <p className="text-xs theme-text-secondary">El carrito quedo listo para una nueva venta.</p>
+              </div>
+            </div>
+          </Toast>
+        </div>
+      ) : null}
 
       {items.length > 0 ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 px-4 lg:hidden">

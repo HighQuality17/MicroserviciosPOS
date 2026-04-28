@@ -135,7 +135,7 @@ export function PaymentModal({
 
         {error ? <FeedbackMessage tone="error">{error}</FeedbackMessage> : null}
 
-        <div className="flex justify-end gap-3">
+        <div className="modal-action-row">
           <Button variant="ghost" type="button" onClick={onClose}>
             Cancelar
           </Button>

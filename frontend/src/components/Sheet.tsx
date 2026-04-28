@@ -230,6 +230,7 @@ export function Sheet({
                 type="button"
                 variant="ghost"
                 size="sm"
+                className="sheet-close-button"
                 icon={<X size={18} />}
                 label={closeLabel}
                 onClick={onClose}

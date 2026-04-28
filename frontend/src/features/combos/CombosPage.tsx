@@ -1421,7 +1421,7 @@ export function CombosPage() {
               />
             </div>
           </div>
-          <div className="products-panel__actions flex justify-end gap-3">
+          <div className="products-panel__actions modal-action-row">
             <Button
               variant="secondary"
               className="products-panel__secondary sm:flex-none sm:min-w-[9rem]"
@@ -1602,7 +1602,7 @@ export function CombosPage() {
             </div>
           )}
 
-          <div className="products-panel__actions flex justify-end gap-3">
+          <div className="products-panel__actions modal-action-row">
             <Button
               variant="secondary"
               className="products-panel__secondary sm:flex-none sm:min-w-[9rem]"
@@ -1649,7 +1649,7 @@ export function CombosPage() {
             el sistema bloqueara la operacion y te pedira desactivarlo en lugar de
             eliminarlo.
           </div>
-          <div className="products-panel__actions flex justify-end gap-3">
+          <div className="products-panel__actions modal-action-row">
             <Button
               variant="secondary"
               className="products-panel__secondary sm:flex-none sm:min-w-[9rem]"
