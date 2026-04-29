@@ -141,14 +141,16 @@
 }
 
 .admin-config-header-actions,
-.admin-config-actions {
+.admin-config-actions,
+.admin-config-audit-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
 }
 
 .admin-config-header-actions .ui-button-base,
-.admin-config-actions .ui-button-base {
+.admin-config-actions .ui-button-base,
+.admin-config-audit-actions .ui-button-base {
   min-height: 2.55rem;
 }
 
@@ -702,6 +704,89 @@
   color: var(--text-muted);
   font-size: 0.76rem;
   line-height: 1.38;
+}
+
+.admin-config-section--audit {
+  border-color: rgb(var(--theme-secondary-rgb) / 0.24);
+}
+
+.admin-config-audit-actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.admin-config-audit-actions .ui-button-base {
+  min-height: 2.25rem;
+}
+
+.admin-config-audit-list {
+  display: grid;
+  gap: 0.68rem;
+}
+
+.admin-config-audit-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 6.4rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(135deg, rgb(var(--theme-secondary-rgb) / 0.08), transparent 62%),
+    var(--admin-surface-muted);
+  padding: 0.82rem;
+}
+
+.admin-config-audit-item__main {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.admin-config-audit-item__meta,
+.admin-config-audit-item__fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.36rem;
+  min-width: 0;
+}
+
+.admin-config-audit-item__meta span:not(.status-badge),
+.admin-config-audit-item__main > span {
+  color: var(--text-muted);
+  font-size: 0.73rem;
+  font-weight: 680;
+}
+
+.admin-config-audit-item__main p {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.admin-config-audit-item__fields span {
+  display: inline-flex;
+  min-height: 1.55rem;
+  align-items: center;
+  border: 1px solid rgb(var(--theme-secondary-rgb) / 0.24);
+  border-radius: 999px;
+  background: rgb(var(--theme-secondary-rgb) / 0.1);
+  padding: 0.22rem 0.5rem;
+  color: var(--info);
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.admin-config-audit-item__aside {
+  display: grid;
+  justify-items: end;
+  align-content: space-between;
+  gap: 0.55rem;
+  min-width: 8.5rem;
+  color: var(--text-faint);
 }
 
 .admin-config-actions-card {
@@ -1807,7 +1892,8 @@
 .admin-activity-detail__metrics,
 .admin-activity-detail__split,
 .admin-activity-detail__rows,
-.admin-activity-detail__list {
+.admin-activity-detail__list,
+.admin-activity-detail__change-list {
   display: grid;
   gap: 0.68rem;
 }
@@ -1935,6 +2021,53 @@
 .admin-activity-detail__list-meta {
   display: grid;
   gap: 0.08rem;
+}
+
+.admin-activity-detail__change-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: 0.7rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.76rem;
+  background: rgb(var(--theme-primary-rgb) / 0.06);
+  padding: 0.68rem;
+}
+
+.admin-activity-detail__change-row p {
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.22;
+}
+
+.admin-activity-detail__change-row span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 680;
+  line-height: 1.3;
+}
+
+.admin-activity-detail__change-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.48rem;
+}
+
+.admin-activity-detail__change-values span {
+  display: grid;
+  gap: 0.22rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.68rem;
+  background: var(--admin-surface-strong);
+  padding: 0.5rem;
+}
+
+.admin-activity-detail__change-values strong {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 780;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .admin-activity-detail__note {
@@ -2578,12 +2711,14 @@
 
   .admin-config-header-actions,
   .admin-config-actions,
+  .admin-config-audit-actions,
   .admin-location-header-actions {
     width: 100%;
   }
 
   .admin-config-header-actions .ui-button-base,
   .admin-config-actions .ui-button-base,
+  .admin-config-audit-actions .ui-button-base,
   .admin-location-header-actions .ui-button-base {
     width: 100%;
   }
@@ -2883,7 +3018,8 @@
   .admin-activity-item__actions,
   .admin-activity-pagination,
   .admin-activity-detail__row,
-  .admin-activity-detail__list-item {
+  .admin-activity-detail__list-item,
+  .admin-config-audit-item__aside {
     width: 100%;
   }
 
@@ -2923,6 +3059,22 @@
   .admin-activity-detail__list-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .admin-config-audit-item,
+  .admin-activity-detail__change-row,
+  .admin-activity-detail__change-values {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-config-audit-item__aside {
+    min-width: 0;
+    justify-items: stretch;
+  }
+
+  .admin-config-audit-item__aside .ui-button-base {
+    width: 100%;
+    justify-content: center;
   }
 
   .admin-activity-pagination__actions {

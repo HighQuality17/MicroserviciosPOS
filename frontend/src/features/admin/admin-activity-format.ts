@@ -7,6 +7,7 @@ export function formatActivityType(activityType: AdminActivityListItem['activity
   if (activityType === 'SALE_COMPLETED') return 'Venta';
   if (activityType === 'CASH_OPENED') return 'Apertura';
   if (activityType === 'CASH_CLOSED') return 'Cierre';
+  if (activityType === 'CONFIG_UPDATED') return 'Configuracion';
   return 'Inventario';
 }
 
@@ -14,6 +15,7 @@ export function getActivityTone(activityType: AdminActivityListItem['activity_ty
   if (activityType === 'SALE_COMPLETED') return 'info';
   if (activityType === 'CASH_OPENED') return 'success';
   if (activityType === 'CASH_CLOSED') return 'danger';
+  if (activityType === 'CONFIG_UPDATED') return 'info';
   return 'warning';
 }
 
@@ -57,6 +59,22 @@ export function getActivityHighlights(item: AdminActivityListItem) {
       formatCurrency(summary.total),
       formatPaymentMethod(summary.payment_method),
       summary.responsible_name,
+    ];
+  }
+
+  if (item.activity_type === 'CONFIG_UPDATED') {
+    const summary = item.summary as {
+      changed_count: number;
+      changed_fields: string[];
+      responsible_name: string;
+    };
+
+    return [
+      `${summary.changed_count} campos`,
+      summary.responsible_name,
+      ...(summary.changed_fields.length > 0
+        ? summary.changed_fields.slice(0, 1)
+        : ['Sin detalle']),
     ];
   }
 
