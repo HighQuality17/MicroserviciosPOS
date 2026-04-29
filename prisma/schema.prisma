@@ -73,6 +73,7 @@ enum ProductType {
   SIMPLE
   VARIANT
 }
+
 enum SaleItemType {
   VARIANT
   COMBO
@@ -143,8 +144,9 @@ model BusinessConfig {
 }
 
 model Location {
-  id           Int               @id @default(autoincrement())
-  name         String            @unique
+  id           Int                  @id @default(autoincrement())
+  name         String               @unique
+  isActive     Boolean              @default(true)
   stocks       IngredientStock[]
   movements    IngredientMovement[]
   cashSessions CashSession[]
@@ -152,45 +154,45 @@ model Location {
 }
 
 model UnitType {
-  id           Int        @id @default(autoincrement())
-  code         String     @unique
+  id           Int          @id @default(autoincrement())
+  code         String       @unique
   dimension    Dimension
   factorToBase Decimal
   ingredients  Ingredient[]
 }
 
 model Ingredient {
-  id               Int                 @id @default(autoincrement())
-  name             String              @unique
-  dimension        Dimension
-  defaultUnitCode  String
-  defaultUnit      UnitType            @relation(fields: [defaultUnitCode], references: [code])
-  stocks           IngredientStock[]
-  movements        IngredientMovement[]
-  variantRecipe    VariantRecipeItem[]
+  id              Int                  @id @default(autoincrement())
+  name            String               @unique
+  dimension       Dimension
+  defaultUnitCode String
+  defaultUnit     UnitType             @relation(fields: [defaultUnitCode], references: [code])
+  stocks          IngredientStock[]
+  movements       IngredientMovement[]
+  variantRecipe   VariantRecipeItem[]
 }
 
 model IngredientStock {
-  ingredientId   Int
-  locationId     Int
-  qtyOnHandBase  Decimal @default(0)
-  ingredient     Ingredient   @relation(fields: [ingredientId], references: [id])
-  location       Location     @relation(fields: [locationId], references: [id])
+  ingredientId  Int
+  locationId    Int
+  qtyOnHandBase Decimal    @default(0)
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
+  location      Location   @relation(fields: [locationId], references: [id])
 
   @@id([ingredientId, locationId])
 }
 
 model IngredientMovement {
-  id               Int                             @id @default(autoincrement())
+  id               Int                              @id @default(autoincrement())
   ingredientId     Int
   locationId       Int
-  movementType     IngredientMovementType          @map("type")
+  movementType     IngredientMovementType           @map("type")
   qtyBase          Decimal
-  notes            String?                         @map("reason")
+  notes            String?                          @map("reason")
   referenceType    IngredientMovementReferenceType?
-  referenceId      Int?                            @map("refSaleId")
-  createdAt        DateTime                        @default(now())
-  adjustedByUserId Int                             @map("userId")
+  referenceId      Int?                             @map("refSaleId")
+  createdAt        DateTime                         @default(now())
+  adjustedByUserId Int                              @map("userId")
   reasonCode       IngredientMovementReasonCode?
   supportDocument  String?
   unitCostAtTime   Decimal?
@@ -198,10 +200,10 @@ model IngredientMovement {
   previousStock    Decimal?
   newStock         Decimal?
   countedStock     Decimal?
-  ingredient       Ingredient                      @relation(fields: [ingredientId], references: [id])
-  location         Location                        @relation(fields: [locationId], references: [id])
-  adjustedByUser   User                            @relation(fields: [adjustedByUserId], references: [id])
-  sale             Sale?                           @relation(fields: [referenceId], references: [id])
+  ingredient       Ingredient                       @relation(fields: [ingredientId], references: [id])
+  location         Location                         @relation(fields: [locationId], references: [id])
+  adjustedByUser   User                             @relation(fields: [adjustedByUserId], references: [id])
+  sale             Sale?                            @relation(fields: [referenceId], references: [id])
 
   @@index([locationId, createdAt])
   @@index([ingredientId, createdAt])
@@ -229,15 +231,15 @@ model Product {
 }
 
 model ProductVariant {
-  id           Int                 @id @default(autoincrement())
-  productId    Int
-  size         String
-  sku          String              @unique
-  salePrice    Decimal
-  active       Boolean             @default(true)
-  product      Product             @relation(fields: [productId], references: [id])
-  recipeItems  VariantRecipeItem[]
-  comboItems   ComboItem[]
+  id          Int                 @id @default(autoincrement())
+  productId   Int
+  size        String
+  sku         String              @unique
+  salePrice   Decimal
+  active      Boolean             @default(true)
+  product     Product             @relation(fields: [productId], references: [id])
+  recipeItems VariantRecipeItem[]
+  comboItems  ComboItem[]
 }
 
 model Combo {
@@ -259,35 +261,35 @@ model ComboItem {
 }
 
 model VariantRecipeItem {
-  variantId        Int
-  ingredientId     Int
-  qtyBaseRequired  Decimal
-  variant          ProductVariant @relation(fields: [variantId], references: [id])
-  ingredient       Ingredient     @relation(fields: [ingredientId], references: [id])
+  variantId       Int
+  ingredientId    Int
+  qtyBaseRequired Decimal
+  variant         ProductVariant @relation(fields: [variantId], references: [id])
+  ingredient      Ingredient     @relation(fields: [ingredientId], references: [id])
 
   @@id([variantId, ingredientId])
 }
 
 model CashSession {
-  id                  Int       @id @default(autoincrement())
+  id                  Int                  @id @default(autoincrement())
   locationId          Int
   openedBy            Int
   closedById          Int?
-  openedAt            DateTime  @default(now())
+  openedAt            DateTime             @default(now())
   openingCash         Decimal
   closedAt            DateTime?
   closingCashExpected Decimal?
   closingCashCounted  Decimal?
-  location            Location  @relation(fields: [locationId], references: [id])
-  opener              User      @relation("OpenedSessions", fields: [openedBy], references: [id])
-  closer              User?     @relation("ClosedSessions", fields: [closedById], references: [id])
+  location            Location             @relation(fields: [locationId], references: [id])
+  opener              User                 @relation("OpenedSessions", fields: [openedBy], references: [id])
+  closer              User?                @relation("ClosedSessions", fields: [closedById], references: [id])
   closureSnapshot     CashClosureSnapshot?
   sales               Sale[]
 }
 
 model CashClosureSnapshot {
-  id                  Int       @id @default(autoincrement())
-  cashSessionId       Int       @unique
+  id                  Int         @id @default(autoincrement())
+  cashSessionId       Int         @unique
   locationId          Int
   locationName        String
   openedById          Int
@@ -304,7 +306,7 @@ model CashClosureSnapshot {
   closingCashCounted  Decimal
   difference          Decimal
   summaryJson         Json?
-  createdAt           DateTime  @default(now())
+  createdAt           DateTime    @default(now())
   cashSession         CashSession @relation(fields: [cashSessionId], references: [id], onDelete: Cascade)
 
   @@index([closedAt])
@@ -334,57 +336,53 @@ model BusinessActivity {
 }
 
 model Sale {
-  id            Int           @id @default(autoincrement())
-  locationId    Int
-  cashierId     Int
-  cashSessionId Int
-  subtotal      Decimal
-  discountType  DiscountType  @default(NONE)
-  discountValue Decimal @default(0)
-  discountAmount Decimal @default(0)
-  total         Decimal
-  status        SaleStatus    @default(PENDING)
-  createdAt     DateTime      @default(now())
-  location      Location      @relation(fields: [locationId], references: [id])
-  cashier       User          @relation(fields: [cashierId], references: [id])
-  cashSession   CashSession   @relation(fields: [cashSessionId], references: [id])
-  items         SaleItem[]
-  payments      Payment[]
-  movements     IngredientMovement[]
+  id             Int                  @id @default(autoincrement())
+  locationId     Int
+  cashierId      Int
+  cashSessionId  Int
+  subtotal       Decimal
+  discountType   DiscountType         @default(NONE)
+  discountValue  Decimal              @default(0)
+  discountAmount Decimal              @default(0)
+  total          Decimal
+  status         SaleStatus           @default(PENDING)
+  createdAt      DateTime             @default(now())
+  location       Location             @relation(fields: [locationId], references: [id])
+  cashier        User                 @relation(fields: [cashierId], references: [id])
+  cashSession    CashSession          @relation(fields: [cashSessionId], references: [id])
+  items          SaleItem[]
+  payments       Payment[]
+  movements      IngredientMovement[]
 }
 
 model SaleItem {
-  id         Int          @id @default(autoincrement())
-  saleId     Int
-  itemType   SaleItemType
-  refId      Int
-  qty        Decimal
-  unitPrice  Decimal
-  lineTotal  Decimal
-  sale       Sale         @relation(fields: [saleId], references: [id])
+  id        Int          @id @default(autoincrement())
+  saleId    Int
+  itemType  SaleItemType
+  refId     Int
+  qty       Decimal
+  unitPrice Decimal
+  lineTotal Decimal
+  sale      Sale         @relation(fields: [saleId], references: [id])
 }
 
 model Payment {
   id             Int           @id @default(autoincrement())
-  saleId          Int
-  method          PaymentMethod
-  amountReceived  Decimal
-  amountApplied   Decimal
-  changeGiven     Decimal
-  sale            Sale         @relation(fields: [saleId], references: [id])
+  saleId         Int
+  method         PaymentMethod
+  amountReceived Decimal
+  amountApplied  Decimal
+  changeGiven    Decimal
+  sale           Sale          @relation(fields: [saleId], references: [id])
 }
 
 model AuditLog {
-  id           Int       @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   userId       Int
   action       String
   entity       String
   entityId     Int?
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime @default(now())
   metadataJson String
-  user         User      @relation(fields: [userId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
 }
-
-
-
-
