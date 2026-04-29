@@ -309,13 +309,22 @@ export class BusinessActivityService {
     await this.persistStockMovement(client, movement);
   }
 
-  async getFeed(page: number, limit: number): Promise<BusinessActivityFeedResponse> {
+  async getFeed(
+    page: number,
+    limit: number,
+    filters: {
+      category?: 'ALL' | 'CASH' | 'SALES' | 'INVENTORY' | 'CONFIG';
+      search?: string;
+    } = {},
+  ): Promise<BusinessActivityFeedResponse> {
     await this.ensureHistoricalRecords();
 
     const skip = (page - 1) * limit;
+    const where = this.buildFeedWhere(filters);
     const [total, records] = await Promise.all([
-      this.prisma.businessActivity.count(),
+      this.prisma.businessActivity.count({ where }),
       this.prisma.businessActivity.findMany({
+        where,
         orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
         skip,
         take: limit,
@@ -794,6 +803,44 @@ export class BusinessActivityService {
       ...this.mapRecordToListItem(record),
       detail: this.parseJson<BusinessActivityDetailPayload>(record.detailJson),
     };
+  }
+
+  private buildFeedWhere(filters: {
+    category?: 'ALL' | 'CASH' | 'SALES' | 'INVENTORY' | 'CONFIG';
+    search?: string;
+  }): Prisma.BusinessActivityWhereInput {
+    const where: Prisma.BusinessActivityWhereInput = {};
+
+    if (filters.category && filters.category !== 'ALL') {
+      if (filters.category === 'CASH') {
+        where.type = { in: [BusinessActivityType.CASH_OPENED, BusinessActivityType.CASH_CLOSED] };
+      }
+
+      if (filters.category === 'SALES') {
+        where.type = BusinessActivityType.SALE_COMPLETED;
+      }
+
+      if (filters.category === 'INVENTORY') {
+        where.type = BusinessActivityType.STOCK_MOVEMENT;
+      }
+
+      if (filters.category === 'CONFIG') {
+        where.id = -1;
+      }
+    }
+
+    const search = filters.search?.trim();
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { subtitle: { contains: search, mode: 'insensitive' } },
+        { actorUserName: { contains: search, mode: 'insensitive' } },
+        { locationName: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    return where;
   }
 
   private buildNavigation(

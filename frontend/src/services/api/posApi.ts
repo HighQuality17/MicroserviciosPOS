@@ -121,7 +121,12 @@ export const posApi = {
     unwrap<AdminTopItemsResponse>(api.get("/admin/top-items")),
   getAdminLowStock: () =>
     unwrap<AdminLowStockItem[]>(api.get("/admin/low-stock")),
-  getAdminActivity: (params?: { page?: number; limit?: number }) =>
+  getAdminActivity: (params?: {
+    page?: number;
+    limit?: number;
+    category?: "ALL" | "CASH" | "SALES" | "INVENTORY" | "CONFIG";
+    q?: string;
+  }) =>
     unwrap<AdminActivityFeedResponse>(api.get("/admin/activity", { params })),
   getAdminActivityDetail: (activityId: number) =>
     unwrap<AdminActivityDetailResponse>(api.get(`/admin/activity/${activityId}`)),

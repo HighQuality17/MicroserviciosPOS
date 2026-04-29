@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsInt, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 function toOptionalNumber(value: unknown) {
   if (value === undefined || value === null || value === '') {
@@ -21,4 +21,12 @@ export class GetAdminActivityQueryDto {
   @Min(1)
   @Max(50)
   limit = 8;
+
+  @IsOptional()
+  @IsIn(['ALL', 'CASH', 'SALES', 'INVENTORY', 'CONFIG'])
+  category?: 'ALL' | 'CASH' | 'SALES' | 'INVENTORY' | 'CONFIG';
+
+  @IsOptional()
+  @IsString()
+  q?: string;
 }

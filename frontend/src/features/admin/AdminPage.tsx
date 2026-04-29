@@ -1,6 +1,7 @@
 import '@/features/admin/admin-d1.css';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Activity,
   AlertTriangle,
   Boxes,
   CreditCard,
@@ -15,15 +16,16 @@ import { AdminChartCard } from '@/components/AdminChartCard';
 import { AlertCard } from '@/components/AlertCard';
 import { AccessState } from '@/components/AccessState';
 import { AdminActivityDetailDialog } from '@/features/admin/AdminActivityDetailDialog';
+import { AdminActivityFeedList } from '@/features/admin/AdminActivityFeedList';
 import {
-  getAdminActivityNavigation,
-  getAdminActivityNavigationCapability,
-} from '@/features/admin/admin-activity-navigation';
+  formatActivityType,
+  formatPaymentMethod,
+  getActivityTone,
+} from '@/features/admin/admin-activity-format';
 import { AdminPaymentMethodChartCard } from '@/features/admin/AdminPaymentMethodChartCard';
 import { AdminSubmoduleNav } from '@/features/admin/AdminSubmoduleNav';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type {
@@ -31,7 +33,6 @@ import type {
   ModulePageHeaderCard,
 } from '@/components/ModulePageHeader';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
-import { ScrollPanel } from '@/components/ScrollPanel';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
@@ -48,7 +49,6 @@ import type {
   AdminSalesByPaymentItem,
   AdminSummary,
   AdminTopItem,
-  PaymentMethod,
 } from '@/types/api';
 
 type BadgeTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
@@ -87,7 +87,7 @@ function SkeletonRows({ rows = 4 }: { rows?: number }) {
 
 export function AdminPage() {
   const navigate = useNavigate();
-  const { isAdmin, isAuditor, can } = usePermissions();
+  const { isAdmin, isAuditor } = usePermissions();
   const { isModuleEnabled } = useBusinessModules();
   const availableLocations = useAppStore((state) => state.availableLocations);
   const locationsLoading = useAppStore((state) => state.locationsLoading);
@@ -96,9 +96,7 @@ export function AdminPage() {
   const [topItems, setTopItems] = useState<AdminTopItem[]>([]);
   const [lowStock, setLowStock] = useState<AdminLowStockItem[]>([]);
   const [recentActivity, setRecentActivity] = useState<AdminActivityListItem[]>([]);
-  const [recentActivityPage, setRecentActivityPage] = useState(1);
   const [recentActivityTotal, setRecentActivityTotal] = useState(0);
-  const [recentActivityTotalPages, setRecentActivityTotalPages] = useState(0);
   const [selectedActivity, setSelectedActivity] = useState<AdminActivityListItem | null>(null);
   const [selectedActivityDetail, setSelectedActivityDetail] =
     useState<AdminActivityDetailResponse | null>(null);
@@ -126,8 +124,8 @@ export function AdminPage() {
   }, []);
 
   useEffect(() => {
-    void loadRecentActivity(recentActivityPage);
-  }, [recentActivityPage]);
+    void loadRecentActivity();
+  }, []);
 
   async function loadDashboard() {
     void loadSummary();
@@ -204,21 +202,19 @@ export function AdminPage() {
     }
   }
 
-  async function loadRecentActivity(page: number) {
+  async function loadRecentActivity() {
     try {
       setRecentActivityLoading(true);
       setRecentActivityError(null);
       const response = await posApi.getAdminActivity({
-        page,
-        limit: 8,
+        page: 1,
+        limit: 5,
       });
       setRecentActivity(response.items);
       setRecentActivityTotal(response.total);
-      setRecentActivityTotalPages(response.total_pages);
     } catch (error) {
       setRecentActivity([]);
       setRecentActivityTotal(0);
-      setRecentActivityTotalPages(0);
       setRecentActivityError(
         error instanceof Error
           ? error.message
@@ -493,6 +489,13 @@ export function AdminPage() {
       path: '/admin/config',
     },
     {
+      key: 'activity',
+      title: 'Actividad',
+      description: 'Eventos y auditoria.',
+      actionLabel: 'Ver todo',
+      path: '/admin/activity',
+    },
+    {
       key: 'locations',
       title: 'Puntos de venta',
       description: 'Ubicaciones operativas.',
@@ -592,6 +595,12 @@ export function AdminPage() {
         asideAction={
           isAdmin ? (
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/admin/activity')}
+              >
+                Actividad
+              </Button>
               <Button
                 variant="secondary"
                 onClick={() => navigate('/admin/locations')}
@@ -884,120 +893,35 @@ export function AdminPage() {
           <SectionHeader
             eyebrow="Actividad"
             title="Actividad reciente"
-            description="Eventos de venta, caja e inventario."
-            actions={<StatusBadge label={activityLabel} tone={activityTone} />}
+            description="Ultimos eventos. Feed completo en submodulo dedicado."
+            actions={
+              <div className="admin-activity-preview-actions">
+                <StatusBadge label={activityLabel} tone={activityTone} />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate('/admin/activity')}
+                >
+                  <Activity size={15} />
+                  Ver toda
+                </Button>
+              </div>
+            }
           />
 
-          {recentActivityError ? (
-            <div className="mt-6">
-              <BlockError message={recentActivityError} />
-            </div>
-          ) : recentActivityLoading ? (
-            <div className="mt-6">
-              <SkeletonRows rows={5} />
-            </div>
-          ) : recentActivity.length === 0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title="Sin actividad reciente"
-                description="Aparecera con ventas, caja o inventario."
-              />
-            </div>
-          ) : (
-            <>
-              <ScrollPanel className="admin-activity-list" maxHeightClassName="max-h-[22rem]" tabIndex={0} aria-label="Actividad reciente">
-                {recentActivity.map((item) => {
-                  const activityNavigation = getAdminActivityNavigation(item);
-                  const canShowNavigation =
-                    activityNavigation !== null &&
-                    can(getAdminActivityNavigationCapability(item.activity_type));
-
-                  return (
-                    <div
-                      key={`${item.id}-${item.activity_type}-${item.entity_id}`}
-                      className="admin-activity-item admin-activity-item--rich"
-                      data-tone={getActivityTone(item.activity_type)}
-                    >
-                      <div className="admin-activity-item__content">
-                        <div className="admin-activity-item__meta">
-                          <StatusBadge
-                            label={formatActivityType(item.activity_type)}
-                            tone={getActivityTone(item.activity_type)}
-                          />
-                          <span>#{item.entity_id}</span>
-                          {item.location?.location_name ? (
-                            <span>{item.location.location_name}</span>
-                          ) : null}
-                        </div>
-                        <p>{item.title}</p>
-                        <span>{item.subtitle}</span>
-                        <div className="admin-activity-item__chips">
-                          {getActivityHighlights(item).map((highlight) => (
-                            <span key={`${item.id}-${highlight}`}>{highlight}</span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="admin-activity-item__aside">
-                        <time>{formatDate(item.occurred_at)}</time>
-                        <div className="admin-activity-item__actions">
-                          <Button
-                            className="admin-activity-item__details-button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => void handleOpenActivityDetail(item)}
-                          >
-                            Mas detalles
-                          </Button>
-                          {canShowNavigation && activityNavigation ? (
-                            <Button
-                              className="admin-activity-item__nav-button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                handleActivityNavigation(activityNavigation);
-                              }}
-                            >
-                              {activityNavigation.label}
-                            </Button>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </ScrollPanel>
-              <div className="admin-activity-pagination">
-                <span>
-                  {recentActivityTotal} eventos - pagina {recentActivityPage} de{' '}
-                  {Math.max(recentActivityTotalPages, 1)}
-                </span>
-                <div className="admin-activity-pagination__actions">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={recentActivityLoading || recentActivityPage <= 1}
-                    onClick={() =>
-                      setRecentActivityPage((current) => Math.max(1, current - 1))
-                    }
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={
-                      recentActivityLoading ||
-                      recentActivityTotalPages === 0 ||
-                      recentActivityPage >= recentActivityTotalPages
-                    }
-                    onClick={() => setRecentActivityPage((current) => current + 1)}
-                  >
-                    Siguiente
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+          <AdminActivityFeedList
+            items={recentActivity}
+            loading={recentActivityLoading}
+            error={recentActivityError}
+            total={recentActivityTotal}
+            page={1}
+            totalPages={1}
+            rows={4}
+            maxHeightClassName="max-h-[21rem]"
+            showPagination={false}
+            onOpenDetail={(activity) => void handleOpenActivityDetail(activity)}
+            onNavigate={handleActivityNavigation}
+          />
           </div>
         </Card>
       </div>
@@ -1063,87 +987,4 @@ export function AdminPage() {
       />
     </div>
   );
-}
-
-function formatActivityType(activityType: AdminActivityListItem['activity_type']) {
-  if (activityType === 'SALE_COMPLETED') return 'Venta';
-  if (activityType === 'CASH_OPENED') return 'Apertura';
-  if (activityType === 'CASH_CLOSED') return 'Cierre';
-  return 'Inventario';
-}
-
-function getActivityTone(activityType: AdminActivityListItem['activity_type']): BadgeTone {
-  if (activityType === 'SALE_COMPLETED') return 'info';
-  if (activityType === 'CASH_OPENED') return 'success';
-  if (activityType === 'CASH_CLOSED') return 'danger';
-  return 'warning';
-}
-
-function getActivityHighlights(item: AdminActivityListItem) {
-  if (item.activity_type === 'CASH_OPENED') {
-    const summary = item.summary as {
-      cash_session_id: number;
-      responsible_name: string;
-      location_name: string;
-    };
-
-    return [
-      `Caja #${summary.cash_session_id}`,
-      summary.responsible_name,
-      summary.location_name,
-    ];
-  }
-
-  if (item.activity_type === 'CASH_CLOSED') {
-    const summary = item.summary as {
-      expected: number;
-      counted: number;
-      difference: number;
-    };
-
-    return [
-      `Esperado ${formatCurrency(summary.expected)}`,
-      `Contado ${formatCurrency(summary.counted)}`,
-      `Diff ${formatCurrency(summary.difference)}`,
-    ];
-  }
-
-  if (item.activity_type === 'SALE_COMPLETED') {
-    const summary = item.summary as {
-      total: number;
-      payment_method: PaymentMethod | null;
-      responsible_name: string;
-    };
-
-    return [
-      formatCurrency(summary.total),
-      formatPaymentMethod(summary.payment_method),
-      summary.responsible_name,
-    ];
-  }
-
-  const summary = item.summary as {
-    ingredient_name: string;
-    movement_type: string;
-    qty_delta: number;
-  };
-
-  return [
-    summary.ingredient_name,
-    formatInventoryMovementType(summary.movement_type),
-    `${summary.qty_delta >= 0 ? '+' : ''}${summary.qty_delta}`,
-  ];
-}
-
-function formatPaymentMethod(method: PaymentMethod | null) {
-  if (method === 'CASH') return 'Efectivo';
-  if (method === 'TRANSFER') return 'Transferencia';
-  return 'Pendiente';
-}
-
-function formatInventoryMovementType(value: string) {
-  if (value === 'ENTRY') return 'Entrada';
-  if (value === 'EXIT') return 'Salida';
-  if (value === 'ADJUSTMENT') return 'Ajuste';
-  return value;
 }
