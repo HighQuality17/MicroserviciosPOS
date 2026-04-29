@@ -76,6 +76,7 @@ export interface AuthLoginResponse {
 export interface Location {
   id: number;
   name: string;
+  isActive?: boolean;
 }
 
 export interface Product {

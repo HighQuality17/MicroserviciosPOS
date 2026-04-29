@@ -130,9 +130,14 @@ export const posApi = {
   getBusinessConfig: () => unwrap<BusinessConfig>(api.get("/config")),
   updateBusinessConfig: (payload: UpdateBusinessConfigPayload) =>
     unwrap<BusinessConfig>(api.patch("/config", payload)),
-  getLocations: () => unwrap<Location[]>(api.get("/locations")),
+  getLocations: (params?: { status?: "ALL" | "ACTIVE" | "INACTIVE" }) =>
+    unwrap<Location[]>(api.get("/locations", { params })),
   createLocation: (payload: { name: string }) =>
     unwrap<Location>(api.post("/locations", payload)),
+  updateLocation: (locationId: number, payload: { name: string }) =>
+    unwrap<Location>(api.patch(`/locations/${locationId}`, payload)),
+  updateLocationStatus: (locationId: number, payload: { isActive: boolean }) =>
+    unwrap<Location>(api.patch(`/locations/${locationId}/status`, payload)),
   getCatalog: () => unwrap<CatalogResponse>(api.get("/catalog")),
   getProducts: () => unwrap<CatalogProduct[]>(api.get("/products")),
   getVariants: (params?: { status?: "ALL" | "ACTIVE" | "INACTIVE" }) =>

@@ -35,6 +35,9 @@ export class CashService {
     ]);
     if (!location) throw new NotFoundException('Location not found');
     if (!user) throw new NotFoundException('User not found');
+    if (!location.isActive) {
+      throw new BadRequestException('Location is inactive');
+    }
 
     const active = await this.prisma.cashSession.findFirst({
       where: { locationId: dto.location_id, closedAt: null },

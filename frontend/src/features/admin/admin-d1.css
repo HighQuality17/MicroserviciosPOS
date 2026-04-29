@@ -2066,6 +2066,13 @@
   box-shadow: var(--admin-shadow-soft);
 }
 
+.admin-pos-item[data-active='false'] {
+  border-color: rgb(251 191 36 / 0.28);
+  background:
+    linear-gradient(135deg, rgb(251 191 36 / 0.09), transparent 62%),
+    var(--admin-surface-muted);
+}
+
 .admin-pos-item:hover {
   transform: translateY(-1px);
   border-color: var(--admin-border-strong);
@@ -2114,6 +2121,14 @@
   min-width: 0;
 }
 
+.admin-pos-item__badges {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  justify-content: flex-end;
+}
+
 .admin-pos-item h3 {
   overflow: hidden;
   color: var(--text);
@@ -2143,9 +2158,98 @@
   font-weight: 740;
 }
 
-.admin-pos-item__status {
+.admin-pos-item__actions {
+  display: flex;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.42rem;
   justify-self: end;
+}
+
+.admin-pos-item__actions .ui-button-base {
+  min-height: 2.2rem;
+}
+
+.admin-location-toolbar {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-location-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.34rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.78rem;
+  background: rgb(var(--theme-primary-rgb) / 0.06);
+  padding: 0.34rem;
+}
+
+.admin-location-filter button {
+  min-height: 2.05rem;
+  flex: 1 1 6rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  padding: 0.34rem 0.58rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.admin-location-filter button:hover {
+  border-color: var(--admin-border-strong);
+  color: var(--text);
+}
+
+.admin-location-filter button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
+}
+
+.admin-location-filter button[data-active='true'] {
+  border-color: var(--surface-selected-border);
+  background: var(--surface-selected-background);
+  color: var(--text);
+}
+
+.admin-location-modal-form,
+.admin-location-confirm {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.admin-location-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.admin-location-confirm__target {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.78rem;
+  background: var(--admin-surface-muted);
+  padding: 0.72rem;
+}
+
+.admin-location-confirm__target strong {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 830;
+}
+
+.admin-location-confirm__target p {
+  margin-top: 0.12rem;
+  color: var(--text-muted);
+  font-size: 0.74rem;
 }
 
 .admin-location-skeleton-list {
@@ -2628,12 +2732,22 @@
     flex-direction: column;
   }
 
+  .admin-pos-item__badges {
+    justify-content: flex-start;
+  }
+
   .admin-pos-item h3 {
     white-space: normal;
   }
 
-  .admin-pos-item__status {
+  .admin-pos-item__actions {
+    width: 100%;
     justify-self: stretch;
+  }
+
+  .admin-pos-item__actions .ui-button-base,
+  .admin-location-modal-actions .ui-button-base {
+    width: 100%;
   }
 
   .admin-activity-item {
