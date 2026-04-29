@@ -427,7 +427,7 @@ export interface AdminLowStockItem {
 }
 
 export interface AdminRecentActivityItem {
-  activity_type: "SALE" | "CASH_SESSION" | "STOCK_ADJUSTMENT";
+  activity_type: "SALE" | "CASH_SESSION" | "STOCK_ADJUSTMENT" | "CONFIG";
   action: string;
   created_at: string;
   entity_id: number;
@@ -443,12 +443,14 @@ export type AdminActivityType =
   | "CASH_OPENED"
   | "CASH_CLOSED"
   | "SALE_COMPLETED"
-  | "STOCK_MOVEMENT";
+  | "STOCK_MOVEMENT"
+  | "CONFIG_UPDATED";
 
 export type AdminActivityEntityType =
   | "CASH_SESSION"
   | "SALE"
-  | "INGREDIENT_MOVEMENT";
+  | "INGREDIENT_MOVEMENT"
+  | "BUSINESS_CONFIG";
 
 export interface AdminActivityActor {
   user_id: number | null;
@@ -571,17 +573,47 @@ export interface AdminStockMovementActivityDetail
   counted_stock: number | null;
 }
 
+export type AdminConfigAuditValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Record<string, boolean>;
+
+export interface AdminConfigUpdatedActivityFieldChange {
+  field: string;
+  label: string;
+  before: AdminConfigAuditValue;
+  after: AdminConfigAuditValue;
+}
+
+export interface AdminConfigUpdatedActivitySummary {
+  config_id: number;
+  changed_at: string;
+  responsible_name: string;
+  changed_count: number;
+  changed_fields: string[];
+}
+
+export interface AdminConfigUpdatedActivityDetail
+  extends AdminConfigUpdatedActivitySummary {
+  responsible_id: number;
+  changes: AdminConfigUpdatedActivityFieldChange[];
+}
+
 export type AdminActivitySummary =
   | AdminCashOpenedActivitySummary
   | AdminCashClosedActivitySummary
   | AdminSaleCompletedActivitySummary
-  | AdminStockMovementActivitySummary;
+  | AdminStockMovementActivitySummary
+  | AdminConfigUpdatedActivitySummary;
 
 export type AdminActivityDetail =
   | AdminCashOpenedActivityDetail
   | AdminCashClosedActivityDetail
   | AdminSaleCompletedActivityDetail
-  | AdminStockMovementActivityDetail;
+  | AdminStockMovementActivityDetail
+  | AdminConfigUpdatedActivityDetail;
 
 export interface AdminActivityListItem {
   id: number;

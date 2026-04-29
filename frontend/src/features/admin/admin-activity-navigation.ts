@@ -8,6 +8,7 @@ const activityNavigationLabels: Record<AdminActivityType, string> = {
   CASH_CLOSED: 'Ir a caja',
   SALE_COMPLETED: 'Ver venta',
   STOCK_MOVEMENT: 'Ver inventario',
+  CONFIG_UPDATED: 'Ver configuracion',
 };
 
 export function getAdminActivityNavigationCapability(
@@ -19,6 +20,10 @@ export function getAdminActivityNavigationCapability(
 
   if (activityType === 'SALE_COMPLETED') {
     return 'canViewSales';
+  }
+
+  if (activityType === 'CONFIG_UPDATED') {
+    return 'canManageConfig';
   }
 
   return 'canManageInventory';
@@ -64,6 +69,13 @@ function getFallbackAdminActivityNavigation(
     return {
       label: activityNavigationLabels[activity.activity_type],
       path: '/ingredients',
+    };
+  }
+
+  if (activity.activity_type === 'CONFIG_UPDATED') {
+    return {
+      label: activityNavigationLabels[activity.activity_type],
+      path: '/admin/config',
     };
   }
 

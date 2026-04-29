@@ -41,11 +41,11 @@ const activityFilters: Array<{
   label: string;
   description: string;
 }> = [
-  { value: 'ALL', label: 'Todos', description: 'Ventas, caja e inventario.' },
+  { value: 'ALL', label: 'Todos', description: 'Ventas, caja, inventario y config.' },
   { value: 'CASH', label: 'Caja', description: 'Aperturas y cierres.' },
   { value: 'SALES', label: 'Ventas', description: 'Ventas pagadas.' },
   { value: 'INVENTORY', label: 'Inventario', description: 'Movimientos de stock.' },
-  { value: 'CONFIG', label: 'Configuracion', description: 'Reservado para eventos futuros.' },
+  { value: 'CONFIG', label: 'Configuracion', description: 'Cambios de BusinessConfig.' },
 ];
 
 export function AdminActivityPage() {
@@ -130,7 +130,7 @@ export function AdminActivityPage() {
       { label: 'Caja', icon: CreditCard, copy: 'Aperturas, cierres y sesiones.' },
       { label: 'Ventas', icon: ShoppingBag, copy: 'Ventas pagadas con total y responsable.' },
       { label: 'Inventario', icon: Boxes, copy: 'Entradas, salidas y ajustes.' },
-      { label: 'Configuracion', icon: Settings2, copy: 'Preparado para auditoria futura.' },
+      { label: 'Configuracion', icon: Settings2, copy: 'Cambios de negocio con before/after.' },
     ],
     [],
   );

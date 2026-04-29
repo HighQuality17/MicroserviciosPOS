@@ -1,0 +1,2 @@
+ALTER TYPE "BusinessActivityType" ADD VALUE 'CONFIG_UPDATED';
+ALTER TYPE "BusinessActivityEntityType" ADD VALUE 'BUSINESS_CONFIG';
