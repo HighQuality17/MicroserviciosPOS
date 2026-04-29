@@ -1,12 +1,15 @@
 import '@/features/admin/admin-d1.css';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
   CircleOff,
+  Edit3,
   Hash,
   MapPin,
   MapPinned,
   Plus,
+  Power,
+  PowerOff,
   RefreshCw,
   Search,
   Store,
@@ -17,6 +20,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
+import { Modal } from '@/components/Modal';
 import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type { ModulePageHeaderCard } from '@/components/ModulePageHeader';
 import { ScrollPanel } from '@/components/ScrollPanel';
@@ -27,6 +31,7 @@ import { useAppStore } from '@/store/appStore';
 import type { Location } from '@/types/api';
 
 type BadgeTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
+type LocationStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
 function SkeletonRows({ rows = 3 }: { rows?: number }) {
   return (
@@ -46,39 +51,64 @@ export function AdminLocationsPage() {
   const setAvailableLocations = useAppStore((state) => state.setAvailableLocations);
   const setLocationsLoading = useAppStore((state) => state.setLocationsLoading);
   const setLocationsError = useAppStore((state) => state.setLocationsError);
+  const [adminLocations, setAdminLocations] = useState<Location[]>(availableLocations);
   const [locationName, setLocationName] = useState('');
   const [locationNameError, setLocationNameError] = useState<string | null>(null);
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
   const [locationSubmitError, setLocationSubmitError] = useState<string | null>(null);
   const [creatingLocation, setCreatingLocation] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<LocationStatusFilter>('ALL');
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editNameError, setEditNameError] = useState<string | null>(null);
+  const [editingLocationSaving, setEditingLocationSaving] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<Location | null>(null);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
 
-  const totalLocations = availableLocations.length;
-  const activeLocations = totalLocations;
-  const inactiveLocations = 0;
-  const highlightedLocation = currentLocation ?? availableLocations[0] ?? null;
+  useEffect(() => {
+    void refreshLocations();
+  }, []);
+
+  const totalLocations = adminLocations.length;
+  const activeLocations = adminLocations.filter(isLocationActive).length;
+  const inactiveLocations = totalLocations - activeLocations;
+  const highlightedLocation =
+    (currentLocation && adminLocations.find((location) => location.id === currentLocation.id)) ??
+    adminLocations.find(isLocationActive) ??
+    adminLocations[0] ??
+    null;
   const filteredLocations = useMemo(() => {
     const normalizedSearch = normalizeSearch(searchTerm);
 
-    if (!normalizedSearch) {
-      return availableLocations;
-    }
+    return adminLocations.filter((location) => {
+      const isActive = isLocationActive(location);
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'ACTIVE' && isActive) ||
+        (statusFilter === 'INACTIVE' && !isActive);
+      const matchesSearch =
+        !normalizedSearch ||
+        normalizeSearch(`${location.name} ${location.id}`).includes(normalizedSearch);
 
-    return availableLocations.filter((location) =>
-      normalizeSearch(`${location.name} ${location.id}`).includes(normalizedSearch),
-    );
-  }, [availableLocations, searchTerm]);
+      return matchesStatus && matchesSearch;
+    });
+  }, [adminLocations, searchTerm, statusFilter]);
 
   const locationsTone: BadgeTone = locationsLoading
     ? 'info'
-    : totalLocations > 0
+    : activeLocations > 0
       ? 'success'
-      : 'default';
+      : totalLocations > 0
+        ? 'warning'
+        : 'default';
   const locationsLabel = locationsLoading
     ? 'Actualizando'
-    : totalLocations > 0
+    : activeLocations > 0
       ? 'Cobertura lista'
-      : 'Sin POS';
+      : totalLocations > 0
+        ? 'Todo inactivo'
+        : 'Sin POS';
   const locationHeaderCards: ModulePageHeaderCard[] = [
     {
       label: 'Total POS',
@@ -106,14 +136,14 @@ export function AdminLocationsPage() {
     },
     {
       label: 'Inactivos',
-      value: String(inactiveLocations),
-      note: 'API actual no expone inactivos',
-      accent: 'default',
+      value: locationsLoading ? '...' : String(inactiveLocations),
+      note: inactiveLocations > 0 ? 'Ocultos de operacion normal' : 'Sin sedes pausadas',
+      accent: inactiveLocations > 0 ? 'warning' : 'default',
       icon: <CircleOff size={16} />,
-      iconTone: 'default',
+      iconTone: inactiveLocations > 0 ? 'warning' : 'default',
       badge: {
-        label: 'Sin bajas',
-        tone: 'default',
+        label: inactiveLocations > 0 ? 'Revisar' : 'Sin bajas',
+        tone: inactiveLocations > 0 ? 'warning' : 'default',
       },
     },
     {
@@ -142,8 +172,9 @@ export function AdminLocationsPage() {
     try {
       setLocationsLoading(true);
       setLocationsError(null);
-      const locations = await posApi.getLocations();
-      setAvailableLocations(locations);
+      const locations = await posApi.getLocations({ status: 'ALL' });
+      setAdminLocations(locations);
+      setAvailableLocations(locations.filter(isLocationActive));
     } catch (error) {
       setLocationsError(
         error instanceof Error
@@ -187,6 +218,87 @@ export function AdminLocationsPage() {
     }
   }
 
+  function openEditModal(location: Location) {
+    setEditingLocation(location);
+    setEditName(location.name);
+    setEditNameError(null);
+    setLocationSubmitError(null);
+    setLocationMessage(null);
+  }
+
+  async function handleEditLocation(event?: React.FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+
+    if (!editingLocation) {
+      return;
+    }
+
+    const normalizedName = editName.trim();
+
+    if (!normalizedName) {
+      setEditNameError('Escribe un nombre valido.');
+      return;
+    }
+
+    try {
+      setEditingLocationSaving(true);
+      setEditNameError(null);
+      setLocationSubmitError(null);
+      setLocationMessage(null);
+      const updatedLocation = await posApi.updateLocation(editingLocation.id, {
+        name: normalizedName,
+      });
+      setLocationMessage(`Punto de venta ${updatedLocation.name} actualizado.`);
+      setEditingLocation(null);
+      await refreshLocations();
+    } catch (error) {
+      setEditNameError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible actualizar el punto de venta.',
+      );
+    } finally {
+      setEditingLocationSaving(false);
+    }
+  }
+
+  function requestStatusChange(location: Location) {
+    if (isLocationActive(location)) {
+      setStatusTarget(location);
+      setLocationSubmitError(null);
+      setLocationMessage(null);
+      return;
+    }
+
+    void handleStatusChange(location, true);
+  }
+
+  async function handleStatusChange(location: Location, isActive: boolean) {
+    try {
+      setStatusUpdatingId(location.id);
+      setLocationSubmitError(null);
+      setLocationMessage(null);
+      const updatedLocation = await posApi.updateLocationStatus(location.id, {
+        isActive,
+      });
+      setStatusTarget(null);
+      setLocationMessage(
+        isActive
+          ? `Punto de venta ${updatedLocation.name} activado.`
+          : `Punto de venta ${updatedLocation.name} desactivado.`,
+      );
+      await refreshLocations();
+    } catch (error) {
+      setLocationSubmitError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible actualizar el estado del punto de venta.',
+      );
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  }
+
   return (
     <div className="admin-dashboard admin-locations-page grid min-w-0 gap-4 sm:gap-5">
       <AdminSubmoduleNav />
@@ -196,7 +308,7 @@ export function AdminLocationsPage() {
         eyebrow="Admin / Puntos de venta"
         title="Puntos de venta"
         description="Administra sedes operativas del POS con una vista clara para crecimiento, cobertura y control diario."
-        helpText="Esta pantalla usa los endpoints existentes de locations. No cambia API, backend ni flujos de caja."
+        helpText="Inactivos se conservan para historial y no aparecen en operacion normal. No hay borrado destructivo."
         icon={<Store size={18} />}
         badges={[{ label: locationsLabel, tone: locationsTone }]}
         asideAction={
@@ -241,7 +353,7 @@ export function AdminLocationsPage() {
           <SectionHeader
             eyebrow="Gestion de sedes"
             title="Cobertura operativa"
-            description="Crea puntos de venta y revisa que sedes estan disponibles para operar desde POS."
+            description="Crea, edita y pausa puntos de venta sin perder historial de caja, ventas o inventario."
             actions={<StatusBadge label={`${activeLocations} activos`} tone={activeLocations > 0 ? 'success' : 'default'} />}
           />
 
@@ -300,7 +412,7 @@ export function AdminLocationsPage() {
 
               <div className="admin-location-create__note">
                 <CheckCircle2 size={15} />
-                <span>Al crear, la lista se sincroniza y queda disponible para selector global.</span>
+                <span>Al crear, queda activo y disponible para operacion normal.</span>
               </div>
             </form>
 
@@ -321,17 +433,32 @@ export function AdminLocationsPage() {
                 </Button>
               </div>
 
-              <Input
-                label="Buscar punto de venta"
-                placeholder="Buscar por nombre o ID"
-                value={searchTerm}
-                startAdornment={<Search size={16} />}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
+              <div className="admin-location-toolbar">
+                <Input
+                  label="Buscar punto de venta"
+                  placeholder="Buscar por nombre o ID"
+                  value={searchTerm}
+                  startAdornment={<Search size={16} />}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                />
+
+                <div className="admin-location-filter" aria-label="Filtrar puntos por estado">
+                  {locationStatusFilters.map((filter) => (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      data-active={statusFilter === filter.value}
+                      onClick={() => setStatusFilter(filter.value)}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {locationsLoading ? (
                 <SkeletonRows rows={4} />
-              ) : availableLocations.length === 0 ? (
+              ) : adminLocations.length === 0 ? (
                 <EmptyState
                   title="Sin puntos de venta"
                   description="Crea la primera sede para habilitar operacion POS y organizar la cobertura del negocio."
@@ -346,18 +473,24 @@ export function AdminLocationsPage() {
               ) : filteredLocations.length === 0 ? (
                 <EmptyState
                   title="Sin resultados"
-                  description="No hay puntos de venta con ese nombre o ID."
+                  description="No hay puntos de venta con esos filtros."
                   icon={<Search size={22} />}
                   action={
-                    <Button variant="secondary" onClick={() => setSearchTerm('')}>
-                      Limpiar busqueda
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setStatusFilter('ALL');
+                      }}
+                    >
+                      Limpiar filtros
                     </Button>
                   }
                 />
               ) : (
                 <ScrollPanel
                   className="admin-pos-list"
-                  maxHeightClassName="max-h-[30rem]"
+                  maxHeightClassName="max-h-[34rem]"
                   tabIndex={0}
                   aria-label="Puntos de venta disponibles"
                 >
@@ -367,6 +500,9 @@ export function AdminLocationsPage() {
                       location={location}
                       index={index}
                       isHighlighted={location.id === highlightedLocation?.id}
+                      isUpdatingStatus={statusUpdatingId === location.id}
+                      onEdit={() => openEditModal(location)}
+                      onStatusChange={() => requestStatusChange(location)}
                     />
                   ))}
                 </ScrollPanel>
@@ -375,21 +511,130 @@ export function AdminLocationsPage() {
           </div>
         </div>
       </Card>
+
+      <Modal
+        open={Boolean(editingLocation)}
+        title="Editar punto de venta"
+        subtitle="Actualiza el nombre visible. Historial de ventas, caja e inventario se mantiene."
+        size="sm"
+        onClose={() => {
+          if (!editingLocationSaving) {
+            setEditingLocation(null);
+          }
+        }}
+      >
+        <form className="admin-location-modal-form" onSubmit={handleEditLocation}>
+          <Input
+            label="Nombre del punto"
+            value={editName}
+            error={editNameError ?? undefined}
+            placeholder="Ej: POS Centro"
+            onChange={(event) => {
+              setEditName(event.target.value);
+              setEditNameError(null);
+            }}
+          />
+          <div className="admin-location-modal-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={editingLocationSaving}
+              onClick={() => setEditingLocation(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              loading={editingLocationSaving}
+              disabled={!editName.trim()}
+            >
+              <Edit3 size={16} />
+              Guardar cambios
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(statusTarget)}
+        title="Desactivar punto de venta"
+        subtitle="No se borrara historial. El punto dejara de estar disponible para operacion normal."
+        size="sm"
+        onClose={() => {
+          if (statusUpdatingId === null) {
+            setStatusTarget(null);
+          }
+        }}
+      >
+        {statusTarget ? (
+          <div className="admin-location-confirm">
+            <div className="admin-location-confirm__target">
+              <span className="admin-pos-item__avatar" aria-hidden="true">
+                <Store size={17} />
+              </span>
+              <div>
+                <strong>{statusTarget.name}</strong>
+                <p>ID {statusTarget.id}</p>
+              </div>
+            </div>
+            <FeedbackMessage tone="warning">
+              Si tiene caja abierta, backend bloqueara esta accion.
+            </FeedbackMessage>
+            <div className="admin-location-modal-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={statusUpdatingId !== null}
+                onClick={() => setStatusTarget(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                loading={statusUpdatingId === statusTarget.id}
+                onClick={() => void handleStatusChange(statusTarget, false)}
+              >
+                <PowerOff size={16} />
+                Desactivar
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }
+
+const locationStatusFilters: Array<{ value: LocationStatusFilter; label: string }> = [
+  { value: 'ALL', label: 'Todos' },
+  { value: 'ACTIVE', label: 'Activos' },
+  { value: 'INACTIVE', label: 'Inactivos' },
+];
 
 function LocationListItem({
   location,
   index,
   isHighlighted,
+  isUpdatingStatus,
+  onEdit,
+  onStatusChange,
 }: {
   location: Location;
   index: number;
   isHighlighted: boolean;
+  isUpdatingStatus: boolean;
+  onEdit: () => void;
+  onStatusChange: () => void;
 }) {
+  const isActive = isLocationActive(location);
+
   return (
-    <article className="admin-pos-item" data-highlighted={isHighlighted}>
+    <article
+      className="admin-pos-item"
+      data-highlighted={isHighlighted}
+      data-active={isActive}
+    >
       <div className="admin-pos-item__main">
         <span className="admin-pos-item__avatar" aria-hidden="true">
           <Store size={17} />
@@ -397,7 +642,10 @@ function LocationListItem({
         <div className="admin-pos-item__copy">
           <div className="admin-pos-item__title-row">
             <h3>{location.name}</h3>
-            <StatusBadge label={isHighlighted ? 'Destacado' : 'Operativo'} tone={isHighlighted ? 'info' : 'success'} />
+            <div className="admin-pos-item__badges">
+              <StatusBadge label={isActive ? 'Activo' : 'Inactivo'} tone={isActive ? 'success' : 'warning'} />
+              {isHighlighted ? <StatusBadge label="Destacado" tone="info" /> : null}
+            </div>
           </div>
           <div className="admin-pos-item__meta">
             <span>
@@ -412,11 +660,28 @@ function LocationListItem({
         </div>
       </div>
 
-      <div className="admin-pos-item__status">
-        <StatusBadge label="Activo" tone="success" />
+      <div className="admin-pos-item__actions">
+        <Button size="sm" variant="secondary" onClick={onEdit} aria-label={`Editar ${location.name}`}>
+          <Edit3 size={15} />
+          Editar
+        </Button>
+        <Button
+          size="sm"
+          variant={isActive ? 'danger' : 'secondary'}
+          loading={isUpdatingStatus}
+          onClick={onStatusChange}
+          aria-label={`${isActive ? 'Desactivar' : 'Activar'} ${location.name}`}
+        >
+          {isActive ? <PowerOff size={15} /> : <Power size={15} />}
+          {isActive ? 'Desactivar' : 'Activar'}
+        </Button>
       </div>
     </article>
   );
+}
+
+function isLocationActive(location: Location) {
+  return location.isActive !== false;
 }
 
 function normalizeSearch(value: string) {
