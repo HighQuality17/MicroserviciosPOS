@@ -16,6 +16,7 @@ import type {
   AdminActivityNavigation,
   AdminCashClosedActivityDetail,
   AdminCashOpenedActivityDetail,
+  AdminConfigUpdatedActivityDetail,
   AdminSaleCompletedActivityDetail,
   AdminStockMovementActivityDetail,
 } from '@/types/api';
@@ -163,6 +164,9 @@ function DetailBody({
       ) : null}
       {detail.activity_type === 'STOCK_MOVEMENT' ? (
         <StockMovementDetail detail={detail.detail as AdminStockMovementActivityDetail} />
+      ) : null}
+      {detail.activity_type === 'CONFIG_UPDATED' ? (
+        <ConfigUpdatedDetail detail={detail.detail as AdminConfigUpdatedActivityDetail} />
       ) : null}
     </div>
   );
@@ -391,6 +395,62 @@ function StockMovementDetail({
   );
 }
 
+function ConfigUpdatedDetail({
+  detail,
+}: {
+  detail: AdminConfigUpdatedActivityDetail;
+}) {
+  return (
+    <>
+      <MetricGrid
+        items={[
+          { label: 'Config', value: `#${detail.config_id}` },
+          { label: 'Fecha', value: formatDate(detail.changed_at) },
+          { label: 'Responsable', value: detail.responsible_name },
+          { label: 'Campos', value: String(detail.changed_count), accent: 'info' },
+        ]}
+      />
+      <div className="admin-activity-detail__card">
+        <div className="admin-activity-detail__card-header">
+          <div>
+            <p className="admin-kicker">Auditoria</p>
+            <h3>Campos modificados</h3>
+          </div>
+          <StatusBadge label={`${detail.changes.length} cambios`} tone="info" />
+        </div>
+        <div className="admin-activity-detail__change-list">
+          {detail.changes.map((change) => (
+            <div key={change.field} className="admin-activity-detail__change-row">
+              <div>
+                <p>{change.label}</p>
+                <span>{change.field}</span>
+              </div>
+              <div className="admin-activity-detail__change-values">
+                <span>
+                  Antes
+                  <strong>{formatConfigAuditValue(change.before, change.field)}</strong>
+                </span>
+                <span>
+                  Despues
+                  <strong>{formatConfigAuditValue(change.after, change.field)}</strong>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <InfoCard
+        title="Contexto"
+        rows={[
+          ['Responsable', `${detail.responsible_name} (#${detail.responsible_id})`],
+          ['Fecha', formatDate(detail.changed_at)],
+          ['Resumen', detail.changed_fields.join(', ') || 'Sin campos'],
+        ]}
+      />
+    </>
+  );
+}
+
 function MetricGrid({
   items,
 }: {
@@ -446,12 +506,14 @@ function formatAdminActivityType(type: AdminActivityListItem['activity_type']) {
   if (type === 'CASH_OPENED') return 'Apertura';
   if (type === 'CASH_CLOSED') return 'Cierre';
   if (type === 'SALE_COMPLETED') return 'Venta';
+  if (type === 'CONFIG_UPDATED') return 'Configuracion';
   return 'Inventario';
 }
 
 function getActivityTone(type: AdminActivityListItem['activity_type']) {
   if (type === 'CASH_OPENED' || type === 'CASH_CLOSED') return 'success' as const;
   if (type === 'SALE_COMPLETED') return 'info' as const;
+  if (type === 'CONFIG_UPDATED') return 'info' as const;
   return 'warning' as const;
 }
 
@@ -503,4 +565,58 @@ function formatReasonCode(reason: string) {
   };
 
   return labels[reason] ?? reason;
+}
+
+function formatConfigAuditValue(
+  value: AdminConfigUpdatedActivityDetail['changes'][number]['before'],
+  field?: string,
+) {
+  if (value === null || value === '') {
+    return 'Sin valor';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'Activo' : 'Inactivo';
+  }
+
+  if (typeof value === 'object') {
+    const activeModules = Object.entries(value)
+      .filter(([, enabled]) => enabled)
+      .map(([key]) => formatConfigModuleKey(key));
+
+    return activeModules.length > 0 ? activeModules.join(', ') : 'Sin modulos activos';
+  }
+
+  if (field === 'businessType' && typeof value === 'string') {
+    return formatConfigBusinessType(value);
+  }
+
+  return String(value);
+}
+
+function formatConfigBusinessType(value: string) {
+  const labels: Record<string, string> = {
+    DESSERT_SHOP: 'Postres',
+    CAFE: 'Cafe',
+    RESTAURANT: 'Restaurante',
+    RETAIL: 'Retail',
+    MINIMARKET: 'Minimarket',
+    SALON: 'Salon',
+    CUSTOM: 'Personalizado',
+  };
+
+  return labels[value] ?? value;
+}
+
+function formatConfigModuleKey(key: string) {
+  const labels: Record<string, string> = {
+    ingredients: 'Ingredientes',
+    recipes: 'Recetas',
+    combos: 'Combos',
+    priceLists: 'Listas de precio',
+    fiscalFields: 'Campos fiscales',
+    electronicInvoicing: 'Facturacion electronica',
+  };
+
+  return labels[key] ?? key;
 }

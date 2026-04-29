@@ -23,6 +23,9 @@ import type {
   CashClosedActivitySummary,
   CashOpenedActivityDetail,
   CashOpenedActivitySummary,
+  ConfigUpdatedActivityDetail,
+  ConfigUpdatedActivitySummary,
+  ConfigUpdatedFieldChange,
   SaleCompletedActivityDetail,
   SaleCompletedActivityLineItem,
   SaleCompletedActivitySummary,
@@ -105,6 +108,16 @@ interface RecordCashClosedInput {
     id: number;
     name: string;
   };
+}
+
+interface RecordConfigUpdatedInput {
+  config_id: number;
+  changed_at: Date;
+  responsible: {
+    id: number;
+    name: string;
+  };
+  changes: ConfigUpdatedFieldChange[];
 }
 
 const historicalSaleInclude = {
@@ -307,6 +320,46 @@ export class BusinessActivityService {
     }
 
     await this.persistStockMovement(client, movement);
+  }
+
+  async recordConfigUpdated(
+    client: PrismaClientLike,
+    input: RecordConfigUpdatedInput,
+  ) {
+    const changedFields = input.changes.map((change) => change.label);
+    const summary: ConfigUpdatedActivitySummary = {
+      config_id: input.config_id,
+      changed_at: input.changed_at.toISOString(),
+      responsible_name: input.responsible.name,
+      changed_count: input.changes.length,
+      changed_fields: changedFields,
+    };
+    const detail: ConfigUpdatedActivityDetail = {
+      ...summary,
+      responsible_id: input.responsible.id,
+      changes: input.changes,
+    };
+
+    await this.upsertActivity(client, {
+      event_key: `${this.buildEventKey(
+        BusinessActivityType.CONFIG_UPDATED,
+        BusinessActivityEntityType.BUSINESS_CONFIG,
+        input.config_id,
+      )}:${input.changed_at.getTime()}`,
+      activity_type: BusinessActivityType.CONFIG_UPDATED,
+      entity_type: BusinessActivityEntityType.BUSINESS_CONFIG,
+      entity_id: input.config_id,
+      occurred_at: input.changed_at,
+      actor: {
+        user_id: input.responsible.id,
+        user_name: input.responsible.name,
+      },
+      location: null,
+      title: 'Configuracion de negocio actualizada',
+      subtitle: `${input.responsible.name} · ${changedFields.join(', ')}`,
+      summary,
+      detail,
+    });
   }
 
   async getFeed(
@@ -825,7 +878,7 @@ export class BusinessActivityService {
       }
 
       if (filters.category === 'CONFIG') {
-        where.id = -1;
+        where.type = BusinessActivityType.CONFIG_UPDATED;
       }
     }
 
@@ -877,6 +930,13 @@ export class BusinessActivityService {
       };
     }
 
+    if (record.type === BusinessActivityType.CONFIG_UPDATED) {
+      return {
+        label: 'Ver configuracion',
+        path: '/admin/config',
+      };
+    }
+
     return null;
   }
 
@@ -890,6 +950,10 @@ export class BusinessActivityService {
       activityType === BusinessActivityType.CASH_CLOSED
     ) {
       return 'CASH_SESSION' as const;
+    }
+
+    if (activityType === BusinessActivityType.CONFIG_UPDATED) {
+      return 'CONFIG' as const;
     }
 
     return 'STOCK_ADJUSTMENT' as const;
@@ -909,6 +973,10 @@ export class BusinessActivityService {
 
     if (activityType === BusinessActivityType.CASH_CLOSED) {
       return 'CASH_CLOSED';
+    }
+
+    if (activityType === BusinessActivityType.CONFIG_UPDATED) {
+      return 'CONFIG_UPDATED';
     }
 
     if (

@@ -23,6 +23,12 @@ import { ConfigService } from './config.service';
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 
+  @Get('audit')
+  @Roles(UserRole.ADMIN, UserRole.AUDITOR)
+  getAudit() {
+    return this.configService.getAudit();
+  }
+
   @Get()
   getConfig() {
     return this.configService.getConfig();

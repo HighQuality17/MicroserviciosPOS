@@ -1,6 +1,7 @@
 import '@/features/admin/admin-d1.css';
 import { useEffect, useState } from 'react';
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   Boxes,
@@ -25,10 +26,12 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AdminActivityDetailDialog } from '@/features/admin/AdminActivityDetailDialog';
 import { AdminSubmoduleNav } from '@/features/admin/AdminSubmoduleNav';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { CheckboxField } from '@/components/CheckboxField';
+import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
@@ -38,9 +41,17 @@ import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Textarea } from '@/components/Textarea';
+import {
+  formatActivityType,
+  getActivityTone,
+} from '@/features/admin/admin-activity-format';
 import { posApi } from '@/services/api/posApi';
 import { useBusinessConfigStore } from '@/store/businessConfigStore';
 import type {
+  AdminActivityDetailResponse,
+  AdminActivityListItem,
+  AdminActivityNavigation,
+  AdminConfigUpdatedActivitySummary,
   BusinessConfig,
   BusinessModules,
   BusinessType,
@@ -240,12 +251,28 @@ export function AdminConfigPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const [auditItems, setAuditItems] = useState<AdminActivityListItem[]>([]);
+  const [auditLoading, setAuditLoading] = useState(true);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [selectedAuditActivity, setSelectedAuditActivity] =
+    useState<AdminActivityListItem | null>(null);
+  const [selectedAuditDetail, setSelectedAuditDetail] =
+    useState<AdminActivityDetailResponse | null>(null);
+  const [auditDetailCache, setAuditDetailCache] = useState<
+    Record<number, AdminActivityDetailResponse>
+  >({});
+  const [auditDetailLoading, setAuditDetailLoading] = useState(false);
+  const [auditDetailError, setAuditDetailError] = useState<string | null>(null);
 
   useEffect(() => {
     if (config) {
       setForm(createFormState(config));
     }
   }, [config]);
+
+  useEffect(() => {
+    void loadConfigAudit();
+  }, []);
 
   useEffect(() => {
     if (!config && !isLoadingConfig && !configError) {
@@ -258,6 +285,72 @@ export function AdminConfigPage() {
     setSubmitError(null);
     setSubmitSuccess(null);
     await refreshConfig();
+    await loadConfigAudit();
+  }
+
+  async function loadConfigAudit() {
+    try {
+      setAuditLoading(true);
+      setAuditError(null);
+      const response = await posApi.getBusinessConfigAudit();
+      setAuditItems(response.items);
+    } catch (error) {
+      setAuditItems([]);
+      setAuditError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible cargar historial de configuracion.',
+      );
+    } finally {
+      setAuditLoading(false);
+    }
+  }
+
+  async function handleOpenAuditDetail(activity: AdminActivityListItem) {
+    setSelectedAuditActivity(activity);
+    setAuditDetailError(null);
+
+    const cached = auditDetailCache[activity.id];
+    if (cached) {
+      setSelectedAuditDetail(cached);
+      setAuditDetailLoading(false);
+      return;
+    }
+
+    try {
+      setAuditDetailLoading(true);
+      setSelectedAuditDetail(null);
+      const detail = await posApi.getAdminActivityDetail(activity.id);
+      setAuditDetailCache((current) => ({
+        ...current,
+        [activity.id]: detail,
+      }));
+      setSelectedAuditDetail(detail);
+    } catch (error) {
+      setSelectedAuditDetail(null);
+      setAuditDetailError(
+        error instanceof Error
+          ? error.message
+          : 'No fue posible cargar detalle de auditoria.',
+      );
+    } finally {
+      setAuditDetailLoading(false);
+    }
+  }
+
+  function closeAuditDetail() {
+    setSelectedAuditActivity(null);
+    setSelectedAuditDetail(null);
+    setAuditDetailError(null);
+    setAuditDetailLoading(false);
+  }
+
+  function handleAuditNavigation(navigation: AdminActivityNavigation) {
+    const search = navigation.query
+      ? new URLSearchParams(navigation.query).toString()
+      : '';
+
+    void navigate(search ? `${navigation.path}?${search}` : navigation.path);
   }
 
   function handleRestoreForm() {
@@ -387,6 +480,7 @@ export function AdminConfigPage() {
       const updatedConfig = await posApi.updateBusinessConfig(payload);
       setConfig(updatedConfig);
       setForm(createFormState(updatedConfig));
+      await loadConfigAudit();
       setSubmitSuccess('Configuracion guardada correctamente.');
       setFieldErrors({});
     } catch (error) {
@@ -973,6 +1067,95 @@ export function AdminConfigPage() {
           </div>
         </Card>
 
+        <Card padding="none" glow={false} className="admin-panel admin-config-section admin-config-section--audit">
+          <div className="admin-panel__body admin-config-section__body">
+            <SectionHeader
+              eyebrow="Auditoria"
+              title="Historial de cambios"
+              description="Ultimos cambios reales guardados sobre BusinessConfig, con responsable y campos modificados."
+              actions={
+                <div className="admin-config-audit-actions">
+                  <StatusBadge
+                    label={auditLoading ? 'Cargando' : `${auditItems.length} recientes`}
+                    tone={auditLoading ? 'info' : auditItems.length > 0 ? 'success' : 'default'}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={auditLoading}
+                    onClick={() => void loadConfigAudit()}
+                  >
+                    <RefreshCw size={15} />
+                    Actualizar
+                  </Button>
+                </div>
+              }
+            />
+
+            {auditError ? (
+              <FeedbackMessage tone="error">
+                {auditError}
+              </FeedbackMessage>
+            ) : auditLoading ? (
+              <div className="admin-config-audit-list" aria-label="Cargando historial">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="admin-config-audit-item animate-pulse" />
+                ))}
+              </div>
+            ) : auditItems.length === 0 ? (
+              <EmptyState
+                title="Sin cambios registrados"
+                description="Cuando BusinessConfig cambie, aparecera aqui con before/after persistido."
+              />
+            ) : (
+              <div className="admin-config-audit-list">
+                {auditItems.map((item) => {
+                  const summary = item.summary as AdminConfigUpdatedActivitySummary;
+                  const visibleFields = summary.changed_fields.slice(0, 4);
+
+                  return (
+                    <article key={item.id} className="admin-config-audit-item">
+                      <div className="admin-config-audit-item__main">
+                        <div className="admin-config-audit-item__meta">
+                          <StatusBadge
+                            label={formatActivityType(item.activity_type)}
+                            tone={getActivityTone(item.activity_type)}
+                          />
+                          <span>{formatDate(item.occurred_at)}</span>
+                          <span>{summary.responsible_name}</span>
+                        </div>
+                        <p>{item.title}</p>
+                        <span>{summary.changed_count} campos modificados</span>
+                        <div className="admin-config-audit-item__fields">
+                          {visibleFields.length > 0 ? (
+                            visibleFields.map((field) => (
+                              <span key={`${item.id}-${field}`}>{field}</span>
+                            ))
+                          ) : (
+                            <span>Sin campos</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="admin-config-audit-item__aside">
+                        <Activity size={17} />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => void handleOpenAuditDetail(item)}
+                        >
+                          Ver detalle
+                        </Button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Card>
+
         <Card padding="none" glow={false} className="admin-panel admin-config-actions-card">
           <div className="admin-panel__body admin-config-actions-card__body">
             <SectionHeader
@@ -1022,6 +1205,16 @@ export function AdminConfigPage() {
           </div>
         </Card>
       </form>
+
+      <AdminActivityDetailDialog
+        open={selectedAuditActivity !== null}
+        activity={selectedAuditActivity}
+        detail={selectedAuditDetail}
+        loading={auditDetailLoading}
+        error={auditDetailError}
+        onClose={closeAuditDetail}
+        onNavigate={handleAuditNavigation}
+      />
     </div>
   );
 }

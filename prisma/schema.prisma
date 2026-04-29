@@ -101,12 +101,14 @@ enum BusinessActivityType {
   CASH_CLOSED
   SALE_COMPLETED
   STOCK_MOVEMENT
+  CONFIG_UPDATED
 }
 
 enum BusinessActivityEntityType {
   CASH_SESSION
   SALE
   INGREDIENT_MOVEMENT
+  BUSINESS_CONFIG
 }
 
 model User {

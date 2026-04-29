@@ -133,6 +133,8 @@ export const posApi = {
   getAdminRecentActivity: () =>
     unwrap<AdminRecentActivityResponse>(api.get("/admin/recent-activity")),
   getBusinessConfig: () => unwrap<BusinessConfig>(api.get("/config")),
+  getBusinessConfigAudit: () =>
+    unwrap<AdminActivityFeedResponse>(api.get("/config/audit")),
   updateBusinessConfig: (payload: UpdateBusinessConfigPayload) =>
     unwrap<BusinessConfig>(api.patch("/config", payload)),
   getLocations: (params?: { status?: "ALL" | "ACTIVE" | "INACTIVE" }) =>

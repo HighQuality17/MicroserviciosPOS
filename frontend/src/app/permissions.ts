@@ -33,6 +33,7 @@ export interface NavigationItem {
 
 export type PermissionCapability =
   | 'canViewAdmin'
+  | 'canManageConfig'
   | 'canViewSales'
   | 'canOperateSales'
   | 'canOperatePos'
@@ -84,6 +85,7 @@ const defaultRouteByRole: Record<UserRole, AppRoutePath> = {
 const capabilitiesByRole: Record<UserRole, Record<PermissionCapability, boolean>> = {
   ADMIN: {
     canViewAdmin: true,
+    canManageConfig: true,
     canViewSales: true,
     canOperateSales: true,
     canOperatePos: true,
@@ -94,6 +96,7 @@ const capabilitiesByRole: Record<UserRole, Record<PermissionCapability, boolean>
   },
   CASHIER: {
     canViewAdmin: false,
+    canManageConfig: false,
     canViewSales: true,
     canOperateSales: false,
     canOperatePos: true,
@@ -104,6 +107,7 @@ const capabilitiesByRole: Record<UserRole, Record<PermissionCapability, boolean>
   },
   AUDITOR: {
     canViewAdmin: true,
+    canManageConfig: false,
     canViewSales: true,
     canOperateSales: false,
     canOperatePos: false,

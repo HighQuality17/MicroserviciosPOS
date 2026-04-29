@@ -128,17 +128,46 @@ export interface StockMovementActivityDetail extends StockMovementActivitySummar
   counted_stock: number | null;
 }
 
+export type ConfigAuditValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Record<string, boolean>;
+
+export interface ConfigUpdatedFieldChange {
+  field: string;
+  label: string;
+  before: ConfigAuditValue;
+  after: ConfigAuditValue;
+}
+
+export interface ConfigUpdatedActivitySummary {
+  config_id: number;
+  changed_at: string;
+  responsible_name: string;
+  changed_count: number;
+  changed_fields: string[];
+}
+
+export interface ConfigUpdatedActivityDetail extends ConfigUpdatedActivitySummary {
+  responsible_id: number;
+  changes: ConfigUpdatedFieldChange[];
+}
+
 export type BusinessActivitySummaryPayload =
   | CashOpenedActivitySummary
   | CashClosedActivitySummary
   | SaleCompletedActivitySummary
-  | StockMovementActivitySummary;
+  | StockMovementActivitySummary
+  | ConfigUpdatedActivitySummary;
 
 export type BusinessActivityDetailPayload =
   | CashOpenedActivityDetail
   | CashClosedActivityDetail
   | SaleCompletedActivityDetail
-  | StockMovementActivityDetail;
+  | StockMovementActivityDetail
+  | ConfigUpdatedActivityDetail;
 
 export interface BusinessActivityListItem<
   TSummary extends BusinessActivitySummaryPayload = BusinessActivitySummaryPayload,
