@@ -187,7 +187,10 @@ export class AdminService {
   }
 
   async getActivity(query: GetAdminActivityQueryDto) {
-    return this.businessActivityService.getFeed(query.page, query.limit);
+    return this.businessActivityService.getFeed(query.page, query.limit, {
+      category: query.category,
+      search: query.q,
+    });
   }
 
   async getActivityDetail(id: number) {
