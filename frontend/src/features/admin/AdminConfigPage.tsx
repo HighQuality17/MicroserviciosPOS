@@ -1,12 +1,15 @@
 import '@/features/admin/admin-d1.css';
 import { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   ArrowLeft,
   Boxes,
   Building2,
+  CheckCircle2,
   CreditCard,
   FileText,
   Globe2,
+  Info,
   Mail,
   MapPin,
   Phone,
@@ -46,6 +49,9 @@ import type {
 import { formatDate } from '@/utils/format';
 import { translateProtectedError } from '@/utils/apiError';
 
+type ModuleKey = keyof BusinessModules;
+type BadgeTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
+
 interface BusinessConfigFormState {
   businessName: string;
   legalName: string;
@@ -62,18 +68,66 @@ interface BusinessConfigFormState {
 
 type FormErrors = Partial<Record<'businessName' | 'currencyCode' | 'countryCode' | 'timezone' | 'email', string>>;
 
-const businessTypeOptions: Array<{ value: BusinessType; label: string; description: string }> = [
-  { value: 'DESSERT_SHOP', label: 'Postres', description: 'Recetas, ingredientes y combos listos para operar.' },
-  { value: 'CAFE', label: 'Cafe', description: 'Configuracion ligera para bebidas y preparaciones.' },
-  { value: 'RESTAURANT', label: 'Restaurante', description: 'Preset orientado a produccion y combos.' },
-  { value: 'RETAIL', label: 'Retail', description: 'Enfoque comercial con listas de precio activas.' },
-  { value: 'MINIMARKET', label: 'Minimarket', description: 'Catalogo retail con operacion rapida.' },
-  { value: 'SALON', label: 'Peluqueria', description: 'Servicios y listas de precio sin recetas.' },
-  { value: 'CUSTOM', label: 'Personalizado', description: 'Conserva control manual sin preset forzado.' },
+const businessTypeOptions: Array<{
+  value: BusinessType;
+  label: string;
+  description: string;
+  operation: string;
+  bestFor: string;
+}> = [
+  {
+    value: 'DESSERT_SHOP',
+    label: 'Postres',
+    description: 'Produccion por receta con insumos, preparaciones y combos listos para venta.',
+    operation: 'Operaciones con recetas repetibles, toppings, inventario base y combos.',
+    bestFor: 'Pastelerias, fresas, heladerias y marcas con preparacion diaria.',
+  },
+  {
+    value: 'CAFE',
+    label: 'Cafe',
+    description: 'Bebidas y preparaciones con ingredientes medidos y venta rapida.',
+    operation: 'Barra de cafe, bebidas preparadas, snacks y combos de mostrador.',
+    bestFor: 'Cafeterias compactas con recetas simples y rotacion alta.',
+  },
+  {
+    value: 'RESTAURANT',
+    label: 'Restaurante',
+    description: 'Cocina con recetas, consumos de insumo y paquetes comerciales.',
+    operation: 'Produccion de cocina, platos compuestos y combos por horario o menu.',
+    bestFor: 'Restaurantes, comidas rapidas y cocinas con preparacion interna.',
+  },
+  {
+    value: 'RETAIL',
+    label: 'Retail',
+    description: 'Venta directa de productos terminados con precios por contexto comercial.',
+    operation: 'Catalogo de productos, precios por canal y ventas sin receta.',
+    bestFor: 'Tiendas especializadas, boutiques y comercios con inventario terminado.',
+  },
+  {
+    value: 'MINIMARKET',
+    label: 'Minimarket',
+    description: 'Catalogo amplio, venta rapida y listas de precio para operacion diaria.',
+    operation: 'Muchos SKU, lectura rapida en caja y precios por canal o cliente.',
+    bestFor: 'Minimercados, abarrotes y tiendas de conveniencia.',
+  },
+  {
+    value: 'SALON',
+    label: 'Salon',
+    description: 'Servicios y productos con precios por categoria, sin recetas de produccion.',
+    operation: 'Servicios, productos de apoyo y listas de precio por atencion.',
+    bestFor: 'Salones, barberias, spa y servicios personales.',
+  },
+  {
+    value: 'CUSTOM',
+    label: 'Personalizado',
+    description: 'Control manual para activar solo los modulos que necesita el negocio.',
+    operation: 'Configuracion manual sin preset automatico ni cambios de modulos al elegir tipo.',
+    bestFor: 'Modelos mixtos o negocios que prefieren ajustar cada capacidad.',
+  },
 ];
 
 const moduleDefinitions: Array<{
-  key: keyof BusinessModules;
+  key: ModuleKey;
   label: string;
   description: string;
   impact: string;
@@ -242,12 +296,14 @@ export function AdminConfigPage() {
       }
 
       const preset = getPresetModules(value);
+      const shouldApplyPreset = Boolean(current.applyPreset && preset);
 
       return {
         ...current,
         businessType: value,
+        applyPreset: shouldApplyPreset,
         modules:
-          current.applyPreset && preset
+          shouldApplyPreset && preset
             ? normalizeModules(preset)
             : current.modules,
       };
@@ -263,10 +319,11 @@ export function AdminConfigPage() {
       }
 
       const preset = checked ? getPresetModules(current.businessType) : null;
+      const shouldApplyPreset = Boolean(checked && preset);
 
       return {
         ...current,
-        applyPreset: checked,
+        applyPreset: shouldApplyPreset,
         modules: preset ? normalizeModules(preset) : current.modules,
       };
     });
@@ -282,6 +339,7 @@ export function AdminConfigPage() {
 
       return {
         ...current,
+        applyPreset: false,
         modules: normalizeModules({
           ...current.modules,
           [key]: checked,
@@ -388,6 +446,27 @@ export function AdminConfigPage() {
   );
   const enabledModules = countEnabledModules(form.modules);
   const presetModules = getPresetModules(form.businessType);
+  const normalizedFormModules = normalizeModules(form.modules);
+  const normalizedSavedModules = config ? normalizeModules(config.modules) : null;
+  const saveModuleChanges = normalizedSavedModules
+    ? getModuleChanges(normalizedSavedModules, normalizedFormModules)
+    : getModuleChanges(normalizedFormModules, normalizedFormModules);
+  const selectedRecommendedModules = presetModules ? getEnabledModuleKeys(presetModules) : [];
+  const selectedPresetMatches = presetModules ? modulesMatch(normalizedFormModules, presetModules) : false;
+  const isCustomModuleMix = form.businessType === 'CUSTOM' || !selectedPresetMatches;
+  const selectedPresetStatusLabel = isCustomModuleMix
+    ? 'Personalizado'
+    : form.applyPreset
+      ? 'Preset aplicado'
+      : 'Coincide con preset';
+  const selectedPresetStatusTone: BadgeTone = isCustomModuleMix
+    ? 'warning'
+    : form.applyPreset
+      ? 'success'
+      : 'info';
+  const importantDisabledModules = saveModuleChanges.disable.filter((key) =>
+    ['ingredients', 'recipes', 'fiscalFields', 'electronicInvoicing'].includes(key),
+  );
   const configHeaderStatusLabel = saving ? 'Guardando' : isLoadingConfig ? 'Sincronizando' : 'Editable';
   const configHeaderStatusTone = saving ? 'info' : isLoadingConfig ? 'info' : 'success';
   const configHeaderCards: ModulePageHeaderCard[] = [
@@ -406,10 +485,10 @@ export function AdminConfigPage() {
       label: 'Tipo actual',
       value: selectedBusinessType?.label ?? form.businessType,
       icon: <Store size={16} />,
-      iconTone: 'success',
+      iconTone: isCustomModuleMix ? 'warning' : 'success',
       badge: {
-        label: form.applyPreset ? 'Preset listo' : 'Manual',
-        tone: form.applyPreset ? 'success' : 'default',
+        label: selectedPresetStatusLabel,
+        tone: selectedPresetStatusTone,
       },
       note: selectedBusinessType?.description ?? 'Configuracion personalizada',
     },
@@ -429,6 +508,7 @@ export function AdminConfigPage() {
     form,
     enabledModules,
     presetModules,
+    saveModuleChanges,
     selectedBusinessTypeLabel: selectedBusinessType?.label ?? form.businessType,
   });
 
@@ -619,11 +699,11 @@ export function AdminConfigPage() {
             <SectionHeader
               eyebrow="Tipo de negocio"
               title="Preset comercial"
-              description="Selecciona perfil base y decide si el sistema debe aplicar modulos recomendados para ese perfil."
+              description="Elige perfil base, revisa modulos recomendados y guarda solo cuando impacto sea claro."
               actions={
                 <StatusBadge
-                  label={form.applyPreset ? 'Preset activo' : 'Conservar actual'}
-                  tone={form.applyPreset ? 'success' : 'default'}
+                  label={selectedPresetStatusLabel}
+                  tone={selectedPresetStatusTone}
                 />
               }
             />
@@ -645,8 +725,9 @@ export function AdminConfigPage() {
 
               <CheckboxField
                 label="Aplicar preset recomendado"
-                description="Si lo activas, los modulos se ajustan al preset del tipo seleccionado. Si lo dejas apagado, se conserva tu combinacion actual."
+                description="Ajusta modulos al preset seleccionado en esta pantalla. Nada se guarda hasta confirmar cambios."
                 checked={form.applyPreset}
+                disabled={!presetModules}
                 wrapperClassName="admin-config-preset-toggle"
                 onChange={(event) => handleApplyPresetChange(event.target.checked)}
               />
@@ -658,16 +739,33 @@ export function AdminConfigPage() {
                     label={presetModules ? 'Preset disponible' : 'Sin preset automatico'}
                     tone={presetModules ? 'success' : 'default'}
                   />
+                  <StatusBadge
+                    label={selectedPresetStatusLabel}
+                    tone={selectedPresetStatusTone}
+                  />
                 </div>
                 <p className="mt-3 text-sm theme-text-strong">
                   {selectedBusinessType?.description ??
                     'Mantiene una configuracion totalmente manual.'}
                 </p>
                 <p className="mt-2 text-sm theme-text-muted">
-                  {presetModules
-                    ? `Activa ${countEnabledModules(presetModules)} de 6 modulos como recomendacion base.`
-                    : 'El tipo personalizado no fuerza modulos y respeta tu configuracion actual.'}
+                  {selectedBusinessType?.operation ??
+                    'El tipo personalizado no fuerza modulos y respeta tu configuracion actual.'}
                 </p>
+                <div className="admin-config-preset-facts" aria-label="Detalle del preset seleccionado">
+                  <div>
+                    <span>Sirve para</span>
+                    <strong>{selectedBusinessType?.bestFor ?? 'Operacion manual definida por el negocio.'}</strong>
+                  </div>
+                  <div>
+                    <span>Recomienda activar</span>
+                    <ModulePillList
+                      keys={selectedRecommendedModules}
+                      emptyLabel="Sin recomendacion fija"
+                      tone="info"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             </div>
@@ -683,19 +781,57 @@ export function AdminConfigPage() {
             />
 
             <div className="admin-config-type-card-grid">
-              {businessTypeOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className="admin-config-type-card"
-                  data-active={form.businessType === option.value}
-                  aria-pressed={form.businessType === option.value}
-                  onClick={() => handleBusinessTypeChange(option.value)}
-                >
-                  <span>{option.label}</span>
-                  <p>{option.description}</p>
-                </button>
-              ))}
+              {businessTypeOptions.map((option) => {
+                const optionPresetModules = getPresetModules(option.value);
+                const recommendedKeys = optionPresetModules ? getEnabledModuleKeys(optionPresetModules) : [];
+                const isSelectedBusinessType = form.businessType === option.value;
+                const isPresetCardActive = option.value === 'CUSTOM'
+                  ? isCustomModuleMix
+                  : isSelectedBusinessType && !isCustomModuleMix;
+                const optionStatusLabel = isPresetCardActive
+                  ? 'Activo'
+                  : isSelectedBusinessType
+                    ? 'Tipo elegido'
+                    : optionPresetModules
+                      ? `${recommendedKeys.length}/6`
+                      : 'Manual';
+                const optionStatusTone: BadgeTone = isPresetCardActive
+                  ? 'success'
+                  : isSelectedBusinessType
+                    ? 'warning'
+                    : optionPresetModules
+                      ? 'info'
+                      : 'default';
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className="admin-config-type-card"
+                    data-active={isPresetCardActive}
+                    aria-pressed={isPresetCardActive}
+                    onClick={() => handleBusinessTypeChange(option.value)}
+                  >
+                    <span className="admin-config-type-card__header">
+                      <span className="admin-config-type-card__name">{option.label}</span>
+                      <StatusBadge
+                        label={optionStatusLabel}
+                        tone={optionStatusTone}
+                      />
+                    </span>
+                    <p>{option.description}</p>
+                    <span className="admin-config-type-card__operation">{option.operation}</span>
+                    <span className="admin-config-type-card__modules">
+                      <ModulePillList
+                        keys={recommendedKeys}
+                        emptyLabel="Modulos manuales"
+                        tone={optionPresetModules ? 'success' : 'default'}
+                      />
+                    </span>
+                    <span className="admin-config-type-card__best-for">{option.bestFor}</span>
+                  </button>
+                );
+              })}
             </div>
             </div>
           </Card>
@@ -765,8 +901,57 @@ export function AdminConfigPage() {
               eyebrow="Resumen de impacto"
               title="Que cambia al guardar"
               description="Lectura corta de dependencias, visibilidad gradual y decisiones que afectan modulos."
-              actions={<StatusBadge label="Revision final" tone="warning" />}
+              actions={
+                <StatusBadge
+                  label={saveModuleChanges.hasChanges ? 'Cambios pendientes' : 'Sin cambios de modulos'}
+                  tone={saveModuleChanges.hasChanges ? 'warning' : 'success'}
+                />
+              }
             />
+
+            <div className="admin-config-impact-summary" data-has-changes={saveModuleChanges.hasChanges}>
+              <div className="admin-config-impact-summary__header">
+                <span className="admin-config-impact-summary__icon" aria-hidden="true">
+                  {saveModuleChanges.hasChanges ? <AlertTriangle size={17} /> : <CheckCircle2 size={17} />}
+                </span>
+                <div>
+                  <strong>Impacto antes de guardar</strong>
+                  <p>
+                    {saveModuleChanges.hasChanges
+                      ? 'El PATCH actualizara estos modulos cuando guardes.'
+                      : 'Guardar no cambia modulos frente a la configuracion cargada.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-config-impact-summary__changes">
+                <div>
+                  <span>Se activan</span>
+                  <ModulePillList
+                    keys={saveModuleChanges.enable}
+                    emptyLabel="Nada nuevo"
+                    tone="success"
+                  />
+                </div>
+                <div>
+                  <span>Se desactivan</span>
+                  <ModulePillList
+                    keys={saveModuleChanges.disable}
+                    emptyLabel="Nada se apaga"
+                    tone="warning"
+                  />
+                </div>
+              </div>
+
+              {importantDisabledModules.length > 0 ? (
+                <div className="admin-config-soft-warning" role="status">
+                  <AlertTriangle size={15} />
+                  <span>
+                    Revisa antes de guardar: {formatModuleNames(importantDisabledModules)} dejara de estar visible.
+                  </span>
+                </div>
+              ) : null}
+            </div>
 
             <div className="admin-config-impact-grid">
               {impactNotes.map((note) => {
@@ -845,11 +1030,13 @@ function getImpactNotes({
   form,
   enabledModules,
   presetModules,
+  saveModuleChanges,
   selectedBusinessTypeLabel,
 }: {
   form: BusinessConfigFormState;
   enabledModules: number;
   presetModules: BusinessModules | null;
+  saveModuleChanges: ModuleChangeSet;
   selectedBusinessTypeLabel: string;
 }) {
   return [
@@ -860,12 +1047,20 @@ function getImpactNotes({
       icon: ShieldCheck,
     },
     {
+      title: saveModuleChanges.hasChanges ? 'Cambios pendientes' : 'Sin cambios de modulos',
+      description: saveModuleChanges.hasChanges
+        ? `Al guardar: activa ${formatModuleNames(saveModuleChanges.enable, 'ninguno')} y desactiva ${formatModuleNames(saveModuleChanges.disable, 'ninguno')}.`
+        : 'Los modulos actuales coinciden con la configuracion cargada.',
+      tone: saveModuleChanges.hasChanges ? 'warning' : 'success',
+      icon: saveModuleChanges.hasChanges ? AlertTriangle : CheckCircle2,
+    },
+    {
       title: form.applyPreset ? 'Preset aplicado' : 'Control manual',
       description: form.applyPreset && presetModules
         ? `${selectedBusinessTypeLabel} ajusta modulos recomendados al cambiar de tipo.`
         : 'Cambiar tipo no fuerza modulos; se conserva tu combinacion actual.',
       tone: form.applyPreset ? 'info' : 'default',
-      icon: Store,
+      icon: form.applyPreset ? Store : Info,
     },
     {
       title: form.modules.ingredients ? 'Inventario base disponible' : 'Recetas limitadas',
@@ -884,6 +1079,40 @@ function getImpactNotes({
       icon: ReceiptText,
     },
   ];
+}
+
+interface ModuleChangeSet {
+  enable: ModuleKey[];
+  disable: ModuleKey[];
+  hasChanges: boolean;
+}
+
+function ModulePillList({
+  keys,
+  emptyLabel,
+  tone = 'default',
+}: {
+  keys: ModuleKey[];
+  emptyLabel: string;
+  tone?: BadgeTone;
+}) {
+  const visibleKeys = keys.length > 0 ? keys : null;
+
+  return (
+    <span className="admin-config-module-pills">
+      {visibleKeys ? (
+        visibleKeys.map((key) => (
+          <span key={key} className="admin-config-module-pill" data-tone={tone}>
+            {getModuleLabel(key)}
+          </span>
+        ))
+      ) : (
+        <span className="admin-config-module-pill" data-tone="default">
+          {emptyLabel}
+        </span>
+      )}
+    </span>
+  );
 }
 
 function createFormState(config: BusinessConfig): BusinessConfigFormState {
@@ -962,4 +1191,49 @@ function getPresetModules(businessType: BusinessType): BusinessModules | null {
 
 function countEnabledModules(modules: BusinessModules) {
   return Object.values(modules).filter(Boolean).length;
+}
+
+function getEnabledModuleKeys(modules: BusinessModules): ModuleKey[] {
+  const normalized = normalizeModules(modules);
+  return moduleDefinitions
+    .filter((module) => normalized[module.key])
+    .map((module) => module.key);
+}
+
+function getModuleChanges(current: BusinessModules, next: BusinessModules): ModuleChangeSet {
+  const currentModules = normalizeModules(current);
+  const nextModules = normalizeModules(next);
+  const enable: ModuleKey[] = [];
+  const disable: ModuleKey[] = [];
+
+  moduleDefinitions.forEach((module) => {
+    if (!currentModules[module.key] && nextModules[module.key]) {
+      enable.push(module.key);
+    }
+
+    if (currentModules[module.key] && !nextModules[module.key]) {
+      disable.push(module.key);
+    }
+  });
+
+  return {
+    enable,
+    disable,
+    hasChanges: enable.length > 0 || disable.length > 0,
+  };
+}
+
+function modulesMatch(left: BusinessModules, right: BusinessModules) {
+  const normalizedLeft = normalizeModules(left);
+  const normalizedRight = normalizeModules(right);
+
+  return moduleDefinitions.every((module) => normalizedLeft[module.key] === normalizedRight[module.key]);
+}
+
+function getModuleLabel(key: ModuleKey) {
+  return moduleDefinitions.find((module) => module.key === key)?.label ?? key;
+}
+
+function formatModuleNames(keys: ModuleKey[], emptyLabel = 'ninguno') {
+  return keys.length > 0 ? keys.map(getModuleLabel).join(', ') : emptyLabel;
 }
