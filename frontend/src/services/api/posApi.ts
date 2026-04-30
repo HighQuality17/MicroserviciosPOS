@@ -4,6 +4,7 @@ import type {
   AdminActivityDetailResponse,
   AdminActivityFeedResponse,
   AdminCashReportResponse,
+  AdminInventoryReportResponse,
   AdminLowStockItem,
   AdminRecentActivityResponse,
   AdminSalesReportResponse,
@@ -23,6 +24,7 @@ import type {
   Combo,
   ComboListStatus,
   Ingredient,
+  IngredientMovementType,
   LatestSaleResponse,
   Location,
   PaymentMethod,
@@ -140,6 +142,16 @@ export const posApi = {
   }) =>
     unwrap<AdminCashReportResponse>(
       api.get("/admin/reports/cash", { params }),
+    ),
+  getAdminInventoryReport: (params: {
+    from: string;
+    to: string;
+    locationId?: number;
+    ingredientId?: number;
+    movementType?: IngredientMovementType;
+  }) =>
+    unwrap<AdminInventoryReportResponse>(
+      api.get("/admin/reports/inventory", { params }),
     ),
   getAdminLowStock: () =>
     unwrap<AdminLowStockItem[]>(api.get("/admin/low-stock")),

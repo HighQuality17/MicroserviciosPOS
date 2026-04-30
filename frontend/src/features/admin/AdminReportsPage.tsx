@@ -4,8 +4,13 @@ import {
   BarChart3,
   Building2,
   CalendarDays,
+  Archive,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ClipboardList,
   CreditCard,
   Filter,
+  PackageSearch,
   Receipt,
   RefreshCw,
   RotateCcw,
@@ -48,14 +53,19 @@ import type {
   AdminCashReportDifferenceByClosureItem,
   AdminCashReportResponse,
   AdminCashReportSessionItem,
+  AdminInventoryReportDailyItem,
+  AdminInventoryReportMovementItem,
+  AdminInventoryReportResponse,
   AdminSalesReportDailyItem,
   AdminSalesReportResponse,
   CashReportStatus,
+  Ingredient,
+  IngredientMovementType,
   PaymentMethod,
 } from '@/types/api';
 
 type BadgeTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
-type ActiveReport = 'sales' | 'cash';
+type ActiveReport = 'sales' | 'cash' | 'inventory';
 
 type SalesReportFilters = {
   from: string;
@@ -71,7 +81,16 @@ type CashReportFilters = {
   status: CashReportStatus;
 };
 
+type InventoryReportFilters = {
+  from: string;
+  to: string;
+  locationId: string;
+  ingredientId: string;
+  movementType: 'ALL' | IngredientMovementType;
+};
+
 const allLocationsValue = 'ALL';
+const allIngredientsValue = 'ALL';
 const chartPalette = [
   'var(--admin-chart-cyan)',
   'var(--admin-chart-emerald)',
@@ -96,6 +115,17 @@ function getDefaultCashFilters(): CashReportFilters {
     ...defaults,
     locationId: allLocationsValue,
     status: 'ALL',
+  };
+}
+
+function getDefaultInventoryFilters(): InventoryReportFilters {
+  const defaults = getDefaultDateRange();
+
+  return {
+    ...defaults,
+    locationId: allLocationsValue,
+    ingredientId: allIngredientsValue,
+    movementType: 'ALL',
   };
 }
 
@@ -128,10 +158,26 @@ export function AdminReportsPage() {
             <Wallet size={16} />
             Caja
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeReport === 'inventory'}
+            data-active={activeReport === 'inventory'}
+            onClick={() => setActiveReport('inventory')}
+          >
+            <PackageSearch size={16} />
+            Inventario
+          </button>
         </div>
       </Card>
 
-      {activeReport === 'sales' ? <SalesReportView /> : <CashReportView />}
+      {activeReport === 'sales' ? (
+        <SalesReportView />
+      ) : activeReport === 'cash' ? (
+        <CashReportView />
+      ) : (
+        <InventoryReportView />
+      )}
     </div>
   );
 }
@@ -663,6 +709,377 @@ function CashReportView() {
   );
 }
 
+function InventoryReportView() {
+  const availableLocations = useAppStore((state) => state.availableLocations);
+  const locationsLoading = useAppStore((state) => state.locationsLoading);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredientsLoading, setIngredientsLoading] = useState(true);
+  const [ingredientsError, setIngredientsError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<InventoryReportFilters>(() =>
+    getDefaultInventoryFilters(),
+  );
+  const [appliedFilters, setAppliedFilters] = useState<InventoryReportFilters>(
+    () => getDefaultInventoryFilters(),
+  );
+  const [report, setReport] = useState<AdminInventoryReportResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filterError, setFilterError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadIngredients() {
+      try {
+        setIngredientsLoading(true);
+        setIngredientsError(null);
+        const response = await posApi.getIngredients();
+
+        if (!cancelled) {
+          setIngredients(response);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setIngredients([]);
+          setIngredientsError(
+            loadError instanceof Error
+              ? loadError.message
+              : 'No fue posible cargar ingredientes',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIngredientsLoading(false);
+        }
+      }
+    }
+
+    void loadIngredients();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadReport() {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await posApi.getAdminInventoryReport({
+          from: appliedFilters.from,
+          to: appliedFilters.to,
+          ...(appliedFilters.locationId !== allLocationsValue
+            ? { locationId: Number(appliedFilters.locationId) }
+            : {}),
+          ...(appliedFilters.ingredientId !== allIngredientsValue
+            ? { ingredientId: Number(appliedFilters.ingredientId) }
+            : {}),
+          ...(appliedFilters.movementType !== 'ALL'
+            ? { movementType: appliedFilters.movementType }
+            : {}),
+        });
+
+        if (!cancelled) {
+          setReport(response);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setReport(null);
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : 'No fue posible cargar reportes de inventario',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadReport();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedFilters]);
+
+  const selectedLocationName = useMemo(
+    () => resolveLocationName(appliedFilters.locationId, availableLocations),
+    [appliedFilters.locationId, availableLocations],
+  );
+  const selectedIngredientName = useMemo(
+    () => resolveIngredientName(appliedFilters.ingredientId, ingredients),
+    [appliedFilters.ingredientId, ingredients],
+  );
+  const periodLabel = buildPeriodLabel(appliedFilters.from, appliedFilters.to);
+  const totalMovements =
+    (report?.kpis.entries_count ?? 0) +
+    (report?.kpis.exits_count ?? 0) +
+    (report?.kpis.adjustments_count ?? 0);
+  const hasMovements = totalMovements > 0;
+  const hasLowStock = (report?.stock_low_by_ingredient.length ?? 0) > 0;
+  const statusTone: BadgeTone = loading
+    ? 'info'
+    : error
+      ? 'danger'
+      : hasMovements || hasLowStock
+        ? 'success'
+        : 'default';
+  const statusLabel = loading
+    ? 'Actualizando'
+    : error
+      ? 'Error'
+      : hasMovements
+        ? 'Inventario listo'
+        : hasLowStock
+          ? 'Stock bajo'
+          : 'Sin movimientos';
+  const headerCards = buildInventoryHeaderCards(report, loading);
+  const movementTypeData = useMemo(
+    () =>
+      (report?.movements_by_type ?? []).map((item, index) => ({
+        label: formatInventoryMovementType(item.movement_type),
+        meta: `${formatQuantity(item.quantity_base)} base`,
+        value: item.movement_count,
+        color: chartPalette[index % chartPalette.length],
+      })),
+    [report],
+  );
+  const topIngredientsData = useMemo(
+    () =>
+      (report?.top_ingredients_by_movement ?? []).map((item, index) => ({
+        label: item.ingredient_name,
+        meta: `${formatQuantity(item.total_quantity_base)} base / neto ${formatSignedQuantity(
+          item.net_quantity_base,
+        )}`,
+        value: item.movement_count,
+        color: chartPalette[index % chartPalette.length],
+      })),
+    [report],
+  );
+  const lowStockData = useMemo(
+    () =>
+      (report?.stock_low_by_ingredient ?? []).slice(0, 10).map((item, index) => ({
+        label: `${item.ingredient_name} / ${item.location_name}`,
+        meta: `${formatQuantity(item.qty_on_hand_base)} de ${formatQuantity(
+          item.threshold,
+        )} base`,
+        value: Math.max(item.threshold - item.qty_on_hand_base, 0),
+        color: chartPalette[index % chartPalette.length],
+      })),
+    [report],
+  );
+
+  function handleFilterChange<Key extends keyof InventoryReportFilters>(
+    key: Key,
+    value: InventoryReportFilters[Key],
+  ) {
+    setFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleApplyFilters(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (filters.from > filters.to) {
+      setFilterError('La fecha inicial no puede ser mayor que la fecha final.');
+      return;
+    }
+
+    setFilterError(null);
+    setAppliedFilters(filters);
+  }
+
+  function handleResetFilters() {
+    const nextFilters = getDefaultInventoryFilters();
+    setFilters(nextFilters);
+    setAppliedFilters(nextFilters);
+    setFilterError(null);
+  }
+
+  return (
+    <>
+      <ModulePageHeader
+        ariaLabel="Reportes administrativos de inventario"
+        eyebrow="Admin / Reportes / Inventario"
+        title="Reportes de inventario"
+        description="Movimientos, stock bajo e ingredientes por rango y POS."
+        helpText="Lectura agregada. No cambia flujo operativo de inventario."
+        icon={<PackageSearch size={18} />}
+        badges={[
+          { label: statusLabel, tone: statusTone },
+          { label: formatInventoryMovementFilter(appliedFilters.movementType), tone: 'info' },
+        ]}
+        summary={{
+          label: 'Periodo',
+          value: periodLabel,
+          note: `${selectedLocationName} / ${selectedIngredientName}`,
+        }}
+        asideAction={
+          <Button
+            type="button"
+            variant="secondary"
+            loading={loading}
+            onClick={() => setAppliedFilters({ ...appliedFilters })}
+          >
+            <RefreshCw size={16} />
+            Actualizar
+          </Button>
+        }
+        cards={headerCards}
+      />
+
+      <Card padding="none" glow={false} className="admin-panel admin-reports-filter-panel">
+        <div className="admin-panel__body">
+          <SectionHeader
+            eyebrow="Filtros"
+            title="Consulta de inventario"
+            description="Rango, punto de venta, ingrediente y tipo."
+            actions={<StatusBadge label={periodLabel} tone={statusTone} />}
+          />
+
+          <form className="admin-reports-filter-grid" onSubmit={handleApplyFilters}>
+            <Input
+              type="date"
+              label="Desde"
+              value={filters.from}
+              max={filters.to}
+              onChange={(event) => handleFilterChange('from', event.target.value)}
+              required
+            />
+            <Input
+              type="date"
+              label="Hasta"
+              value={filters.to}
+              min={filters.from}
+              onChange={(event) => handleFilterChange('to', event.target.value)}
+              required
+            />
+            <Select
+              label="POS"
+              value={filters.locationId}
+              disabled={locationsLoading}
+              onChange={(event) => handleFilterChange('locationId', event.target.value)}
+            >
+              <option value={allLocationsValue}>
+                {locationsLoading ? 'Cargando POS...' : 'Todos los POS'}
+              </option>
+              {availableLocations.map((location) => (
+                <option key={location.id} value={String(location.id)}>
+                  {location.name}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Ingrediente"
+              value={filters.ingredientId}
+              disabled={ingredientsLoading}
+              onChange={(event) => handleFilterChange('ingredientId', event.target.value)}
+            >
+              <option value={allIngredientsValue}>
+                {ingredientsLoading ? 'Cargando ingredientes...' : 'Todos los ingredientes'}
+              </option>
+              {ingredients.map((ingredient) => (
+                <option key={ingredient.id} value={String(ingredient.id)}>
+                  {ingredient.name}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Tipo"
+              value={filters.movementType}
+              onChange={(event) =>
+                handleFilterChange(
+                  'movementType',
+                  event.target.value as InventoryReportFilters['movementType'],
+                )
+              }
+            >
+              <option value="ALL">Todos los tipos</option>
+              <option value="ENTRY">Entradas</option>
+              <option value="EXIT">Salidas</option>
+              <option value="ADJUSTMENT">Ajustes</option>
+            </Select>
+            <ReportFilterActions loading={loading} onReset={handleResetFilters} />
+          </form>
+
+          {filterError ? <FeedbackMessage tone="warning">{filterError}</FeedbackMessage> : null}
+          {ingredientsError ? (
+            <FeedbackMessage tone="warning">{ingredientsError}</FeedbackMessage>
+          ) : null}
+        </div>
+      </Card>
+
+      {error ? <FeedbackMessage tone="error">{error}</FeedbackMessage> : null}
+
+      {loading && !report ? (
+        <ReportsSkeleton />
+      ) : !error && report ? (
+        <>
+          {!hasMovements && !hasLowStock ? (
+            <Card padding="none" glow={false} className="admin-panel">
+              <div className="admin-panel__body">
+                <EmptyState
+                  title="Sin movimientos de inventario"
+                  description="No hay movimientos ni alertas de stock bajo con los filtros actuales."
+                  icon={<PackageSearch size={22} />}
+                />
+              </div>
+            </Card>
+          ) : null}
+
+          <div className="admin-reports-chart-grid">
+            <InventoryMovementsByDayChartCard
+              data={report.movements_by_day}
+              hasMovements={hasMovements}
+            />
+            <AdminChartCard
+              title="Movimientos por tipo"
+              description="Entradas, salidas y ajustes registrados."
+              data={movementTypeData}
+              chartType="pie"
+              valueFormat="number"
+              metricLabel="Movimientos"
+              metricUnitLabel="registros"
+              snapshotUnitLabel="tipos"
+              emptyTitle="Sin tipos de movimiento"
+              emptyDescription="Aparecera con movimientos registrados."
+            />
+            <AdminChartCard
+              title="Ingredientes con mas movimiento"
+              description="Ranking por cantidad de registros."
+              data={topIngredientsData}
+              chartType="bar"
+              valueFormat="number"
+              metricLabel="Movimientos"
+              metricUnitLabel="registros"
+              emptyTitle="Sin ranking de ingredientes"
+              emptyDescription="Aparecera con movimientos en el rango."
+            />
+            <AdminChartCard
+              title="Stock bajo por ingrediente"
+              description="Faltante frente al umbral operativo."
+              data={lowStockData}
+              chartType="bar"
+              valueFormat="number"
+              metricLabel="Faltante"
+              metricUnitLabel="base"
+              emptyTitle="Sin stock bajo"
+              emptyDescription="No hay ingredientes bajo umbral con los filtros actuales."
+            />
+          </div>
+
+          <InventoryMovementsTable movements={report.movements} />
+        </>
+      ) : null}
+    </>
+  );
+}
+
 function ReportFilterActions({
   loading,
   onReset,
@@ -803,6 +1220,69 @@ function buildCashHeaderCards(
       icon: <BarChart3 size={16} />,
       iconTone: diffTone,
       badge: { label: difference === 0 ? 'Cuadrada' : 'Revisar', tone: diffTone },
+    },
+  ];
+}
+
+function buildInventoryHeaderCards(
+  report: AdminInventoryReportResponse | null,
+  loading: boolean,
+): ModulePageHeaderCard[] {
+  const activeIngredients = report?.kpis.active_ingredients_count ?? 0;
+  const lowStock = report?.kpis.low_stock_ingredients_count ?? 0;
+  const entries = report?.kpis.entries_count ?? 0;
+  const exits = report?.kpis.exits_count ?? 0;
+  const adjustments = report?.kpis.adjustments_count ?? 0;
+  const lowStockTone: BadgeTone = loading ? 'info' : lowStock > 0 ? 'warning' : 'success';
+
+  return [
+    {
+      label: 'Ingredientes activos',
+      value: loading && !report ? '...' : String(activeIngredients),
+      note: 'Catalogo disponible',
+      accent: activeIngredients > 0 ? 'info' : 'default',
+      icon: <Archive size={16} />,
+      iconTone: activeIngredients > 0 ? 'info' : 'default',
+      badge: {
+        label: activeIngredients > 0 ? 'Activos' : 'Sin base',
+        tone: activeIngredients > 0 ? 'info' : 'default',
+      },
+    },
+    {
+      label: 'Stock bajo',
+      value: loading && !report ? '...' : String(lowStock),
+      note: 'Ingredientes bajo umbral',
+      accent: lowStockTone,
+      icon: <PackageSearch size={16} />,
+      iconTone: lowStockTone,
+      badge: { label: lowStock > 0 ? 'Revisar' : 'Controlado', tone: lowStockTone },
+    },
+    {
+      label: 'Entradas',
+      value: loading && !report ? '...' : String(entries),
+      note: 'Registros del rango',
+      accent: entries > 0 ? 'success' : 'default',
+      icon: <ArrowDownToLine size={16} />,
+      iconTone: entries > 0 ? 'success' : 'default',
+      badge: { label: 'Ingreso', tone: entries > 0 ? 'success' : 'default' },
+    },
+    {
+      label: 'Salidas',
+      value: loading && !report ? '...' : String(exits),
+      note: 'Registros del rango',
+      accent: exits > 0 ? 'warning' : 'default',
+      icon: <ArrowUpFromLine size={16} />,
+      iconTone: exits > 0 ? 'warning' : 'default',
+      badge: { label: 'Consumo', tone: exits > 0 ? 'warning' : 'default' },
+    },
+    {
+      label: 'Ajustes',
+      value: loading && !report ? '...' : String(adjustments),
+      note: 'Conteos y correcciones',
+      accent: adjustments > 0 ? 'info' : 'default',
+      icon: <ClipboardList size={16} />,
+      iconTone: adjustments > 0 ? 'info' : 'default',
+      badge: { label: 'Ajuste', tone: adjustments > 0 ? 'info' : 'default' },
     },
   ];
 }
@@ -1023,6 +1503,80 @@ function CashDifferenceChartCard({
   );
 }
 
+function InventoryMovementsByDayChartCard({
+  data,
+  hasMovements,
+}: {
+  data: AdminInventoryReportDailyItem[];
+  hasMovements: boolean;
+}) {
+  const total = data.reduce((sum, item) => sum + item.movement_count, 0);
+  const bestDay = [...data].sort((left, right) => right.movement_count - left.movement_count)[0] ?? null;
+
+  return (
+    <Card padding="none" glow={false} className="admin-panel admin-reports-daily-card">
+      <div className="admin-panel__body">
+        <SectionHeader
+          eyebrow="Tendencia"
+          title="Movimientos por dia"
+          description="Entradas, salidas y ajustes dentro del rango."
+          actions={
+            <div className="admin-chart-card__header-actions">
+              <StatusBadge label={`${total.toLocaleString('es-CO')} movimientos`} tone={hasMovements ? 'success' : 'default'} />
+              <StatusBadge label={`${data.length} dias`} tone="default" />
+            </div>
+          }
+        />
+
+        {!hasMovements ? (
+          <EmptyState
+            title="Sin movimientos por dia"
+            description="La grafica aparecera cuando existan movimientos."
+            icon={<CalendarDays size={22} />}
+          />
+        ) : (
+          <div className="admin-reports-daily-chart" role="img" aria-label="Grafica de movimientos de inventario por dia">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data.map((item) => ({
+                  ...item,
+                  label: formatDayTick(item.date),
+                }))}
+                margin={{ top: 12, right: 20, left: 4, bottom: 4 }}
+              >
+                <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="4 7" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: 'var(--chart-axis)', fontSize: 11, fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={14}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fill: 'var(--chart-axis)', fontSize: 11, fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={48}
+                />
+                <Tooltip content={<InventoryMovementsTooltip />} />
+                <Bar dataKey="entry_count" name="Entradas" stackId="inventory" fill="var(--admin-chart-emerald)" radius={[0, 0, 0, 0]} maxBarSize={34} />
+                <Bar dataKey="exit_count" name="Salidas" stackId="inventory" fill="var(--admin-chart-amber)" radius={[0, 0, 0, 0]} maxBarSize={34} />
+                <Bar dataKey="adjustment_count" name="Ajustes" stackId="inventory" fill="var(--admin-chart-cyan)" radius={[8, 8, 0, 0]} maxBarSize={34} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="admin-reports-daily-summary">
+              <span>Dia con mas movimiento</span>
+              <strong>{bestDay ? formatDateLabel(bestDay.date) : 'Sin datos'}</strong>
+              <p>{bestDay ? `${bestDay.movement_count.toLocaleString('es-CO')} registros` : '0 registros'}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 function DailySalesTooltip({
   active,
   payload,
@@ -1088,6 +1642,35 @@ function CashDifferenceTooltip({
       {item.closed_at ? (
         <p className="theme-text-secondary mt-0.5 text-[11px]">{formatDate(item.closed_at)}</p>
       ) : null}
+    </div>
+  );
+}
+
+function InventoryMovementsTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: AdminInventoryReportDailyItem; value: number; name: string }>;
+}) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const item = payload[0].payload;
+
+  return (
+    <div className="chart-tooltip-surface rounded-2xl px-3 py-2 shadow-2xl">
+      <p className="text-sm font-medium theme-text-strong">{formatDateLabel(item.date)}</p>
+      <p className="metric-accent mt-1 text-xs">
+        {item.movement_count.toLocaleString('es-CO')} movimientos
+      </p>
+      <p className="theme-text-secondary mt-0.5 text-[11px]">
+        Entradas {item.entry_count.toLocaleString('es-CO')} / Salidas {item.exit_count.toLocaleString('es-CO')} / Ajustes {item.adjustment_count.toLocaleString('es-CO')}
+      </p>
+      <p className="theme-text-secondary mt-0.5 text-[11px]">
+        Neto {formatSignedQuantity(item.net_quantity_base)} base
+      </p>
     </div>
   );
 }
@@ -1229,6 +1812,87 @@ function CashSessionsTable({
                         Ver detalle
                       </Button>
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function InventoryMovementsTable({
+  movements,
+}: {
+  movements: AdminInventoryReportMovementItem[];
+}) {
+  return (
+    <Card padding="none" glow={false} className="admin-panel admin-reports-table-panel">
+      <div className="admin-panel__body">
+        <SectionHeader
+          eyebrow="Resumen"
+          title="Movimientos recientes"
+          description="Registros del rango con stock previo y final."
+          actions={
+            <StatusBadge
+              label={`${movements.length.toLocaleString('es-CO')} movimientos`}
+              tone={movements.length > 0 ? 'success' : 'default'}
+            />
+          }
+        />
+
+        {movements.length === 0 ? (
+          <EmptyState
+            title="Sin movimientos"
+            description="No hay movimientos de inventario en el rango seleccionado."
+            icon={<PackageSearch size={22} />}
+          />
+        ) : (
+          <div className="admin-reports-table-wrap">
+            <table className="admin-reports-table admin-reports-table--inventory">
+              <thead>
+                <tr>
+                  <th>Movimiento</th>
+                  <th>Fecha</th>
+                  <th>Ingrediente</th>
+                  <th>POS</th>
+                  <th>Tipo</th>
+                  <th>Cantidad/delta</th>
+                  <th>Stock previo</th>
+                  <th>Stock final</th>
+                  <th>Responsable</th>
+                  <th>Razon</th>
+                  <th>Documento</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movements.map((item) => (
+                  <tr key={item.movement_id}>
+                    <td>
+                      <div className="admin-reports-product-cell">
+                        <span>#{item.movement_id}</span>
+                        <strong>{formatInventoryMovementType(item.movement_type)}</strong>
+                      </div>
+                    </td>
+                    <td>{formatDate(item.created_at)}</td>
+                    <td>{item.ingredient_name}</td>
+                    <td>{item.location_name}</td>
+                    <td>
+                      <StatusBadge
+                        label={formatInventoryMovementType(item.movement_type)}
+                        tone={getInventoryMovementTone(item.movement_type)}
+                      />
+                    </td>
+                    <td>
+                      {formatQuantity(item.quantity_base)} / {formatSignedQuantity(item.delta_base)}
+                    </td>
+                    <td>{formatNullableQuantity(item.previous_stock)}</td>
+                    <td>{formatNullableQuantity(item.new_stock)}</td>
+                    <td>{item.responsible_name}</td>
+                    <td>{formatInventoryReason(item)}</td>
+                    <td>{item.support_document ?? 'No disponible'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1441,6 +2105,17 @@ function resolveLocationName(locationId: string, locations: Array<{ id: number; 
   return locations.find((location) => location.id === Number(locationId))?.name ?? `POS #${locationId}`;
 }
 
+function resolveIngredientName(ingredientId: string, ingredients: Ingredient[]) {
+  if (ingredientId === allIngredientsValue) {
+    return 'Todos los ingredientes';
+  }
+
+  return (
+    ingredients.find((ingredient) => ingredient.id === Number(ingredientId))?.name ??
+    `Ingrediente #${ingredientId}`
+  );
+}
+
 function buildPeriodLabel(from: string, to: string) {
   return `${formatDateLabel(from)} - ${formatDateLabel(to)}`;
 }
@@ -1449,6 +2124,85 @@ function formatCashStatus(status: CashReportStatus) {
   if (status === 'OPEN') return 'Abiertas';
   if (status === 'CLOSED') return 'Cerradas';
   return 'Todas';
+}
+
+function formatInventoryMovementFilter(type: InventoryReportFilters['movementType']) {
+  return type === 'ALL' ? 'Todos los tipos' : formatInventoryMovementType(type);
+}
+
+function formatInventoryMovementType(type: IngredientMovementType) {
+  if (type === 'ENTRY') return 'Entrada';
+  if (type === 'EXIT') return 'Salida';
+  return 'Ajuste';
+}
+
+function getInventoryMovementTone(type: IngredientMovementType): BadgeTone {
+  if (type === 'ENTRY') return 'success';
+  if (type === 'EXIT') return 'warning';
+  return 'info';
+}
+
+function formatQuantity(value: unknown) {
+  const normalized = normalizeReportNumber(value);
+
+  if (normalized === null) {
+    return 'No disponible';
+  }
+
+  return normalized.toLocaleString('es-CO', {
+    maximumFractionDigits: 3,
+  });
+}
+
+function formatNullableQuantity(value: unknown) {
+  const normalized = normalizeReportNumber(value);
+  return normalized === null ? 'No disponible' : formatQuantity(normalized);
+}
+
+function formatSignedQuantity(value: unknown) {
+  const normalized = normalizeReportNumber(value);
+
+  if (normalized === null) {
+    return 'No disponible';
+  }
+
+  const formatted = formatQuantity(Math.abs(normalized));
+  if (normalized > 0) return `+${formatted}`;
+  if (normalized < 0) return `-${formatted}`;
+  return formatted;
+}
+
+function formatInventoryReason(item: AdminInventoryReportMovementItem) {
+  if (item.reason) {
+    return item.reason;
+  }
+
+  if (item.reason_code) {
+    return formatInventoryReasonCode(item.reason_code);
+  }
+
+  if (item.reference_type === 'SALE' && item.reference_id) {
+    return `Venta #${item.reference_id}`;
+  }
+
+  return 'No disponible';
+}
+
+function formatInventoryReasonCode(
+  reasonCode: AdminInventoryReportMovementItem['reason_code'],
+) {
+  if (reasonCode === 'PURCHASE') return 'Compra';
+  if (reasonCode === 'INITIAL_LOAD') return 'Carga inicial';
+  if (reasonCode === 'SUPPLIER_RETURN') return 'Devolucion proveedor';
+  if (reasonCode === 'POSITIVE_ADJUSTMENT') return 'Ajuste positivo';
+  if (reasonCode === 'WASTE') return 'Merma';
+  if (reasonCode === 'DAMAGE') return 'Dano';
+  if (reasonCode === 'INTERNAL_USE') return 'Uso interno';
+  if (reasonCode === 'EXPIRATION') return 'Vencimiento';
+  if (reasonCode === 'NEGATIVE_ADJUSTMENT') return 'Ajuste negativo';
+  if (reasonCode === 'PHYSICAL_COUNT') return 'Conteo fisico';
+  if (reasonCode === 'ADMIN_CORRECTION') return 'Correccion admin';
+  return 'No disponible';
 }
 
 function formatNullableCurrency(value: unknown) {

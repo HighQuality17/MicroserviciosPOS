@@ -531,6 +531,89 @@ export interface AdminCashReportResponse {
   sessions: AdminCashReportSessionItem[];
 }
 
+export interface AdminInventoryReportKpis {
+  active_ingredients_count: number;
+  low_stock_ingredients_count: number;
+  entries_count: number;
+  exits_count: number;
+  adjustments_count: number;
+}
+
+export interface AdminInventoryReportDailyItem {
+  date: string;
+  entry_count: number;
+  exit_count: number;
+  adjustment_count: number;
+  movement_count: number;
+  quantity_base: number;
+  net_quantity_base: number;
+}
+
+export interface AdminInventoryReportTypeItem {
+  movement_type: IngredientMovementType;
+  movement_count: number;
+  quantity_base: number;
+  net_quantity_base: number;
+}
+
+export interface AdminInventoryReportTopIngredientItem {
+  ingredient_id: number;
+  ingredient_name: string;
+  dimension: IngredientDimension;
+  movement_count: number;
+  total_quantity_base: number;
+  net_quantity_base: number;
+}
+
+export interface AdminInventoryReportLowStockItem {
+  ingredient_id: number;
+  ingredient_name: string;
+  dimension: IngredientDimension;
+  location_id: number;
+  location_name: string;
+  qty_on_hand_base: number;
+  threshold: number;
+}
+
+export interface AdminInventoryReportMovementItem {
+  movement_id: number;
+  created_at: string;
+  ingredient_id: number;
+  ingredient_name: string;
+  dimension: IngredientDimension;
+  location_id: number;
+  location_name: string;
+  movement_type: IngredientMovementType;
+  quantity_base: number;
+  delta_base: number;
+  previous_stock: number | null;
+  new_stock: number | null;
+  counted_stock: number | null;
+  responsible_id: number;
+  responsible_name: string;
+  reason: string | null;
+  reason_code: IngredientMovementReasonCode | null;
+  support_document: string | null;
+  reference_type: IngredientMovementReferenceType | null;
+  reference_id: number | null;
+}
+
+export interface AdminInventoryReportResponse {
+  filters: {
+    from: string;
+    to: string;
+    location_id: number | null;
+    ingredient_id: number | null;
+    movement_type: IngredientMovementType | null;
+  };
+  kpis: AdminInventoryReportKpis;
+  movements_by_day: AdminInventoryReportDailyItem[];
+  movements_by_type: AdminInventoryReportTypeItem[];
+  top_ingredients_by_movement: AdminInventoryReportTopIngredientItem[];
+  stock_low_by_ingredient: AdminInventoryReportLowStockItem[];
+  movements: AdminInventoryReportMovementItem[];
+}
+
 export interface AdminLowStockItem {
   ingredient_id: number;
   ingredient_name: string;
