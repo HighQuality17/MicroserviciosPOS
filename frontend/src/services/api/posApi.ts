@@ -5,6 +5,7 @@ import type {
   AdminActivityFeedResponse,
   AdminLowStockItem,
   AdminRecentActivityResponse,
+  AdminSalesReportResponse,
   AdminSalesByPaymentResponse,
   AdminSummary,
   AdminTopItemsResponse,
@@ -22,6 +23,7 @@ import type {
   Ingredient,
   LatestSaleResponse,
   Location,
+  PaymentMethod,
   Product,
   RecentSalesResponse,
   SaleReceipt,
@@ -119,6 +121,15 @@ export const posApi = {
     unwrap<AdminSalesByPaymentResponse>(api.get("/admin/sales-by-payment")),
   getAdminTopItems: () =>
     unwrap<AdminTopItemsResponse>(api.get("/admin/top-items")),
+  getAdminSalesReport: (params: {
+    from: string;
+    to: string;
+    locationId?: number;
+    paymentMethod?: PaymentMethod;
+  }) =>
+    unwrap<AdminSalesReportResponse>(
+      api.get("/admin/reports/sales", { params }),
+    ),
   getAdminLowStock: () =>
     unwrap<AdminLowStockItem[]>(api.get("/admin/low-stock")),
   getAdminActivity: (params?: {
