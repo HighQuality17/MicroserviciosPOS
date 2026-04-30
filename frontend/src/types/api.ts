@@ -20,6 +20,7 @@ export type UserRole = "ADMIN" | "CASHIER" | "AUDITOR";
 export type DiscountType = "NONE" | "PERCENT" | "FIXED";
 export type PaymentMethod = "CASH" | "TRANSFER";
 export type SaleItemType = "VARIANT" | "COMBO";
+export type CashReportStatus = "ALL" | "OPEN" | "CLOSED";
 export type IngredientDimension = "WEIGHT" | "VOLUME" | "COUNT";
 export type IngredientMovementType = "ENTRY" | "EXIT" | "ADJUSTMENT";
 export type IngredientMovementReasonCode =
@@ -454,6 +455,80 @@ export interface AdminSalesReportResponse {
   sales_by_day: AdminSalesReportDailyItem[];
   sales_by_payment: AdminSalesReportPaymentItem[];
   top_products: AdminSalesReportTopProduct[];
+}
+
+export interface AdminCashReportKpis {
+  open_sessions_count: number;
+  closed_sessions_count: number;
+  total_expected: number;
+  total_counted: number;
+  total_difference: number;
+  average_difference_per_closure: number;
+}
+
+export interface AdminCashReportClosuresByDayItem {
+  date: string;
+  closed_count: number;
+}
+
+export interface AdminCashReportDifferenceByDayItem {
+  date: string;
+  difference: number;
+  expected: number;
+  counted: number;
+}
+
+export interface AdminCashReportExpectedVsCountedItem {
+  label: "Esperado" | "Contado";
+  total: number;
+}
+
+export interface AdminCashReportDifferenceByClosureItem {
+  cash_session_id: number;
+  label: string;
+  closed_at: string | null;
+  difference: number;
+}
+
+export interface AdminCashReportSessionItem {
+  cash_session_id: number;
+  location_id: number;
+  location_name: string;
+  responsible_id: number;
+  responsible_name: string;
+  opened_by_id: number;
+  opened_by_name: string;
+  closed_by_id: number | null;
+  closed_by_name: string | null;
+  opened_at: string;
+  closed_at: string | null;
+  opening_cash: number;
+  opening_amount?: number | null;
+  cash_sales_total?: number | null;
+  transfer_sales_total?: number | null;
+  total_change_given?: number | null;
+  expected: number | null;
+  expected_amount?: number | null;
+  counted: number | null;
+  counted_amount?: number | null;
+  difference: number | null;
+  status: "OPEN" | "CLOSED";
+  source: "SNAPSHOT" | "SESSION";
+}
+
+export interface AdminCashReportResponse {
+  filters: {
+    from: string;
+    to: string;
+    location_id: number | null;
+    status: CashReportStatus;
+  };
+  kpis: AdminCashReportKpis;
+  closures_by_day: AdminCashReportClosuresByDayItem[];
+  differences_by_day: AdminCashReportDifferenceByDayItem[];
+  expected_vs_counted: AdminCashReportExpectedVsCountedItem[];
+  differences_by_closure: AdminCashReportDifferenceByClosureItem[];
+  sessions: AdminCashReportSessionItem[];
 }
 
 export interface AdminLowStockItem {
