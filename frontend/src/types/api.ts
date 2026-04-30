@@ -416,6 +416,46 @@ export interface AdminTopItemsResponse {
   items: AdminTopItem[];
 }
 
+export interface AdminSalesReportKpis {
+  total_sold: number;
+  sales_count: number;
+  average_ticket: number;
+  total_cash: number;
+  total_transfer: number;
+}
+
+export interface AdminSalesReportDailyItem {
+  date: string;
+  total: number;
+  sales_count: number;
+}
+
+export interface AdminSalesReportPaymentItem {
+  method: PaymentMethod;
+  total: number;
+}
+
+export interface AdminSalesReportTopProduct {
+  name: string;
+  item_type: SaleItemType;
+  ref_id: number;
+  qty_sold: number;
+  total_sold: number;
+}
+
+export interface AdminSalesReportResponse {
+  filters: {
+    from: string;
+    to: string;
+    location_id: number | null;
+    payment_method: PaymentMethod | null;
+  };
+  kpis: AdminSalesReportKpis;
+  sales_by_day: AdminSalesReportDailyItem[];
+  sales_by_payment: AdminSalesReportPaymentItem[];
+  top_products: AdminSalesReportTopProduct[];
+}
+
 export interface AdminLowStockItem {
   ingredient_id: number;
   ingredient_name: string;
