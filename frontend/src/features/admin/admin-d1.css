@@ -1128,6 +1128,10 @@
   min-width: 76rem;
 }
 
+.admin-reports-table--inventory {
+  min-width: 82rem;
+}
+
 .admin-reports-table th {
   padding: 0 0.72rem 0.1rem;
   text-align: left;
@@ -1160,6 +1164,11 @@
 }
 
 .admin-reports-table--cash td:last-child {
+  color: var(--text-secondary);
+  font-weight: 720;
+}
+
+.admin-reports-table--inventory td:last-child {
   color: var(--text-secondary);
   font-weight: 720;
 }
