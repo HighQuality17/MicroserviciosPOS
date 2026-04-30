@@ -41,6 +41,11 @@ const AdminActivityPage = lazy(() =>
     default: module.AdminActivityPage,
   })),
 );
+const AdminReportsPage = lazy(() =>
+  import('@/features/admin/AdminReportsPage').then((module) => ({
+    default: module.AdminReportsPage,
+  })),
+);
 const AdminConfigPage = lazy(() =>
   import('@/features/admin/AdminConfigPage').then((module) => ({
     default: module.AdminConfigPage,
@@ -179,6 +184,16 @@ export const router = createBrowserRouter([
           <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/admin/activity')}>
             <LazyRoute>
               <AdminActivityPage />
+            </LazyRoute>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin/reports',
+        element: (
+          <ProtectedRoute allowedRoles={getAllowedRolesForRoute('/admin/reports')}>
+            <LazyRoute>
+              <AdminReportsPage />
             </LazyRoute>
           </ProtectedRoute>
         ),
