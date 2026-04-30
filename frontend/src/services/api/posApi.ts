@@ -3,14 +3,18 @@ import type { ThemeName } from "@/theme/theme";
 import type {
   AdminActivityDetailResponse,
   AdminActivityFeedResponse,
+  AdminCashReportResponse,
+  AdminInventoryReportResponse,
   AdminLowStockItem,
   AdminRecentActivityResponse,
+  AdminSalesReportResponse,
   AdminSalesByPaymentResponse,
   AdminSummary,
   AdminTopItemsResponse,
   AuthLoginResponse,
   AuthUser,
   BusinessConfig,
+  CashReportStatus,
   CashCurrentResponse,
   CashSession,
   CatalogCombo,
@@ -20,8 +24,10 @@ import type {
   Combo,
   ComboListStatus,
   Ingredient,
+  IngredientMovementType,
   LatestSaleResponse,
   Location,
+  PaymentMethod,
   Product,
   RecentSalesResponse,
   SaleReceipt,
@@ -119,6 +125,34 @@ export const posApi = {
     unwrap<AdminSalesByPaymentResponse>(api.get("/admin/sales-by-payment")),
   getAdminTopItems: () =>
     unwrap<AdminTopItemsResponse>(api.get("/admin/top-items")),
+  getAdminSalesReport: (params: {
+    from: string;
+    to: string;
+    locationId?: number;
+    paymentMethod?: PaymentMethod;
+  }) =>
+    unwrap<AdminSalesReportResponse>(
+      api.get("/admin/reports/sales", { params }),
+    ),
+  getAdminCashReport: (params: {
+    from: string;
+    to: string;
+    locationId?: number;
+    status?: CashReportStatus;
+  }) =>
+    unwrap<AdminCashReportResponse>(
+      api.get("/admin/reports/cash", { params }),
+    ),
+  getAdminInventoryReport: (params: {
+    from: string;
+    to: string;
+    locationId?: number;
+    ingredientId?: number;
+    movementType?: IngredientMovementType;
+  }) =>
+    unwrap<AdminInventoryReportResponse>(
+      api.get("/admin/reports/inventory", { params }),
+    ),
   getAdminLowStock: () =>
     unwrap<AdminLowStockItem[]>(api.get("/admin/low-stock")),
   getAdminActivity: (params?: {

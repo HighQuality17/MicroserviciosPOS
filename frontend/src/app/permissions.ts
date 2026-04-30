@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
+  BarChart3,
   Boxes,
   CreditCard,
   LayoutDashboard,
@@ -23,7 +24,8 @@ export type AppRoutePath =
   | '/admin'
   | '/admin/activity'
   | '/admin/config'
-  | '/admin/locations';
+  | '/admin/locations'
+  | '/admin/reports';
 
 export interface NavigationItem {
   to: AppRoutePath;
@@ -55,6 +57,7 @@ const navigationItems: NavigationItem[] = [
 const adminSubnavigationItems: NavigationItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/activity', label: 'Actividad', icon: Activity },
+  { to: '/admin/reports', label: 'Reportes', icon: BarChart3 },
   { to: '/admin/config', label: 'Configuracion', icon: Settings2 },
   { to: '/admin/locations', label: 'Puntos de venta', icon: Store },
 ];
@@ -69,11 +72,12 @@ const allowedRoutesByRole: Record<UserRole, AppRoutePath[]> = {
     '/sales',
     '/admin',
     '/admin/activity',
+    '/admin/reports',
     '/admin/config',
     '/admin/locations',
   ],
   CASHIER: ['/pos', '/cash', '/sales'],
-  AUDITOR: ['/sales', '/admin', '/admin/activity'],
+  AUDITOR: ['/sales', '/admin', '/admin/activity', '/admin/reports'],
 };
 
 const defaultRouteByRole: Record<UserRole, AppRoutePath> = {

@@ -32,6 +32,9 @@ interface AdminChartCardProps {
   data: AdminChartDatum[];
   chartType?: 'pie' | 'bar';
   valueFormat?: 'currency' | 'number';
+  metricLabel?: string;
+  metricUnitLabel?: string;
+  snapshotUnitLabel?: string;
   footer?: ReactNode;
   emptyTitle?: string;
   emptyDescription?: string;
@@ -43,6 +46,9 @@ export function AdminChartCard({
   data,
   chartType = 'bar',
   valueFormat = 'number',
+  metricLabel,
+  metricUnitLabel,
+  snapshotUnitLabel,
   footer,
   emptyTitle = 'Sin datos disponibles',
   emptyDescription = 'Disponible en la siguiente fase.',
@@ -63,10 +69,12 @@ export function AdminChartCard({
     data.length > 0
       ? chartType === 'bar'
         ? `Top ${visibleRankData.length.toLocaleString('es-CO')}`
-        : `${data.length.toLocaleString('es-CO')} metodos`
+        : `${data.length.toLocaleString('es-CO')} ${snapshotUnitLabel ?? 'metodos'}`
       : 'Esperando datos reales';
-  const metricLabel = valueFormat === 'currency' ? 'Ventas' : 'Unidades vendidas';
-  const metricUnitLabel = valueFormat === 'currency' ? 'vendido' : 'unidades';
+  const resolvedMetricLabel =
+    metricLabel ?? (valueFormat === 'currency' ? 'Ventas' : 'Unidades vendidas');
+  const resolvedMetricUnitLabel =
+    metricUnitLabel ?? (valueFormat === 'currency' ? 'vendido' : 'unidades');
 
   return (
     <Card padding="none" glow={false} className="admin-panel admin-chart-card" data-chart-type={chartType}>
@@ -92,12 +100,12 @@ export function AdminChartCard({
           <div className="admin-chart-card__visual">
             <div className="admin-chart-card__visual-heading">
               <div>
-                <span>{metricLabel}</span>
+                <span>{resolvedMetricLabel}</span>
                 <strong>{leader?.label ?? 'Sin ranking'}</strong>
               </div>
               <p>
                 {leader ? formatValue(leader.value) : '0'}
-                <span>{metricUnitLabel}</span>
+                <span>{resolvedMetricUnitLabel}</span>
               </p>
             </div>
 
@@ -216,7 +224,7 @@ export function AdminChartCard({
                 </div>
                 <div className="admin-chart-card__rank-value">
                   <strong>{formatValue(item.value)}</strong>
-                  <span>{metricUnitLabel}</span>
+                  <span>{resolvedMetricUnitLabel}</span>
                 </div>
               </div>
             ))}

@@ -41,7 +41,7 @@ const activityFilters: Array<{
   label: string;
   description: string;
 }> = [
-  { value: 'ALL', label: 'Todos', description: 'Ventas, caja, inventario y config.' },
+  { value: 'ALL', label: 'Todos', description: 'Ventas, caja, inventario y configuracion.' },
   { value: 'CASH', label: 'Caja', description: 'Aperturas y cierres.' },
   { value: 'SALES', label: 'Ventas', description: 'Ventas pagadas.' },
   { value: 'INVENTORY', label: 'Inventario', description: 'Movimientos de stock.' },

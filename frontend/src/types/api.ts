@@ -20,6 +20,7 @@ export type UserRole = "ADMIN" | "CASHIER" | "AUDITOR";
 export type DiscountType = "NONE" | "PERCENT" | "FIXED";
 export type PaymentMethod = "CASH" | "TRANSFER";
 export type SaleItemType = "VARIANT" | "COMBO";
+export type CashReportStatus = "ALL" | "OPEN" | "CLOSED";
 export type IngredientDimension = "WEIGHT" | "VOLUME" | "COUNT";
 export type IngredientMovementType = "ENTRY" | "EXIT" | "ADJUSTMENT";
 export type IngredientMovementReasonCode =
@@ -414,6 +415,203 @@ export interface AdminTopItem {
 
 export interface AdminTopItemsResponse {
   items: AdminTopItem[];
+}
+
+export interface AdminSalesReportKpis {
+  total_sold: number;
+  sales_count: number;
+  average_ticket: number;
+  total_cash: number;
+  total_transfer: number;
+}
+
+export interface AdminSalesReportDailyItem {
+  date: string;
+  total: number;
+  sales_count: number;
+}
+
+export interface AdminSalesReportPaymentItem {
+  method: PaymentMethod;
+  total: number;
+}
+
+export interface AdminSalesReportTopProduct {
+  name: string;
+  item_type: SaleItemType;
+  ref_id: number;
+  qty_sold: number;
+  total_sold: number;
+}
+
+export interface AdminSalesReportResponse {
+  filters: {
+    from: string;
+    to: string;
+    location_id: number | null;
+    payment_method: PaymentMethod | null;
+  };
+  kpis: AdminSalesReportKpis;
+  sales_by_day: AdminSalesReportDailyItem[];
+  sales_by_payment: AdminSalesReportPaymentItem[];
+  top_products: AdminSalesReportTopProduct[];
+}
+
+export interface AdminCashReportKpis {
+  open_sessions_count: number;
+  closed_sessions_count: number;
+  total_expected: number;
+  total_counted: number;
+  total_difference: number;
+  average_difference_per_closure: number;
+}
+
+export interface AdminCashReportClosuresByDayItem {
+  date: string;
+  closed_count: number;
+}
+
+export interface AdminCashReportDifferenceByDayItem {
+  date: string;
+  difference: number;
+  expected: number;
+  counted: number;
+}
+
+export interface AdminCashReportExpectedVsCountedItem {
+  label: "Esperado" | "Contado";
+  total: number;
+}
+
+export interface AdminCashReportDifferenceByClosureItem {
+  cash_session_id: number;
+  label: string;
+  closed_at: string | null;
+  difference: number;
+}
+
+export interface AdminCashReportSessionItem {
+  cash_session_id: number;
+  location_id: number;
+  location_name: string;
+  responsible_id: number;
+  responsible_name: string;
+  opened_by_id: number;
+  opened_by_name: string;
+  closed_by_id: number | null;
+  closed_by_name: string | null;
+  opened_at: string;
+  closed_at: string | null;
+  opening_cash: number;
+  opening_amount?: number | null;
+  cash_sales_total?: number | null;
+  transfer_sales_total?: number | null;
+  total_change_given?: number | null;
+  expected: number | null;
+  expected_amount?: number | null;
+  counted: number | null;
+  counted_amount?: number | null;
+  difference: number | null;
+  status: "OPEN" | "CLOSED";
+  source: "SNAPSHOT" | "SESSION";
+}
+
+export interface AdminCashReportResponse {
+  filters: {
+    from: string;
+    to: string;
+    location_id: number | null;
+    status: CashReportStatus;
+  };
+  kpis: AdminCashReportKpis;
+  closures_by_day: AdminCashReportClosuresByDayItem[];
+  differences_by_day: AdminCashReportDifferenceByDayItem[];
+  expected_vs_counted: AdminCashReportExpectedVsCountedItem[];
+  differences_by_closure: AdminCashReportDifferenceByClosureItem[];
+  sessions: AdminCashReportSessionItem[];
+}
+
+export interface AdminInventoryReportKpis {
+  active_ingredients_count: number;
+  low_stock_ingredients_count: number;
+  entries_count: number;
+  exits_count: number;
+  adjustments_count: number;
+}
+
+export interface AdminInventoryReportDailyItem {
+  date: string;
+  entry_count: number;
+  exit_count: number;
+  adjustment_count: number;
+  movement_count: number;
+  quantity_base: number;
+  net_quantity_base: number;
+}
+
+export interface AdminInventoryReportTypeItem {
+  movement_type: IngredientMovementType;
+  movement_count: number;
+  quantity_base: number;
+  net_quantity_base: number;
+}
+
+export interface AdminInventoryReportTopIngredientItem {
+  ingredient_id: number;
+  ingredient_name: string;
+  dimension: IngredientDimension;
+  movement_count: number;
+  total_quantity_base: number;
+  net_quantity_base: number;
+}
+
+export interface AdminInventoryReportLowStockItem {
+  ingredient_id: number;
+  ingredient_name: string;
+  dimension: IngredientDimension;
+  location_id: number;
+  location_name: string;
+  qty_on_hand_base: number;
+  threshold: number;
+}
+
+export interface AdminInventoryReportMovementItem {
+  movement_id: number;
+  created_at: string;
+  ingredient_id: number;
+  ingredient_name: string;
+  dimension: IngredientDimension;
+  location_id: number;
+  location_name: string;
+  movement_type: IngredientMovementType;
+  quantity_base: number;
+  delta_base: number;
+  previous_stock: number | null;
+  new_stock: number | null;
+  counted_stock: number | null;
+  responsible_id: number;
+  responsible_name: string;
+  reason: string | null;
+  reason_code: IngredientMovementReasonCode | null;
+  support_document: string | null;
+  reference_type: IngredientMovementReferenceType | null;
+  reference_id: number | null;
+}
+
+export interface AdminInventoryReportResponse {
+  filters: {
+    from: string;
+    to: string;
+    location_id: number | null;
+    ingredient_id: number | null;
+    movement_type: IngredientMovementType | null;
+  };
+  kpis: AdminInventoryReportKpis;
+  movements_by_day: AdminInventoryReportDailyItem[];
+  movements_by_type: AdminInventoryReportTypeItem[];
+  top_ingredients_by_movement: AdminInventoryReportTopIngredientItem[];
+  stock_low_by_ingredient: AdminInventoryReportLowStockItem[];
+  movements: AdminInventoryReportMovementItem[];
 }
 
 export interface AdminLowStockItem {

@@ -4,6 +4,9 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { GetAdminActivityQueryDto } from './dto/get-admin-activity-query.dto';
+import { GetAdminCashReportQueryDto } from './dto/get-admin-cash-report-query.dto';
+import { GetAdminInventoryReportQueryDto } from './dto/get-admin-inventory-report-query.dto';
+import { GetAdminSalesReportQueryDto } from './dto/get-admin-sales-report-query.dto';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -25,6 +28,21 @@ export class AdminController {
   @Get('top-items')
   topItems() {
     return this.adminService.getTopItems();
+  }
+
+  @Get('reports/sales')
+  salesReport(@Query() query: GetAdminSalesReportQueryDto) {
+    return this.adminService.getSalesReport(query);
+  }
+
+  @Get('reports/cash')
+  cashReport(@Query() query: GetAdminCashReportQueryDto) {
+    return this.adminService.getCashReport(query);
+  }
+
+  @Get('reports/inventory')
+  inventoryReport(@Query() query: GetAdminInventoryReportQueryDto) {
+    return this.adminService.getInventoryReport(query);
   }
 
   @Get('low-stock')
