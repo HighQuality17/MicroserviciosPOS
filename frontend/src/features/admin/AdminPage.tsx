@@ -541,9 +541,9 @@ export function AdminPage() {
     {
       key: 'exports',
       title: 'Reportes',
-      description: 'Exportacion ejecutiva.',
-      actionLabel: null,
-      path: null,
+      description: 'Placeholder analitico.',
+      actionLabel: 'Abrir',
+      path: '/admin/reports',
     },
     {
       key: 'alerts',
@@ -600,6 +600,12 @@ export function AdminPage() {
                 onClick={() => navigate('/admin/activity')}
               >
                 Actividad
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/admin/reports')}
+              >
+                Reportes
               </Button>
               <Button
                 variant="secondary"
