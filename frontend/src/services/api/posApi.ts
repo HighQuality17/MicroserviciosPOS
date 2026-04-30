@@ -3,6 +3,7 @@ import type { ThemeName } from "@/theme/theme";
 import type {
   AdminActivityDetailResponse,
   AdminActivityFeedResponse,
+  AdminCashReportResponse,
   AdminLowStockItem,
   AdminRecentActivityResponse,
   AdminSalesReportResponse,
@@ -12,6 +13,7 @@ import type {
   AuthLoginResponse,
   AuthUser,
   BusinessConfig,
+  CashReportStatus,
   CashCurrentResponse,
   CashSession,
   CatalogCombo,
@@ -129,6 +131,15 @@ export const posApi = {
   }) =>
     unwrap<AdminSalesReportResponse>(
       api.get("/admin/reports/sales", { params }),
+    ),
+  getAdminCashReport: (params: {
+    from: string;
+    to: string;
+    locationId?: number;
+    status?: CashReportStatus;
+  }) =>
+    unwrap<AdminCashReportResponse>(
+      api.get("/admin/reports/cash", { params }),
     ),
   getAdminLowStock: () =>
     unwrap<AdminLowStockItem[]>(api.get("/admin/low-stock")),

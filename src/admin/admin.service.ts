@@ -7,8 +7,10 @@ import {
   SaleStatus,
 } from "@prisma/client";
 import { BusinessActivityService } from "../business-activity/business-activity.service";
+import { round } from "../common/utils/number.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { GetAdminActivityQueryDto } from "./dto/get-admin-activity-query.dto";
+import { GetAdminCashReportQueryDto } from "./dto/get-admin-cash-report-query.dto";
 import { GetAdminSalesReportQueryDto } from "./dto/get-admin-sales-report-query.dto";
 
 const MAX_REPORT_RANGE_DAYS = 366;
@@ -23,6 +25,48 @@ type DailySalesReportRow = {
   total: Prisma.Decimal | number | string | null;
   sales_count: bigint | number | string;
 };
+
+type CashReportSessionStatus = "OPEN" | "CLOSED";
+
+type CashReportSessionRow = {
+  cash_session_id: number;
+  location_id: number;
+  location_name: string;
+  opened_by_id: number;
+  opened_by_name: string;
+  closed_by_id: number | null;
+  closed_by_name: string | null;
+  responsible_id: number;
+  responsible_name: string;
+  opened_at: Date;
+  closed_at: Date | null;
+  opening_cash: number;
+  cash_sales_total: number | null;
+  transfer_sales_total: number | null;
+  total_change_given: number | null;
+  expected: number | null;
+  counted: number | null;
+  difference: number | null;
+  status: CashReportSessionStatus;
+  source: "SNAPSHOT" | "SESSION";
+};
+
+type CashSnapshotReportRecord = Prisma.CashClosureSnapshotGetPayload<object>;
+
+type FallbackCashSessionReportRecord = Prisma.CashSessionGetPayload<{
+  include: {
+    location: true;
+    opener: true;
+    closer: true;
+  };
+}>;
+
+type OpenCashSessionReportRecord = Prisma.CashSessionGetPayload<{
+  include: {
+    location: true;
+    opener: true;
+  };
+}>;
 
 @Injectable()
 export class AdminService {
@@ -259,6 +303,134 @@ export class AdminService {
     };
   }
 
+  async getCashReport(query: GetAdminCashReportQueryDto) {
+    const range = this.buildCashReportDateRange(query);
+    const status = query.status ?? "ALL";
+    const includeOpen = status === "ALL" || status === "OPEN";
+    const includeClosed = status === "ALL" || status === "CLOSED";
+
+    const [snapshotClosures, fallbackClosedSessions, openSessions] =
+      await Promise.all([
+        includeClosed
+          ? this.prisma.cashClosureSnapshot.findMany({
+              where: this.buildCashSnapshotWhere(query, range),
+              orderBy: { closedAt: "desc" },
+            })
+          : [],
+        includeClosed
+          ? this.prisma.cashSession.findMany({
+              where: this.buildFallbackClosedCashSessionWhere(query, range),
+              include: {
+                location: true,
+                opener: true,
+                closer: true,
+              },
+              orderBy: { closedAt: "desc" },
+            })
+          : [],
+        includeOpen
+          ? this.prisma.cashSession.findMany({
+              where: this.buildOpenCashSessionWhere(query, range),
+              include: {
+                location: true,
+                opener: true,
+              },
+              orderBy: { openedAt: "desc" },
+            })
+          : [],
+      ]);
+
+    const rows = [
+      ...snapshotClosures.map((snapshot) =>
+        this.mapCashSnapshotToReportRow(snapshot),
+      ),
+      ...fallbackClosedSessions.map((session) =>
+        this.mapFallbackCashSessionToReportRow(session),
+      ),
+      ...openSessions.map((session) => this.mapOpenCashSessionToReportRow(session)),
+    ].sort((left, right) => {
+      const leftDate = left.closed_at ?? left.opened_at;
+      const rightDate = right.closed_at ?? right.opened_at;
+      return rightDate.getTime() - leftDate.getTime();
+    });
+    const closedRows = rows.filter((row) => row.status === "CLOSED");
+    const totalExpected = round(
+      closedRows.reduce((sum, row) => sum + (row.expected ?? 0), 0),
+      2,
+    );
+    const totalCounted = round(
+      closedRows.reduce((sum, row) => sum + (row.counted ?? 0), 0),
+      2,
+    );
+    const totalDifference = round(
+      closedRows.reduce((sum, row) => sum + (row.difference ?? 0), 0),
+      2,
+    );
+    const openCount = rows.filter((row) => row.status === "OPEN").length;
+    const closedCount = closedRows.length;
+
+    return {
+      filters: {
+        from: this.formatDateKey(range.fromDate),
+        to: this.formatDateKey(range.toDate),
+        location_id: query.locationId ?? null,
+        status,
+      },
+      kpis: {
+        open_sessions_count: openCount,
+        closed_sessions_count: closedCount,
+        total_expected: totalExpected,
+        total_counted: totalCounted,
+        total_difference: totalDifference,
+        average_difference_per_closure:
+          closedCount > 0 ? round(totalDifference / closedCount, 2) : 0,
+      },
+      closures_by_day: this.buildCashClosuresByDay(range, closedRows),
+      differences_by_day: this.buildCashDifferencesByDay(range, closedRows),
+      expected_vs_counted: [
+        {
+          label: "Esperado",
+          total: totalExpected,
+        },
+        {
+          label: "Contado",
+          total: totalCounted,
+        },
+      ],
+      differences_by_closure: closedRows.slice(0, 12).map((row) => ({
+        cash_session_id: row.cash_session_id,
+        label: `Caja #${row.cash_session_id}`,
+        closed_at: row.closed_at,
+        difference: row.difference ?? 0,
+      })),
+      sessions: rows.slice(0, 25).map((row) => ({
+        cash_session_id: row.cash_session_id,
+        location_id: row.location_id,
+        location_name: row.location_name,
+        responsible_id: row.responsible_id,
+        responsible_name: row.responsible_name,
+        opened_by_id: row.opened_by_id,
+        opened_by_name: row.opened_by_name,
+        closed_by_id: row.closed_by_id,
+        closed_by_name: row.closed_by_name,
+        opened_at: row.opened_at,
+        closed_at: row.closed_at,
+        opening_cash: row.opening_cash,
+        opening_amount: row.opening_cash,
+        cash_sales_total: row.cash_sales_total,
+        transfer_sales_total: row.transfer_sales_total,
+        total_change_given: row.total_change_given,
+        expected: row.expected,
+        expected_amount: row.expected,
+        counted: row.counted,
+        counted_amount: row.counted,
+        difference: row.difference,
+        status: row.status,
+        source: row.source,
+      })),
+    };
+  }
+
   async getLowStock() {
     const stocks = await this.prisma.ingredientStock.findMany({
       include: {
@@ -480,6 +652,235 @@ export class AdminService {
       qty_sold: this.toNumber(item._sum.qty),
       total_sold: this.toNumber(item._sum.lineTotal),
     }));
+  }
+
+  private buildCashReportDateRange(
+    query: GetAdminCashReportQueryDto,
+  ): SalesReportDateRange {
+    const fromDate = this.parseReportDateBoundary(query.from, "from", "start");
+    const toDate = this.parseReportDateBoundary(query.to, "to", "end");
+
+    if (fromDate > toDate) {
+      throw new BadRequestException("from cannot be greater than to");
+    }
+
+    const rangeDays =
+      Math.floor(
+        (this.startOfDay(toDate).getTime() -
+          this.startOfDay(fromDate).getTime()) /
+          86_400_000,
+      ) + 1;
+
+    if (rangeDays > MAX_REPORT_RANGE_DAYS) {
+      throw new BadRequestException(
+        `Report range cannot exceed ${MAX_REPORT_RANGE_DAYS} days`,
+      );
+    }
+
+    return { fromDate, toDate };
+  }
+
+  private buildCashSnapshotWhere(
+    query: GetAdminCashReportQueryDto,
+    range: SalesReportDateRange,
+  ): Prisma.CashClosureSnapshotWhereInput {
+    return {
+      closedAt: {
+        gte: range.fromDate,
+        lte: range.toDate,
+      },
+      ...(query.locationId ? { locationId: query.locationId } : {}),
+    };
+  }
+
+  private buildFallbackClosedCashSessionWhere(
+    query: GetAdminCashReportQueryDto,
+    range: SalesReportDateRange,
+  ): Prisma.CashSessionWhereInput {
+    return {
+      closedAt: {
+        gte: range.fromDate,
+        lte: range.toDate,
+      },
+      closureSnapshot: null,
+      ...(query.locationId ? { locationId: query.locationId } : {}),
+    };
+  }
+
+  private buildOpenCashSessionWhere(
+    query: GetAdminCashReportQueryDto,
+    range: SalesReportDateRange,
+  ): Prisma.CashSessionWhereInput {
+    return {
+      closedAt: null,
+      openedAt: {
+        gte: range.fromDate,
+        lte: range.toDate,
+      },
+      ...(query.locationId ? { locationId: query.locationId } : {}),
+    };
+  }
+
+  private mapCashSnapshotToReportRow(
+    snapshot: CashSnapshotReportRecord,
+  ): CashReportSessionRow {
+    return {
+      cash_session_id: snapshot.cashSessionId,
+      location_id: snapshot.locationId,
+      location_name: snapshot.locationName,
+      opened_by_id: snapshot.openedById,
+      opened_by_name: snapshot.openedByName,
+      closed_by_id: snapshot.closedById,
+      closed_by_name: snapshot.closedByName,
+      responsible_id: snapshot.closedById,
+      responsible_name: snapshot.closedByName,
+      opened_at: snapshot.openedAt,
+      closed_at: snapshot.closedAt,
+      opening_cash: this.toNumber(snapshot.openingCash),
+      cash_sales_total: this.toNumber(snapshot.cashSalesTotal),
+      transfer_sales_total: this.toNumber(snapshot.transferSalesTotal),
+      total_change_given: this.toNumber(snapshot.totalChangeGiven),
+      expected: this.toNumber(snapshot.closingCashExpected),
+      counted: this.toNumber(snapshot.closingCashCounted),
+      difference: this.toNumber(snapshot.difference),
+      status: "CLOSED",
+      source: "SNAPSHOT",
+    };
+  }
+
+  private mapFallbackCashSessionToReportRow(
+    session: FallbackCashSessionReportRecord,
+  ): CashReportSessionRow {
+    const expected =
+      session.closingCashExpected === null
+        ? null
+        : this.toNumber(session.closingCashExpected);
+    const counted =
+      session.closingCashCounted === null
+        ? null
+        : this.toNumber(session.closingCashCounted);
+    const difference =
+      expected === null || counted === null ? null : round(counted - expected, 2);
+    const closer = session.closer ?? session.opener;
+
+    return {
+      cash_session_id: session.id,
+      location_id: session.locationId,
+      location_name: session.location.name,
+      opened_by_id: session.openedBy,
+      opened_by_name: session.opener.name,
+      closed_by_id: closer.id,
+      closed_by_name: closer.name,
+      responsible_id: closer.id,
+      responsible_name: closer.name,
+      opened_at: session.openedAt,
+      closed_at: session.closedAt,
+      opening_cash: this.toNumber(session.openingCash),
+      cash_sales_total: null,
+      transfer_sales_total: null,
+      total_change_given: null,
+      expected,
+      counted,
+      difference,
+      status: "CLOSED",
+      source: "SESSION",
+    };
+  }
+
+  private mapOpenCashSessionToReportRow(
+    session: OpenCashSessionReportRecord,
+  ): CashReportSessionRow {
+    return {
+      cash_session_id: session.id,
+      location_id: session.locationId,
+      location_name: session.location.name,
+      opened_by_id: session.openedBy,
+      opened_by_name: session.opener.name,
+      closed_by_id: null,
+      closed_by_name: null,
+      responsible_id: session.openedBy,
+      responsible_name: session.opener.name,
+      opened_at: session.openedAt,
+      closed_at: null,
+      opening_cash: this.toNumber(session.openingCash),
+      cash_sales_total: null,
+      transfer_sales_total: null,
+      total_change_given: null,
+      expected: null,
+      counted: null,
+      difference: null,
+      status: "OPEN",
+      source: "SESSION",
+    };
+  }
+
+  private buildCashClosuresByDay(
+    range: SalesReportDateRange,
+    rows: CashReportSessionRow[],
+  ) {
+    const totals = new Map<string, number>();
+
+    for (const row of rows) {
+      if (!row.closed_at) continue;
+      const dateKey = this.formatDateKey(row.closed_at);
+      totals.set(dateKey, (totals.get(dateKey) ?? 0) + 1);
+    }
+
+    return this.fillDateRange(range, (date) => ({
+      date,
+      closed_count: totals.get(date) ?? 0,
+    }));
+  }
+
+  private buildCashDifferencesByDay(
+    range: SalesReportDateRange,
+    rows: CashReportSessionRow[],
+  ) {
+    const totals = new Map<
+      string,
+      { difference: number; expected: number; counted: number }
+    >();
+
+    for (const row of rows) {
+      if (!row.closed_at) continue;
+      const dateKey = this.formatDateKey(row.closed_at);
+      const current = totals.get(dateKey) ?? {
+        difference: 0,
+        expected: 0,
+        counted: 0,
+      };
+      totals.set(dateKey, {
+        difference: round(current.difference + (row.difference ?? 0), 2),
+        expected: round(current.expected + (row.expected ?? 0), 2),
+        counted: round(current.counted + (row.counted ?? 0), 2),
+      });
+    }
+
+    return this.fillDateRange(range, (date) => {
+      const current = totals.get(date);
+      return {
+        date,
+        difference: current?.difference ?? 0,
+        expected: current?.expected ?? 0,
+        counted: current?.counted ?? 0,
+      };
+    });
+  }
+
+  private fillDateRange<T>(
+    range: SalesReportDateRange,
+    buildItem: (date: string) => T,
+  ) {
+    const items: T[] = [];
+    const cursor = this.startOfDay(range.fromDate);
+    const last = this.startOfDay(range.toDate);
+
+    while (cursor <= last) {
+      items.push(buildItem(this.formatDateKey(cursor)));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return items;
   }
 
   private parseReportDateBoundary(
