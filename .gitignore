@@ -10,3 +10,7 @@ vite.config.js
 vite.config.d.ts
 .codex/
 uploads/
+.agents
+skills-lock.json
+.opencode
+DESIGN.md

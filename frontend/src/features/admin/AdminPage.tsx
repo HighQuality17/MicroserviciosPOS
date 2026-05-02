@@ -580,10 +580,11 @@ export function AdminPage() {
       ) : null}
 
       <ModulePageHeader
+        className="admin-dashboard-hero"
         ariaLabel="Estado general del dashboard administrativo"
         eyebrow="Centro de control"
         title="Dashboard administrativo"
-        icon={<Sparkles size={18} />}
+        icon={<Activity size={18} />}
         helpText="Vista ejecutiva del negocio."
         badges={adminHeaderBadges}
         description="Ventas, caja, inventario y actividad clave."
@@ -594,7 +595,7 @@ export function AdminPage() {
         }}
         asideAction={
           isAdmin ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="admin-header-actions">
               <Button
                 variant="secondary"
                 onClick={() => navigate('/admin/activity')}
@@ -964,6 +965,7 @@ export function AdminPage() {
                   <button
                     type="button"
                     className="admin-shortcut-card__action"
+                    aria-label={`${item.actionLabel} ${item.title}`}
                     onClick={() => {
                       if (item.path) {
                         void navigate(item.path);
