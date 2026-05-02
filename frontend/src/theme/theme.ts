@@ -1,5 +1,6 @@
 export type ThemeName =
   | 'midnight-indigo'
+  | 'professional-light'
   | 'graphite-cyan'
   | 'arctic-blue'
   | 'emerald-ops'
@@ -22,6 +23,12 @@ export const themeOptions: ThemeOption[] = [
     label: 'Midnight Indigo',
     description: 'Tema base actual del POS con acentos indigo y violeta.',
     scheme: 'dark',
+  },
+  {
+    name: 'professional-light',
+    label: 'Professional Light',
+    description: 'Base clara profesional para POS SaaS con acentos azules sobrios.',
+    scheme: 'light',
   },
   {
     name: 'graphite-cyan',
