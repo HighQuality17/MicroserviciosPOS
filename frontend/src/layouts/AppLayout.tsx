@@ -152,7 +152,11 @@ export function AppLayout() {
             aria-expanded={!isDesktopSidebarCollapsed}
             onClick={() => setIsDesktopSidebarCollapsed((collapsed) => !collapsed)}
           >
-            {isDesktopSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            {isDesktopSidebarCollapsed ? (
+              <ChevronRight size={18} aria-hidden="true" />
+            ) : (
+              <ChevronLeft size={18} aria-hidden="true" />
+            )}
           </Button>
         </div>
 
@@ -175,7 +179,7 @@ export function AppLayout() {
                 aria-expanded={false}
                 onClick={() => setIsMobileNavigationOpen(true)}
               >
-                <Menu size={18} />
+                <Menu size={18} aria-hidden="true" />
                 <span>Menu</span>
               </Button>
             ) : null}

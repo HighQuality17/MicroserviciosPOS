@@ -116,7 +116,7 @@ export function Sidebar({
             aria-label="Cerrar menu de navegacion"
             onClick={onClose}
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </Button>
         ) : null}
       </div>
@@ -168,7 +168,7 @@ export function Sidebar({
               </NavLink>
 
               {isAdminLink && canShowSubnav ? (
-                <div className="app-sidebar__subnav" aria-label="Submodulos Admin">
+                <div className="app-sidebar__subnav" role="group" aria-label="Submodulos Admin">
                   {adminSubLinks.map(({ to: childTo, label: childLabel, icon: ChildIcon }) => (
                     <NavLink
                       key={childTo}
@@ -210,7 +210,7 @@ export function Sidebar({
             navigate('/login');
           }}
         >
-          <LogOut size={16} />
+          <LogOut size={16} aria-hidden="true" />
           <span
             aria-hidden={isDesktopCollapsed}
             className={clsx(
