@@ -47,6 +47,7 @@ export function PosCatalogCard({
       aria-label={`Agregar ${badge.toLowerCase()} ${item.name}${item.subtitle ? ', ' + item.subtitle : ''} al carrito, precio ${formatCurrency(item.unit_price)}`}
       className="pos-catalog-card surface-interactive group text-left"
       data-kind={kind}
+      data-has-image={hasImage ? 'true' : 'false'}
     >
       <div className="pos-catalog-card__body">
         <div className="pos-catalog-card__header">
