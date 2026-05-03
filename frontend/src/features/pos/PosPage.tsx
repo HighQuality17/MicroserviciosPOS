@@ -362,10 +362,6 @@ export function PosPage() {
       : items.length === 0
         ? 'Agrega al menos un item para habilitar el cobro.'
         : null;
-  const catalogSummaryCopy =
-    visibleCatalogItems.length === catalogEntries.length && catalogFilter === 'ALL' && !search.trim()
-      ? 'Catalogo completo activo'
-      : `de ${catalogEntries.length} disponibles`;
   const catalogScopeLabel =
     catalogFilter === 'ALL' ? 'Todo el catalogo' : resolveCatalogFilterLabel(catalogFilter);
   const catalogSearchSummary = search.trim()
@@ -652,7 +648,6 @@ export function PosPage() {
                   <p className="pos-catalog-toolbar__summary-value">
                     {visibleCatalogItems.length}
                   </p>
-                  <p className="pos-catalog-toolbar__summary-note">{catalogSummaryCopy}</p>
                   <p className="pos-catalog-toolbar__summary-scope">{catalogSearchSummary}</p>
                 </div>
               </div>
