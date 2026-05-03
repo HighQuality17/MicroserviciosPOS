@@ -339,7 +339,6 @@ export function PosPage() {
 
   const latestReceiptId = lastReceiptId ?? recentReceipts[0]?.sale_id ?? null;
   const currentUserName = currentUser?.name || currentUser?.username || 'Sin usuario';
-  const currentUserHandle = currentUser?.username ? `@${currentUser.username}` : 'Sin sesion';
   const currentUserRole = formatUserRole(currentUser?.role);
   const cashStatusTone = currentCashSession
     ? 'success'
@@ -363,10 +362,6 @@ export function PosPage() {
       : items.length === 0
         ? 'Agrega al menos un item para habilitar el cobro.'
         : null;
-  const catalogSummaryCopy =
-    visibleCatalogItems.length === catalogEntries.length && catalogFilter === 'ALL' && !search.trim()
-      ? 'Catalogo completo activo'
-      : `de ${catalogEntries.length} disponibles`;
   const catalogScopeLabel =
     catalogFilter === 'ALL' ? 'Todo el catalogo' : resolveCatalogFilterLabel(catalogFilter);
   const catalogSearchSummary = search.trim()
@@ -390,12 +385,6 @@ export function PosPage() {
     {
       label: 'Caja actual',
       value: currentCashSession ? `Caja #${currentCashSession.id}` : 'Caja sin abrir',
-      note:
-        currentCashSession
-          ? 'Lista para cobrar'
-          : currentLocation
-            ? 'Abre caja para habilitar cobro'
-            : 'Selecciona un POS',
       accent: cashStatusTone,
       icon: <CircleDot size={16} />,
       iconTone: cashStatusTone,
@@ -407,7 +396,6 @@ export function PosPage() {
     {
       label: 'POS actual',
       value: currentLocation ? currentLocation.name : 'Sin ubicacion',
-      note: currentLocation ? 'Activo en la sesion' : 'Se define en el encabezado',
       accent: currentLocation ? ('info' as const) : ('default' as const),
       icon: <MapPin size={16} />,
       iconTone: currentLocation ? 'info' : 'default',
@@ -419,7 +407,6 @@ export function PosPage() {
     {
       label: 'Cajero',
       value: currentUserName,
-      note: currentUserHandle,
       accent: currentUser ? ('info' as const) : ('default' as const),
       icon: <User size={16} />,
       iconTone: currentUser ? 'info' : 'default',
@@ -431,7 +418,6 @@ export function PosPage() {
     {
       label: 'Ultima venta',
       value: latestReceiptId ? `#${latestReceiptId}` : 'Pendiente',
-      note: latestReceiptId ? 'Tambien visible en Ventas' : 'Aparece tras el primer cobro',
       accent: latestReceiptId ? ('info' as const) : ('default' as const),
       icon: <Receipt size={16} />,
       iconTone: latestReceiptId ? 'info' : 'default',
@@ -571,9 +557,6 @@ export function PosPage() {
                   </div>
                 </div>
               </div>
-              <p className="module-page-header__description">
-                Venta rapida con catalogo operativo, carrito visible y cobro listo dentro del mismo lenguaje visual de Productos y Caja.
-              </p>
             </div>
 
             <div className="module-page-header__aside">
@@ -630,7 +613,6 @@ export function PosPage() {
               <SectionHeader
                 eyebrow="Catalogo de venta"
                 title="Catalogo operativo"
-                description="Consulta productos simples, variantes y combos activos con lectura rapida y contexto claro para venta continua."
                 className="pos-catalog-shell__heading"
               />
 
@@ -653,7 +635,6 @@ export function PosPage() {
                   onChange={(event) => setSearch(event.target.value)}
                   onClear={() => setSearch('')}
                   placeholder="Buscar por nombre, presentacion o SKU"
-                  hint="Filtra por nombre, SKU o presentacion sin salir del teclado."
                   fieldClassName="pos-catalog-toolbar__search-field"
                 />
               </div>
@@ -667,7 +648,6 @@ export function PosPage() {
                   <p className="pos-catalog-toolbar__summary-value">
                     {visibleCatalogItems.length}
                   </p>
-                  <p className="pos-catalog-toolbar__summary-note">{catalogSummaryCopy}</p>
                   <p className="pos-catalog-toolbar__summary-scope">{catalogSearchSummary}</p>
                 </div>
               </div>
