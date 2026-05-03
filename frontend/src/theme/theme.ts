@@ -27,7 +27,7 @@ export const themeOptions: ThemeOption[] = [
   {
     name: 'professional-light',
     label: 'Professional Light',
-    description: 'Base clara profesional para POS SaaS con acentos azules sobrios.',
+    description: 'Base clara profesional para POS SaaS con jerarquia slate y acento azul reservado.',
     scheme: 'light',
   },
   {
