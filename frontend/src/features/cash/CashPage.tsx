@@ -124,7 +124,7 @@ export function CashPage() {
     ? formatCurrency(toNumber(currentCashSession.openingCash))
     : openingCashPreview !== null
       ? formatCurrency(openingCashPreview)
-      : 'Pendiente';
+      : 'Sin definir';
   const cashStatusTone = currentCashSession ? 'success' : 'warning';
   const cashStatusLabel = currentCashSession
     ? 'Abierta'
@@ -155,25 +155,15 @@ export function CashPage() {
       : 'Pendiente';
   const currentUserName = currentUser?.name || currentUser?.username || 'Sin usuario';
   const currentUserRole = formatUserRole(currentUser?.role);
+  const responsibleBadgeLabel = currentUser
+    ? currentUserName.trim().toLowerCase() === currentUserRole.trim().toLowerCase()
+      ? 'Activo'
+      : currentUserRole
+    : 'Sin usuario';
   const closingCashPreview = parseNumberInput(closingCashCountedInput);
   const closingValue =
     closingCashPreview !== null ? formatCurrency(closingCashPreview) : 'Pendiente';
   const locationValue = currentLocation?.name ?? 'Sin POS';
-  const locationMeta = currentLocation ? `POS #${currentLocation.id}` : 'Requerido';
-  const openingSessionItems = [
-    {
-      label: 'POS',
-      value: locationValue,
-      meta: locationMeta,
-      icon: <MapPin size={16} />,
-    },
-    {
-      label: 'Responsable',
-      value: currentUserName,
-      meta: currentUserRole,
-      icon: <User size={16} />,
-    },
-  ];
   const closeSessionItems = currentCashSession
     ? [
         {
@@ -203,11 +193,7 @@ export function CashPage() {
     {
       label: 'Estado',
       value: currentCashSession ? `Caja #${currentCashSession.id}` : 'Sin sesion',
-      note: currentCashSession
-        ? formatDate(currentCashSession.openedAt)
-        : currentLocation
-          ? 'Pendiente de apertura'
-          : 'POS requerido',
+      note: currentCashSession ? formatDate(currentCashSession.openedAt) : undefined,
       accent: cashStatusTone,
       icon: <CircleDot size={16} />,
       iconTone: cashStatusTone,
@@ -219,7 +205,6 @@ export function CashPage() {
     {
       label: 'POS',
       value: locationValue,
-      note: locationMeta,
       accent: currentLocation ? ('info' as const) : ('warning' as const),
       icon: <MapPin size={16} />,
       iconTone: currentLocation ? 'info' : 'warning',
@@ -231,23 +216,17 @@ export function CashPage() {
     {
       label: 'Responsable',
       value: currentUserName,
-      note: currentUserRole,
       accent: currentUser ? ('info' as const) : ('default' as const),
       icon: <User size={16} />,
       iconTone: currentUser ? 'info' : 'default',
       badge: {
-        label: currentUser ? 'Activo' : 'Sin usuario',
+        label: responsibleBadgeLabel,
         tone: currentUser ? 'info' : 'default',
       },
     },
     {
       label: 'Fondo inicial',
       value: openingValue,
-      note: currentCashSession
-        ? 'Registrado'
-        : openingCashPreview !== null
-          ? 'Ingresado'
-          : 'Pendiente',
       accent: openingTone,
       icon: <Landmark size={16} />,
       iconTone: openingTone,
@@ -384,21 +363,6 @@ export function CashPage() {
                     : 'Por ingresar'}
               </p>
             </div>
-          </div>
-
-          <div className="cash-session-strip" aria-label="Datos de apertura">
-            {openingSessionItems.map((item) => (
-              <div key={item.label} className="cash-session-pill">
-                <span className="cash-session-pill__icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <div className="min-w-0">
-                  <p className="cash-session-pill__label">{item.label}</p>
-                  <p className="cash-session-pill__value">{item.value}</p>
-                  <p className="cash-session-pill__meta">{item.meta}</p>
-                </div>
-              </div>
-            ))}
           </div>
 
           <div className="cash-form-grid">
