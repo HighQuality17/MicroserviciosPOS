@@ -53,7 +53,6 @@ import type {
   CatalogCombo,
   CatalogResponse,
   CatalogVariant,
-  DiscountType,
   PaymentMethod,
   UserRole,
 } from '@/types/api';
@@ -64,7 +63,6 @@ import {
   isSimpleOperationalVariant,
 } from '@/utils/catalog';
 import { formatCurrency } from '@/utils/format';
-import { normalizeNumberInput } from '@/utils/numberInput';
 
 const missingRecipePattern = /^Variant (\d+) has no recipe configured$/i;
 const cartSheetId = 'mobile-cart-sheet';
@@ -97,7 +95,6 @@ export function PosPage() {
   const updateQty = useCartStore((state) => state.updateQty);
   const removeItem = useCartStore((state) => state.removeItem);
   const clearCart = useCartStore((state) => state.clearCart);
-  const setDiscount = useCartStore((state) => state.setDiscount);
 
   const [catalog, setCatalog] = useState<CatalogResponse>({
     products: [],
@@ -108,7 +105,6 @@ export function PosPage() {
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>('ALL');
-  const [discountInput, setDiscountInput] = useState('');
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -153,10 +149,6 @@ export function PosPage() {
 
     void loadCatalog();
   }, []);
-
-  useEffect(() => {
-    setDiscountInput(discountValue > 0 ? String(discountValue) : '');
-  }, [discountValue]);
 
   useEffect(() => {
     if (!mobileCartToast) {
@@ -427,23 +419,6 @@ export function PosPage() {
       },
     },
   ];
-
-  function handleDiscountInputChange(rawValue: string) {
-    const nextValue = normalizeNumberInput(rawValue, {
-      allowDecimal: true,
-    });
-
-    if (nextValue === null) {
-      return;
-    }
-
-    setDiscountInput(nextValue);
-    setDiscount(discountType, nextValue === '' ? 0 : Number(nextValue));
-  }
-
-  function handleDiscountTypeChange(nextType: DiscountType) {
-    setDiscount(nextType, discountValue);
-  }
 
   function handleAddCatalogItem(item: PosCatalogEntry) {
     addItem(item);
@@ -752,19 +727,16 @@ export function PosPage() {
         >
           <PosCartPanel
             mode="desktop"
-            className="pos-cart-panel--desktop-shell"
+            className="pos-cart-shell--desktop-frame"
             items={items}
-            discountType={discountType}
-            discountInput={discountInput}
             totals={totals}
             locationName={currentLocation?.name}
+            cashStatusLabel={cashStatusLabel}
             checkoutDisabledReason={checkoutDisabledReason}
             onClearCart={() => {
               clearCart();
               setMobileCartToast(null);
             }}
-            onDiscountTypeChange={handleDiscountTypeChange}
-            onDiscountInputChange={handleDiscountInputChange}
             onChangeQty={(key, qty) => updateQty(key, qty)}
             onRemove={(key) => removeItem(key)}
             onCheckout={handleOpenPayment}
@@ -847,19 +819,16 @@ export function PosPage() {
       >
         <PosCartPanel
           mode="mobile"
-          className="min-h-0 pos-cart-panel--mobile-shell"
+          className="min-h-0 pos-cart-shell--mobile-frame"
           items={items}
-          discountType={discountType}
-          discountInput={discountInput}
           totals={totals}
           locationName={currentLocation?.name}
+          cashStatusLabel={cashStatusLabel}
           checkoutDisabledReason={checkoutDisabledReason}
           onClearCart={() => {
             clearCart();
             setMobileCartToast(null);
           }}
-          onDiscountTypeChange={handleDiscountTypeChange}
-          onDiscountInputChange={handleDiscountInputChange}
           onChangeQty={(key, qty) => updateQty(key, qty)}
           onRemove={(key) => removeItem(key)}
           onCheckout={handleOpenPayment}
