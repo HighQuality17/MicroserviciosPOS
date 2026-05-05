@@ -70,7 +70,10 @@ export function ModulePageHeader({
   const normalizedTitle = typeof title === 'string' ? title.toLowerCase() : 'modulo';
 
   return (
-    <section className={clsx('module-page-header', className)} aria-label={ariaLabel}>
+    <section
+      className={clsx('module-page-header module-page-header--operational', className)}
+      aria-label={ariaLabel}
+    >
       <div className="module-page-header__shell">
         <div className="module-page-header__main">
           <div className="module-page-header__copy">
