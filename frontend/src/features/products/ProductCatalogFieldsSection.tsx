@@ -43,18 +43,17 @@ export function ProductCatalogFieldsSection({
           <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
             Datos comerciales
           </p>
-          <span className="products-form-group__tag">Base</span>
         </div>
 
         <div className="products-form-group__grid mt-3 grid gap-3 sm:grid-cols-2">
           <Input
-            label="Codigo interno"
+            label="SKU producto"
             wrapperClassName="products-field"
             labelClassName="products-field__label"
             className="products-field__control"
             value={draft.internalCode}
             onChange={(event) => onInternalCodeChange(event.target.value)}
-            placeholder="Ej: CAF-LAT-001"
+            placeholder="Ej: CAF-LAT"
             maxLength={80}
           />
           <Input
@@ -97,9 +96,8 @@ export function ProductCatalogFieldsSection({
       <div className="products-form-group surface-subtle rounded-lg p-4">
         <div className="products-form-group__heading">
           <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
-            Detalle adicional
+            Datos internos
           </p>
-          <span className="products-form-group__tag">Opcional</span>
         </div>
 
         <div className="products-form-group__grid mt-3 grid gap-3">

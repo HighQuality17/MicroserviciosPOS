@@ -181,8 +181,7 @@ export function ProductImageField({
 
         <div className="product-image-field__content">
           <div className="product-image-field__copy">
-            <p className="product-image-field__title">Portada POS</p>
-            <p className="product-image-field__caption">{resolveCaption(previewState)}</p>
+            <p className="product-image-field__title">Portada</p>
           </div>
 
           <div className="product-image-field__actions">
@@ -293,19 +292,6 @@ function resolvePreviewNote(state: 'empty' | 'current' | 'pending' | 'marked') {
       return 'Quitar';
     default:
       return 'Sin imagen';
-  }
-}
-
-function resolveCaption(state: 'empty' | 'current' | 'pending' | 'marked') {
-  switch (state) {
-    case 'pending':
-      return 'Se guardara al confirmar.';
-    case 'marked':
-      return 'Puedes conservarla o reemplazarla.';
-    case 'current':
-      return 'Lista para catalogo y POS.';
-    default:
-      return 'Portada limpia, cuadrada y legible.';
   }
 }
 

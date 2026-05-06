@@ -54,7 +54,6 @@ export function ProductFiscalFieldsSection({
     <div className="products-fiscal-shell">
       <CheckboxField
         label="Datos fiscales"
-        description="Facturacion opcional"
         wrapperClassName="products-toggle-card products-toggle-card--fiscal"
         className="products-toggle-card__label"
         checked={open}

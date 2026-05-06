@@ -8,7 +8,6 @@ import { AccessState } from '@/components/AccessState';
 import { CheckboxField } from '@/components/CheckboxField';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { EmptyState } from '@/components/EmptyState';
-import { FilterChip } from '@/components/FilterChip';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { Modal } from '@/components/Modal';
@@ -148,7 +147,6 @@ export function ProductsPage() {
 
   const [variantProductId, setVariantProductId] = useState('');
   const [variantSize, setVariantSize] = useState('');
-  const [variantSku, setVariantSku] = useState('');
   const [variantPriceInput, setVariantPriceInput] = useState('');
   const [variantActive, setVariantActive] = useState(true);
 
@@ -477,8 +475,8 @@ export function ProductsPage() {
       );
       return;
     }
-    if (!variantSize.trim() || !variantSku.trim()) {
-      setSubmitError('Tamaño y SKU son obligatorios.');
+    if (!variantSize.trim()) {
+      setSubmitError('El tamano es obligatorio.');
       return;
     }
     if (variantPrice === null || variantPrice < 0) {
@@ -494,7 +492,7 @@ export function ProductsPage() {
       const variant = await posApi.createVariant({
         product_id: productId,
         size: variantSize.trim(),
-        sku: variantSku.trim(),
+        sku: buildVariantSku(selectedProductForVariant, variantSize),
         sale_price: variantPrice,
         active: variantActive,
       });
@@ -502,7 +500,6 @@ export function ProductsPage() {
       addSessionVariant(variant);
       setVariantProductId('');
       setVariantSize('');
-      setVariantSku('');
       setVariantPriceInput('');
       setVariantActive(true);
       setMessage(`Variante #${variant.id} creada correctamente.`);
@@ -629,8 +626,8 @@ export function ProductsPage() {
     if ((!selectedVariant.is_operational && !editVariantSize.trim()) || !editVariantSku.trim()) {
       setSubmitError(
         selectedVariant.is_operational
-          ? 'SKU obligatorio para la operacion simple.'
-          : 'Tamano y SKU son obligatorios.',
+          ? 'SKU POS obligatorio para la operacion simple.'
+          : 'Tamano y SKU POS son obligatorios.',
       );
       return;
     }
@@ -995,21 +992,15 @@ export function ProductsPage() {
     : simpleProductListFilter === 'ACTIVE'
       ? `${activeSimpleProductsCount} activos`
       : `${inactiveSimpleProductsCount} inactivos`;
-  const variantPricePreview = Number(variantPriceInput);
-  const variantPriceSummary =
-    variantPriceInput.trim() && Number.isFinite(variantPricePreview)
-      ? formatCurrency(variantPricePreview)
-      : 'Pendiente';
-  const accessStatusLabel = canManageCatalog ? 'Edicion habilitada' : 'Solo lectura';
   const heroSummaryLabel = showRecipeModule ? 'Cobertura activa' : 'Operacion activa';
   const heroSummaryValue = showRecipeModule ? recipeBadgeLabel : operationalBadgeLabel;
   const heroSummaryNote = catalogAccessDenied
-    ? 'Perfil sin gestion de catalogo.'
+    ? 'Solo lectura'
     : showRecipeModule
       ? activeVariantsCount > 0
-        ? `${configuredRecipesCount}/${activeVariantsCount} operaciones con receta`
-        : 'Sin operaciones activas'
-      : `${activeSimpleOperationalCount} simples y ${activeRealVariantsCount} variantes activas en POS`;
+        ? `${configuredRecipesCount}/${activeVariantsCount} con receta`
+        : 'Sin operaciones'
+      : `${activeSimpleOperationalCount} simples / ${activeRealVariantsCount} variantes`;
   const productsHeroMetrics: ModulePageHeaderCard[] = [
     {
       label: 'Catalogo',
@@ -1024,7 +1015,7 @@ export function ProductsPage() {
       iconTone: catalogStatusTone,
     },
     {
-      label: 'Productos simples',
+      label: 'Simples',
       value: String(simpleProducts.length),
       note:
         simpleProducts.length > 0
@@ -1035,7 +1026,7 @@ export function ProductsPage() {
       iconTone: 'default',
     },
     {
-      label: 'Variantes reales',
+      label: 'Variantes',
       value: String(realVariants.length),
       note:
         realVariants.length > 0
@@ -1046,7 +1037,7 @@ export function ProductsPage() {
       iconTone: 'info',
     },
     {
-      label: showRecipeModule ? 'Cobertura receta' : 'Operaciones activas',
+      label: showRecipeModule ? 'Receta' : 'Operaciones',
       value: showRecipeModule
         ? activeVariantsCount > 0
           ? `${configuredRecipesCount}/${activeVariantsCount}`
@@ -1067,10 +1058,14 @@ export function ProductsPage() {
       label: catalogStatusLabel,
       tone: catalogStatusTone,
     },
-    {
-      label: accessStatusLabel,
-      tone: canManageCatalog ? ('info' as const) : ('default' as const),
-    },
+    ...(!canManageCatalog
+      ? [
+          {
+            label: 'Solo lectura',
+            tone: 'default' as const,
+          },
+        ]
+      : []),
   ];
   return (
     <div className="products-page grid min-w-0 gap-4 sm:gap-5">
@@ -1079,9 +1074,7 @@ export function ProductsPage() {
         eyebrow="Administracion de catalogo"
         title="Productos"
         icon={<Boxes size={18} />}
-        helpText="Estado, tipo, operacion POS y recetas del catalogo."
         badges={productsHeaderBadges}
-        description="Ficha comercial, venta POS y recetas en una vista operativa."
         summary={{
           label: heroSummaryLabel,
           value: heroSummaryValue,
@@ -1102,7 +1095,7 @@ export function ProductsPage() {
       {catalogError ? <FeedbackMessage tone="error" className="products-feedback">{catalogError}</FeedbackMessage> : null}
 
       {catalogAccessDenied ? (
-        <AccessState description="Tu perfil actual no puede consultar productos, operaciones de venta ni recetas administrativas." />
+        <AccessState description="Sin permiso para consultar catalogo." />
       ) : null}
 
       <div className="products-workspace grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:gap-5 xl:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
@@ -1122,16 +1115,6 @@ export function ProductsPage() {
                   tone={productCatalogDraft.productType === 'VARIANT' ? 'info' : 'default'}
                 />
               }
-            />
-            <ProductsMetricStrip
-              items={[
-                { label: 'Familias', value: variantReadyProducts.length, tone: 'info' },
-                {
-                  label: 'Estado',
-                  value: productActive ? 'Activo' : 'Inactivo',
-                  tone: productActive ? 'success' : 'warning',
-                },
-              ]}
             />
             <div className="products-form-stack">
               <Input
@@ -1247,7 +1230,6 @@ export function ProductsPage() {
               ) : null}
               <CheckboxField
                 label="Activo"
-                description="Disponible en catalogo."
                 wrapperClassName="products-toggle-card"
                 className="products-toggle-card__label"
                 checked={productActive}
@@ -1288,16 +1270,6 @@ export function ProductsPage() {
                 />
               }
             />
-            <ProductsMetricStrip
-              items={[
-                { label: 'Familias', value: variantReadyProducts.length, tone: 'info' },
-                {
-                  label: 'Precio',
-                  value: variantPriceSummary,
-                  tone: variantPriceSummary === 'Pendiente' ? 'default' : 'success',
-                },
-              ]}
-            />
             <div className="products-form-stack">
               <Select
                 label="Producto"
@@ -1309,7 +1281,7 @@ export function ProductsPage() {
               >
                 <option value="">
                   {variantReadyProducts.length === 0
-                    ? 'No hay productos tipo variante activos'
+                    ? 'Sin familias activas'
                     : 'Selecciona un producto'}
                 </option>
                 {variantReadyProducts.map((product) => (
@@ -1320,7 +1292,7 @@ export function ProductsPage() {
               </Select>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input
-                  label="Tamaño"
+                  label="Tamano"
                   wrapperClassName="products-field"
                   labelClassName="products-field__label"
                   className="products-field__control"
@@ -1329,34 +1301,23 @@ export function ProductsPage() {
                   placeholder="Ej: 12oz"
                 />
                 <Input
-                  label="SKU"
+                  type="number"
+                  min={0}
+                  label="Precio de venta"
                   wrapperClassName="products-field"
                   labelClassName="products-field__label"
                   className="products-field__control"
-                  value={variantSku}
-                  onChange={(event) => setVariantSku(event.target.value)}
-                  placeholder="Ej: CAF-AM-12"
+                  placeholder="Ej: 12000"
+                  value={variantPriceInput}
+                  onChange={(event) => {
+                    const nextValue = normalizeNumberInput(event.target.value);
+                    if (nextValue !== null) setVariantPriceInput(nextValue);
+                  }}
                 />
               </div>
 
-              <Input
-                type="number"
-                min={0}
-                label="Precio de venta"
-                wrapperClassName="products-field"
-                labelClassName="products-field__label"
-                className="products-field__control"
-                placeholder="Ej: 12000"
-                value={variantPriceInput}
-                onChange={(event) => {
-                  const nextValue = normalizeNumberInput(event.target.value);
-                  if (nextValue !== null) setVariantPriceInput(nextValue);
-                }}
-              />
-
               <CheckboxField
                 label="Activa"
-                description="Visible en POS."
                 wrapperClassName="products-toggle-card"
                 className="products-toggle-card__label"
                 checked={variantActive}
@@ -1391,13 +1352,6 @@ export function ProductsPage() {
             <ProductsPanelHeader
               eyebrow="Catalogo"
               title="Productos"
-              description="Base comercial y operacion principal."
-              meta={
-                <StatusBadge
-                  label={productListFilter === 'ACTIVE' ? 'Activos' : 'Inactivos'}
-                  tone={productListFilter === 'ACTIVE' ? 'success' : 'default'}
-                />
-              }
             />
 
             <CatalogListToolbar
@@ -1423,17 +1377,17 @@ export function ProductsPage() {
                 <EmptyState
                   title={
                     productSearchTerm.trim()
-                      ? 'Sin coincidencias para esta busqueda'
+                      ? 'Sin coincidencias'
                       : productListFilter === 'ACTIVE'
                         ? 'Sin productos activos'
                         : 'Sin productos inactivos'
                   }
                   description={
                     productSearchTerm.trim()
-                      ? 'No hay productos con ese nombre o SKU.'
+                      ? 'Sin coincidencias.'
                       : productListFilter === 'ACTIVE'
                         ? 'Crea o reactiva un producto.'
-                        : 'Los productos desactivados apareceran aqui.'
+                        : 'Sin inactivos.'
                   }
                 />
               </div>
@@ -1451,8 +1405,7 @@ export function ProductsPage() {
                     header: 'Producto',
                     width: '360px',
                     render: (product) => {
-                      const displayVariant = getProductCardVariant(product);
-                      const metaItems = getProductCardMetaItems(product, displayVariant);
+                      const metaItems = getProductCardMetaItems(product);
                       const summary = getProductTableSummary(product);
 
                       return (
@@ -1485,7 +1438,8 @@ export function ProductsPage() {
                                     item.mono && 'products-table-meta__item--mono',
                                   )}
                                 >
-                                  {item.value}
+                                  <span className="products-table-meta__label">{item.label}</span>
+                                  <span>{item.value}</span>
                                 </span>
                               ))}
                             </div>
@@ -1621,13 +1575,6 @@ export function ProductsPage() {
             <ProductsPanelHeader
               eyebrow="POS simple"
               title="Productos simples"
-              description="Registro POS unificado por producto."
-              meta={
-                <StatusBadge
-                  label={simpleProductListFilter === 'ACTIVE' ? 'Activos' : 'Inactivos'}
-                  tone={simpleProductListFilter === 'ACTIVE' ? 'success' : 'default'}
-                />
-              }
             />
             <CatalogListToolbar
               countLabel={visibleSimpleProductsLabel}
@@ -1650,17 +1597,17 @@ export function ProductsPage() {
                 <EmptyState
                   title={
                     simpleProductSearchTerm.trim()
-                      ? 'Sin coincidencias para esta busqueda'
+                      ? 'Sin coincidencias'
                       : simpleProductListFilter === 'ACTIVE'
                       ? 'Sin productos simples activos'
                       : 'Sin productos simples inactivos'
                   }
                   description={
                     simpleProductSearchTerm.trim()
-                      ? 'No hay simples con ese nombre o SKU.'
+                      ? 'Sin coincidencias.'
                       : simpleProductListFilter === 'ACTIVE'
                       ? 'Crea o reactiva un producto simple.'
-                      : 'Los simples desactivados apareceran aqui.'
+                      : 'Sin inactivos.'
                   }
                 />
               </div>
@@ -1701,7 +1648,6 @@ export function ProductsPage() {
                           </p>
                           <div className="products-table-meta">
                             <span className="products-table-meta__item">#{product.id}</span>
-                            <span className="products-table-meta__item">POS simple</span>
                           </div>
                         </div>
                       </div>
@@ -1709,7 +1655,7 @@ export function ProductsPage() {
                   },
                   {
                     key: 'sku',
-                    header: 'SKU',
+                    header: 'SKU POS',
                     width: '148px',
                     cellClassName: 'font-mono text-[12px]',
                     render: (product) => product.operationalVariant?.sku ?? 'Sin SKU',
@@ -1803,13 +1749,6 @@ export function ProductsPage() {
             <ProductsPanelHeader
               eyebrow="Variantes reales"
               title="Variantes"
-              description="SKU, precio, estado y receta."
-              meta={
-                <StatusBadge
-                  label={variantListFilter === 'ACTIVE' ? 'Activas' : 'Inactivas'}
-                  tone={variantListFilter === 'ACTIVE' ? 'success' : 'default'}
-                />
-              }
             />
             <CatalogListToolbar
               countLabel={visibleVariantsLabel}
@@ -1837,10 +1776,10 @@ export function ProductsPage() {
             ) : filteredRealVariants.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
-                  title={variantSearchTerm.trim() ? 'Sin coincidencias para esta busqueda' : 'No hay variantes para este filtro'}
+                  title={variantSearchTerm.trim() ? 'Sin coincidencias' : 'Sin variantes'}
                   description={
                     variantSearchTerm.trim()
-                      ? 'No hay variantes con ese nombre o SKU.'
+                      ? 'Sin coincidencias.'
                       : variantListFilter === 'ACTIVE'
                       ? 'Sin variantes activas.'
                       : 'Sin variantes inactivas.'
@@ -1889,7 +1828,7 @@ export function ProductsPage() {
                       <div className="products-table-stack">
                         <p className="products-table-stack__title">{variant.size || 'Sin tamano'}</p>
                         <p className="products-table-stack__detail products-table-stack__detail--mono">
-                          {variant.sku}
+                          SKU {variant.sku}
                         </p>
                       </div>
                     ),
@@ -1972,11 +1911,6 @@ export function ProductsPage() {
               />
             )}
 
-            {showRecipeModule && activeVariantsCount > 0 ? (
-              <div className="products-inline-note products-inline-note--footer toolbar-shell mt-4 text-xs text-[color:var(--text-faint)]">
-                Recetas pendientes aparecen en amarillo.
-              </div>
-            ) : null}
           </Card>
         </div>
       </div>
@@ -1985,7 +1919,6 @@ export function ProductsPage() {
         open={productEditorOpen}
         onClose={() => setProductEditorOpen(false)}
         title="Editar producto"
-        subtitle="Ficha comercial, estado e imagen."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Input
@@ -2097,7 +2030,6 @@ export function ProductsPage() {
           ) : null}
           <CheckboxField
             label="Activo"
-            description="Disponible en catalogo."
             checked={editProductActive}
             onChange={(event) => setEditProductActive(event.target.checked)}
           />
@@ -2117,9 +2049,6 @@ export function ProductsPage() {
         open={variantEditorOpen}
         onClose={() => setVariantEditorOpen(false)}
         title={selectedVariant?.is_operational ? 'Editar operacion simple' : 'Editar variante'}
-        subtitle={selectedVariant?.is_operational
-          ? 'SKU, precio y estado POS.'
-          : 'Tamano, SKU, precio y estado.'}
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           {selectedVariant?.is_operational ? null : (
@@ -2131,7 +2060,7 @@ export function ProductsPage() {
             />
           )}
           <Input
-            label="SKU"
+            label="SKU POS"
             value={editVariantSku}
             onChange={(event) => setEditVariantSku(event.target.value)}
             placeholder={selectedVariant?.is_operational ? 'Ej: CAF-BASE' : 'Ej: LAT-AV-16'}
@@ -2149,9 +2078,6 @@ export function ProductsPage() {
           />
           <CheckboxField
             label={selectedVariant?.is_operational ? 'Operativa en POS' : 'Activa'}
-            description={selectedVariant?.is_operational
-              ? 'Controla venta del simple.'
-              : 'Visible en POS.'}
             checked={editVariantActive}
             onChange={(event) => setEditVariantActive(event.target.checked)}
           />
@@ -2175,7 +2101,7 @@ export function ProductsPage() {
           }
         }}
         title={deleteTarget?.kind === 'PRODUCT' ? 'Eliminar producto' : 'Eliminar variante'}
-        subtitle="Esta acción solo debe usarse cuando el registro ya no deba existir en el catálogo."
+        subtitle="Operacion permanente si no hay dependencias."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <div className="products-delete-summary rounded-lg px-4 py-4">
@@ -2189,7 +2115,7 @@ export function ProductsPage() {
             ) : null}
           </div>
           <p className="text-sm text-[color:var(--text-secondary)]">
-            ¿Deseas continuar con la eliminación? Si el registro tiene ventas históricas o relaciones activas, el sistema bloqueará la operación y te pedirá desactivarlo o limpiar dependencias primero.
+            El sistema bloqueara la eliminacion si existen ventas o relaciones activas.
           </p>
           <div className="modal-action-row">
             <Button
@@ -2230,7 +2156,7 @@ export function ProductsPage() {
         {loadingRecipe ? (
           <LoadingState
             title="Cargando receta"
-            description="Estamos leyendo la configuración actual de ingredientes."
+            description="Leyendo ingredientes."
             rows={3}
           />
         ) : (
@@ -2342,12 +2268,10 @@ type CatalogFilterOption<T extends string> = {
 function ProductsPanelHeader({
   eyebrow,
   title,
-  description,
   meta,
 }: {
   eyebrow: string;
   title: string;
-  description?: string;
   meta?: ReactNode;
 }) {
   return (
@@ -2358,25 +2282,7 @@ function ProductsPanelHeader({
           <h2 className="font-display text-2xl font-bold theme-text-strong">{title}</h2>
           {meta ? <div className="products-panel__meta">{meta}</div> : null}
         </div>
-        {description ? <p className="products-panel__description">{description}</p> : null}
       </div>
-    </div>
-  );
-}
-
-function ProductsMetricStrip({
-  items,
-}: {
-  items: Array<{ label: string; value: ReactNode; tone?: 'default' | 'info' | 'success' | 'warning' }>;
-}) {
-  return (
-    <div className="products-panel__quick-strip" aria-label="Resumen del formulario">
-      {items.map((item) => (
-        <div key={item.label} className="products-panel__quick-item" data-tone={item.tone ?? 'default'}>
-          <p className="products-panel__quick-label">{item.label}</p>
-          <p className="products-panel__quick-value">{item.value}</p>
-        </div>
-      ))}
     </div>
   );
 }
@@ -2401,7 +2307,6 @@ function CatalogListToolbar<T extends string>({
   return (
     <div className="products-list-toolbar toolbar-shell mt-4 grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
       <div className="products-list-toolbar__summary">
-        <p className="products-list-toolbar__label">Resultado</p>
         <p className="products-list-toolbar__count">{countLabel}</p>
       </div>
       <div className="products-list-toolbar__controls flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
@@ -2409,21 +2314,28 @@ function CatalogListToolbar<T extends string>({
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
           onClear={() => onSearchChange('')}
-          placeholder="Nombre o SKU"
+          placeholder="Nombre / SKU"
           aria-label={searchAriaLabel}
           fieldClassName="products-list-toolbar__search-field"
           className="min-h-10"
           wrapperClassName="products-list-toolbar__search w-full sm:max-w-[280px] xl:max-w-[320px]"
         />
-        <div className="products-list-toolbar__filters flex flex-wrap justify-end gap-2">
+        <div
+          className="products-list-toolbar__filters flex flex-wrap justify-end gap-2"
+          role="group"
+          aria-label="Filtrar por estado"
+        >
           {filters.map((filterOption) => (
-            <FilterChip
+            <button
+              type="button"
               key={filterOption.value}
-              active={activeFilter === filterOption.value}
+              aria-pressed={activeFilter === filterOption.value}
+              data-active={activeFilter === filterOption.value || undefined}
               className="products-list-toolbar__filter min-w-[78px] justify-center"
-              label={filterOption.label}
               onClick={() => onFilterChange(filterOption.value)}
-            />
+            >
+              {filterOption.label}
+            </button>
           ))}
         </div>
       </div>
@@ -2438,14 +2350,11 @@ function getProductCardVariant(product: EnrichedCatalogProduct) {
   return activeVariant ?? product.relatedVariants[0] ?? null;
 }
 
-function getProductCardMetaItems(
-  product: EnrichedCatalogProduct,
-  variant: CatalogVariant | null,
-) {
+function getProductCardMetaItems(product: EnrichedCatalogProduct) {
   const items: Array<{ label: string; value: string; mono?: boolean }> = [];
 
-  if (variant?.sku) {
-    items.push({ label: 'SKU', value: variant.sku, mono: true });
+  if (product.internalCode) {
+    items.push({ label: 'SKU', value: product.internalCode, mono: true });
   }
 
   if (product.brand) {
@@ -2517,7 +2426,7 @@ function getProductOperationSummary(
 
     return {
       title: 'POS simple',
-      detail: variant.active ? variant.sku : 'POS inactivo',
+      detail: variant.active ? `SKU ${variant.sku}` : 'POS inactivo',
     };
   }
 
@@ -2560,6 +2469,23 @@ function getSimpleProductTableStatus(product: EnrichedCatalogProduct) {
   return 'Activo';
 }
 
+function buildVariantSku(product: CatalogProduct, size: string) {
+  const productSku = normalizeSkuToken(product.internalCode || `P${product.id}`);
+  const sizeSku = normalizeSkuToken(size) || 'VAR';
+
+  return `${productSku || `P${product.id}`}-${sizeSku}`;
+}
+
+function normalizeSkuToken(value: string) {
+  return value
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toUpperCase();
+}
+
 function normalizeCatalogSearch(value: string) {
   return value.trim().toLocaleLowerCase();
 }
@@ -2570,6 +2496,7 @@ function matchesProductSearch(product: EnrichedCatalogProduct, searchTerm: strin
 
   const candidate = [
     product.name,
+    product.internalCode ?? '',
     product.operationalVariant?.sku ?? '',
     ...product.relatedVariants.map((variant) => variant.sku),
   ]
@@ -2583,7 +2510,7 @@ function matchesSimpleProductSearch(product: EnrichedCatalogProduct, searchTerm:
   const normalizedSearch = normalizeCatalogSearch(searchTerm);
   if (!normalizedSearch) return true;
 
-  return [product.name, product.operationalVariant?.sku ?? '']
+  return [product.name, product.internalCode ?? '', product.operationalVariant?.sku ?? '']
     .join(' ')
     .toLocaleLowerCase()
     .includes(normalizedSearch);
