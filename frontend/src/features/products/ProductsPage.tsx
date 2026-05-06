@@ -1,6 +1,6 @@
 import '@/features/products/products-d2b.css';
 import clsx from 'clsx';
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Boxes, CircleDot, Layers3, Package2, PackageSearch } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -17,6 +17,7 @@ import {
   type ModulePageHeaderBadge,
   type ModulePageHeaderCard,
 } from '@/components/ModulePageHeader';
+import { ProductMedia } from '@/components/ProductMedia';
 import { SearchField } from '@/components/SearchField';
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
@@ -982,37 +983,42 @@ export function ProductsPage() {
   const visibleProductsLabel = productSearchTerm.trim()
     ? `${filteredProducts.length} coincidencias`
     : productListFilter === 'ACTIVE'
-      ? `${activeProductsCount} activos visibles`
-      : `${inactiveProductsCount} inactivos visibles`;
+      ? `${activeProductsCount} activos`
+      : `${inactiveProductsCount} inactivos`;
   const visibleVariantsLabel = variantSearchTerm.trim()
     ? `${filteredRealVariants.length} coincidencias`
     : variantListFilter === 'ACTIVE'
-      ? `${activeRealVariantsCount} activas visibles`
-      : `${inactiveRealVariantsCount} inactivas visibles`;
+      ? `${activeRealVariantsCount} activas`
+      : `${inactiveRealVariantsCount} inactivas`;
   const visibleSimpleProductsLabel = simpleProductSearchTerm.trim()
     ? `${filteredSimpleProducts.length} coincidencias`
     : simpleProductListFilter === 'ACTIVE'
-      ? `${activeSimpleProductsCount} activos visibles`
-      : `${inactiveSimpleProductsCount} inactivos visibles`;
+      ? `${activeSimpleProductsCount} activos`
+      : `${inactiveSimpleProductsCount} inactivos`;
+  const variantPricePreview = Number(variantPriceInput);
+  const variantPriceSummary =
+    variantPriceInput.trim() && Number.isFinite(variantPricePreview)
+      ? formatCurrency(variantPricePreview)
+      : 'Pendiente';
   const accessStatusLabel = canManageCatalog ? 'Edicion habilitada' : 'Solo lectura';
   const heroSummaryLabel = showRecipeModule ? 'Cobertura activa' : 'Operacion activa';
   const heroSummaryValue = showRecipeModule ? recipeBadgeLabel : operationalBadgeLabel;
   const heroSummaryNote = catalogAccessDenied
-    ? 'Tu perfil actual solo puede revisar estado general del catalogo.'
+    ? 'Perfil sin gestion de catalogo.'
     : showRecipeModule
       ? activeVariantsCount > 0
-        ? `${configuredRecipesCount} recetas listas para ${activeVariantsCount} operaciones activas`
-        : 'Crea operaciones para medir cobertura administrativa.'
+        ? `${configuredRecipesCount}/${activeVariantsCount} operaciones con receta`
+        : 'Sin operaciones activas'
       : `${activeSimpleOperationalCount} simples y ${activeRealVariantsCount} variantes activas en POS`;
   const productsHeroMetrics: ModulePageHeaderCard[] = [
     {
-      label: 'Catalogo total',
+      label: 'Catalogo',
       value: String(products.length),
       note: loadingCatalog
-        ? 'Sincronizando productos y operaciones'
+        ? 'Sincronizando'
         : inactiveProductsCount > 0
-          ? `${activeProductsCount} activos y ${inactiveProductsCount} inactivos`
-          : `${activeProductsCount} activos en catalogo`,
+          ? `${activeProductsCount} activos / ${inactiveProductsCount} inactivos`
+          : `${activeProductsCount} activos`,
       accent: catalogStatusTone,
       icon: <PackageSearch size={16} />,
       iconTone: catalogStatusTone,
@@ -1022,8 +1028,8 @@ export function ProductsPage() {
       value: String(simpleProducts.length),
       note:
         simpleProducts.length > 0
-          ? `${activeSimpleProductsCount} activos con operacion unificada`
-          : 'Aun no hay productos simples configurados',
+          ? `${activeSimpleProductsCount} activos`
+          : 'Sin simples',
       accent: 'default' as const,
       icon: <Package2 size={16} />,
       iconTone: 'default',
@@ -1033,8 +1039,8 @@ export function ProductsPage() {
       value: String(realVariants.length),
       note:
         realVariants.length > 0
-          ? `${activeRealVariantsCount} listas para venta`
-          : 'Sin variantes reales configuradas',
+          ? `${activeRealVariantsCount} activas`
+          : 'Sin variantes',
       accent: 'info' as const,
       icon: <Layers3 size={16} />,
       iconTone: 'info',
@@ -1049,7 +1055,7 @@ export function ProductsPage() {
       note: showRecipeModule
         ? activeVariantsCount > 0
           ? recipeBadgeLabel
-          : 'Sin cobertura pendiente por medir'
+          : 'Sin operaciones'
         : `${activeSimpleOperationalCount} simples y ${activeRealVariantsCount} variantes activas`,
       accent: showRecipeModule ? recipeCoverageTone : ('success' as const),
       icon: <CircleDot size={16} />,
@@ -1073,9 +1079,9 @@ export function ProductsPage() {
         eyebrow="Administracion de catalogo"
         title="Productos"
         icon={<Boxes size={18} />}
-        helpText="Controla estado del catalogo, productos simples, variantes activas y cobertura de recetas dentro del mismo flujo administrativo."
+        helpText="Estado, tipo, operacion POS y recetas del catalogo."
         badges={productsHeaderBadges}
-        description="Catalogo comercial, operaciones de venta y control administrativo para mantener producto y receta en orden."
+        description="Ficha comercial, venta POS y recetas en una vista operativa."
         summary={{
           label: heroSummaryLabel,
           value: heroSummaryValue,
@@ -1107,36 +1113,27 @@ export function ProductsPage() {
             className="products-panel products-panel--form"
             contentClassName="products-panel__body"
           >
-            <div className="products-panel__intro">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Administracion base</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Crear producto</h2>
-                <p className="products-panel__description">
-                  Define ficha comercial, tipo de producto y estado operativo sin cambiar flujo.
-                </p>
-              </div>
-            </div>
-            <div className="products-panel__highlights">
-              <div className="products-panel__spotlight products-panel__spotlight--variant">
-                <p className="products-panel__spotlight-label">Familias disponibles</p>
-                <p className="products-panel__spotlight-value">{variantReadyProducts.length}</p>
-                <p className="products-panel__spotlight-note">
-                  Solo se habilitan productos activos configurados para trabajar con variantes.
-                </p>
-              </div>
-              <div className="products-panel__spotlight products-panel__spotlight--product">
-                <p className="products-panel__spotlight-label">Tipo base</p>
-                <p className="products-panel__spotlight-value">
-                  {productCatalogDraft.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
-                </p>
-                <p className="products-panel__spotlight-note">
-                  {productName.trim()
-                    ? productName
-                    : 'Define la ficha base antes de crear operaciones de venta.'}
-                </p>
-              </div>
-            </div>
-            <div className="products-form-stack grid gap-4">
+            <ProductsPanelHeader
+              eyebrow="Producto"
+              title="Crear producto"
+              meta={
+                <StatusBadge
+                  label={productCatalogDraft.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
+                  tone={productCatalogDraft.productType === 'VARIANT' ? 'info' : 'default'}
+                />
+              }
+            />
+            <ProductsMetricStrip
+              items={[
+                { label: 'Familias', value: variantReadyProducts.length, tone: 'info' },
+                {
+                  label: 'Estado',
+                  value: productActive ? 'Activo' : 'Inactivo',
+                  tone: productActive ? 'success' : 'warning',
+                },
+              ]}
+            />
+            <div className="products-form-stack">
               <Input
                 label="Nombre"
                 wrapperClassName="products-field"
@@ -1250,7 +1247,7 @@ export function ProductsPage() {
               ) : null}
               <CheckboxField
                 label="Activo"
-                description="Define si el producto estara disponible en el catalogo operativo."
+                description="Disponible en catalogo."
                 wrapperClassName="products-toggle-card"
                 className="products-toggle-card__label"
                 checked={productActive}
@@ -1258,7 +1255,7 @@ export function ProductsPage() {
               />
 
 
-              <div className="products-panel__actions flex gap-3">
+              <div className="products-panel__actions">
                 <Button
                   disabled={!canManageCatalog || creatingProduct || !productName.trim()}
                   onClick={handleCreateProduct}
@@ -1281,36 +1278,27 @@ export function ProductsPage() {
             className="products-panel products-panel--form"
             contentClassName="products-panel__body"
           >
-            <div className="products-panel__intro">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Operaciones de venta</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Crear variante</h2>
-                <p className="products-panel__description">
-                  Asigna SKU, tamano y precio a familias activas preparadas para POS.
-                </p>
-              </div>
-            </div>
-            <div className="products-panel__highlights">
-              <div className="products-panel__spotlight products-panel__spotlight--variant">
-                <p className="products-panel__spotlight-label">Familias disponibles</p>
-                <p className="products-panel__spotlight-value">{variantReadyProducts.length}</p>
-                <p className="products-panel__spotlight-note">
-                  Solo aparecen productos activos listos para trabajar con variantes reales.
-                </p>
-              </div>
-              <div className="products-panel__spotlight">
-                <p className="products-panel__spotlight-label">Estado inicial</p>
-                <p className="products-panel__spotlight-value">
-                  {variantActive ? 'Activa' : 'Inactiva'}
-                </p>
-                <p className="products-panel__spotlight-note">
-                  {variantProductId
-                    ? 'Se creara para la familia seleccionada.'
-                    : 'Selecciona primero una familia para continuar.'}
-                </p>
-              </div>
-            </div>
-            <div className="products-form-stack grid gap-4">
+            <ProductsPanelHeader
+              eyebrow="Venta"
+              title="Crear variante"
+              meta={
+                <StatusBadge
+                  label={variantActive ? 'Activa' : 'Inactiva'}
+                  tone={variantActive ? 'success' : 'default'}
+                />
+              }
+            />
+            <ProductsMetricStrip
+              items={[
+                { label: 'Familias', value: variantReadyProducts.length, tone: 'info' },
+                {
+                  label: 'Precio',
+                  value: variantPriceSummary,
+                  tone: variantPriceSummary === 'Pendiente' ? 'default' : 'success',
+                },
+              ]}
+            />
+            <div className="products-form-stack">
               <Select
                 label="Producto"
                 wrapperClassName="products-field"
@@ -1330,12 +1318,7 @@ export function ProductsPage() {
                   </option>
                 ))}
               </Select>
-              <p className="products-inline-note">
-                Solo se listan productos activos configurados como tipo variante.
-              </p>
-
-
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <Input
                   label="Tamaño"
                   wrapperClassName="products-field"
@@ -1373,14 +1356,14 @@ export function ProductsPage() {
 
               <CheckboxField
                 label="Activa"
-                description="Las variantes inactivas no se muestran en POS."
+                description="Visible en POS."
                 wrapperClassName="products-toggle-card"
                 className="products-toggle-card__label"
                 checked={variantActive}
                 onChange={(event) => setVariantActive(event.target.checked)}
               />
 
-              <div className="products-panel__actions flex gap-3">
+              <div className="products-panel__actions">
                 <Button
                   disabled={!canManageCatalog || creatingVariant || variantReadyProducts.length === 0}
                   onClick={handleCreateVariant}
@@ -1405,15 +1388,17 @@ export function ProductsPage() {
             className="products-panel products-panel--list"
             contentClassName="products-panel__body"
           >
-            <div className="products-panel__header">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Vista general</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Productos</h2>
-                <p className="products-panel__description">
-                  Listado base del catalogo con operacion principal, estado y precio de referencia.
-                </p>
-              </div>
-            </div>
+            <ProductsPanelHeader
+              eyebrow="Catalogo"
+              title="Productos"
+              description="Base comercial y operacion principal."
+              meta={
+                <StatusBadge
+                  label={productListFilter === 'ACTIVE' ? 'Activos' : 'Inactivos'}
+                  tone={productListFilter === 'ACTIVE' ? 'success' : 'default'}
+                />
+              }
+            />
 
             <CatalogListToolbar
               countLabel={visibleProductsLabel}
@@ -1429,7 +1414,7 @@ export function ProductsPage() {
               <div className="mt-6">
                 <LoadingState
                   title="Cargando productos"
-                  description="Estamos preparando el catalogo y sus operaciones activas."
+                  description="Sincronizando catalogo."
                   rows={4}
                 />
               </div>
@@ -1445,10 +1430,10 @@ export function ProductsPage() {
                   }
                   description={
                     productSearchTerm.trim()
-                      ? 'No encontramos productos que coincidan con el nombre o SKU ingresado.'
+                      ? 'No hay productos con ese nombre o SKU.'
                       : productListFilter === 'ACTIVE'
-                        ? 'Activa un producto existente o crea uno nuevo para verlo en este listado.'
-                        : 'Cuando desactives productos, podras revisarlos y reactivarlos desde aqui.'
+                        ? 'Crea o reactiva un producto.'
+                        : 'Los productos desactivados apareceran aqui.'
                   }
                 />
               </div>
@@ -1459,15 +1444,8 @@ export function ProductsPage() {
                 rows={filteredProducts}
                 rowKey={(product) => product.id}
                 rowClassName={(product) => (!product.active ? 'opacity-80' : undefined)}
-                tableMinWidthClassName="min-w-[1360px]"
+                tableMinWidthClassName="min-w-[1080px]"
                 columns={[
-                  {
-                    key: 'id',
-                    header: 'ID',
-                    width: '72px',
-                    cellClassName: 'whitespace-nowrap text-xs theme-text-muted',
-                    render: (product) => `#${product.id}`,
-                  },
                   {
                     key: 'product',
                     header: 'Producto',
@@ -1475,40 +1453,46 @@ export function ProductsPage() {
                     render: (product) => {
                       const displayVariant = getProductCardVariant(product);
                       const metaItems = getProductCardMetaItems(product, displayVariant);
+                      const summary = getProductTableSummary(product);
 
                       return (
-                        <div className="products-table-entity">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate text-[15px] font-semibold theme-text-strong">
-                              {product.name}
-                            </p>
-                            <StatusBadge
-                              label={product.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
-                              tone={product.productType === 'VARIANT' ? 'info' : 'default'}
-                            />
-                          </div>
-                          <p className="products-table-entity__summary">
-                            {getProductTableSummary(product)}
-                          </p>
-                          {metaItems.length > 0 ? (
+                        <div className="products-table-entity products-table-entity--with-media">
+                          <ProductMedia
+                            size="sm"
+                            label={product.name}
+                            src={product.imageUrl}
+                            alt={product.imageAlt ?? product.name}
+                            kind={product.productType === 'VARIANT' ? 'VARIANT' : 'SIMPLE'}
+                            className="products-table-media"
+                          />
+                          <div className="min-w-0">
+                            <div className="products-table-entity__title-row">
+                              <p className="truncate text-[15px] font-semibold theme-text-strong">
+                                {product.name}
+                              </p>
+                              <StatusBadge
+                                label={product.productType === 'SIMPLE' ? 'Simple' : 'Variantes'}
+                                tone={product.productType === 'VARIANT' ? 'info' : 'default'}
+                              />
+                            </div>
                             <div className="products-table-meta">
+                              <span className="products-table-meta__item">#{product.id}</span>
                               {metaItems.map((item) => (
-                                <span key={item.label} className="products-table-meta__item">
-                                  <span className="text-[color:var(--text-faint)]">
-                                    {item.label}
-                                  </span>
-                                  <span
-                                    className={clsx(
-                                      'font-medium theme-text-strong',
-                                      item.mono && 'font-mono text-[11px]',
-                                    )}
-                                  >
-                                    {item.value}
-                                  </span>
+                                <span
+                                  key={item.label}
+                                  className={clsx(
+                                    'products-table-meta__item',
+                                    item.mono && 'products-table-meta__item--mono',
+                                  )}
+                                >
+                                  {item.value}
                                 </span>
                               ))}
                             </div>
-                          ) : null}
+                            {summary ? (
+                              <p className="products-table-entity__summary">{summary}</p>
+                            ) : null}
+                          </div>
                         </div>
                       );
                     },
@@ -1585,7 +1569,7 @@ export function ProductsPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: showRecipeModule ? '320px' : '256px',
+                    width: showRecipeModule ? '292px' : '232px',
                     render: (product) =>
                       canManageCatalog ? (
                         <div className="products-table-actions">
@@ -1634,15 +1618,17 @@ export function ProductsPage() {
             className="products-panel products-panel--list"
             contentClassName="products-panel__body"
           >
-            <div className="products-panel__header">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Operacion unificada</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Productos simples</h2>
-                <p className="products-panel__description">
-                  Vista operativa de productos simples con su registro POS asociado.
-                </p>
-              </div>
-            </div>
+            <ProductsPanelHeader
+              eyebrow="POS simple"
+              title="Productos simples"
+              description="Registro POS unificado por producto."
+              meta={
+                <StatusBadge
+                  label={simpleProductListFilter === 'ACTIVE' ? 'Activos' : 'Inactivos'}
+                  tone={simpleProductListFilter === 'ACTIVE' ? 'success' : 'default'}
+                />
+              }
+            />
             <CatalogListToolbar
               countLabel={visibleSimpleProductsLabel}
               searchValue={simpleProductSearchTerm}
@@ -1671,10 +1657,10 @@ export function ProductsPage() {
                   }
                   description={
                     simpleProductSearchTerm.trim()
-                      ? 'No encontramos productos simples que coincidan con el nombre o SKU ingresado.'
+                      ? 'No hay simples con ese nombre o SKU.'
                       : simpleProductListFilter === 'ACTIVE'
-                      ? 'Activa un producto simple existente o crea uno nuevo para verlo en este listado.'
-                      : 'Cuando desactives productos simples, podras revisarlos y reactivarlos desde aqui.'
+                      ? 'Crea o reactiva un producto simple.'
+                      : 'Los simples desactivados apareceran aqui.'
                   }
                 />
               </div>
@@ -1682,7 +1668,7 @@ export function ProductsPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Operacion simple pendiente"
-                  description="No se encontro configuracion operativa para los productos simples visibles. Refresca el catalogo para regenerarla."
+                  description="Refresca el catalogo para regenerarla."
                 />
               </div>
             ) : (
@@ -1694,22 +1680,31 @@ export function ProductsPage() {
                 rowClassName={(product) =>
                   !product.active || !product.operationalVariant?.active ? 'opacity-80' : undefined
                 }
-                tableMinWidthClassName="min-w-[1180px]"
+                tableMinWidthClassName="min-w-[980px]"
                 columns={[
-                  {
-                    key: 'id',
-                    header: 'ID',
-                    width: '72px',
-                    cellClassName: 'whitespace-nowrap text-xs theme-text-muted',
-                    render: (product) => `#${product.id}`,
-                  },
                   {
                     key: 'product',
                     header: 'Producto',
                     render: (product) => (
-                      <p className="truncate text-[15px] font-semibold theme-text-strong">
-                        {product.name}
-                      </p>
+                      <div className="products-table-entity products-table-entity--with-media">
+                        <ProductMedia
+                          size="sm"
+                          label={product.name}
+                          src={product.imageUrl}
+                          alt={product.imageAlt ?? product.name}
+                          kind="SIMPLE"
+                          className="products-table-media"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-semibold theme-text-strong">
+                            {product.name}
+                          </p>
+                          <div className="products-table-meta">
+                            <span className="products-table-meta__item">#{product.id}</span>
+                            <span className="products-table-meta__item">POS simple</span>
+                          </div>
+                        </div>
+                      </div>
                     ),
                   },
                   {
@@ -1767,7 +1762,7 @@ export function ProductsPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: '332px',
+                    width: showRecipeModule ? '304px' : '220px',
                     render: (product) =>
                       canManageCatalog && product.operationalVariant ? (
                         <div className="products-table-actions">
@@ -1805,15 +1800,17 @@ export function ProductsPage() {
             className="products-panel products-panel--list"
             contentClassName="products-panel__body"
           >
-            <div className="products-panel__header">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Listado real</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Variantes</h2>
-                <p className="products-panel__description">
-                  Seguimiento de variantes reales, precio, estado comercial y receta.
-                </p>
-              </div>
-            </div>
+            <ProductsPanelHeader
+              eyebrow="Variantes reales"
+              title="Variantes"
+              description="SKU, precio, estado y receta."
+              meta={
+                <StatusBadge
+                  label={variantListFilter === 'ACTIVE' ? 'Activas' : 'Inactivas'}
+                  tone={variantListFilter === 'ACTIVE' ? 'success' : 'default'}
+                />
+              }
+            />
             <CatalogListToolbar
               countLabel={visibleVariantsLabel}
               searchValue={variantSearchTerm}
@@ -1834,7 +1831,7 @@ export function ProductsPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin variantes cargadas"
-                  description="Crea la primera variante real para ampliar el catalogo y los combos."
+                  description="Crea una variante para habilitar venta."
                 />
               </div>
             ) : filteredRealVariants.length === 0 ? (
@@ -1843,10 +1840,10 @@ export function ProductsPage() {
                   title={variantSearchTerm.trim() ? 'Sin coincidencias para esta busqueda' : 'No hay variantes para este filtro'}
                   description={
                     variantSearchTerm.trim()
-                      ? 'No encontramos variantes que coincidan con el nombre o SKU ingresado.'
+                      ? 'No hay variantes con ese nombre o SKU.'
                       : variantListFilter === 'ACTIVE'
-                      ? 'No hay variantes activas para mostrar en este momento.'
-                      : 'No hay variantes inactivas para revisar en este momento.'
+                      ? 'Sin variantes activas.'
+                      : 'Sin variantes inactivas.'
                   }
                 />
               </div>
@@ -1857,27 +1854,46 @@ export function ProductsPage() {
                 rows={filteredRealVariants}
                 rowKey={(variant) => variant.id}
                 rowClassName={(variant) => (!variant.active ? 'opacity-80' : undefined)}
-                tableMinWidthClassName="min-w-[1280px]"
+                tableMinWidthClassName="min-w-[1040px]"
                 columns={[
-                  { key: 'id', header: 'ID', width: '64px', cellClassName: 'whitespace-nowrap text-xs theme-text-muted', render: (variant) => `#${variant.id}` },
                   {
                     key: 'product',
                     header: 'Producto',
                     render: (variant) => (
-                      <div className="min-w-0">
-                        <p className="truncate text-[15px] font-semibold theme-text-strong">
-                          {variant.product_name}
-                        </p>
-                        {!variant.active ? (
-                          <p className="mt-1 text-xs text-[color:var(--text-faint)]">
-                            Variante inactiva. Sigue disponible aqui para revision o reactivacion.
+                      <div className="products-table-entity products-table-entity--with-media">
+                        <ProductMedia
+                          size="sm"
+                          label={variant.product_name}
+                          src={variant.image_url}
+                          alt={variant.image_alt ?? variant.product_name}
+                          kind="VARIANT"
+                          className="products-table-media"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-semibold theme-text-strong">
+                            {variant.product_name}
                           </p>
-                        ) : null}
+                          <div className="products-table-meta">
+                            <span className="products-table-meta__item">#{variant.id}</span>
+                            <span className="products-table-meta__item">Producto #{variant.product_id}</span>
+                          </div>
+                        </div>
                       </div>
                     ),
                   },
-                  { key: 'size', header: 'Tamano', width: '92px', cellClassName: 'whitespace-nowrap text-sm', render: (variant) => variant.size },
-                  { key: 'sku', header: 'SKU', width: '112px', cellClassName: 'font-mono text-[12px]', render: (variant) => variant.sku },
+                  {
+                    key: 'variant',
+                    header: 'Variante',
+                    width: '180px',
+                    render: (variant) => (
+                      <div className="products-table-stack">
+                        <p className="products-table-stack__title">{variant.size || 'Sin tamano'}</p>
+                        <p className="products-table-stack__detail products-table-stack__detail--mono">
+                          {variant.sku}
+                        </p>
+                      </div>
+                    ),
+                  },
                   { key: 'price', header: 'Precio', width: '104px', align: 'right', cellClassName: 'whitespace-nowrap', render: (variant) => (<span className="metric-accent text-[15px] font-semibold">{formatCurrency(Number(variant.sale_price))}</span>) },
                   { key: 'status', header: 'Estado', width: '108px', render: (variant) => (<StatusBadge label={variant.active ? 'Activa' : 'Inactiva'} tone={variant.active ? 'success' : 'default'} className="min-w-[92px] justify-center" />) },
                   ...(showRecipeModule
@@ -1903,7 +1919,7 @@ export function ProductsPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: showRecipeModule ? '372px' : '252px',
+                    width: showRecipeModule ? '304px' : '232px',
                     render: (variant) =>
                       canManageCatalog ? (
                         <div className="products-table-actions">
@@ -1957,8 +1973,8 @@ export function ProductsPage() {
             )}
 
             {showRecipeModule && activeVariantsCount > 0 ? (
-              <div className="products-inline-note products-inline-note--footer toolbar-shell mt-4 rounded-lg px-4 py-3 text-xs text-[color:var(--text-faint)]">
-                Las operaciones activas sin receta seguiran detectandose aqui para que administracion complete la configuracion antes de vender.
+              <div className="products-inline-note products-inline-note--footer toolbar-shell mt-4 text-xs text-[color:var(--text-faint)]">
+                Recetas pendientes aparecen en amarillo.
               </div>
             ) : null}
           </Card>
@@ -1969,7 +1985,7 @@ export function ProductsPage() {
         open={productEditorOpen}
         onClose={() => setProductEditorOpen(false)}
         title="Editar producto"
-        subtitle="Actualiza la ficha comercial, el estado y la preparacion fiscal opcional del producto."
+        subtitle="Ficha comercial, estado e imagen."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Input
@@ -2081,7 +2097,7 @@ export function ProductsPage() {
           ) : null}
           <CheckboxField
             label="Activo"
-            description="Define si el producto estara disponible en el catalogo operativo."
+            description="Disponible en catalogo."
             checked={editProductActive}
             onChange={(event) => setEditProductActive(event.target.checked)}
           />
@@ -2102,8 +2118,8 @@ export function ProductsPage() {
         onClose={() => setVariantEditorOpen(false)}
         title={selectedVariant?.is_operational ? 'Editar operacion simple' : 'Editar variante'}
         subtitle={selectedVariant?.is_operational
-          ? 'Ajusta SKU, precio y estado de la operacion que mantiene compatible el producto simple con POS y recetas.'
-          : 'Ajusta tamano, SKU, precio y estado de la variante seleccionada.'}
+          ? 'SKU, precio y estado POS.'
+          : 'Tamano, SKU, precio y estado.'}
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           {selectedVariant?.is_operational ? null : (
@@ -2134,8 +2150,8 @@ export function ProductsPage() {
           <CheckboxField
             label={selectedVariant?.is_operational ? 'Operativa en POS' : 'Activa'}
             description={selectedVariant?.is_operational
-              ? 'Cuando se desactiva, el producto simple deja de operar en POS.'
-              : 'Las variantes inactivas no se muestran en POS.'}
+              ? 'Controla venta del simple.'
+              : 'Visible en POS.'}
             checked={editVariantActive}
             onChange={(event) => setEditVariantActive(event.target.checked)}
           />
@@ -2323,6 +2339,48 @@ type CatalogFilterOption<T extends string> = {
   label: string;
 };
 
+function ProductsPanelHeader({
+  eyebrow,
+  title,
+  description,
+  meta,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  meta?: ReactNode;
+}) {
+  return (
+    <div className="products-panel__header">
+      <div className="products-panel__header-copy">
+        <p className="products-panel__eyebrow">{eyebrow}</p>
+        <div className="products-panel__title-row">
+          <h2 className="font-display text-2xl font-bold theme-text-strong">{title}</h2>
+          {meta ? <div className="products-panel__meta">{meta}</div> : null}
+        </div>
+        {description ? <p className="products-panel__description">{description}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function ProductsMetricStrip({
+  items,
+}: {
+  items: Array<{ label: string; value: ReactNode; tone?: 'default' | 'info' | 'success' | 'warning' }>;
+}) {
+  return (
+    <div className="products-panel__quick-strip" aria-label="Resumen del formulario">
+      {items.map((item) => (
+        <div key={item.label} className="products-panel__quick-item" data-tone={item.tone ?? 'default'}>
+          <p className="products-panel__quick-label">{item.label}</p>
+          <p className="products-panel__quick-value">{item.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CatalogListToolbar<T extends string>({
   countLabel,
   searchValue,
@@ -2341,9 +2399,9 @@ function CatalogListToolbar<T extends string>({
   onFilterChange: (value: T) => void;
 }) {
   return (
-    <div className="products-list-toolbar toolbar-shell mt-4 grid gap-3 rounded-lg px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+    <div className="products-list-toolbar toolbar-shell mt-4 grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
       <div className="products-list-toolbar__summary">
-        <p className="products-list-toolbar__label">Vista activa</p>
+        <p className="products-list-toolbar__label">Resultado</p>
         <p className="products-list-toolbar__count">{countLabel}</p>
       </div>
       <div className="products-list-toolbar__controls flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
@@ -2351,7 +2409,7 @@ function CatalogListToolbar<T extends string>({
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
           onClear={() => onSearchChange('')}
-          placeholder="Buscar por nombre o SKU"
+          placeholder="Nombre o SKU"
           aria-label={searchAriaLabel}
           fieldClassName="products-list-toolbar__search-field"
           className="min-h-10"
@@ -2362,7 +2420,7 @@ function CatalogListToolbar<T extends string>({
             <FilterChip
               key={filterOption.value}
               active={activeFilter === filterOption.value}
-              className="products-list-toolbar__filter min-w-[90px] justify-center"
+              className="products-list-toolbar__filter min-w-[78px] justify-center"
               label={filterOption.label}
               onClick={() => onFilterChange(filterOption.value)}
             />
@@ -2442,15 +2500,7 @@ function getProductTableSummary(product: EnrichedCatalogProduct) {
   const description = product.description?.trim();
   if (description) return description;
 
-  if (product.productType === 'SIMPLE') {
-    return product.operationalVariant
-      ? 'Producto simple listo para operacion unificada.'
-      : 'Producto simple pendiente de operacion en POS.';
-  }
-
-  return product.relatedVariants.length > 0
-    ? `${product.relatedVariants.length} variantes configuradas para venta.`
-    : 'Producto sin variantes reales configuradas.';
+  return null;
 }
 
 function getProductOperationSummary(
@@ -2460,14 +2510,14 @@ function getProductOperationSummary(
   if (product.productType === 'SIMPLE') {
     if (!variant) {
       return {
-        title: 'Sin operacion unificada',
-        detail: 'Refresca catalogo para regenerar operacion.',
+        title: 'Sin operacion',
+        detail: 'Requiere refresh',
       };
     }
 
     return {
-      title: 'Operacion unificada',
-      detail: variant.active ? 'Lista para operar en POS.' : 'Operacion POS inactiva.',
+      title: 'POS simple',
+      detail: variant.active ? variant.sku : 'POS inactivo',
     };
   }
 
@@ -2494,13 +2544,13 @@ function getProductOperationSummary(
   if (comparableVariants.length > 0) {
     return {
       title: 'Sin tamano definido',
-      detail: `${comparableVariants.length} variantes configuradas`,
+      detail: `${comparableVariants.length} variantes`,
     };
   }
 
   return {
     title: 'Sin variantes activas',
-    detail: 'Crea una variante para habilitar venta en POS.',
+    detail: 'Pendiente',
   };
 }
 

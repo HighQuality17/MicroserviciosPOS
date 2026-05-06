@@ -37,16 +37,16 @@ export function ProductCatalogFieldsSection({
   onProductTypeChange,
 }: ProductCatalogFieldsSectionProps) {
   return (
-    <div className="products-form-sections grid gap-4">
-      <div className="products-form-group products-form-group--strong surface-subtle-strong rounded-lg p-4 sm:p-5">
-        <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
-          Datos comerciales
-        </p>
-        <p className="products-form-group__description mt-2 text-sm theme-text-muted">
-          Completa identificadores operativos, marca y tipo sin afectar la logica actual de variantes.
-        </p>
+    <div className="products-form-sections">
+      <div className="products-form-group products-form-group--strong surface-subtle-strong rounded-lg p-4">
+        <div className="products-form-group__heading">
+          <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
+            Datos comerciales
+          </p>
+          <span className="products-form-group__tag">Base</span>
+        </div>
 
-        <div className="products-form-group__grid mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="products-form-group__grid mt-3 grid gap-3 sm:grid-cols-2">
           <Input
             label="Codigo interno"
             wrapperClassName="products-field"
@@ -94,15 +94,15 @@ export function ProductCatalogFieldsSection({
         </div>
       </div>
 
-      <div className="products-form-group surface-subtle rounded-lg p-4 sm:p-5">
-        <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
-          Detalle adicional
-        </p>
-        <p className="products-form-group__description mt-2 text-sm theme-text-muted">
-          Referencia del proveedor y descripcion comercial opcional para enriquecer el catalogo.
-        </p>
+      <div className="products-form-group surface-subtle rounded-lg p-4">
+        <div className="products-form-group__heading">
+          <p className="products-form-group__label text-[11px] font-semibold uppercase tracking-[0.22em] theme-text-secondary">
+            Detalle adicional
+          </p>
+          <span className="products-form-group__tag">Opcional</span>
+        </div>
 
-        <div className="products-form-group__grid mt-4 grid gap-4">
+        <div className="products-form-group__grid mt-3 grid gap-3">
           <Input
             label="Referencia proveedor"
             wrapperClassName="products-field"
@@ -117,12 +117,12 @@ export function ProductCatalogFieldsSection({
             label="Descripcion"
             wrapperClassName="products-field"
             labelClassName="products-field__label"
-            className="products-field__control min-h-28 resize-y"
+            className="products-field__control min-h-24 resize-y"
             value={draft.description}
             onChange={(event) => onDescriptionChange(event.target.value)}
-            placeholder="Resumen comercial breve, notas operativas o detalles utiles para catalogo."
+            placeholder="Descripcion breve para catalogo."
             maxLength={1000}
-            rows={4}
+            rows={3}
           />
         </div>
       </div>
