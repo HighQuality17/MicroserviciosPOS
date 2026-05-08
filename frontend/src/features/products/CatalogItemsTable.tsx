@@ -84,6 +84,8 @@ export function CatalogItemsTable<Row>({
                 {columns.map((column) => (
                   <td
                     key={column.key}
+                    data-column={column.key}
+                    data-label={column.header}
                     className={clsx(
                       'px-3 py-3.5 align-middle sm:px-4',
                       column.align === 'right' ? 'text-right' : 'text-left',
