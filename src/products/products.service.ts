@@ -42,7 +42,9 @@ export class ProductsService {
         });
 
         if (createdProduct.productType === ProductType.SIMPLE) {
-          await ensureOperationalVariantForSimpleProduct(tx, createdProduct.id);
+          await ensureOperationalVariantForSimpleProduct(tx, createdProduct.id, {
+            size: dto.simplePresentation,
+          });
         }
 
         return tx.product.findUniqueOrThrow({
@@ -133,7 +135,9 @@ export class ProductsService {
         });
 
         if (nextProductType === ProductType.SIMPLE) {
-          await ensureOperationalVariantForSimpleProduct(tx, id);
+          await ensureOperationalVariantForSimpleProduct(tx, id, {
+            size: dto.simplePresentation,
+          });
         }
 
         return tx.product.findUniqueOrThrow({

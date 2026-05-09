@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateVariantDto {
   @IsInt()
@@ -6,6 +6,9 @@ export class CreateVariantDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(15, {
+    message: 'size must be shorter than or equal to 15 characters',
+  })
   size!: string;
 
   @IsString()

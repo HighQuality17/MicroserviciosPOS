@@ -207,6 +207,7 @@ export const posApi = {
     supplierReference?: string | null;
     description?: string | null;
     brand?: string | null;
+    simplePresentation?: string | null;
     productType?: "SIMPLE" | "VARIANT";
     unspscCode?: string | null;
     vatType?:
@@ -236,6 +237,7 @@ export const posApi = {
       supplierReference?: string | null;
       description?: string | null;
       brand?: string | null;
+      simplePresentation?: string | null;
       productType?: "SIMPLE" | "VARIANT";
       unspscCode?: string | null;
       vatType?:

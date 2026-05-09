@@ -86,6 +86,8 @@ type EnrichedCatalogProduct = CatalogProduct & {
   relatedVariants: CatalogVariant[];
 };
 
+const PRESENTATION_MAX_LENGTH = 15;
+
 const unitsByDimension: Record<IngredientDimension, string[]> = {
   WEIGHT: ['g', 'kg'],
   VOLUME: ['ml', 'L'],
@@ -360,22 +362,6 @@ export function ProductsPage() {
     setProductFiscalSectionOpen(false);
   }
 
-  async function syncSimpleProductPresentation(productId: number, presentation: string) {
-    const trimmedPresentation = presentation.trim();
-    if (!trimmedPresentation) return;
-
-    const catalog = await posApi.getCatalog();
-    const operationalVariant = catalog.variants.find(
-      (variant) => variant.product_id === productId && variant.is_operational,
-    );
-
-    if (!operationalVariant) {
-      throw new Error('No se encontro la operacion simple del producto.');
-    }
-
-    await posApi.updateVariant(operationalVariant.id, { size: trimmedPresentation });
-  }
-
   async function refreshCatalog() {
     try {
       setLoadingCatalog(true);
@@ -440,6 +426,10 @@ export function ProductsPage() {
       setSubmitError('La presentacion es obligatoria para productos simples.');
       return;
     }
+    if (simpleProductPresentation.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('La presentacion no puede superar 15 caracteres.');
+      return;
+    }
     if (productImageDraft.error) {
       setSubmitError(productImageDraft.error);
       return;
@@ -452,6 +442,9 @@ export function ProductsPage() {
 
       const createdProduct = await posApi.createProduct({
         name: productName.trim(),
+        ...(productCatalogDraft.productType === 'SIMPLE'
+          ? { simplePresentation: simpleProductPresentation.trim() }
+          : {}),
         ...serializeProductCatalogDraft(productCatalogDraft),
         ...serializeProductFiscalDraft(
           showFiscalFields ? productFiscalDraft : createEmptyProductFiscalDraft(),
@@ -477,25 +470,6 @@ export function ProductsPage() {
         setSubmitError(
           `Producto creado, pero imagen no pudo ${resolveProductImageMutationAction(productImageDraft)}. Abre editar para reintentar. ${translateCatalogError(
             imageError instanceof Error ? imageError.message : 'No se pudo guardar la imagen.',
-          )}`,
-        );
-        await refreshCatalog();
-        return;
-      }
-
-      try {
-        if (productCatalogDraft.productType === 'SIMPLE') {
-          await syncSimpleProductPresentation(createdProduct.id, simpleProductPresentation);
-        }
-      } catch (presentationError) {
-        addSessionProduct(persistedProduct);
-        resetCreateProductForm();
-        setMessage('Producto creado correctamente.');
-        setSubmitError(
-          `Producto creado, pero la presentacion no pudo guardarse. ${translateCatalogError(
-            presentationError instanceof Error
-              ? presentationError.message
-              : 'No se pudo actualizar la presentacion.',
           )}`,
         );
         await refreshCatalog();
@@ -540,6 +514,10 @@ export function ProductsPage() {
     }
     if (!variantSize.trim()) {
       setSubmitError('El tamano es obligatorio.');
+      return;
+    }
+    if (variantSize.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('El tamano no puede superar 15 caracteres.');
       return;
     }
     if (!variantSku.trim()) {
@@ -609,6 +587,10 @@ export function ProductsPage() {
       setSubmitError('La presentacion es obligatoria para productos simples.');
       return;
     }
+    if (editSimpleProductPresentation.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('La presentacion no puede superar 15 caracteres.');
+      return;
+    }
     if (editProductImageDraft.error) {
       setSubmitError(editProductImageDraft.error);
       return;
@@ -621,6 +603,9 @@ export function ProductsPage() {
 
       const updatedProduct = await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
+        ...(editProductCatalogDraft.productType === 'SIMPLE'
+          ? { simplePresentation: editSimpleProductPresentation.trim() }
+          : {}),
         ...serializeProductCatalogDraft(editProductCatalogDraft),
         ...serializeProductFiscalDraft(
           showFiscalFields ? editProductFiscalDraft : getProductFiscalDraft(selectedProduct),
@@ -645,24 +630,6 @@ export function ProductsPage() {
         setSubmitError(
           `Producto actualizado, pero imagen no pudo ${resolveProductImageMutationAction(editProductImageDraft)}. ${translateCatalogError(
             imageError instanceof Error ? imageError.message : 'No se pudo actualizar la imagen.',
-          )}`,
-        );
-        await refreshCatalog();
-        return;
-      }
-
-      try {
-        if (editProductCatalogDraft.productType === 'SIMPLE') {
-          await syncSimpleProductPresentation(selectedProduct.id, editSimpleProductPresentation);
-        }
-      } catch (presentationError) {
-        setSelectedProduct(persistedProduct);
-        setMessage('Producto actualizado correctamente.');
-        setSubmitError(
-          `Producto actualizado, pero la presentacion no pudo guardarse. ${translateCatalogError(
-            presentationError instanceof Error
-              ? presentationError.message
-              : 'No se pudo actualizar la presentacion.',
           )}`,
         );
         await refreshCatalog();
@@ -723,6 +690,13 @@ export function ProductsPage() {
           ? 'La operacion simple requiere una configuracion valida.'
           : 'Tamano y SKU de venta son obligatorios.',
       );
+      return;
+    }
+    if (
+      !selectedVariant.is_operational &&
+      editVariantSize.trim().length > PRESENTATION_MAX_LENGTH
+    ) {
+      setSubmitError('El tamano no puede superar 15 caracteres.');
       return;
     }
     if (salePrice === null || salePrice < 0) {
@@ -1361,7 +1335,7 @@ export function ProductsPage() {
                       value={simpleProductPresentation}
                       onChange={(event) => setSimpleProductPresentation(event.target.value)}
                       placeholder="Ej: Botella 350 ml"
-                      maxLength={80}
+                      maxLength={15}
                     />
                   ) : null}
 
@@ -1468,6 +1442,7 @@ export function ProductsPage() {
                       value={variantSize}
                       onChange={(event) => setVariantSize(event.target.value)}
                       placeholder="Ej: 12oz"
+                      maxLength={15}
                     />
                     <Input
                       label="SKU de venta"
@@ -1625,7 +1600,7 @@ export function ProductsPage() {
                               </p>
                               <StatusBadge
                                 label={product.productType === 'SIMPLE' ? 'Simple' : 'Variantes'}
-                                tone={product.productType === 'VARIANT' ? 'info' : 'default'}
+                                tone="info"
                               />
                             </div>
                             {metaItems.length > 0 ? (
@@ -1847,7 +1822,7 @@ export function ProductsPage() {
                               <p className="truncate text-[15px] font-semibold theme-text-strong">
                                 {product.name}
                               </p>
-                              <StatusBadge label="Simple" tone="default" />
+                              <StatusBadge label="Simple" tone="info" />
                             </div>
                             {metaItems.length > 0 ? (
                               <div className="products-table-meta">
@@ -2219,7 +2194,7 @@ export function ProductsPage() {
               value={editSimpleProductPresentation}
               onChange={(event) => setEditSimpleProductPresentation(event.target.value)}
               placeholder="Ej: Botella 350 ml"
-              maxLength={80}
+              maxLength={15}
             />
           ) : null}
           {showFiscalFields ? (
@@ -2294,6 +2269,7 @@ export function ProductsPage() {
               value={editVariantSize}
               onChange={(event) => setEditVariantSize(event.target.value)}
               placeholder="Ej: 16oz"
+              maxLength={15}
             />
           )}
           {selectedVariant?.is_operational ? null : (
@@ -2637,7 +2613,7 @@ function getProductCardMetaItems(product: EnrichedCatalogProduct) {
   const items: Array<{ label: string; value: string; mono?: boolean }> = [];
 
   if (product.internalCode) {
-    items.push({ label: 'SKU producto', value: product.internalCode, mono: true });
+    items.push({ label: 'SKU', value: product.internalCode, mono: true });
   }
 
   if (product.brand) {
@@ -2938,6 +2914,12 @@ function translateCatalogError(message: string) {
   if (message === 'Product barcode already exists') return 'Ya existe un producto con ese codigo de barras.';
   if (message === 'Simple product SKU already exists') return 'Ya existe una variante u operacion con ese SKU.';
   if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
+  if (message === 'simplePresentation must be shorter than or equal to 15 characters') {
+    return 'La presentacion no puede superar 15 caracteres.';
+  }
+  if (message === 'size must be shorter than or equal to 15 characters') {
+    return 'El tamano no puede superar 15 caracteres.';
+  }
   if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
   if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';
   if (message === 'Product image file is required') return 'Selecciona una imagen valida antes de guardar.';

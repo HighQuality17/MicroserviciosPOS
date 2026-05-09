@@ -36,6 +36,7 @@ function isUniqueConstraintError(error: unknown) {
 export async function ensureOperationalVariantForSimpleProduct(
   prisma: PrismaLike,
   productId: number,
+  options?: { size?: string | null },
 ) {
   const product = await prisma.product.findUnique({
     where: { id: productId },
@@ -63,12 +64,18 @@ export async function ensureOperationalVariantForSimpleProduct(
     product.internalCode,
     operationalVariant?.sku,
   );
+  const requestedSize = normalizeOptionalText(options?.size);
+  const nextSize = requestedSize ?? operationalVariant?.size ?? OPERATIONAL_VARIANT_SIZE;
 
   if (operationalVariant) {
-    const nextData: { sku?: string; active?: boolean } = {};
+    const nextData: { sku?: string; active?: boolean; size?: string } = {};
 
     if (operationalVariant.sku !== nextSku) {
       nextData.sku = nextSku;
+    }
+
+    if (operationalVariant.size !== nextSize) {
+      nextData.size = nextSize;
     }
 
     if (operationalVariant.active !== product.active) {
@@ -89,7 +96,7 @@ export async function ensureOperationalVariantForSimpleProduct(
     await prisma.productVariant.create({
       data: {
         productId: product.id,
-        size: OPERATIONAL_VARIANT_SIZE,
+        size: nextSize,
         sku: nextSku,
         salePrice: 0,
         active: product.active,

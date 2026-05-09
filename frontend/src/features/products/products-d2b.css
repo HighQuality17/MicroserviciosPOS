@@ -1056,11 +1056,10 @@
 }
 
 .products-table-entity__title-row {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem;
+  justify-items: start;
+  gap: 0.38rem;
 }
 
 .products-table-entity__summary,
@@ -1124,6 +1123,13 @@
 .products-table-stack__title {
   overflow-wrap: anywhere;
   line-height: 1.4;
+}
+
+.products-page--catalog td[data-column='operation'] .products-table-stack__title,
+.products-page--catalog td[data-column='variant'] .products-table-stack__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .products-table-price {
