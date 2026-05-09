@@ -153,6 +153,7 @@ export function ProductsPage() {
   );
   const [productActive, setProductActive] = useState(true);
   const [simpleProductPresentation, setSimpleProductPresentation] = useState('');
+  const [simpleProductPriceInput, setSimpleProductPriceInput] = useState('');
   const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
   const [productListFilter, setProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -193,6 +194,8 @@ export function ProductsPage() {
   );
   const [editProductActive, setEditProductActive] = useState(true);
   const [editSimpleProductPresentation, setEditSimpleProductPresentation] = useState('');
+  const [editSimpleProductPriceInput, setEditSimpleProductPriceInput] = useState('');
+  const [editSimpleProductOperationActive, setEditSimpleProductOperationActive] = useState(true);
   const [editProductFiscalSectionOpen, setEditProductFiscalSectionOpen] = useState(false);
   const [editVariantSize, setEditVariantSize] = useState('');
   const [editVariantSku, setEditVariantSku] = useState('');
@@ -359,6 +362,7 @@ export function ProductsPage() {
     setProductImageDraft(createEmptyProductImageDraft());
     setProductActive(true);
     setSimpleProductPresentation('');
+    setSimpleProductPriceInput('');
     setProductFiscalSectionOpen(false);
   }
 
@@ -415,6 +419,8 @@ export function ProductsPage() {
   }
 
   async function handleCreateProduct() {
+    const simpleSalePrice = parseNumberInput(simpleProductPriceInput);
+
     if (!productName.trim()) {
       setSubmitError('El nombre del producto es obligatorio.');
       return;
@@ -428,6 +434,13 @@ export function ProductsPage() {
     }
     if (simpleProductPresentation.trim().length > PRESENTATION_MAX_LENGTH) {
       setSubmitError('La presentacion no puede superar 15 caracteres.');
+      return;
+    }
+    if (
+      productCatalogDraft.productType === 'SIMPLE' &&
+      (simpleSalePrice === null || simpleSalePrice < 0)
+    ) {
+      setSubmitError('El precio de venta debe ser mayor o igual a 0.');
       return;
     }
     if (productImageDraft.error) {
@@ -453,6 +466,12 @@ export function ProductsPage() {
       });
 
       let persistedProduct = createdProduct;
+      const operationalVariant = getSimpleOperationalVariant(createdProduct);
+
+      if (productCatalogDraft.productType === 'SIMPLE' && !operationalVariant) {
+        setSubmitError('No se pudo preparar la operacion simple del producto.');
+        return;
+      }
 
       try {
         const imageProduct = await persistProductImageDraft(
@@ -474,6 +493,28 @@ export function ProductsPage() {
         );
         await refreshCatalog();
         return;
+      }
+
+      if (productCatalogDraft.productType === 'SIMPLE' && operationalVariant) {
+        try {
+          await posApi.updateVariant(operationalVariant.id, {
+            sale_price: simpleSalePrice ?? 0,
+            active: productActive,
+          });
+        } catch (operationError) {
+          addSessionProduct(persistedProduct);
+          resetCreateProductForm();
+          setMessage('Producto creado correctamente.');
+          setSubmitError(
+            `Producto creado, pero precio de venta no pudo guardarse. ${translateCatalogError(
+              operationError instanceof Error
+                ? operationError.message
+                : 'No se pudo actualizar la operacion simple.',
+            )}`,
+          );
+          await refreshCatalog();
+          return;
+        }
       }
 
       addSessionProduct(persistedProduct);
@@ -562,6 +603,8 @@ export function ProductsPage() {
   }
 
   function openProductEditor(product: CatalogProduct) {
+    const operationalVariant = getSimpleOperationalVariant(product);
+
     setSelectedProduct(product);
     setEditProductName(product.name);
     setEditProductCatalogDraft(getProductCatalogDraft(product));
@@ -569,6 +612,10 @@ export function ProductsPage() {
     setEditProductImageDraft(getProductImageDraft(product));
     setEditProductActive(product.active);
     setEditSimpleProductPresentation(getSimpleProductPresentation(product));
+    setEditSimpleProductPriceInput(
+      operationalVariant ? String(Number(operationalVariant.sale_price)) : '',
+    );
+    setEditSimpleProductOperationActive(operationalVariant?.active ?? product.active);
     setEditProductFiscalSectionOpen(showFiscalFields && hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
     setSubmitError(null);
@@ -576,6 +623,8 @@ export function ProductsPage() {
 
   async function handleSaveProduct() {
     if (!selectedProduct) return;
+    const simpleSalePrice = parseNumberInput(editSimpleProductPriceInput);
+
     if (!editProductName.trim()) {
       setSubmitError('El nombre del producto es obligatorio.');
       return;
@@ -589,6 +638,13 @@ export function ProductsPage() {
     }
     if (editSimpleProductPresentation.trim().length > PRESENTATION_MAX_LENGTH) {
       setSubmitError('La presentacion no puede superar 15 caracteres.');
+      return;
+    }
+    if (
+      editProductCatalogDraft.productType === 'SIMPLE' &&
+      (simpleSalePrice === null || simpleSalePrice < 0)
+    ) {
+      setSubmitError('El precio de venta debe ser mayor o igual a 0.');
       return;
     }
     if (editProductImageDraft.error) {
@@ -636,6 +692,37 @@ export function ProductsPage() {
         return;
       }
 
+      if (editProductCatalogDraft.productType === 'SIMPLE') {
+        const operationalVariant = getSimpleOperationalVariant(updatedProduct);
+
+        if (!operationalVariant) {
+          setSelectedProduct(persistedProduct);
+          setMessage('Producto actualizado correctamente.');
+          setSubmitError('No se pudo localizar la operacion simple del producto.');
+          await refreshCatalog();
+          return;
+        }
+
+        try {
+          await posApi.updateVariant(operationalVariant.id, {
+            sale_price: simpleSalePrice ?? 0,
+            active: editSimpleProductOperationActive,
+          });
+        } catch (operationError) {
+          setSelectedProduct(persistedProduct);
+          setMessage('Producto actualizado correctamente.');
+          setSubmitError(
+            `Producto actualizado, pero precio de venta no pudo guardarse. ${translateCatalogError(
+              operationError instanceof Error
+                ? operationError.message
+                : 'No se pudo actualizar la operacion simple.',
+            )}`,
+          );
+          await refreshCatalog();
+          return;
+        }
+      }
+
       setSelectedProduct(persistedProduct);
       setProductEditorOpen(false);
       setEditProductImageDraft(createEmptyProductImageDraft());
@@ -671,6 +758,8 @@ export function ProductsPage() {
   }
 
   function openVariantEditor(variant: CatalogVariant) {
+    if (variant.is_operational) return;
+
     setSelectedVariant(variant);
     setEditVariantSize(variant.size);
     setEditVariantSku(variant.sku);
@@ -684,18 +773,13 @@ export function ProductsPage() {
     if (!selectedVariant) return;
     const salePrice = parseNumberInput(editVariantPriceInput);
 
-    if ((!selectedVariant.is_operational && !editVariantSize.trim()) || (!selectedVariant.is_operational && !editVariantSku.trim())) {
+    if (!editVariantSize.trim() || !editVariantSku.trim()) {
       setSubmitError(
-        selectedVariant.is_operational
-          ? 'La operacion simple requiere una configuracion valida.'
-          : 'Tamano y SKU de venta son obligatorios.',
+        'Tamano y SKU de venta son obligatorios.',
       );
       return;
     }
-    if (
-      !selectedVariant.is_operational &&
-      editVariantSize.trim().length > PRESENTATION_MAX_LENGTH
-    ) {
+    if (editVariantSize.trim().length > PRESENTATION_MAX_LENGTH) {
       setSubmitError('El tamano no puede superar 15 caracteres.');
       return;
     }
@@ -708,17 +792,13 @@ export function ProductsPage() {
       setEditingVariant(true);
       setSubmitError(null);
       await posApi.updateVariant(selectedVariant.id, {
-        ...(selectedVariant.is_operational ? {} : { size: editVariantSize.trim() }),
-        ...(selectedVariant.is_operational ? {} : { sku: editVariantSku.trim() }),
+        size: editVariantSize.trim(),
+        sku: editVariantSku.trim(),
         sale_price: salePrice,
         active: editVariantActive,
       });
       setVariantEditorOpen(false);
-      setMessage(
-        selectedVariant.is_operational
-          ? 'Operacion simple actualizada correctamente.'
-          : 'Variante actualizada correctamente.',
-      );
+      setMessage('Variante actualizada correctamente.');
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -1327,16 +1407,32 @@ export function ProductsPage() {
                     }
                   />
                   {productCatalogDraft.productType === 'SIMPLE' ? (
-                    <Input
-                      label="Presentacion"
-                      wrapperClassName="products-field"
-                      labelClassName="products-field__label"
-                      className="products-field__control"
-                      value={simpleProductPresentation}
-                      onChange={(event) => setSimpleProductPresentation(event.target.value)}
-                      placeholder="Ej: Botella 350 ml"
-                      maxLength={15}
-                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input
+                        label="Presentacion"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={simpleProductPresentation}
+                        onChange={(event) => setSimpleProductPresentation(event.target.value)}
+                        placeholder="Ej: Botella 350 ml"
+                        maxLength={15}
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        label="Precio de venta"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={simpleProductPriceInput}
+                        onChange={(event) => {
+                          const nextValue = normalizeNumberInput(event.target.value);
+                          if (nextValue !== null) setSimpleProductPriceInput(nextValue);
+                        }}
+                        placeholder="Ej: 12000"
+                      />
+                    </div>
                   ) : null}
 
                   {showFiscalFields ? (
@@ -1595,7 +1691,7 @@ export function ProductsPage() {
                           />
                           <div className="min-w-0">
                             <div className="products-table-entity__title-row">
-                              <p className="truncate text-[15px] font-semibold theme-text-strong">
+                              <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
                                 {product.name}
                               </p>
                               <StatusBadge
@@ -1819,7 +1915,7 @@ export function ProductsPage() {
                           />
                           <div className="min-w-0">
                             <div className="products-table-entity__title-row">
-                              <p className="truncate text-[15px] font-semibold theme-text-strong">
+                              <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
                                 {product.name}
                               </p>
                               <StatusBadge label="Simple" tone="info" />
@@ -1927,16 +2023,13 @@ export function ProductsPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: showRecipeModule ? '304px' : '220px',
+                    width: showRecipeModule ? '304px' : '232px',
                     render: (product) =>
                       canManageCatalog && product.operationalVariant ? (
                         <div className="products-table-actions">
                           <div className="products-table-actions__primary">
                             <Button variant="secondary" className="action-soft-brand products-action-edit" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
                               Editar
-                            </Button>
-                            <Button variant="secondary" className="action-soft-brand products-action-operation" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(product.operationalVariant!)}>
-                              Operacion
                             </Button>
                             {showRecipeModule ? (
                               <Button variant="secondary" className="action-soft-brand products-action-recipe" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(product.operationalVariant!)}>
@@ -1947,6 +2040,9 @@ export function ProductsPage() {
                           <div className="products-table-actions__secondary">
                             <Button variant="ghost" className={product.operationalVariant.active ? 'products-action-toggle' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}>
                               {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
+                            </Button>
+                            <Button variant="ghost" className="action-soft-danger products-action-delete" onClick={() => requestProductDelete(product)}>
+                              Eliminar
                             </Button>
                           </div>
                         </div>
@@ -2015,7 +2111,7 @@ export function ProductsPage() {
                           className="products-table-media"
                         />
                         <div className="min-w-0">
-                          <p className="truncate text-[15px] font-semibold theme-text-strong">
+                          <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
                             {variant.product_name}
                           </p>
                         </div>
@@ -2189,13 +2285,31 @@ export function ProductsPage() {
             }
           />
           {editProductCatalogDraft.productType === 'SIMPLE' ? (
-            <Input
-              label="Presentacion"
-              value={editSimpleProductPresentation}
-              onChange={(event) => setEditSimpleProductPresentation(event.target.value)}
-              placeholder="Ej: Botella 350 ml"
-              maxLength={15}
-            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label="Presentacion"
+                value={editSimpleProductPresentation}
+                onChange={(event) => setEditSimpleProductPresentation(event.target.value)}
+                placeholder="Ej: Botella 350 ml"
+                maxLength={15}
+              />
+              <Input
+                type="number"
+                min={0}
+                label="Precio de venta"
+                value={editSimpleProductPriceInput}
+                onChange={(event) => {
+                  const nextValue = normalizeNumberInput(event.target.value);
+                  if (nextValue !== null) setEditSimpleProductPriceInput(nextValue);
+                }}
+                placeholder="Ej: 12000"
+              />
+              <CheckboxField
+                label="Operativa en POS"
+                checked={editSimpleProductOperationActive}
+                onChange={(event) => setEditSimpleProductOperationActive(event.target.checked)}
+              />
+            </div>
           ) : null}
           {showFiscalFields ? (
             <ProductFiscalFieldsSection
@@ -2260,26 +2374,22 @@ export function ProductsPage() {
         id="variant-editor-dialog"
         open={variantEditorOpen}
         onClose={() => setVariantEditorOpen(false)}
-        title={selectedVariant?.is_operational ? 'Editar operacion simple' : 'Editar variante'}
+        title="Editar variante"
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
-          {selectedVariant?.is_operational ? null : (
-            <Input
-              label="Tamano"
-              value={editVariantSize}
-              onChange={(event) => setEditVariantSize(event.target.value)}
-              placeholder="Ej: 16oz"
-              maxLength={15}
-            />
-          )}
-          {selectedVariant?.is_operational ? null : (
-            <Input
-              label="SKU de venta"
-              value={editVariantSku}
-              onChange={(event) => setEditVariantSku(event.target.value)}
-              placeholder="Ej: LAT-AV-16"
-            />
-          )}
+          <Input
+            label="Tamano"
+            value={editVariantSize}
+            onChange={(event) => setEditVariantSize(event.target.value)}
+            placeholder="Ej: 16oz"
+            maxLength={15}
+          />
+          <Input
+            label="SKU de venta"
+            value={editVariantSku}
+            onChange={(event) => setEditVariantSku(event.target.value)}
+            placeholder="Ej: LAT-AV-16"
+          />
           <Input
             type="number"
             min={0}
@@ -2292,7 +2402,7 @@ export function ProductsPage() {
             placeholder="Ej: 15000"
           />
           <CheckboxField
-            label={selectedVariant?.is_operational ? 'Operativa en POS' : 'Activa'}
+            label="Activa"
             checked={editVariantActive}
             onChange={(event) => setEditVariantActive(event.target.checked)}
           />
@@ -2755,13 +2865,24 @@ function matchesSimpleProductSearch(product: EnrichedCatalogProduct, searchTerm:
     .includes(normalizedSearch);
 }
 
+function getSimpleOperationalVariant(product: {
+  productType: ProductType;
+  variants?: Array<{ id: number; sale_price: number; active: boolean; size: string; is_operational?: boolean }>;
+}) {
+  if (product.productType !== 'SIMPLE') return null;
+
+  return (
+    product.variants?.find((variant) => variant.is_operational || variant.active) ??
+    product.variants?.[0] ??
+    null
+  );
+}
+
 function getSimpleProductPresentation(product: {
   productType: ProductType;
-  variants?: Array<{ size: string; active?: boolean }>;
+  variants?: Array<{ id: number; sale_price: number; active: boolean; size: string; is_operational?: boolean }>;
 }) {
-  if (product.productType !== 'SIMPLE') return '';
-
-  const operationalVariant = product.variants?.find((variant) => variant.active) ?? product.variants?.[0];
+  const operationalVariant = getSimpleOperationalVariant(product);
   return operationalVariant?.size ?? '';
 }
 
