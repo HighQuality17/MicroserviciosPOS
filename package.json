@@ -18,6 +18,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:seed:demo": "ts-node prisma/seed.demo.ts",
     "db:sqlite:export": "ts-node scripts/db/export-sqlite.ts",
+    "db:simple-products:sync-operational-skus": "ts-node scripts/db/sync-simple-product-operational-skus.ts",
     "db:postgres:import": "ts-node scripts/db/import-postgres.ts",
     "db:postgres:reset-sequences": "ts-node scripts/db/import-postgres.ts --reset-sequences-only",
     "db:postgres:verify": "ts-node scripts/db/verify-parity.ts"

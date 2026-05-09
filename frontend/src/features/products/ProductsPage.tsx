@@ -150,6 +150,7 @@ export function ProductsPage() {
     createEmptyProductImageDraft(),
   );
   const [productActive, setProductActive] = useState(true);
+  const [simpleProductPresentation, setSimpleProductPresentation] = useState('');
   const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
   const [productListFilter, setProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -189,6 +190,7 @@ export function ProductsPage() {
     createEmptyProductImageDraft(),
   );
   const [editProductActive, setEditProductActive] = useState(true);
+  const [editSimpleProductPresentation, setEditSimpleProductPresentation] = useState('');
   const [editProductFiscalSectionOpen, setEditProductFiscalSectionOpen] = useState(false);
   const [editVariantSize, setEditVariantSize] = useState('');
   const [editVariantSku, setEditVariantSku] = useState('');
@@ -354,7 +356,24 @@ export function ProductsPage() {
     setProductFiscalDraft(createEmptyProductFiscalDraft());
     setProductImageDraft(createEmptyProductImageDraft());
     setProductActive(true);
+    setSimpleProductPresentation('');
     setProductFiscalSectionOpen(false);
+  }
+
+  async function syncSimpleProductPresentation(productId: number, presentation: string) {
+    const trimmedPresentation = presentation.trim();
+    if (!trimmedPresentation) return;
+
+    const catalog = await posApi.getCatalog();
+    const operationalVariant = catalog.variants.find(
+      (variant) => variant.product_id === productId && variant.is_operational,
+    );
+
+    if (!operationalVariant) {
+      throw new Error('No se encontro la operacion simple del producto.');
+    }
+
+    await posApi.updateVariant(operationalVariant.id, { size: trimmedPresentation });
   }
 
   async function refreshCatalog() {
@@ -414,6 +433,13 @@ export function ProductsPage() {
       setSubmitError('El nombre del producto es obligatorio.');
       return;
     }
+    if (
+      productCatalogDraft.productType === 'SIMPLE' &&
+      !simpleProductPresentation.trim()
+    ) {
+      setSubmitError('La presentacion es obligatoria para productos simples.');
+      return;
+    }
     if (productImageDraft.error) {
       setSubmitError(productImageDraft.error);
       return;
@@ -451,6 +477,25 @@ export function ProductsPage() {
         setSubmitError(
           `Producto creado, pero imagen no pudo ${resolveProductImageMutationAction(productImageDraft)}. Abre editar para reintentar. ${translateCatalogError(
             imageError instanceof Error ? imageError.message : 'No se pudo guardar la imagen.',
+          )}`,
+        );
+        await refreshCatalog();
+        return;
+      }
+
+      try {
+        if (productCatalogDraft.productType === 'SIMPLE') {
+          await syncSimpleProductPresentation(createdProduct.id, simpleProductPresentation);
+        }
+      } catch (presentationError) {
+        addSessionProduct(persistedProduct);
+        resetCreateProductForm();
+        setMessage('Producto creado correctamente.');
+        setSubmitError(
+          `Producto creado, pero la presentacion no pudo guardarse. ${translateCatalogError(
+            presentationError instanceof Error
+              ? presentationError.message
+              : 'No se pudo actualizar la presentacion.',
           )}`,
         );
         await refreshCatalog();
@@ -545,6 +590,7 @@ export function ProductsPage() {
     setEditProductFiscalDraft(getProductFiscalDraft(product));
     setEditProductImageDraft(getProductImageDraft(product));
     setEditProductActive(product.active);
+    setEditSimpleProductPresentation(getSimpleProductPresentation(product));
     setEditProductFiscalSectionOpen(showFiscalFields && hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
     setSubmitError(null);
@@ -554,6 +600,13 @@ export function ProductsPage() {
     if (!selectedProduct) return;
     if (!editProductName.trim()) {
       setSubmitError('El nombre del producto es obligatorio.');
+      return;
+    }
+    if (
+      editProductCatalogDraft.productType === 'SIMPLE' &&
+      !editSimpleProductPresentation.trim()
+    ) {
+      setSubmitError('La presentacion es obligatoria para productos simples.');
       return;
     }
     if (editProductImageDraft.error) {
@@ -592,6 +645,24 @@ export function ProductsPage() {
         setSubmitError(
           `Producto actualizado, pero imagen no pudo ${resolveProductImageMutationAction(editProductImageDraft)}. ${translateCatalogError(
             imageError instanceof Error ? imageError.message : 'No se pudo actualizar la imagen.',
+          )}`,
+        );
+        await refreshCatalog();
+        return;
+      }
+
+      try {
+        if (editProductCatalogDraft.productType === 'SIMPLE') {
+          await syncSimpleProductPresentation(selectedProduct.id, editSimpleProductPresentation);
+        }
+      } catch (presentationError) {
+        setSelectedProduct(persistedProduct);
+        setMessage('Producto actualizado correctamente.');
+        setSubmitError(
+          `Producto actualizado, pero la presentacion no pudo guardarse. ${translateCatalogError(
+            presentationError instanceof Error
+              ? presentationError.message
+              : 'No se pudo actualizar la presentacion.',
           )}`,
         );
         await refreshCatalog();
@@ -646,10 +717,10 @@ export function ProductsPage() {
     if (!selectedVariant) return;
     const salePrice = parseNumberInput(editVariantPriceInput);
 
-    if ((!selectedVariant.is_operational && !editVariantSize.trim()) || !editVariantSku.trim()) {
+    if ((!selectedVariant.is_operational && !editVariantSize.trim()) || (!selectedVariant.is_operational && !editVariantSku.trim())) {
       setSubmitError(
         selectedVariant.is_operational
-          ? 'SKU POS obligatorio para la operacion simple.'
+          ? 'La operacion simple requiere una configuracion valida.'
           : 'Tamano y SKU de venta son obligatorios.',
       );
       return;
@@ -664,7 +735,7 @@ export function ProductsPage() {
       setSubmitError(null);
       await posApi.updateVariant(selectedVariant.id, {
         ...(selectedVariant.is_operational ? {} : { size: editVariantSize.trim() }),
-        sku: editVariantSku.trim(),
+        ...(selectedVariant.is_operational ? {} : { sku: editVariantSku.trim() }),
         sale_price: salePrice,
         active: editVariantActive,
       });
@@ -1281,6 +1352,18 @@ export function ProductsPage() {
                       }))
                     }
                   />
+                  {productCatalogDraft.productType === 'SIMPLE' ? (
+                    <Input
+                      label="Presentacion"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      value={simpleProductPresentation}
+                      onChange={(event) => setSimpleProductPresentation(event.target.value)}
+                      placeholder="Ej: Botella 350 ml"
+                      maxLength={80}
+                    />
+                  ) : null}
 
                   {showFiscalFields ? (
                     <ProductFiscalFieldsSection
@@ -1581,7 +1664,14 @@ export function ProductsPage() {
                         <div className="products-table-stack">
                           <p className="products-table-stack__title">{operationSummary.title}</p>
                           {operationSummary.detail ? (
-                            <p className="products-table-stack__detail">{operationSummary.detail}</p>
+                            <p
+                              className={clsx(
+                                'products-table-stack__detail',
+                                operationSummary.detailMono && 'products-table-stack__detail--mono',
+                              )}
+                            >
+                              {operationSummary.detail}
+                            </p>
                           ) : null}
                         </div>
                       );
@@ -1732,52 +1822,102 @@ export function ProductsPage() {
                 rowClassName={(product) =>
                   !product.active || !product.operationalVariant?.active ? 'opacity-80' : undefined
                 }
-                tableMinWidthClassName="min-w-[980px]"
+                tableMinWidthClassName="min-w-[1080px]"
                 columns={[
                   {
                     key: 'product',
                     header: 'Producto',
-                    render: (product) => (
-                      <div className="products-table-entity products-table-entity--with-media">
-                        <ProductMedia
-                          size="sm"
-                          label={product.name}
-                          src={product.imageUrl}
-                          alt={product.imageAlt ?? product.name}
-                          kind="SIMPLE"
-                          className="products-table-media"
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-[15px] font-semibold theme-text-strong">
-                            {product.name}
-                          </p>
+                    width: '360px',
+                    render: (product) => {
+                      const metaItems = getProductCardMetaItems(product);
+                      const summary = getProductTableSummary(product);
+
+                      return (
+                        <div className="products-table-entity products-table-entity--with-media">
+                          <ProductMedia
+                            size="sm"
+                            label={product.name}
+                            src={product.imageUrl}
+                            alt={product.imageAlt ?? product.name}
+                            kind="SIMPLE"
+                            className="products-table-media"
+                          />
+                          <div className="min-w-0">
+                            <div className="products-table-entity__title-row">
+                              <p className="truncate text-[15px] font-semibold theme-text-strong">
+                                {product.name}
+                              </p>
+                              <StatusBadge label="Simple" tone="default" />
+                            </div>
+                            {metaItems.length > 0 ? (
+                              <div className="products-table-meta">
+                                {metaItems.map((item) => (
+                                  <span
+                                    key={item.label}
+                                    className={clsx(
+                                      'products-table-meta__item',
+                                      item.mono && 'products-table-meta__item--mono',
+                                    )}
+                                  >
+                                    <span className="products-table-meta__label">{item.label}</span>
+                                    <span>{item.value}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                            {summary ? (
+                              <p className="products-table-entity__summary">{summary}</p>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                    ),
+                      );
+                    },
                   },
                   {
-                    key: 'sku',
-                    header: 'SKU de venta',
-                    width: '148px',
-                    cellClassName: 'font-mono text-[12px]',
-                    render: (product) => product.operationalVariant?.sku ?? 'Sin SKU',
+                    key: 'operation',
+                    header: 'Operacion',
+                    width: '220px',
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+                      const operationSummary = getProductOperationSummary(product, displayVariant);
+
+                      return (
+                        <div className="products-table-stack">
+                          <p className="products-table-stack__title">{operationSummary.title}</p>
+                          {operationSummary.detail ? (
+                            <p
+                              className={clsx(
+                                'products-table-stack__detail',
+                                operationSummary.detailMono && 'products-table-stack__detail--mono',
+                              )}
+                            >
+                              {operationSummary.detail}
+                            </p>
+                          ) : null}
+                        </div>
+                      );
+                    },
                   },
                   {
                     key: 'price',
                     header: 'Precio',
-                    width: '112px',
+                    width: '116px',
                     align: 'right',
                     cellClassName: 'whitespace-nowrap',
-                    render: (product) => (
-                      <span className="metric-accent text-[15px] font-semibold">
-                        {formatCurrency(Number(product.operationalVariant?.sale_price ?? 0))}
-                      </span>
-                    ),
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+
+                      return (
+                        <span className="products-table-price">
+                          {getProductCardPriceLabel(product, displayVariant)}
+                        </span>
+                      );
+                    },
                   },
                   {
                     key: 'status',
                     header: 'Estado',
-                    width: '132px',
+                    width: '128px',
                     render: (product) => (
                       <StatusBadge
                         label={getSimpleProductTableStatus(product)}
@@ -1793,13 +1933,15 @@ export function ProductsPage() {
                           header: 'Receta',
                           width: '128px',
                           render: (product: EnrichedCatalogProduct) => {
-                            const variant = product.operationalVariant;
-                            const hasRecipe = variant ? recipeStatusByVariant[variant.id] ?? false : false;
+                            const recipeState = getProductCardRecipeState(
+                              product,
+                              recipeStatusByVariant,
+                            );
 
                             return (
                               <StatusBadge
-                                label={hasRecipe ? 'Con receta' : 'Sin receta'}
-                                tone={hasRecipe ? 'info' : 'warning'}
+                                label={recipeState.label}
+                                tone={recipeState.tone}
                                 className="min-w-[112px] justify-center"
                               />
                             );
@@ -2071,6 +2213,15 @@ export function ProductsPage() {
               }))
             }
           />
+          {editProductCatalogDraft.productType === 'SIMPLE' ? (
+            <Input
+              label="Presentacion"
+              value={editSimpleProductPresentation}
+              onChange={(event) => setEditSimpleProductPresentation(event.target.value)}
+              placeholder="Ej: Botella 350 ml"
+              maxLength={80}
+            />
+          ) : null}
           {showFiscalFields ? (
             <ProductFiscalFieldsSection
               open={editProductFiscalSectionOpen}
@@ -2145,12 +2296,14 @@ export function ProductsPage() {
               placeholder="Ej: 16oz"
             />
           )}
-          <Input
-            label={selectedVariant?.is_operational ? 'SKU POS' : 'SKU de venta'}
-            value={editVariantSku}
-            onChange={(event) => setEditVariantSku(event.target.value)}
-            placeholder={selectedVariant?.is_operational ? 'Ej: CAF-BASE' : 'Ej: LAT-AV-16'}
-          />
+          {selectedVariant?.is_operational ? null : (
+            <Input
+              label="SKU de venta"
+              value={editVariantSku}
+              onChange={(event) => setEditVariantSku(event.target.value)}
+              placeholder="Ej: LAT-AV-16"
+            />
+          )}
           <Input
             type="number"
             min={0}
@@ -2536,27 +2689,24 @@ function getProductCardRecipeState(
 }
 
 function getProductTableSummary(product: EnrichedCatalogProduct) {
-  const description = product.description?.trim();
-  if (description) return description;
-
   return null;
 }
 
 function getProductOperationSummary(
   product: EnrichedCatalogProduct,
   variant: CatalogVariant | null,
-) {
+): { title: string; detail?: string; detailMono?: boolean } {
   if (product.productType === 'SIMPLE') {
     if (!variant) {
       return {
-        title: 'Sin operacion',
-        detail: 'Requiere refresh',
+        title: 'Sin presentacion',
+        detail: undefined,
       };
     }
 
     return {
-      title: 'POS simple',
-      detail: variant.active ? `SKU ${variant.sku}` : 'POS inactivo',
+      title: variant.size.trim() || 'Sin presentacion',
+      detail: undefined,
     };
   }
 
@@ -2576,19 +2726,19 @@ function getProductOperationSummary(
   if (sizes.length > 0) {
     return {
       title: sizes.join(' - '),
-      detail: undefined,
+      detail: `${comparableVariants.length} ${comparableVariants.length === 1 ? 'variante' : 'variantes'}`,
     };
   }
 
   if (comparableVariants.length > 0) {
     return {
-      title: 'Sin tamano definido',
+      title: 'Presentaciones por definir',
       detail: `${comparableVariants.length} variantes`,
     };
   }
 
   return {
-    title: 'Sin variantes activas',
+    title: 'Sin variantes configuradas',
     detail: 'Pendiente',
   };
 }
@@ -2610,7 +2760,7 @@ function matchesProductSearch(product: EnrichedCatalogProduct, searchTerm: strin
   const candidate = [
     product.name,
     product.internalCode ?? '',
-    product.operationalVariant?.sku ?? '',
+    ...(product.productType === 'SIMPLE' ? [] : [product.operationalVariant?.sku ?? '']),
     ...product.relatedVariants.map((variant) => variant.sku),
   ]
     .join(' ')
@@ -2623,10 +2773,20 @@ function matchesSimpleProductSearch(product: EnrichedCatalogProduct, searchTerm:
   const normalizedSearch = normalizeCatalogSearch(searchTerm);
   if (!normalizedSearch) return true;
 
-  return [product.name, product.internalCode ?? '', product.operationalVariant?.sku ?? '']
+  return [product.name, product.internalCode ?? '']
     .join(' ')
     .toLocaleLowerCase()
     .includes(normalizedSearch);
+}
+
+function getSimpleProductPresentation(product: {
+  productType: ProductType;
+  variants?: Array<{ size: string; active?: boolean }>;
+}) {
+  if (product.productType !== 'SIMPLE') return '';
+
+  const operationalVariant = product.variants?.find((variant) => variant.active) ?? product.variants?.[0];
+  return operationalVariant?.size ?? '';
 }
 
 function matchesVariantSearch(variant: CatalogVariant, searchTerm: string) {
@@ -2776,6 +2936,7 @@ function translateCatalogError(message: string) {
   if (message === 'Product name already exists') return 'Ya existe un producto con ese nombre.';
   if (message === 'Product internal code already exists') return 'Ya existe un producto con ese codigo interno.';
   if (message === 'Product barcode already exists') return 'Ya existe un producto con ese codigo de barras.';
+  if (message === 'Simple product SKU already exists') return 'Ya existe una variante u operacion con ese SKU.';
   if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
   if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
   if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';

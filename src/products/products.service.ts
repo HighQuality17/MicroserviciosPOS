@@ -435,6 +435,10 @@ export class ProductsService {
         throw new ConflictException('Product barcode already exists');
       }
 
+      if (target.includes('sku')) {
+        throw new ConflictException('Simple product SKU already exists');
+      }
+
       throw new ConflictException('Product unique field already exists');
     }
 
