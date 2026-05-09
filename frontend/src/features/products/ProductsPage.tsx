@@ -1267,6 +1267,285 @@ export function ProductsPage() {
         ]
       : []),
   ];
+
+  function renderMobileInfoItem(
+    label: string,
+    value: ReactNode,
+    options?: { accent?: 'price' | 'default' },
+  ) {
+    return (
+      <div className="products-mobile-card__info-item">
+        <span className="products-mobile-card__info-label">{label}</span>
+        <div
+          className={clsx(
+            'products-mobile-card__info-value',
+            options?.accent === 'price' && 'products-mobile-card__info-value--price',
+          )}
+        >
+          {value}
+        </div>
+      </div>
+    );
+  }
+
+  function renderMobileEntityHeader(
+    label: string,
+    image: { src: string | null; alt: string | null; kind: 'SIMPLE' | 'VARIANT' },
+    chip: { label: string; tone: 'info' | 'default' },
+    sku?: string | null,
+  ) {
+    return (
+      <div className="products-mobile-card__header">
+        <ProductMedia
+          size="sm"
+          label={label}
+          src={image.src}
+          alt={image.alt ?? label}
+          kind={image.kind}
+          className="products-mobile-card__media"
+        />
+        <div className="min-w-0 products-mobile-card__header-copy">
+          <p className="products-mobile-card__name">{label}</p>
+          <StatusBadge label={chip.label} tone={chip.tone} className="products-mobile-card__type" />
+          {sku ? <p className="products-mobile-card__sku">SKU {sku}</p> : null}
+        </div>
+      </div>
+    );
+  }
+
+  function renderProductMobileCard(product: EnrichedCatalogProduct) {
+    const displayVariant = getProductCardVariant(product);
+    const operationSummary = getProductOperationSummary(product, displayVariant);
+    const recipeState = showRecipeModule
+      ? getProductCardRecipeState(product, recipeStatusByVariant)
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          product.name,
+          {
+            src: product.imageUrl,
+            alt: product.imageAlt,
+            kind: product.productType === 'VARIANT' ? 'VARIANT' : 'SIMPLE',
+          },
+          {
+            label: product.productType === 'SIMPLE' ? 'Simple' : 'Variantes',
+            tone: 'info',
+          },
+          product.internalCode,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem('Operacion', operationSummary.title || 'Sin presentacion')}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {getProductCardPriceLabel(product, displayVariant)}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge
+              label={product.active ? 'Activo' : 'Inactivo'}
+              tone={product.active ? 'success' : 'default'}
+            />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem(
+                'Receta',
+                <StatusBadge label={recipeState.label} tone={recipeState.tone} />,
+              )
+            : null}
+        </div>
+        {canManageCatalog ? (
+          <div className="products-mobile-card__actions">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="product-editor-dialog"
+              onClick={() => openProductEditor(product)}
+            >
+              Editar
+            </Button>
+            <Button
+              variant="ghost"
+              className={product.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleProductStatus(product)}
+            >
+              {product.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestProductDelete(product)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderSimpleProductMobileCard(product: EnrichedCatalogProduct) {
+    const displayVariant = getProductCardVariant(product);
+    const recipeState = showRecipeModule
+      ? getProductCardRecipeState(product, recipeStatusByVariant)
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          product.name,
+          { src: product.imageUrl, alt: product.imageAlt, kind: 'SIMPLE' },
+          { label: 'Simple', tone: 'info' },
+          product.internalCode,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem(
+            'Presentacion',
+            displayVariant?.size.trim() || 'Sin presentacion',
+          )}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {getProductCardPriceLabel(product, displayVariant)}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge
+              label={getSimpleProductTableStatus(product)}
+              tone={product.active && product.operationalVariant?.active ? 'success' : 'default'}
+            />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem(
+                'Receta',
+                <StatusBadge label={recipeState.label} tone={recipeState.tone} />,
+              )
+            : null}
+        </div>
+        {canManageCatalog && product.operationalVariant ? (
+          <div className="products-mobile-card__actions products-mobile-card__actions--grid">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="product-editor-dialog"
+              onClick={() => openProductEditor(product)}
+            >
+              Editar
+            </Button>
+            {showRecipeModule ? (
+              <Button
+                variant="secondary"
+                className="action-soft-brand"
+                aria-haspopup="dialog"
+                aria-controls="recipe-manager-dialog"
+                onClick={() => void openRecipeManager(product.operationalVariant!)}
+              >
+                Receta
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              className={product.operationalVariant.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}
+            >
+              {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestProductDelete(product)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderVariantMobileCard(variant: CatalogVariant) {
+    const recipeState = showRecipeModule
+      ? {
+          label: recipeStatusByVariant[variant.id] ? 'Con receta' : 'Sin receta',
+          tone: recipeStatusByVariant[variant.id] ? ('info' as const) : ('warning' as const),
+        }
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          variant.product_name,
+          { src: variant.image_url, alt: variant.image_alt, kind: 'VARIANT' },
+          { label: 'Variante', tone: 'info' },
+          variant.sku,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem('Presentacion', variant.size || 'Sin tamano')}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {formatCurrency(Number(variant.sale_price))}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge label={variant.active ? 'Activa' : 'Inactiva'} tone={variant.active ? 'success' : 'default'} />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem('Receta', <StatusBadge label={recipeState.label} tone={recipeState.tone} />)
+            : null}
+        </div>
+        {canManageCatalog ? (
+          <div className="products-mobile-card__actions products-mobile-card__actions--grid">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="variant-editor-dialog"
+              onClick={() => openVariantEditor(variant)}
+            >
+              Editar
+            </Button>
+            {showRecipeModule ? (
+              <Button
+                variant="secondary"
+                className="action-soft-brand"
+                aria-haspopup="dialog"
+                aria-controls="recipe-manager-dialog"
+                onClick={() => void openRecipeManager(variant)}
+              >
+                Receta
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              className={variant.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleVariantStatus(variant)}
+            >
+              {variant.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestVariantDelete(variant)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
   return (
     <div className="products-page products-page--catalog grid min-w-0 gap-4 sm:gap-5">
       <ModulePageHeader
@@ -1667,6 +1946,7 @@ export function ProductsPage() {
                 ariaLabel="Listado de productos"
                 caption="Tabla general de productos del catalogo"
                 rows={filteredProducts}
+                mobileCardRender={(product) => renderProductMobileCard(product)}
                 rowKey={(product) => product.id}
                 rowClassName={(product) => (!product.active ? 'opacity-80' : undefined)}
                 tableMinWidthClassName="min-w-[1080px]"
@@ -1889,6 +2169,7 @@ export function ProductsPage() {
                 ariaLabel="Listado de productos simples"
                 caption="Tabla de productos simples con operacion unificada"
                 rows={visibleSimpleProductsWithOperation}
+                mobileCardRender={(product) => renderSimpleProductMobileCard(product)}
                 rowKey={(product) => product.id}
                 rowClassName={(product) =>
                   !product.active || !product.operationalVariant?.active ? 'opacity-80' : undefined
@@ -2093,6 +2374,7 @@ export function ProductsPage() {
                 ariaLabel="Listado de variantes"
                 caption="Tabla de variantes del catalogo"
                 rows={filteredRealVariants}
+                mobileCardRender={(variant) => renderVariantMobileCard(variant)}
                 rowKey={(variant) => variant.id}
                 rowClassName={(variant) => (!variant.active ? 'opacity-80' : undefined)}
                 tableMinWidthClassName="min-w-[1040px]"
