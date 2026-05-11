@@ -56,11 +56,6 @@ type ComboCompositionDraftItem = {
   variant: CatalogVariant;
 };
 
-type CombosToolbarBadge = {
-  label: string;
-  tone?: 'default' | 'success' | 'warning' | 'danger' | 'info';
-};
-
 type ComboWorkspaceTab = 'COMBO' | 'COMPOSITION';
 type ComboStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'PENDING';
 
@@ -736,7 +731,7 @@ export function CombosPage() {
       : activeCombosCount === 0
         ? 'Sin activos'
         : readyCombosCount === activeCombosCount
-          ? 'POS listo'
+          ? 'Listo'
           : readyCombosCount > 0
             ? 'Cobertura parcial'
             : 'Pendiente';
@@ -784,7 +779,7 @@ export function CombosPage() {
       },
     },
     {
-      label: 'Listos POS',
+      label: 'Listos',
       value: String(readyCombosCount),
       note: loadingCatalog
         ? 'Verificando'
@@ -798,20 +793,6 @@ export function CombosPage() {
         label: comboReadyBadgeLabel,
         tone: comboCoverageTone,
       },
-    },
-  ];
-  const comboToolbarBadges: CombosToolbarBadge[] = [
-    {
-      label: `${activeCombosCount} activos`,
-      tone: activeCombosCount > 0 ? 'success' : 'default',
-    },
-    {
-      label: `${variants.length} items base`,
-      tone: variants.length > 0 ? 'info' : 'default',
-    },
-    {
-      label: `${readyCombosCount} listos POS`,
-      tone: comboCoverageTone,
     },
   ];
   const comboWorkspaceTabLabel =
@@ -829,10 +810,6 @@ export function CombosPage() {
     : variants.length > 0
       ? `${activeVariantsCount} items activos`
       : 'Sin items base';
-  const comboListCountLabel = comboSearch.trim() || comboStatusFilter !== 'ALL'
-    ? `${filteredCombos.length} coincidencias`
-    : `${combos.length} combos`;
-
   function renderMobileInfoItem(label: string, value: ReactNode) {
     return (
       <div className="products-mobile-card__info-item">
@@ -1220,8 +1197,6 @@ export function CombosPage() {
 
             <CombosListToolbar
               label="Vista activa"
-              value={comboListCountLabel}
-              badges={comboToolbarBadges}
               searchValue={comboSearch}
               onSearchChange={setComboSearch}
               activeFilter={comboStatusFilter}
@@ -1301,20 +1276,6 @@ export function CombosPage() {
                               tone={combo.items.length > 0 ? 'info' : 'default'}
                             />
                           </div>
-                          <div className="products-table-meta">
-                            <span className="products-table-meta__item">
-                              <span className="products-table-meta__label">Precio</span>
-                              <span className="font-medium theme-text-strong">
-                                {formatCurrency(Number(combo.sale_price))}
-                              </span>
-                            </span>
-                            <span className="products-table-meta__item">
-                              <span className="products-table-meta__label">POS</span>
-                              <span className="font-medium theme-text-strong">
-                                {getComboCoverageState(combo).label}
-                              </span>
-                            </span>
-                          </div>
                         </div>
                       </div>
                     ),
@@ -1326,12 +1287,7 @@ export function CombosPage() {
                     render: (combo) => (
                       <div className="products-table-stack">
                         <p className="products-table-stack__title">
-                          {combo.items.length > 0
-                            ? `${combo.items.length} items`
-                            : 'Sin composicion'}
-                        </p>
-                        <p className="products-table-stack__detail">
-                          {getComboCompositionSummary(combo)}
+                          {combo.items.length > 0 ? getComboCompositionSummary(combo) : 'Sin composicion'}
                         </p>
                       </div>
                     ),
@@ -1770,7 +1726,7 @@ function getComboCoverageState(combo: CatalogCombo): {
   }
 
   if (combo.items.length > 0) {
-    return { label: 'Listo POS', tone: 'success' };
+    return { label: 'Listo', tone: 'success' };
   }
 
   return { label: 'Pendiente', tone: 'warning' };
@@ -1845,8 +1801,8 @@ function getComboCompositionSummary(combo: CatalogCombo) {
   }
 
   const previewItems = combo.items.slice(0, 2).map((item) => {
-    const subtitle = formatVariantSubtitle(item.variant);
-    const parts = [formatVariantDisplayName(item.variant), subtitle, `cant. ${item.qty}`].filter(
+    const size = item.variant.size.trim();
+    const parts = [item.variant.product_name, size, `qty ${item.qty}`].filter(
       Boolean,
     );
 
@@ -1932,8 +1888,6 @@ function CombosSegmentedControl<T extends string>({
 
 function CombosListToolbar({
   label,
-  value,
-  badges = [],
   searchValue,
   onSearchChange,
   activeFilter,
@@ -1942,8 +1896,6 @@ function CombosListToolbar({
   action,
 }: {
   label: string;
-  value: string;
-  badges?: CombosToolbarBadge[];
   searchValue: string;
   onSearchChange: (value: string) => void;
   activeFilter: ComboStatusFilter;
@@ -1955,7 +1907,6 @@ function CombosListToolbar({
     <div className="products-list-toolbar toolbar-shell mt-4 grid gap-3 rounded-lg px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
       <div className="products-list-toolbar__summary">
         <p className="products-list-toolbar__label">{label}</p>
-        <p className="products-list-toolbar__count">{value}</p>
       </div>
       <div className="products-list-toolbar__controls flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
         <SearchField
@@ -1986,17 +1937,6 @@ function CombosListToolbar({
             </button>
           ))}
         </div>
-        {badges.length > 0 ? (
-          <div className="products-list-toolbar__filters flex flex-wrap justify-end gap-2">
-            {badges.map((badge) => (
-              <StatusBadge
-                key={`${badge.label}-${badge.tone ?? 'default'}`}
-                label={badge.label}
-                tone={badge.tone ?? 'default'}
-              />
-            ))}
-          </div>
-        ) : null}
         {action ? <div className="combos-toolbar-action-slot">{action}</div> : null}
       </div>
     </div>
