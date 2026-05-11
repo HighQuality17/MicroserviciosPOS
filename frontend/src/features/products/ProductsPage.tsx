@@ -86,6 +86,8 @@ type EnrichedCatalogProduct = CatalogProduct & {
   relatedVariants: CatalogVariant[];
 };
 
+const PRESENTATION_MAX_LENGTH = 15;
+
 const unitsByDimension: Record<IngredientDimension, string[]> = {
   WEIGHT: ['g', 'kg'],
   VOLUME: ['ml', 'L'],
@@ -150,6 +152,8 @@ export function ProductsPage() {
     createEmptyProductImageDraft(),
   );
   const [productActive, setProductActive] = useState(true);
+  const [simpleProductPresentation, setSimpleProductPresentation] = useState('');
+  const [simpleProductPriceInput, setSimpleProductPriceInput] = useState('');
   const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
   const [productListFilter, setProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -189,6 +193,9 @@ export function ProductsPage() {
     createEmptyProductImageDraft(),
   );
   const [editProductActive, setEditProductActive] = useState(true);
+  const [editSimpleProductPresentation, setEditSimpleProductPresentation] = useState('');
+  const [editSimpleProductPriceInput, setEditSimpleProductPriceInput] = useState('');
+  const [editSimpleProductOperationActive, setEditSimpleProductOperationActive] = useState(true);
   const [editProductFiscalSectionOpen, setEditProductFiscalSectionOpen] = useState(false);
   const [editVariantSize, setEditVariantSize] = useState('');
   const [editVariantSku, setEditVariantSku] = useState('');
@@ -354,6 +361,8 @@ export function ProductsPage() {
     setProductFiscalDraft(createEmptyProductFiscalDraft());
     setProductImageDraft(createEmptyProductImageDraft());
     setProductActive(true);
+    setSimpleProductPresentation('');
+    setSimpleProductPriceInput('');
     setProductFiscalSectionOpen(false);
   }
 
@@ -410,8 +419,28 @@ export function ProductsPage() {
   }
 
   async function handleCreateProduct() {
+    const simpleSalePrice = parseNumberInput(simpleProductPriceInput);
+
     if (!productName.trim()) {
       setSubmitError('El nombre del producto es obligatorio.');
+      return;
+    }
+    if (
+      productCatalogDraft.productType === 'SIMPLE' &&
+      !simpleProductPresentation.trim()
+    ) {
+      setSubmitError('La presentacion es obligatoria para productos simples.');
+      return;
+    }
+    if (simpleProductPresentation.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('La presentacion no puede superar 15 caracteres.');
+      return;
+    }
+    if (
+      productCatalogDraft.productType === 'SIMPLE' &&
+      (simpleSalePrice === null || simpleSalePrice < 0)
+    ) {
+      setSubmitError('El precio de venta debe ser mayor o igual a 0.');
       return;
     }
     if (productImageDraft.error) {
@@ -426,6 +455,9 @@ export function ProductsPage() {
 
       const createdProduct = await posApi.createProduct({
         name: productName.trim(),
+        ...(productCatalogDraft.productType === 'SIMPLE'
+          ? { simplePresentation: simpleProductPresentation.trim() }
+          : {}),
         ...serializeProductCatalogDraft(productCatalogDraft),
         ...serializeProductFiscalDraft(
           showFiscalFields ? productFiscalDraft : createEmptyProductFiscalDraft(),
@@ -434,6 +466,12 @@ export function ProductsPage() {
       });
 
       let persistedProduct = createdProduct;
+      const operationalVariant = getSimpleOperationalVariant(createdProduct);
+
+      if (productCatalogDraft.productType === 'SIMPLE' && !operationalVariant) {
+        setSubmitError('No se pudo preparar la operacion simple del producto.');
+        return;
+      }
 
       try {
         const imageProduct = await persistProductImageDraft(
@@ -455,6 +493,28 @@ export function ProductsPage() {
         );
         await refreshCatalog();
         return;
+      }
+
+      if (productCatalogDraft.productType === 'SIMPLE' && operationalVariant) {
+        try {
+          await posApi.updateVariant(operationalVariant.id, {
+            sale_price: simpleSalePrice ?? 0,
+            active: productActive,
+          });
+        } catch (operationError) {
+          addSessionProduct(persistedProduct);
+          resetCreateProductForm();
+          setMessage('Producto creado correctamente.');
+          setSubmitError(
+            `Producto creado, pero precio de venta no pudo guardarse. ${translateCatalogError(
+              operationError instanceof Error
+                ? operationError.message
+                : 'No se pudo actualizar la operacion simple.',
+            )}`,
+          );
+          await refreshCatalog();
+          return;
+        }
       }
 
       addSessionProduct(persistedProduct);
@@ -495,6 +555,10 @@ export function ProductsPage() {
     }
     if (!variantSize.trim()) {
       setSubmitError('El tamano es obligatorio.');
+      return;
+    }
+    if (variantSize.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('El tamano no puede superar 15 caracteres.');
       return;
     }
     if (!variantSku.trim()) {
@@ -539,12 +603,19 @@ export function ProductsPage() {
   }
 
   function openProductEditor(product: CatalogProduct) {
+    const operationalVariant = getSimpleOperationalVariant(product);
+
     setSelectedProduct(product);
     setEditProductName(product.name);
     setEditProductCatalogDraft(getProductCatalogDraft(product));
     setEditProductFiscalDraft(getProductFiscalDraft(product));
     setEditProductImageDraft(getProductImageDraft(product));
     setEditProductActive(product.active);
+    setEditSimpleProductPresentation(getSimpleProductPresentation(product));
+    setEditSimpleProductPriceInput(
+      operationalVariant ? String(Number(operationalVariant.sale_price)) : '',
+    );
+    setEditSimpleProductOperationActive(operationalVariant?.active ?? product.active);
     setEditProductFiscalSectionOpen(showFiscalFields && hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
     setSubmitError(null);
@@ -552,8 +623,28 @@ export function ProductsPage() {
 
   async function handleSaveProduct() {
     if (!selectedProduct) return;
+    const simpleSalePrice = parseNumberInput(editSimpleProductPriceInput);
+
     if (!editProductName.trim()) {
       setSubmitError('El nombre del producto es obligatorio.');
+      return;
+    }
+    if (
+      editProductCatalogDraft.productType === 'SIMPLE' &&
+      !editSimpleProductPresentation.trim()
+    ) {
+      setSubmitError('La presentacion es obligatoria para productos simples.');
+      return;
+    }
+    if (editSimpleProductPresentation.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('La presentacion no puede superar 15 caracteres.');
+      return;
+    }
+    if (
+      editProductCatalogDraft.productType === 'SIMPLE' &&
+      (simpleSalePrice === null || simpleSalePrice < 0)
+    ) {
+      setSubmitError('El precio de venta debe ser mayor o igual a 0.');
       return;
     }
     if (editProductImageDraft.error) {
@@ -568,6 +659,9 @@ export function ProductsPage() {
 
       const updatedProduct = await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
+        ...(editProductCatalogDraft.productType === 'SIMPLE'
+          ? { simplePresentation: editSimpleProductPresentation.trim() }
+          : {}),
         ...serializeProductCatalogDraft(editProductCatalogDraft),
         ...serializeProductFiscalDraft(
           showFiscalFields ? editProductFiscalDraft : getProductFiscalDraft(selectedProduct),
@@ -596,6 +690,37 @@ export function ProductsPage() {
         );
         await refreshCatalog();
         return;
+      }
+
+      if (editProductCatalogDraft.productType === 'SIMPLE') {
+        const operationalVariant = getSimpleOperationalVariant(updatedProduct);
+
+        if (!operationalVariant) {
+          setSelectedProduct(persistedProduct);
+          setMessage('Producto actualizado correctamente.');
+          setSubmitError('No se pudo localizar la operacion simple del producto.');
+          await refreshCatalog();
+          return;
+        }
+
+        try {
+          await posApi.updateVariant(operationalVariant.id, {
+            sale_price: simpleSalePrice ?? 0,
+            active: editSimpleProductOperationActive,
+          });
+        } catch (operationError) {
+          setSelectedProduct(persistedProduct);
+          setMessage('Producto actualizado correctamente.');
+          setSubmitError(
+            `Producto actualizado, pero precio de venta no pudo guardarse. ${translateCatalogError(
+              operationError instanceof Error
+                ? operationError.message
+                : 'No se pudo actualizar la operacion simple.',
+            )}`,
+          );
+          await refreshCatalog();
+          return;
+        }
       }
 
       setSelectedProduct(persistedProduct);
@@ -633,6 +758,8 @@ export function ProductsPage() {
   }
 
   function openVariantEditor(variant: CatalogVariant) {
+    if (variant.is_operational) return;
+
     setSelectedVariant(variant);
     setEditVariantSize(variant.size);
     setEditVariantSku(variant.sku);
@@ -646,12 +773,14 @@ export function ProductsPage() {
     if (!selectedVariant) return;
     const salePrice = parseNumberInput(editVariantPriceInput);
 
-    if ((!selectedVariant.is_operational && !editVariantSize.trim()) || !editVariantSku.trim()) {
+    if (!editVariantSize.trim() || !editVariantSku.trim()) {
       setSubmitError(
-        selectedVariant.is_operational
-          ? 'SKU POS obligatorio para la operacion simple.'
-          : 'Tamano y SKU de venta son obligatorios.',
+        'Tamano y SKU de venta son obligatorios.',
       );
+      return;
+    }
+    if (editVariantSize.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('El tamano no puede superar 15 caracteres.');
       return;
     }
     if (salePrice === null || salePrice < 0) {
@@ -663,17 +792,13 @@ export function ProductsPage() {
       setEditingVariant(true);
       setSubmitError(null);
       await posApi.updateVariant(selectedVariant.id, {
-        ...(selectedVariant.is_operational ? {} : { size: editVariantSize.trim() }),
+        size: editVariantSize.trim(),
         sku: editVariantSku.trim(),
         sale_price: salePrice,
         active: editVariantActive,
       });
       setVariantEditorOpen(false);
-      setMessage(
-        selectedVariant.is_operational
-          ? 'Operacion simple actualizada correctamente.'
-          : 'Variante actualizada correctamente.',
-      );
+      setMessage('Variante actualizada correctamente.');
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -1142,6 +1267,285 @@ export function ProductsPage() {
         ]
       : []),
   ];
+
+  function renderMobileInfoItem(
+    label: string,
+    value: ReactNode,
+    options?: { accent?: 'price' | 'default' },
+  ) {
+    return (
+      <div className="products-mobile-card__info-item">
+        <span className="products-mobile-card__info-label">{label}</span>
+        <div
+          className={clsx(
+            'products-mobile-card__info-value',
+            options?.accent === 'price' && 'products-mobile-card__info-value--price',
+          )}
+        >
+          {value}
+        </div>
+      </div>
+    );
+  }
+
+  function renderMobileEntityHeader(
+    label: string,
+    image: { src: string | null; alt: string | null; kind: 'SIMPLE' | 'VARIANT' },
+    chip: { label: string; tone: 'info' | 'default' },
+    sku?: string | null,
+  ) {
+    return (
+      <div className="products-mobile-card__header">
+        <ProductMedia
+          size="sm"
+          label={label}
+          src={image.src}
+          alt={image.alt ?? label}
+          kind={image.kind}
+          className="products-mobile-card__media"
+        />
+        <div className="min-w-0 products-mobile-card__header-copy">
+          <p className="products-mobile-card__name">{label}</p>
+          <StatusBadge label={chip.label} tone={chip.tone} className="products-mobile-card__type" />
+          {sku ? <p className="products-mobile-card__sku">SKU {sku}</p> : null}
+        </div>
+      </div>
+    );
+  }
+
+  function renderProductMobileCard(product: EnrichedCatalogProduct) {
+    const displayVariant = getProductCardVariant(product);
+    const operationSummary = getProductOperationSummary(product, displayVariant);
+    const recipeState = showRecipeModule
+      ? getProductCardRecipeState(product, recipeStatusByVariant)
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          product.name,
+          {
+            src: product.imageUrl,
+            alt: product.imageAlt,
+            kind: product.productType === 'VARIANT' ? 'VARIANT' : 'SIMPLE',
+          },
+          {
+            label: product.productType === 'SIMPLE' ? 'Simple' : 'Variantes',
+            tone: 'info',
+          },
+          product.internalCode,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem('Operacion', operationSummary.title || 'Sin presentacion')}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {getProductCardPriceLabel(product, displayVariant)}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge
+              label={product.active ? 'Activo' : 'Inactivo'}
+              tone={product.active ? 'success' : 'default'}
+            />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem(
+                'Receta',
+                <StatusBadge label={recipeState.label} tone={recipeState.tone} />,
+              )
+            : null}
+        </div>
+        {canManageCatalog ? (
+          <div className="products-mobile-card__actions">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="product-editor-dialog"
+              onClick={() => openProductEditor(product)}
+            >
+              Editar
+            </Button>
+            <Button
+              variant="ghost"
+              className={product.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleProductStatus(product)}
+            >
+              {product.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestProductDelete(product)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderSimpleProductMobileCard(product: EnrichedCatalogProduct) {
+    const displayVariant = getProductCardVariant(product);
+    const recipeState = showRecipeModule
+      ? getProductCardRecipeState(product, recipeStatusByVariant)
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          product.name,
+          { src: product.imageUrl, alt: product.imageAlt, kind: 'SIMPLE' },
+          { label: 'Simple', tone: 'info' },
+          product.internalCode,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem(
+            'Presentacion',
+            displayVariant?.size.trim() || 'Sin presentacion',
+          )}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {getProductCardPriceLabel(product, displayVariant)}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge
+              label={getSimpleProductTableStatus(product)}
+              tone={product.active && product.operationalVariant?.active ? 'success' : 'default'}
+            />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem(
+                'Receta',
+                <StatusBadge label={recipeState.label} tone={recipeState.tone} />,
+              )
+            : null}
+        </div>
+        {canManageCatalog && product.operationalVariant ? (
+          <div className="products-mobile-card__actions products-mobile-card__actions--grid">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="product-editor-dialog"
+              onClick={() => openProductEditor(product)}
+            >
+              Editar
+            </Button>
+            {showRecipeModule ? (
+              <Button
+                variant="secondary"
+                className="action-soft-brand"
+                aria-haspopup="dialog"
+                aria-controls="recipe-manager-dialog"
+                onClick={() => void openRecipeManager(product.operationalVariant!)}
+              >
+                Receta
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              className={product.operationalVariant.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}
+            >
+              {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestProductDelete(product)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderVariantMobileCard(variant: CatalogVariant) {
+    const recipeState = showRecipeModule
+      ? {
+          label: recipeStatusByVariant[variant.id] ? 'Con receta' : 'Sin receta',
+          tone: recipeStatusByVariant[variant.id] ? ('info' as const) : ('warning' as const),
+        }
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          variant.product_name,
+          { src: variant.image_url, alt: variant.image_alt, kind: 'VARIANT' },
+          { label: 'Variante', tone: 'info' },
+          variant.sku,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem('Presentacion', variant.size || 'Sin tamano')}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {formatCurrency(Number(variant.sale_price))}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge label={variant.active ? 'Activa' : 'Inactiva'} tone={variant.active ? 'success' : 'default'} />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem('Receta', <StatusBadge label={recipeState.label} tone={recipeState.tone} />)
+            : null}
+        </div>
+        {canManageCatalog ? (
+          <div className="products-mobile-card__actions products-mobile-card__actions--grid">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="variant-editor-dialog"
+              onClick={() => openVariantEditor(variant)}
+            >
+              Editar
+            </Button>
+            {showRecipeModule ? (
+              <Button
+                variant="secondary"
+                className="action-soft-brand"
+                aria-haspopup="dialog"
+                aria-controls="recipe-manager-dialog"
+                onClick={() => void openRecipeManager(variant)}
+              >
+                Receta
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              className={variant.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleVariantStatus(variant)}
+            >
+              {variant.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestVariantDelete(variant)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
   return (
     <div className="products-page products-page--catalog grid min-w-0 gap-4 sm:gap-5">
       <ModulePageHeader
@@ -1281,6 +1685,34 @@ export function ProductsPage() {
                       }))
                     }
                   />
+                  {productCatalogDraft.productType === 'SIMPLE' ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input
+                        label="Presentacion"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={simpleProductPresentation}
+                        onChange={(event) => setSimpleProductPresentation(event.target.value)}
+                        placeholder="Ej: Botella 350 ml"
+                        maxLength={15}
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        label="Precio de venta"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={simpleProductPriceInput}
+                        onChange={(event) => {
+                          const nextValue = normalizeNumberInput(event.target.value);
+                          if (nextValue !== null) setSimpleProductPriceInput(nextValue);
+                        }}
+                        placeholder="Ej: 12000"
+                      />
+                    </div>
+                  ) : null}
 
                   {showFiscalFields ? (
                     <ProductFiscalFieldsSection
@@ -1385,6 +1817,7 @@ export function ProductsPage() {
                       value={variantSize}
                       onChange={(event) => setVariantSize(event.target.value)}
                       placeholder="Ej: 12oz"
+                      maxLength={15}
                     />
                     <Input
                       label="SKU de venta"
@@ -1513,6 +1946,7 @@ export function ProductsPage() {
                 ariaLabel="Listado de productos"
                 caption="Tabla general de productos del catalogo"
                 rows={filteredProducts}
+                mobileCardRender={(product) => renderProductMobileCard(product)}
                 rowKey={(product) => product.id}
                 rowClassName={(product) => (!product.active ? 'opacity-80' : undefined)}
                 tableMinWidthClassName="min-w-[1080px]"
@@ -1537,12 +1971,12 @@ export function ProductsPage() {
                           />
                           <div className="min-w-0">
                             <div className="products-table-entity__title-row">
-                              <p className="truncate text-[15px] font-semibold theme-text-strong">
+                              <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
                                 {product.name}
                               </p>
                               <StatusBadge
                                 label={product.productType === 'SIMPLE' ? 'Simple' : 'Variantes'}
-                                tone={product.productType === 'VARIANT' ? 'info' : 'default'}
+                                tone="info"
                               />
                             </div>
                             {metaItems.length > 0 ? (
@@ -1581,7 +2015,14 @@ export function ProductsPage() {
                         <div className="products-table-stack">
                           <p className="products-table-stack__title">{operationSummary.title}</p>
                           {operationSummary.detail ? (
-                            <p className="products-table-stack__detail">{operationSummary.detail}</p>
+                            <p
+                              className={clsx(
+                                'products-table-stack__detail',
+                                operationSummary.detailMono && 'products-table-stack__detail--mono',
+                              )}
+                            >
+                              {operationSummary.detail}
+                            </p>
                           ) : null}
                         </div>
                       );
@@ -1728,56 +2169,107 @@ export function ProductsPage() {
                 ariaLabel="Listado de productos simples"
                 caption="Tabla de productos simples con operacion unificada"
                 rows={visibleSimpleProductsWithOperation}
+                mobileCardRender={(product) => renderSimpleProductMobileCard(product)}
                 rowKey={(product) => product.id}
                 rowClassName={(product) =>
                   !product.active || !product.operationalVariant?.active ? 'opacity-80' : undefined
                 }
-                tableMinWidthClassName="min-w-[980px]"
+                tableMinWidthClassName="min-w-[1080px]"
                 columns={[
                   {
                     key: 'product',
                     header: 'Producto',
-                    render: (product) => (
-                      <div className="products-table-entity products-table-entity--with-media">
-                        <ProductMedia
-                          size="sm"
-                          label={product.name}
-                          src={product.imageUrl}
-                          alt={product.imageAlt ?? product.name}
-                          kind="SIMPLE"
-                          className="products-table-media"
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-[15px] font-semibold theme-text-strong">
-                            {product.name}
-                          </p>
+                    width: '360px',
+                    render: (product) => {
+                      const metaItems = getProductCardMetaItems(product);
+                      const summary = getProductTableSummary(product);
+
+                      return (
+                        <div className="products-table-entity products-table-entity--with-media">
+                          <ProductMedia
+                            size="sm"
+                            label={product.name}
+                            src={product.imageUrl}
+                            alt={product.imageAlt ?? product.name}
+                            kind="SIMPLE"
+                            className="products-table-media"
+                          />
+                          <div className="min-w-0">
+                            <div className="products-table-entity__title-row">
+                              <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
+                                {product.name}
+                              </p>
+                              <StatusBadge label="Simple" tone="info" />
+                            </div>
+                            {metaItems.length > 0 ? (
+                              <div className="products-table-meta">
+                                {metaItems.map((item) => (
+                                  <span
+                                    key={item.label}
+                                    className={clsx(
+                                      'products-table-meta__item',
+                                      item.mono && 'products-table-meta__item--mono',
+                                    )}
+                                  >
+                                    <span className="products-table-meta__label">{item.label}</span>
+                                    <span>{item.value}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                            {summary ? (
+                              <p className="products-table-entity__summary">{summary}</p>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                    ),
+                      );
+                    },
                   },
                   {
-                    key: 'sku',
-                    header: 'SKU de venta',
-                    width: '148px',
-                    cellClassName: 'font-mono text-[12px]',
-                    render: (product) => product.operationalVariant?.sku ?? 'Sin SKU',
+                    key: 'operation',
+                    header: 'Operacion',
+                    width: '220px',
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+                      const operationSummary = getProductOperationSummary(product, displayVariant);
+
+                      return (
+                        <div className="products-table-stack">
+                          <p className="products-table-stack__title">{operationSummary.title}</p>
+                          {operationSummary.detail ? (
+                            <p
+                              className={clsx(
+                                'products-table-stack__detail',
+                                operationSummary.detailMono && 'products-table-stack__detail--mono',
+                              )}
+                            >
+                              {operationSummary.detail}
+                            </p>
+                          ) : null}
+                        </div>
+                      );
+                    },
                   },
                   {
                     key: 'price',
                     header: 'Precio',
-                    width: '112px',
+                    width: '116px',
                     align: 'right',
                     cellClassName: 'whitespace-nowrap',
-                    render: (product) => (
-                      <span className="metric-accent text-[15px] font-semibold">
-                        {formatCurrency(Number(product.operationalVariant?.sale_price ?? 0))}
-                      </span>
-                    ),
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+
+                      return (
+                        <span className="products-table-price">
+                          {getProductCardPriceLabel(product, displayVariant)}
+                        </span>
+                      );
+                    },
                   },
                   {
                     key: 'status',
                     header: 'Estado',
-                    width: '132px',
+                    width: '128px',
                     render: (product) => (
                       <StatusBadge
                         label={getSimpleProductTableStatus(product)}
@@ -1793,13 +2285,15 @@ export function ProductsPage() {
                           header: 'Receta',
                           width: '128px',
                           render: (product: EnrichedCatalogProduct) => {
-                            const variant = product.operationalVariant;
-                            const hasRecipe = variant ? recipeStatusByVariant[variant.id] ?? false : false;
+                            const recipeState = getProductCardRecipeState(
+                              product,
+                              recipeStatusByVariant,
+                            );
 
                             return (
                               <StatusBadge
-                                label={hasRecipe ? 'Con receta' : 'Sin receta'}
-                                tone={hasRecipe ? 'info' : 'warning'}
+                                label={recipeState.label}
+                                tone={recipeState.tone}
                                 className="min-w-[112px] justify-center"
                               />
                             );
@@ -1810,16 +2304,13 @@ export function ProductsPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: showRecipeModule ? '304px' : '220px',
+                    width: showRecipeModule ? '304px' : '232px',
                     render: (product) =>
                       canManageCatalog && product.operationalVariant ? (
                         <div className="products-table-actions">
                           <div className="products-table-actions__primary">
                             <Button variant="secondary" className="action-soft-brand products-action-edit" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
                               Editar
-                            </Button>
-                            <Button variant="secondary" className="action-soft-brand products-action-operation" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(product.operationalVariant!)}>
-                              Operacion
                             </Button>
                             {showRecipeModule ? (
                               <Button variant="secondary" className="action-soft-brand products-action-recipe" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(product.operationalVariant!)}>
@@ -1830,6 +2321,9 @@ export function ProductsPage() {
                           <div className="products-table-actions__secondary">
                             <Button variant="ghost" className={product.operationalVariant.active ? 'products-action-toggle' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}>
                               {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
+                            </Button>
+                            <Button variant="ghost" className="action-soft-danger products-action-delete" onClick={() => requestProductDelete(product)}>
+                              Eliminar
                             </Button>
                           </div>
                         </div>
@@ -1880,6 +2374,7 @@ export function ProductsPage() {
                 ariaLabel="Listado de variantes"
                 caption="Tabla de variantes del catalogo"
                 rows={filteredRealVariants}
+                mobileCardRender={(variant) => renderVariantMobileCard(variant)}
                 rowKey={(variant) => variant.id}
                 rowClassName={(variant) => (!variant.active ? 'opacity-80' : undefined)}
                 tableMinWidthClassName="min-w-[1040px]"
@@ -1898,7 +2393,7 @@ export function ProductsPage() {
                           className="products-table-media"
                         />
                         <div className="min-w-0">
-                          <p className="truncate text-[15px] font-semibold theme-text-strong">
+                          <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
                             {variant.product_name}
                           </p>
                         </div>
@@ -2071,6 +2566,33 @@ export function ProductsPage() {
               }))
             }
           />
+          {editProductCatalogDraft.productType === 'SIMPLE' ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label="Presentacion"
+                value={editSimpleProductPresentation}
+                onChange={(event) => setEditSimpleProductPresentation(event.target.value)}
+                placeholder="Ej: Botella 350 ml"
+                maxLength={15}
+              />
+              <Input
+                type="number"
+                min={0}
+                label="Precio de venta"
+                value={editSimpleProductPriceInput}
+                onChange={(event) => {
+                  const nextValue = normalizeNumberInput(event.target.value);
+                  if (nextValue !== null) setEditSimpleProductPriceInput(nextValue);
+                }}
+                placeholder="Ej: 12000"
+              />
+              <CheckboxField
+                label="Operativa en POS"
+                checked={editSimpleProductOperationActive}
+                onChange={(event) => setEditSimpleProductOperationActive(event.target.checked)}
+              />
+            </div>
+          ) : null}
           {showFiscalFields ? (
             <ProductFiscalFieldsSection
               open={editProductFiscalSectionOpen}
@@ -2134,22 +2656,21 @@ export function ProductsPage() {
         id="variant-editor-dialog"
         open={variantEditorOpen}
         onClose={() => setVariantEditorOpen(false)}
-        title={selectedVariant?.is_operational ? 'Editar operacion simple' : 'Editar variante'}
+        title="Editar variante"
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
-          {selectedVariant?.is_operational ? null : (
-            <Input
-              label="Tamano"
-              value={editVariantSize}
-              onChange={(event) => setEditVariantSize(event.target.value)}
-              placeholder="Ej: 16oz"
-            />
-          )}
           <Input
-            label={selectedVariant?.is_operational ? 'SKU POS' : 'SKU de venta'}
+            label="Tamano"
+            value={editVariantSize}
+            onChange={(event) => setEditVariantSize(event.target.value)}
+            placeholder="Ej: 16oz"
+            maxLength={15}
+          />
+          <Input
+            label="SKU de venta"
             value={editVariantSku}
             onChange={(event) => setEditVariantSku(event.target.value)}
-            placeholder={selectedVariant?.is_operational ? 'Ej: CAF-BASE' : 'Ej: LAT-AV-16'}
+            placeholder="Ej: LAT-AV-16"
           />
           <Input
             type="number"
@@ -2163,7 +2684,7 @@ export function ProductsPage() {
             placeholder="Ej: 15000"
           />
           <CheckboxField
-            label={selectedVariant?.is_operational ? 'Operativa en POS' : 'Activa'}
+            label="Activa"
             checked={editVariantActive}
             onChange={(event) => setEditVariantActive(event.target.checked)}
           />
@@ -2484,7 +3005,7 @@ function getProductCardMetaItems(product: EnrichedCatalogProduct) {
   const items: Array<{ label: string; value: string; mono?: boolean }> = [];
 
   if (product.internalCode) {
-    items.push({ label: 'SKU producto', value: product.internalCode, mono: true });
+    items.push({ label: 'SKU', value: product.internalCode, mono: true });
   }
 
   if (product.brand) {
@@ -2536,27 +3057,24 @@ function getProductCardRecipeState(
 }
 
 function getProductTableSummary(product: EnrichedCatalogProduct) {
-  const description = product.description?.trim();
-  if (description) return description;
-
   return null;
 }
 
 function getProductOperationSummary(
   product: EnrichedCatalogProduct,
   variant: CatalogVariant | null,
-) {
+): { title: string; detail?: string; detailMono?: boolean } {
   if (product.productType === 'SIMPLE') {
     if (!variant) {
       return {
-        title: 'Sin operacion',
-        detail: 'Requiere refresh',
+        title: 'Sin presentacion',
+        detail: undefined,
       };
     }
 
     return {
-      title: 'POS simple',
-      detail: variant.active ? `SKU ${variant.sku}` : 'POS inactivo',
+      title: variant.size.trim() || 'Sin presentacion',
+      detail: undefined,
     };
   }
 
@@ -2576,19 +3094,19 @@ function getProductOperationSummary(
   if (sizes.length > 0) {
     return {
       title: sizes.join(' - '),
-      detail: undefined,
+      detail: `${comparableVariants.length} ${comparableVariants.length === 1 ? 'variante' : 'variantes'}`,
     };
   }
 
   if (comparableVariants.length > 0) {
     return {
-      title: 'Sin tamano definido',
+      title: 'Presentaciones por definir',
       detail: `${comparableVariants.length} variantes`,
     };
   }
 
   return {
-    title: 'Sin variantes activas',
+    title: 'Sin variantes configuradas',
     detail: 'Pendiente',
   };
 }
@@ -2610,7 +3128,7 @@ function matchesProductSearch(product: EnrichedCatalogProduct, searchTerm: strin
   const candidate = [
     product.name,
     product.internalCode ?? '',
-    product.operationalVariant?.sku ?? '',
+    ...(product.productType === 'SIMPLE' ? [] : [product.operationalVariant?.sku ?? '']),
     ...product.relatedVariants.map((variant) => variant.sku),
   ]
     .join(' ')
@@ -2623,10 +3141,31 @@ function matchesSimpleProductSearch(product: EnrichedCatalogProduct, searchTerm:
   const normalizedSearch = normalizeCatalogSearch(searchTerm);
   if (!normalizedSearch) return true;
 
-  return [product.name, product.internalCode ?? '', product.operationalVariant?.sku ?? '']
+  return [product.name, product.internalCode ?? '']
     .join(' ')
     .toLocaleLowerCase()
     .includes(normalizedSearch);
+}
+
+function getSimpleOperationalVariant(product: {
+  productType: ProductType;
+  variants?: Array<{ id: number; sale_price: number; active: boolean; size: string; is_operational?: boolean }>;
+}) {
+  if (product.productType !== 'SIMPLE') return null;
+
+  return (
+    product.variants?.find((variant) => variant.is_operational || variant.active) ??
+    product.variants?.[0] ??
+    null
+  );
+}
+
+function getSimpleProductPresentation(product: {
+  productType: ProductType;
+  variants?: Array<{ id: number; sale_price: number; active: boolean; size: string; is_operational?: boolean }>;
+}) {
+  const operationalVariant = getSimpleOperationalVariant(product);
+  return operationalVariant?.size ?? '';
 }
 
 function matchesVariantSearch(variant: CatalogVariant, searchTerm: string) {
@@ -2776,7 +3315,14 @@ function translateCatalogError(message: string) {
   if (message === 'Product name already exists') return 'Ya existe un producto con ese nombre.';
   if (message === 'Product internal code already exists') return 'Ya existe un producto con ese codigo interno.';
   if (message === 'Product barcode already exists') return 'Ya existe un producto con ese codigo de barras.';
+  if (message === 'Simple product SKU already exists') return 'Ya existe una variante u operacion con ese SKU.';
   if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
+  if (message === 'simplePresentation must be shorter than or equal to 15 characters') {
+    return 'La presentacion no puede superar 15 caracteres.';
+  }
+  if (message === 'size must be shorter than or equal to 15 characters') {
+    return 'El tamano no puede superar 15 caracteres.';
+  }
   if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
   if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';
   if (message === 'Product image file is required') return 'Selecciona una imagen valida antes de guardar.';

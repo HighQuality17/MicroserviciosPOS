@@ -40,6 +40,13 @@ export class CreateProductDto {
   @IsOptional()
   brand?: string | null;
 
+  @IsString()
+  @MaxLength(15, {
+    message: 'simplePresentation must be shorter than or equal to 15 characters',
+  })
+  @IsOptional()
+  simplePresentation?: string | null;
+
   @IsEnum(ProductType)
   @IsOptional()
   productType?: ProductType;

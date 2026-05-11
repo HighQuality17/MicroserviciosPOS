@@ -20,6 +20,7 @@ interface CatalogItemsTableProps<Row> {
   rowClassName?: (row: Row, index: number) => string | undefined;
   maxHeightClassName?: string;
   tableMinWidthClassName?: string;
+  mobileCardRender?: (row: Row, index: number) => ReactNode;
 }
 
 export function CatalogItemsTable<Row>({
@@ -31,14 +32,29 @@ export function CatalogItemsTable<Row>({
   rowClassName,
   maxHeightClassName = 'max-h-[34rem]',
   tableMinWidthClassName = 'min-w-[1180px]',
+  mobileCardRender,
 }: CatalogItemsTableProps<Row>) {
   return (
     <div className="catalog-items-table mt-4 overflow-hidden rounded-lg table-shell">
+      {mobileCardRender ? (
+        <div className="catalog-items-table__mobile sm:hidden">
+          <div className="catalog-items-table__mobile-list">
+            {rows.map((row, index) => (
+              <div
+                key={rowKey(row)}
+                className={clsx('catalog-items-table__mobile-item', rowClassName?.(row, index))}
+              >
+                {mobileCardRender(row, index)}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div
         tabIndex={0}
         aria-label={ariaLabel}
         className={clsx(
-          'catalog-items-table__scroll overflow-x-auto overflow-y-auto overscroll-x-contain pb-1 touch-pan-x [scrollbar-gutter:stable] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]',
+          'catalog-items-table__scroll hidden overflow-x-auto overflow-y-auto overscroll-x-contain pb-1 touch-pan-x [scrollbar-gutter:stable] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)] sm:block',
           maxHeightClassName,
         )}
       >
