@@ -13,7 +13,7 @@ export interface ThemeOption {
   scheme: 'dark' | 'light';
 }
 
-export const defaultTheme: ThemeName = 'midnight-indigo';
+export const defaultTheme: ThemeName = 'professional-light';
 
 export const THEME_STORAGE_KEY = 'microservicios-pos-theme';
 
@@ -69,11 +69,8 @@ export function getThemeOption(theme: ThemeName) {
   return themeOptionByName.get(theme) ?? themeOptionByName.get(defaultTheme)!;
 }
 
-export function resolveThemeName(value: string | null | undefined): ThemeName {
-  if (value && isThemeName(value)) {
-    return value;
-  }
-
+export function resolveThemeName(_value: string | null | undefined): ThemeName {
+  // Theme switching is locked while preserving the other theme definitions.
   return defaultTheme;
 }
 
@@ -82,7 +79,9 @@ export function readStoredTheme(): ThemeName {
     return defaultTheme;
   }
 
-  return resolveThemeName(window.localStorage.getItem(THEME_STORAGE_KEY));
+  const theme = resolveThemeName(window.localStorage.getItem(THEME_STORAGE_KEY));
+  persistTheme(theme);
+  return theme;
 }
 
 export function persistTheme(theme: ThemeName) {
@@ -90,7 +89,7 @@ export function persistTheme(theme: ThemeName) {
     return;
   }
 
-  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  window.localStorage.setItem(THEME_STORAGE_KEY, resolveThemeName(theme));
 }
 
 export function applyThemeToDocument(theme: ThemeName) {
@@ -98,12 +97,14 @@ export function applyThemeToDocument(theme: ThemeName) {
     return;
   }
 
-  const option = getThemeOption(theme);
-  document.documentElement.dataset.theme = theme;
+  const resolvedTheme = resolveThemeName(theme);
+  const option = getThemeOption(resolvedTheme);
+  document.documentElement.dataset.theme = resolvedTheme;
   document.documentElement.style.colorScheme = option.scheme;
 }
 
 export function initializeTheme() {
-  applyThemeToDocument(defaultTheme);
-  return defaultTheme;
+  const theme = readStoredTheme();
+  applyThemeToDocument(theme);
+  return theme;
 }
