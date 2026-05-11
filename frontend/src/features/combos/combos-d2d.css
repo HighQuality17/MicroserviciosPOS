@@ -1,0 +1,159 @@
+.combos-page {
+  --combos-blue: var(--products-catalog-blue, rgb(var(--theme-accent-rgb) / 0.92));
+  --combos-blue-strong: var(--products-catalog-blue-strong, rgb(var(--theme-accent-rgb) / 1));
+  --combos-blue-soft: var(--products-catalog-blue-soft, rgb(var(--theme-accent-rgb) / 0.14));
+  --combos-card: var(--products-catalog-card, var(--bg-panel));
+  --combos-soft: var(--products-catalog-soft, var(--surface-ghost));
+  --combos-soft-strong: var(--products-catalog-soft-strong, var(--surface-ghost-strong));
+  --combos-line: var(--products-catalog-line, var(--line));
+  --combos-line-soft: var(--products-catalog-line-soft, var(--line-soft));
+  --combos-positive: var(--semantic-success-text);
+  --combos-positive-fill: var(--semantic-success-background);
+  --combos-warning: var(--semantic-warning-text);
+  --combos-warning-fill: var(--semantic-warning-background);
+}
+
+:root[data-theme='professional-light'] .combos-page {
+  --combos-blue: #0052ff;
+  --combos-blue-strong: #003ecc;
+  --combos-blue-soft: #dfeaff;
+  --combos-positive: #14824f;
+  --combos-positive-fill: #e9f8f1;
+  --combos-warning: #b96b00;
+  --combos-warning-fill: #fff5df;
+}
+
+.combos-page.products-page--catalog {
+  background:
+    radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--combos-blue-soft) 88%, transparent), transparent 24rem),
+    linear-gradient(180deg, var(--products-catalog-canvas, var(--bg)), transparent 24rem);
+}
+
+.combos-workspace-switcher .products-panel__body,
+.combos-explorer-panel .products-panel__body {
+  gap: 0.95rem;
+}
+
+.combos-workspace-card .products-panel__body {
+  gap: 1rem;
+}
+
+.combos-page .combos-workspace-card .products-panel__header,
+.combos-page .combos-explorer-panel .products-panel__header {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--combos-blue-soft) 58%, var(--combos-card)), var(--combos-card) 68%),
+    var(--combos-card);
+}
+
+.combos-page .products-list-toolbar__filters .status-badge {
+  min-height: 2.1rem;
+  border-radius: 999px;
+  box-shadow: none;
+  font-weight: 800;
+}
+
+.combos-toolbar-action-slot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.combos-toolbar-action.ui-button-base {
+  min-height: 2.42rem;
+  border-radius: 999px;
+  box-shadow: none;
+  padding-inline: 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.combos-composition-strip {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--combos-line-soft) 84%, transparent);
+  border-left: 3px solid var(--combos-blue);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--combos-blue-soft) 48%, var(--combos-card));
+  padding: 0.68rem 0.76rem;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.3;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.58);
+}
+
+.combos-composition-strip span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combos-composition-strip strong {
+  border-radius: 999px;
+  background: var(--combos-card);
+  color: var(--combos-blue-strong);
+  font-size: 0.68rem;
+  font-weight: 850;
+  padding: 0.18rem 0.52rem;
+  white-space: nowrap;
+}
+
+.combos-composition-strip span:last-child {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+}
+
+.combos-page .products-table-entity .status-badge[data-tone='warning'],
+.combos-mobile-card .status-badge[data-tone='warning'] {
+  background: var(--combos-warning-fill);
+  color: var(--combos-warning);
+}
+
+.combos-page .products-table-price,
+.combos-page .products-mobile-card__price {
+  color: var(--combos-blue-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.combos-mobile-card .products-mobile-card__info-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.combos-mobile-card .products-mobile-card__actions {
+  border-top: 1px solid color-mix(in srgb, var(--combos-line-soft) 84%, transparent);
+  padding-top: 0.78rem;
+}
+
+.combos-page .combo-composition-row {
+  border-color: color-mix(in srgb, var(--combos-line-soft) 84%, transparent);
+  background: color-mix(in srgb, var(--combos-soft) 58%, transparent);
+}
+
+@media (max-width: 639px) {
+  .combos-toolbar-action-slot,
+  .combos-toolbar-action.ui-button-base {
+    width: 100%;
+  }
+
+  .combos-page .products-list-toolbar__filters {
+    width: 100%;
+  }
+
+  .combos-page .products-list-toolbar__filters .products-list-toolbar__filter {
+    width: 100%;
+  }
+
+  .combos-composition-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .combos-composition-strip strong,
+  .combos-composition-strip span:last-child {
+    justify-self: start;
+  }
+}
