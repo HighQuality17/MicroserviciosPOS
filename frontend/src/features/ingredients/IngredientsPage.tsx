@@ -1,7 +1,7 @@
 import "@/features/products/products-d2b.css";
 import "@/features/ingredients/ingredients-d2c.css";
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Boxes, ClipboardList, FlaskConical, Warehouse } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { AccessState } from "@/components/AccessState";
@@ -83,6 +83,26 @@ const movementTypeOptions: IngredientMovementType[] = [
   "ENTRY",
   "EXIT",
   "ADJUSTMENT",
+];
+
+type IngredientWorkspaceTab = "INGREDIENT" | "MOVEMENT";
+type IngredientExplorerTab = "INGREDIENTS" | "STOCK" | "MOVEMENTS";
+
+const ingredientWorkspaceTabs: Array<{
+  value: IngredientWorkspaceTab;
+  label: string;
+}> = [
+  { value: "INGREDIENT", label: "Ingrediente" },
+  { value: "MOVEMENT", label: "Movimiento" },
+];
+
+const ingredientExplorerTabs: Array<{
+  value: IngredientExplorerTab;
+  label: string;
+}> = [
+  { value: "INGREDIENTS", label: "Ingredientes" },
+  { value: "STOCK", label: "Stock" },
+  { value: "MOVEMENTS", label: "Movimientos" },
 ];
 
 const AUDIT_HISTORY_LIMIT = 12;
@@ -223,6 +243,10 @@ export function IngredientsPage() {
   const [catalogSearchTerm, setCatalogSearchTerm] = useState("");
   const [stockSearchTerm, setStockSearchTerm] = useState("");
   const [auditSearchTerm, setAuditSearchTerm] = useState("");
+  const [workspaceTab, setWorkspaceTab] =
+    useState<IngredientWorkspaceTab>("INGREDIENT");
+  const [explorerTab, setExplorerTab] =
+    useState<IngredientExplorerTab>("INGREDIENTS");
 
   const isAdmin = currentUser?.role === "ADMIN";
   const movementIdFromQuery = useMemo(() => {
@@ -458,7 +482,7 @@ export function IngredientsPage() {
       addSessionIngredient(ingredient);
       setSelectedIngredientId(String(ingredient.id));
       setName("");
-      setMessage(`Ingrediente #${ingredient.id} creado correctamente.`);
+      setMessage("Ingrediente creado correctamente.");
       await loadIngredients();
       if (selectedLocationId !== null) await loadStock(selectedLocationId);
     } catch (error) {
@@ -772,8 +796,8 @@ export function IngredientsPage() {
             : "default"
           : "default";
   const selectedLocationLabel = selectedLocation
-    ? `#${selectedLocation.id} / ${selectedLocation.name}`
-    : "Sin ubicacion activa";
+    ? selectedLocation.name
+    : "Sin ubicacion";
   const selectedIngredientSummary = selectedIngredient
     ? `${selectedIngredient.name} / ${getUnitLabel(selectedIngredient.defaultUnitCode)}`
     : "Sin ingrediente seleccionado";
@@ -797,7 +821,7 @@ export function IngredientsPage() {
   ];
   const inventoryHeaderCards: ModulePageHeaderCard[] = [
     {
-      label: "Catalogo base",
+      label: "Catalogo",
       value: String(mergedIngredients.length),
       note: loadingCatalog
         ? "Sincronizando"
@@ -811,7 +835,7 @@ export function IngredientsPage() {
       },
     },
     {
-      label: "Stock visible",
+      label: "Stock",
       value: selectedLocation ? String(stockItems.length) : "--",
       note: selectedLocation
         ? `${formatQty(totalStockBase)} base`
@@ -820,7 +844,7 @@ export function IngredientsPage() {
       icon: <Warehouse size={16} />,
       iconTone: stockTone,
       badge: {
-        label: selectedLocation ? "Por ubicacion" : "Sin POS",
+          label: selectedLocation ? "Ubicacion" : "Sin POS",
         tone: selectedLocation ? "info" : "default",
       },
     },
@@ -839,7 +863,7 @@ export function IngredientsPage() {
       },
     },
     {
-      label: "Auditoria reciente",
+      label: "Movimientos",
       value: selectedLocation ? String(adjustmentItems.length) : "--",
       note: selectedLocation
         ? `${AUDIT_HISTORY_LIMIT} recientes`
@@ -848,7 +872,7 @@ export function IngredientsPage() {
       icon: <ClipboardList size={16} />,
       iconTone: auditTone,
       badge: {
-        label: selectedLocation ? "Trazabilidad" : "Sin POS",
+          label: selectedLocation ? "Recientes" : "Sin POS",
         tone: auditTone,
       },
     },
@@ -859,22 +883,253 @@ export function IngredientsPage() {
       ? "lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]"
       : "grid-cols-1",
   );
+  const workspaceTabLabel =
+    ingredientWorkspaceTabs.find((tab) => tab.value === workspaceTab)?.label ??
+    "Workspace";
+  const explorerTabLabel =
+    ingredientExplorerTabs.find((tab) => tab.value === explorerTab)?.label ??
+    "Inventario";
+  const explorerCountLabel =
+    explorerTab === "INGREDIENTS"
+      ? catalogSearchTerm.trim()
+        ? `${filteredCatalogIngredients.length} coincidencias`
+        : `${mergedIngredients.length} ingredientes`
+      : explorerTab === "STOCK"
+        ? selectedLocation
+          ? stockSearchTerm.trim()
+            ? `${filteredStockItems.length} coincidencias`
+            : `${stockItems.length} existencias`
+          : "Sin ubicacion"
+        : selectedLocation
+          ? auditSearchTerm.trim()
+            ? `${filteredAdjustmentItems.length} coincidencias`
+            : `${mergedAdjustmentItems.length} movimientos`
+          : "Sin ubicacion";
+  const explorerSearchValue =
+    explorerTab === "INGREDIENTS"
+      ? catalogSearchTerm
+      : explorerTab === "STOCK"
+        ? stockSearchTerm
+        : auditSearchTerm;
+  const explorerSearchPlaceholder =
+    explorerTab === "MOVEMENTS" ? "Buscar movimiento" : "Buscar ingrediente";
+  const explorerSearchLabel =
+    explorerTab === "INGREDIENTS"
+      ? "Buscar ingredientes"
+      : explorerTab === "STOCK"
+        ? "Buscar stock por ingrediente"
+        : "Buscar movimientos por ingrediente, tipo o responsable";
+  const explorerBadges: IngredientsToolbarBadge[] =
+    explorerTab === "INGREDIENTS"
+      ? [
+          {
+            label: catalogError ? "Datos locales" : "Catalogo",
+            tone: ingredientCatalogTone,
+          },
+          {
+            label: selectedLocation ? selectedLocation.name : "Sin ubicacion",
+            tone: selectedLocation ? "info" : "default",
+          },
+        ]
+      : explorerTab === "STOCK"
+        ? [
+            {
+              label: selectedLocation ? selectedLocation.name : "Sin ubicacion",
+              tone: selectedLocation ? "info" : "default",
+            },
+            {
+              label: selectedLocation ? `${formatQty(totalStockBase)} base` : "Sin lectura",
+              tone: stockTone,
+            },
+          ]
+        : [
+            {
+              label: selectedLocation ? selectedLocation.name : "Sin ubicacion",
+              tone: selectedLocation ? "info" : "default",
+            },
+            {
+              label: `${AUDIT_HISTORY_LIMIT} recientes`,
+              tone: auditTone,
+            },
+          ];
+
+  function handleExplorerSearchChange(value: string) {
+    if (explorerTab === "INGREDIENTS") {
+      setCatalogSearchTerm(value);
+      return;
+    }
+
+    if (explorerTab === "STOCK") {
+      setStockSearchTerm(value);
+      return;
+    }
+
+    setAuditSearchTerm(value);
+  }
+
+  function handleExplorerRefresh() {
+    if (explorerTab === "INGREDIENTS") {
+      void loadIngredients();
+      return;
+    }
+
+    if (selectedLocationId === null) return;
+
+    if (explorerTab === "STOCK") {
+      void loadStock(selectedLocationId);
+      return;
+    }
+
+    void loadAdjustments(selectedLocationId);
+  }
+
+  function renderMobileInfoItem(label: string, value: ReactNode) {
+    return (
+      <div className="products-mobile-card__info-item">
+        <span className="products-mobile-card__info-label">{label}</span>
+        <div className="products-mobile-card__info-value">{value}</div>
+      </div>
+    );
+  }
+
+  function renderIngredientMobileCard(ingredient: Ingredient) {
+    const stockOnHand = stockQtyByIngredientId.get(ingredient.id) ?? 0;
+    const stockStatus = getIngredientStockStatus(stockOnHand, Boolean(selectedLocation));
+
+    return (
+      <article className="products-mobile-card ingredients-mobile-card">
+        <div className="products-mobile-card__header">
+          <div className="ingredients-mobile-card__icon" aria-hidden="true">
+            {ingredient.name.trim().charAt(0).toLocaleUpperCase() || "I"}
+          </div>
+          <div className="products-mobile-card__header-copy min-w-0">
+            <p className="products-mobile-card__name">{ingredient.name}</p>
+            <StatusBadge
+              label={getDimensionLabel(ingredient.dimension)}
+              tone={getIngredientDimensionTone(ingredient.dimension)}
+              className="products-mobile-card__type"
+            />
+          </div>
+        </div>
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem("Unidad", getUnitLabel(ingredient.defaultUnitCode))}
+          {renderMobileInfoItem(
+            "Stock",
+            <span
+              className="ingredients-stock-value"
+              data-tone={getStockValueTone(stockOnHand, Boolean(selectedLocation))}
+            >
+              {selectedLocation ? formatQty(stockOnHand) : "--"}
+            </span>,
+          )}
+          {renderMobileInfoItem(
+            "Estado",
+            <StatusBadge label={stockStatus.label} tone={stockStatus.tone} />,
+          )}
+          {renderMobileInfoItem("Ubicacion", selectedLocation?.name ?? "Sin ubicacion")}
+        </div>
+      </article>
+    );
+  }
+
+  function renderStockMobileCard(item: StockListItem) {
+    const stockOnHand = toNumber(item.qtyOnHandBase);
+    const stockStatus = getIngredientStockStatus(stockOnHand, true);
+
+    return (
+      <article className="products-mobile-card ingredients-mobile-card">
+        <div className="products-mobile-card__header">
+          <div className="ingredients-mobile-card__icon" aria-hidden="true">
+            {item.ingredient.name.trim().charAt(0).toLocaleUpperCase() || "S"}
+          </div>
+          <div className="products-mobile-card__header-copy min-w-0">
+            <p className="products-mobile-card__name">{item.ingredient.name}</p>
+            <StatusBadge
+              label={getDimensionLabel(item.ingredient.dimension)}
+              tone={getIngredientDimensionTone(item.ingredient.dimension)}
+              className="products-mobile-card__type"
+            />
+          </div>
+        </div>
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem("Ubicacion", item.location.name)}
+          {renderMobileInfoItem("Unidad", getUnitLabel(item.ingredient.defaultUnitCode))}
+          {renderMobileInfoItem(
+            "Stock",
+            <span className="ingredients-stock-value" data-tone={getStockValueTone(stockOnHand, true)}>
+              {formatQty(stockOnHand)}
+            </span>,
+          )}
+          {renderMobileInfoItem(
+            "Estado",
+            <StatusBadge label={stockStatus.label} tone={stockStatus.tone} />,
+          )}
+        </div>
+      </article>
+    );
+  }
+
+  function renderAdjustmentMobileCard(item: StockAdjustmentItem) {
+    const delta = getMovementDelta(item);
+
+    return (
+      <article className="products-mobile-card ingredients-mobile-card">
+        <div className="products-mobile-card__header">
+          <div
+            className="ingredients-mobile-card__icon ingredients-mobile-card__icon--movement"
+            data-tone={movementTypeTones[item.movementType]}
+            aria-hidden="true"
+          >
+            {movementTypeLabels[item.movementType].charAt(0)}
+          </div>
+          <div className="products-mobile-card__header-copy min-w-0">
+            <p className="products-mobile-card__name">{item.ingredient.name}</p>
+            <StatusBadge
+              label={movementTypeLabels[item.movementType]}
+              tone={movementTypeTones[item.movementType]}
+              className="products-mobile-card__type"
+            />
+          </div>
+        </div>
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem("Fecha", formatDate(item.createdAt))}
+          {renderMobileInfoItem("Responsable", item.adjustedByUser.name)}
+          {renderMobileInfoItem(
+            "Diferencia",
+            <span className="ingredients-stock-value" data-tone={getDeltaValueTone(delta)}>
+              {delta >= 0 ? "+" : ""}
+              {formatQty(delta)}
+            </span>,
+          )}
+          {renderMobileInfoItem(
+            "Stock final",
+            item.newStock === null ? "--" : formatQty(item.newStock),
+          )}
+        </div>
+        {item.reasonCode || item.notes ? (
+          <div className="ingredients-mobile-card__footer">
+            {item.reasonCode ? <span>{reasonLabels[item.reasonCode]}</span> : null}
+            {item.notes ? <span>{item.notes}</span> : null}
+          </div>
+        ) : null}
+      </article>
+    );
+  }
 
   return (
-    <div className="products-page ingredients-page grid min-w-0 gap-5 sm:gap-6">
+    <div className="products-page products-page--catalog ingredients-page grid min-w-0 gap-4 sm:gap-5">
       <ModulePageHeader
         ariaLabel="Estado operativo de ingredientes"
         eyebrow="Administracion de inventario"
         title="Ingredientes"
         icon={<FlaskConical size={18} />}
         badges={inventoryHeaderBadges}
-        description="Catalogo, stock y movimientos por ubicacion."
         summary={{
-          label: "Contexto activo",
+          label: "Ubicacion",
           value: selectedLocationLabel,
           note: selectedLocation
-            ? `${adjustmentItems.length} movimientos / ${stockItems.length} items`
-            : "Selecciona una ubicacion.",
+            ? `${adjustmentItems.length} mov. / ${stockItems.length} items`
+            : "Sin contexto activo",
         }}
         asideAction={
           <Button variant="secondary" onClick={() => void refreshIngredientsWorkspace()}>
@@ -903,18 +1158,16 @@ export function IngredientsPage() {
         >
           <EmptyState
             title="Sin punto de venta activo"
-            description="Selecciona una ubicacion real en el encabezado para consultar y registrar inventario."
+            description="Selecciona una ubicacion para consultar inventario."
           />
         </Card>
       ) : null}
       {catalogAccessDenied || stockAccessDenied || adjustmentsAccessDenied ? (
-        <AccessState description="Tu perfil actual no tiene permiso para consultar este modulo completo." />
+        <AccessState description="Sin permiso para consultar ingredientes." />
       ) : null}
       {!isAdmin ? (
         <FeedbackMessage tone="info">
-          Tu perfil esta en modo consulta. Puedes revisar catalogo, stock e
-          historial, pero no crear ingredientes ni registrar movimientos
-          manuales.
+          Modo consulta: creacion y movimientos deshabilitados.
         </FeedbackMessage>
       ) : null}
 
@@ -924,31 +1177,43 @@ export function IngredientsPage() {
             <Card
               padding="none"
               glow={false}
-              className="products-panel products-panel--form"
+              className="products-panel products-panel--form products-panel--creation-workspace ingredients-workspace-switcher"
+              contentClassName="products-panel__body"
+            >
+              <IngredientsPanelHeader
+                eyebrow="Workspace"
+                title="Operaciones"
+                meta={
+                  <StatusBadge
+                    label={workspaceTabLabel}
+                    tone={workspaceTab === "MOVEMENT" ? movementTypeTones[movementType] : "info"}
+                  />
+                }
+              />
+              <IngredientsSegmentedControl
+                options={ingredientWorkspaceTabs}
+                value={workspaceTab}
+                onChange={setWorkspaceTab}
+                ariaLabel="Seleccionar flujo de ingredientes"
+                idPrefix="ingredients-workspace"
+              />
+            </Card>
+
+            {workspaceTab === "INGREDIENT" ? (
+            <Card
+              padding="none"
+              glow={false}
+              className="products-panel products-panel--form products-panel--creation-workspace ingredients-workspace-card"
               contentClassName="products-panel__body"
             >
               <div className="products-panel__header">
                 <div className="products-panel__header-copy">
-                  <p className="products-panel__eyebrow">Administracion base</p>
+                  <p className="products-panel__eyebrow">Creacion</p>
                   <div className="products-panel__title-row">
                     <h2 className="font-display text-2xl font-bold theme-text-strong">
                       Crear ingrediente
                     </h2>
                   </div>
-                </div>
-              </div>
-              <div className="products-panel__highlights ingredients-quick-metrics">
-                <div className="products-panel__spotlight products-panel__spotlight--variant">
-                  <p className="products-panel__spotlight-label">Catalogo</p>
-                  <p className="products-panel__spotlight-value">
-                    {mergedIngredients.length}
-                  </p>
-                </div>
-                <div className="products-panel__spotlight">
-                  <p className="products-panel__spotlight-label">Dimension</p>
-                  <p className="products-panel__spotlight-value">
-                    {getDimensionLabel(dimension)}
-                  </p>
                 </div>
               </div>
               <div className="products-form-stack grid gap-4">
@@ -1007,20 +1272,22 @@ export function IngredientsPage() {
                 </div>
               </div>
             </Card>
+            ) : null}
 
+            {workspaceTab === "MOVEMENT" ? (
             <Card
               padding="none"
               glow={false}
-              className="products-panel products-panel--form"
+              className="products-panel products-panel--form products-panel--creation-workspace ingredients-workspace-card"
               contentClassName="products-panel__body"
             >
               <div className="products-panel__header">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="products-panel__header-copy">
-                    <p className="products-panel__eyebrow">Movimiento de stock</p>
+                    <p className="products-panel__eyebrow">Movimiento</p>
                     <div className="products-panel__title-row">
                       <h2 className="font-display text-2xl font-bold theme-text-strong">
-                        Registro auditado
+                        Stock
                       </h2>
                     </div>
                   </div>
@@ -1028,26 +1295,6 @@ export function IngredientsPage() {
                     label={movementTypeLabels[movementType]}
                     tone={movementTypeTones[movementType]}
                   />
-                </div>
-              </div>
-              <div className="products-panel__highlights">
-                <div className="products-panel__spotlight products-panel__spotlight--variant">
-                  <p className="products-panel__spotlight-label">Ubicacion activa</p>
-                  <p className="products-panel__spotlight-value">
-                    {selectedLocation ? `#${selectedLocation.id}` : "--"}
-                  </p>
-                  <p className="products-panel__spotlight-note">
-                    {selectedLocation?.name ?? "Selecciona un POS para continuar."}
-                  </p>
-                </div>
-                <div className="products-panel__spotlight">
-                  <p className="products-panel__spotlight-label">Ingrediente</p>
-                  <p className="products-panel__spotlight-value">
-                    {selectedIngredient ? getUnitLabel(selectedIngredient.defaultUnitCode) : "--"}
-                  </p>
-                  <p className="products-panel__spotlight-note">
-                    {selectedIngredientSummary}
-                  </p>
                 </div>
               </div>
               <div className="products-form-stack grid gap-4">
@@ -1069,7 +1316,7 @@ export function IngredientsPage() {
                     <option value="">Selecciona una ubicacion</option>
                     {availableLocations.map((location) => (
                       <option key={location.id} value={location.id}>
-                        #{location.id} / {location.name}
+                        {location.name}
                       </option>
                     ))}
                   </Select>
@@ -1086,7 +1333,7 @@ export function IngredientsPage() {
                     <option value="">Selecciona un ingrediente</option>
                     {mergedIngredients.map((ingredient) => (
                       <option key={ingredient.id} value={String(ingredient.id)}>
-                        #{ingredient.id} / {ingredient.name}
+                        {ingredient.name} / {getUnitLabel(ingredient.defaultUnitCode)}
                       </option>
                     ))}
                   </Select>
@@ -1096,7 +1343,7 @@ export function IngredientsPage() {
                     <p className="products-form-group__label">Tipo de movimiento</p>
                   </div>
                   <div
-                    className="ingredients-flow-selector mt-3"
+                    className="products-segmented-control ingredients-movement-type-control mt-3"
                     role="group"
                     aria-label="Tipo de movimiento"
                   >
@@ -1106,7 +1353,8 @@ export function IngredientsPage() {
                         type="button"
                         aria-pressed={movementType === type}
                         data-active={movementType === type || undefined}
-                        className="ingredients-flow-selector__option"
+                        data-tone={type}
+                        className="products-segmented-control__item ingredients-movement-type-control__item"
                         onClick={() => setMovementType(type)}
                       >
                         <span>{movementTypeLabels[type]}</span>
@@ -1137,28 +1385,9 @@ export function IngredientsPage() {
                 {movementType === "ADJUSTMENT" ? (
                   <div className="products-form-group rounded-lg p-4 sm:p-5">
                     <div className="products-form-group__heading">
-                      <p className="products-form-group__label">Conteo y base</p>
+                      <p className="products-form-group__label">Conteo</p>
                     </div>
-                    <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                      <Input
-                        label="Stock actual"
-                        wrapperClassName="products-field"
-                        labelClassName="products-field__label"
-                        className="products-field__control"
-                        value={formatQty(
-                          movementPreview?.currentInSelectedUnit ??
-                            currentBaseStock / unitFactor,
-                        )}
-                        readOnly
-                      />
-                      <Input
-                        label="Stock actual base"
-                        wrapperClassName="products-field"
-                        labelClassName="products-field__label"
-                        className="products-field__control"
-                        value={formatQty(currentBaseStock)}
-                        readOnly
-                      />
+                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
                       <Input
                         type="number"
                         label="Stock contado"
@@ -1193,9 +1422,9 @@ export function IngredientsPage() {
                 ) : (
                   <div className="products-form-group rounded-lg p-4 sm:p-5">
                     <div className="products-form-group__heading">
-                      <p className="products-form-group__label">Cantidad operativa</p>
+                      <p className="products-form-group__label">Cantidad</p>
                     </div>
-                    <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
                       <Input
                         type="number"
                         label="Cantidad"
@@ -1225,14 +1454,6 @@ export function IngredientsPage() {
                           </option>
                         ))}
                       </Select>
-                      <Input
-                        label="Stock actual base"
-                        wrapperClassName="products-field"
-                        labelClassName="products-field__label"
-                        className="products-field__control"
-                        value={formatQty(currentBaseStock)}
-                        readOnly
-                      />
                     </div>
                   </div>
                 )}
@@ -1248,7 +1469,7 @@ export function IngredientsPage() {
                       className="products-field__control"
                       value={supportDocument}
                       onChange={(event) => setSupportDocument(event.target.value)}
-                      placeholder="Factura, acta o remision"
+                      placeholder="Factura o acta"
                     />
                     <Input
                       label="Lote"
@@ -1292,17 +1513,17 @@ export function IngredientsPage() {
                       className="products-field__control min-h-[7rem]"
                       value={notes}
                       onChange={(event) => setNotes(event.target.value)}
-                      hint={
-                        movementType === "ENTRY"
-                          ? "Opcional"
-                          : "Obligatorio para salidas y ajustes."
-                      }
+                        hint={
+                          movementType === "ENTRY"
+                            ? "Opcional"
+                            : "Requerido"
+                        }
                     />
                   </div>
                 </div>
-                <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
+                <div className="products-form-group products-form-group--strong ingredients-impact-shell rounded-lg p-4 sm:p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="products-form-group__label">Impacto estimado</p>
+                    <p className="products-form-group__label">Impacto</p>
                     <StatusBadge
                       label={movementPreview?.invalid ? "Bloqueado" : "Listo"}
                       tone={movementPreview?.invalid ? "danger" : "info"}
@@ -1341,7 +1562,7 @@ export function IngredientsPage() {
                     </div>
                   </div>
                   {movementPreview?.invalidMessage ? (
-                    <p className="mt-3 text-sm text-[color:var(--danger-text)]">
+                    <p className="ingredients-impact-message">
                       {movementPreview.invalidMessage}
                     </p>
                   ) : null}
@@ -1367,6 +1588,7 @@ export function IngredientsPage() {
                 </div>
               </div>
             </Card>
+            ) : null}
           </div>
         ) : null}
 
@@ -1374,16 +1596,55 @@ export function IngredientsPage() {
           <Card
             padding="none"
             glow={false}
-            className="products-panel products-panel--list"
+            className="products-panel products-panel--list products-panel--catalog-explorer ingredients-explorer-switcher"
+            contentClassName="products-panel__body"
+          >
+            <IngredientsPanelHeader
+              eyebrow="Explorador"
+              title="Inventario"
+              meta={<StatusBadge label={explorerTabLabel} tone="info" />}
+            />
+            <IngredientsSegmentedControl
+              options={ingredientExplorerTabs}
+              value={explorerTab}
+              onChange={setExplorerTab}
+              ariaLabel="Seleccionar vista de inventario"
+              idPrefix="ingredients-explorer"
+            />
+            <IngredientsPanelToolbar
+              label="Vista activa"
+              value={explorerCountLabel}
+              badges={explorerBadges}
+              searchValue={explorerSearchValue}
+              onSearchChange={handleExplorerSearchChange}
+              searchPlaceholder={explorerSearchPlaceholder}
+              searchAriaLabel={explorerSearchLabel}
+              action={
+                <Button
+                  variant="secondary"
+                  className="ingredients-toolbar-action"
+                  onClick={handleExplorerRefresh}
+                >
+                  Actualizar
+                </Button>
+              }
+            />
+          </Card>
+
+          {explorerTab === "INGREDIENTS" ? (
+          <Card
+            padding="none"
+            glow={false}
+            className="products-panel products-panel--list products-panel--catalog-explorer ingredients-explorer-panel"
             contentClassName="products-panel__body"
           >
             <div className="products-panel__header">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="products-panel__header-copy">
-                  <p className="products-panel__eyebrow">Listado de ingredientes</p>
+                  <p className="products-panel__eyebrow">Ingredientes</p>
                   <div className="products-panel__title-row">
                     <h2 className="font-display text-2xl font-bold theme-text-strong">
-                      Catalogo base
+                      Catalogo
                     </h2>
                   </div>
                 </div>
@@ -1405,7 +1666,7 @@ export function IngredientsPage() {
                   tone: ingredientCatalogTone,
                 },
                 {
-                  label: selectedLocation ? `POS #${selectedLocation.id}` : "Sin POS",
+                  label: selectedLocation ? selectedLocation.name : "Sin ubicacion",
                   tone: selectedLocation ? "info" : "default",
                 },
               ]}
@@ -1427,14 +1688,14 @@ export function IngredientsPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin ingredientes cargados"
-                  description="Crea el primer ingrediente para comenzar a controlar inventario."
+                  description="Crea el primer ingrediente."
                 />
               </div>
             ) : filteredCatalogIngredients.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
                   title="Sin coincidencias para esta busqueda"
-                  description="No encontramos ingredientes que coincidan con el nombre ingresado."
+                  description="Ajusta la busqueda."
                 />
               </div>
             ) : (
@@ -1442,6 +1703,7 @@ export function IngredientsPage() {
                 ariaLabel="Catalogo de ingredientes"
                 caption="Tabla base de ingredientes"
                 rows={filteredCatalogIngredients}
+                mobileCardRender={(ingredient) => renderIngredientMobileCard(ingredient)}
                 rowKey={(ingredient) => ingredient.id}
                 rowClassName={(ingredient) =>
                   selectedLocation &&
@@ -1450,19 +1712,12 @@ export function IngredientsPage() {
                     : undefined
                 }
                 maxHeightClassName="max-h-[24rem]"
-                tableMinWidthClassName="min-w-[980px]"
+                tableMinWidthClassName="min-w-[780px]"
                 columns={[
-                  {
-                    key: "id",
-                    header: "ID",
-                    width: "72px",
-                    cellClassName: "whitespace-nowrap text-xs theme-text-muted",
-                    render: (ingredient) => `#${ingredient.id}`,
-                  },
                   {
                     key: "ingredient",
                     header: "Ingrediente",
-                    width: "420px",
+                    width: "340px",
                     render: (ingredient) => {
                       const stockOnHand =
                         stockQtyByIngredientId.get(ingredient.id) ?? 0;
@@ -1514,7 +1769,13 @@ export function IngredientsPage() {
                     align: "right",
                     cellClassName: "whitespace-nowrap",
                     render: (ingredient) => (
-                      <span className="products-table-price">
+                      <span
+                        className="products-table-price ingredients-stock-value"
+                        data-tone={getStockValueTone(
+                          stockQtyByIngredientId.get(ingredient.id) ?? 0,
+                          Boolean(selectedLocation),
+                        )}
+                      >
                         {selectedLocation
                           ? formatQty(stockQtyByIngredientId.get(ingredient.id) ?? 0)
                           : "--"}
@@ -1528,23 +1789,14 @@ export function IngredientsPage() {
                     render: (ingredient) => {
                       const stockOnHand =
                         stockQtyByIngredientId.get(ingredient.id) ?? 0;
-                      const hasContext = Boolean(selectedLocation);
+                      const stockStatus = getIngredientStockStatus(
+                        stockOnHand,
+                        Boolean(selectedLocation),
+                      );
                       return (
                         <StatusBadge
-                          label={
-                            !hasContext
-                              ? "Sin contexto"
-                              : stockOnHand > 0
-                                ? "Con stock"
-                                : "Sin stock"
-                          }
-                          tone={
-                            !hasContext
-                              ? "default"
-                              : stockOnHand > 0
-                                ? "success"
-                                : "warning"
-                          }
+                          label={stockStatus.label}
+                          tone={stockStatus.tone}
                           className="min-w-[104px] justify-center"
                         />
                       );
@@ -1555,24 +1807,26 @@ export function IngredientsPage() {
             )}
             {catalogError ? (
               <FeedbackMessage tone="info" className="mt-4">
-                Catalogo no disponible. Mostrando datos recuperados de la sesion y el stock.
+                Catalogo no disponible. Usando datos locales.
               </FeedbackMessage>
             ) : null}
           </Card>
+          ) : null}
 
+          {explorerTab === "STOCK" ? (
           <Card
             padding="none"
             glow={false}
-            className="products-panel products-panel--list"
+            className="products-panel products-panel--list products-panel--catalog-explorer ingredients-explorer-panel"
             contentClassName="products-panel__body"
           >
             <div className="products-panel__header">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="products-panel__header-copy">
-                  <p className="products-panel__eyebrow">Existencias reales</p>
+                  <p className="products-panel__eyebrow">Stock</p>
                   <div className="products-panel__title-row">
                     <h2 className="font-display text-2xl font-bold theme-text-strong">
-                      Stock por ubicacion
+                      Existencias
                     </h2>
                   </div>
                 </div>
@@ -1596,7 +1850,7 @@ export function IngredientsPage() {
               }
               badges={[
                 {
-                  label: selectedLocation ? `POS #${selectedLocation.id}` : "Sin POS",
+                  label: selectedLocation ? selectedLocation.name : "Sin ubicacion",
                   tone: selectedLocation ? "info" : "default",
                 },
                 {
@@ -1624,14 +1878,14 @@ export function IngredientsPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin stock registrado"
-                  description="Registra una entrada o ajuste para empezar a ver existencias por ubicacion."
+                  description="Registra una entrada o ajuste."
                 />
               </div>
             ) : filteredStockItems.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
                   title="Sin coincidencias para esta busqueda"
-                  description="No encontramos existencias que coincidan con el nombre del ingrediente."
+                  description="Ajusta la busqueda."
                 />
               </div>
             ) : (
@@ -1639,24 +1893,18 @@ export function IngredientsPage() {
                 ariaLabel="Stock por ubicacion"
                 caption="Tabla de stock por ubicacion"
                 rows={filteredStockItems}
+                mobileCardRender={(item) => renderStockMobileCard(item)}
                 rowKey={(item) => `${item.ingredientId}-${item.locationId}`}
                 rowClassName={(item) =>
                   toNumber(item.qtyOnHandBase) <= 0 ? "opacity-85" : undefined
                 }
                 maxHeightClassName="max-h-[24rem]"
-                tableMinWidthClassName="min-w-[960px]"
+                tableMinWidthClassName="min-w-[780px]"
                 columns={[
-                  {
-                    key: "id",
-                    header: "ID",
-                    width: "72px",
-                    cellClassName: "whitespace-nowrap text-xs theme-text-muted",
-                    render: (item) => `#${item.ingredientId}`,
-                  },
                   {
                     key: "ingredient",
                     header: "Ingrediente",
-                    width: "380px",
+                    width: "340px",
                     render: (item) => (
                       <div className="products-table-entity">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1681,9 +1929,6 @@ export function IngredientsPage() {
                     render: (item) => (
                       <div className="products-table-stack">
                         <p className="products-table-stack__title">{item.location.name}</p>
-                        <p className="products-table-stack__detail">
-                          POS #{item.location.id}
-                        </p>
                       </div>
                     ),
                   },
@@ -1694,7 +1939,10 @@ export function IngredientsPage() {
                     align: "right",
                     cellClassName: "whitespace-nowrap",
                     render: (item) => (
-                      <span className="products-table-price">
+                      <span
+                        className="products-table-price ingredients-stock-value"
+                        data-tone={getStockValueTone(toNumber(item.qtyOnHandBase), true)}
+                      >
                         {formatQty(item.qtyOnHandBase)}
                       </span>
                     ),
@@ -1703,19 +1951,20 @@ export function IngredientsPage() {
                     key: "status",
                     header: "Estado",
                     width: "124px",
-                    render: (item) => (
-                      <StatusBadge
-                        label={
-                          toNumber(item.qtyOnHandBase) > 0
-                            ? "Disponible"
-                            : "Sin stock"
-                        }
-                        tone={
-                          toNumber(item.qtyOnHandBase) > 0 ? "success" : "warning"
-                        }
-                        className="min-w-[104px] justify-center"
-                      />
-                    ),
+                    render: (item) => {
+                      const stockStatus = getIngredientStockStatus(
+                        toNumber(item.qtyOnHandBase),
+                        true,
+                      );
+
+                      return (
+                        <StatusBadge
+                          label={stockStatus.label}
+                          tone={stockStatus.tone}
+                          className="min-w-[104px] justify-center"
+                        />
+                      );
+                    },
                   },
                 ]}
               />
@@ -1726,11 +1975,13 @@ export function IngredientsPage() {
               </FeedbackMessage>
             ) : null}
           </Card>
+          ) : null}
 
+          {explorerTab === "MOVEMENTS" ? (
           <Card
             padding="none"
             glow={false}
-            className="products-panel products-panel--list"
+            className="products-panel products-panel--list products-panel--catalog-explorer ingredients-explorer-panel"
             contentClassName="products-panel__body"
           >
             <div className="products-panel__header">
@@ -1739,7 +1990,7 @@ export function IngredientsPage() {
                   <p className="products-panel__eyebrow">Movimientos</p>
                   <div className="products-panel__title-row">
                     <h2 className="font-display text-2xl font-bold theme-text-strong">
-                      Historial auditado
+                      Historial
                     </h2>
                   </div>
                 </div>
@@ -1765,7 +2016,7 @@ export function IngredientsPage() {
               }
               badges={[
                 {
-                  label: selectedLocation ? `POS #${selectedLocation.id}` : "Sin POS",
+                  label: selectedLocation ? selectedLocation.name : "Sin ubicacion",
                   tone: selectedLocation ? "info" : "default",
                 },
                 {
@@ -1791,14 +2042,14 @@ export function IngredientsPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin movimientos recientes"
-                  description="Registra un movimiento para verlo aqui."
+                  description="Aun no hay movimientos."
                 />
               </div>
             ) : filteredAdjustmentItems.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
                   title="Sin coincidencias para esta busqueda"
-                  description="No encontramos movimientos que coincidan con ingrediente, tipo o responsable."
+                  description="Ajusta la busqueda."
                 />
               </div>
             ) : (
@@ -1806,6 +2057,7 @@ export function IngredientsPage() {
                 ariaLabel="Historial de movimientos de stock"
                 caption="Tabla de movimientos auditados"
                 rows={filteredAdjustmentItems}
+                mobileCardRender={(item) => renderAdjustmentMobileCard(item)}
                 rowKey={(item) => item.id}
                 rowClassName={(item) =>
                   movementIdFromQuery === item.id
@@ -1813,19 +2065,12 @@ export function IngredientsPage() {
                     : undefined
                 }
                 maxHeightClassName="max-h-[28rem]"
-                tableMinWidthClassName="min-w-[1180px]"
+                tableMinWidthClassName="min-w-[940px]"
                 columns={[
                   {
-                    key: "id",
-                    header: "ID",
-                    width: "72px",
-                    cellClassName: "whitespace-nowrap text-xs theme-text-muted",
-                    render: (item) => `#${item.id}`,
-                  },
-                  {
                     key: "movement",
-                    header: "Movimiento",
-                    width: "420px",
+                    header: "Ingrediente",
+                    width: "380px",
                     render: (item) => (
                       <div className="products-table-entity">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1913,7 +2158,10 @@ export function IngredientsPage() {
                     render: (item) => {
                       const delta = getMovementDelta(item);
                       return (
-                        <span className="products-table-price">
+                        <span
+                          className="products-table-price ingredients-stock-value"
+                          data-tone={getDeltaValueTone(delta)}
+                        >
                           {delta >= 0 ? "+" : ""}
                           {formatQty(delta)}
                         </span>
@@ -1927,7 +2175,7 @@ export function IngredientsPage() {
                     align: "right",
                     cellClassName: "whitespace-nowrap",
                     render: (item) => (
-                      <span className="products-table-price">
+                      <span className="products-table-price ingredients-stock-value">
                         {item.newStock === null ? "--" : formatQty(item.newStock)}
                       </span>
                     ),
@@ -1941,6 +2189,7 @@ export function IngredientsPage() {
               </FeedbackMessage>
             ) : null}
           </Card>
+          ) : null}
         </div>
       </div>
     </div>
@@ -1952,6 +2201,72 @@ type IngredientsToolbarBadge = {
   tone?: "default" | "success" | "warning" | "danger" | "info";
 };
 
+type IngredientsSegmentOption<T extends string> = {
+  value: T;
+  label: string;
+};
+
+function IngredientsPanelHeader({
+  eyebrow,
+  title,
+  meta,
+}: {
+  eyebrow: string;
+  title: string;
+  meta?: ReactNode;
+}) {
+  return (
+    <div className="products-panel__header">
+      <div className="products-panel__header-copy">
+        <p className="products-panel__eyebrow">{eyebrow}</p>
+        <div className="products-panel__title-row">
+          <h2 className="font-display text-2xl font-bold theme-text-strong">{title}</h2>
+          {meta ? <div className="products-panel__meta">{meta}</div> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IngredientsSegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+  idPrefix,
+}: {
+  options: Array<IngredientsSegmentOption<T>> | readonly IngredientsSegmentOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  ariaLabel: string;
+  idPrefix: string;
+}) {
+  return (
+    <div className="products-segmented-control" role="tablist" aria-label={ariaLabel}>
+      {options.map((option) => {
+        const active = value === option.value;
+        const optionId = String(option.value).toLocaleLowerCase();
+
+        return (
+          <button
+            key={option.value}
+            id={`${idPrefix}-${optionId}-tab`}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-controls={`${idPrefix}-${optionId}-panel`}
+            data-active={active || undefined}
+            className="products-segmented-control__item"
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function IngredientsPanelToolbar({
   label,
   value,
@@ -1960,6 +2275,7 @@ function IngredientsPanelToolbar({
   onSearchChange,
   searchPlaceholder = "Buscar",
   searchAriaLabel,
+  action,
 }: {
   label: string;
   value: string;
@@ -1968,8 +2284,10 @@ function IngredientsPanelToolbar({
   onSearchChange?: (value: string) => void;
   searchPlaceholder?: string;
   searchAriaLabel?: string;
+  action?: ReactNode;
 }) {
-  const showControls = badges.length > 0 || typeof searchValue === "string";
+  const showControls =
+    badges.length > 0 || typeof searchValue === "string" || Boolean(action);
 
   return (
     <div className="products-list-toolbar toolbar-shell mt-4 grid gap-3 rounded-lg px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
@@ -2002,6 +2320,7 @@ function IngredientsPanelToolbar({
               ))}
             </div>
           ) : null}
+          {action ? <div className="ingredients-toolbar-action-slot">{action}</div> : null}
         </div>
       ) : null}
     </div>
@@ -2012,6 +2331,29 @@ function getIngredientDimensionTone(dimension: IngredientDimension) {
   if (dimension === "VOLUME") return "info";
   if (dimension === "COUNT") return "success";
   return "default";
+}
+
+function getIngredientStockStatus(stockOnHand: number, hasContext: boolean) {
+  if (!hasContext) {
+    return { label: "Sin contexto", tone: "default" as const };
+  }
+
+  if (stockOnHand > 0) {
+    return { label: "Con stock", tone: "success" as const };
+  }
+
+  return { label: "Sin stock", tone: "warning" as const };
+}
+
+function getStockValueTone(stockOnHand: number, hasContext: boolean) {
+  if (!hasContext) return "neutral";
+  return stockOnHand > 0 ? "positive" : "warning";
+}
+
+function getDeltaValueTone(delta: number) {
+  if (delta > 0) return "positive";
+  if (delta < 0) return "negative";
+  return "neutral";
 }
 
 
