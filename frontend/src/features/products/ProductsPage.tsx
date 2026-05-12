@@ -1,6 +1,6 @@
 import '@/features/products/products-d2b.css';
 import clsx from 'clsx';
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Boxes, CircleDot, Layers3, Package2, PackageSearch } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -8,15 +8,15 @@ import { AccessState } from '@/components/AccessState';
 import { CheckboxField } from '@/components/CheckboxField';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { EmptyState } from '@/components/EmptyState';
-import { FilterChip } from '@/components/FilterChip';
 import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { Modal } from '@/components/Modal';
-import type {
-  ModulePageHeaderBadge,
-  ModulePageHeaderCard,
+import {
+  ModulePageHeader,
+  type ModulePageHeaderBadge,
+  type ModulePageHeaderCard,
 } from '@/components/ModulePageHeader';
-import { ModuleInfoTooltip } from '@/components/ModuleStatusHeader';
+import { ProductMedia } from '@/components/ProductMedia';
 import { SearchField } from '@/components/SearchField';
 import { Select } from '@/components/Select';
 import { ScrollPanel } from '@/components/ScrollPanel';
@@ -71,6 +71,8 @@ type RecipeDraftItem = {
 };
 
 type StatusOnlyFilter = 'ACTIVE' | 'INACTIVE';
+type CreationWorkspaceTab = 'PRODUCT' | 'VARIANT';
+type CatalogExplorerTab = 'PRODUCTS' | 'SIMPLES' | 'VARIANTS';
 
 type DeleteConfirmationTarget = {
   kind: 'PRODUCT' | 'VARIANT';
@@ -83,6 +85,8 @@ type EnrichedCatalogProduct = CatalogProduct & {
   operationalVariant: CatalogVariant | null;
   relatedVariants: CatalogVariant[];
 };
+
+const PRESENTATION_MAX_LENGTH = 15;
 
 const unitsByDimension: Record<IngredientDimension, string[]> = {
   WEIGHT: ['g', 'kg'],
@@ -99,6 +103,17 @@ const variantStatusFilterOptions = [
   { value: 'ACTIVE', label: 'Activas' },
   { value: 'INACTIVE', label: 'Inactivas' },
 ] as const;
+
+const creationWorkspaceTabs: Array<{ value: CreationWorkspaceTab; label: string }> = [
+  { value: 'PRODUCT', label: 'Producto' },
+  { value: 'VARIANT', label: 'Variante' },
+];
+
+const catalogExplorerTabs: Array<{ value: CatalogExplorerTab; label: string }> = [
+  { value: 'PRODUCTS', label: 'Productos' },
+  { value: 'SIMPLES', label: 'Simples' },
+  { value: 'VARIANTS', label: 'Variantes' },
+];
 
 export function ProductsPage() {
   const { can } = usePermissions();
@@ -137,6 +152,8 @@ export function ProductsPage() {
     createEmptyProductImageDraft(),
   );
   const [productActive, setProductActive] = useState(true);
+  const [simpleProductPresentation, setSimpleProductPresentation] = useState('');
+  const [simpleProductPriceInput, setSimpleProductPriceInput] = useState('');
   const [productFiscalSectionOpen, setProductFiscalSectionOpen] = useState(false);
   const [productListFilter, setProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -144,6 +161,10 @@ export function ProductsPage() {
   const [variantSearchTerm, setVariantSearchTerm] = useState('');
   const [simpleProductListFilter, setSimpleProductListFilter] = useState<StatusOnlyFilter>('ACTIVE');
   const [simpleProductSearchTerm, setSimpleProductSearchTerm] = useState('');
+  const [creationWorkspaceTab, setCreationWorkspaceTab] =
+    useState<CreationWorkspaceTab>('PRODUCT');
+  const [catalogExplorerTab, setCatalogExplorerTab] =
+    useState<CatalogExplorerTab>('PRODUCTS');
 
   const [variantProductId, setVariantProductId] = useState('');
   const [variantSize, setVariantSize] = useState('');
@@ -172,6 +193,9 @@ export function ProductsPage() {
     createEmptyProductImageDraft(),
   );
   const [editProductActive, setEditProductActive] = useState(true);
+  const [editSimpleProductPresentation, setEditSimpleProductPresentation] = useState('');
+  const [editSimpleProductPriceInput, setEditSimpleProductPriceInput] = useState('');
+  const [editSimpleProductOperationActive, setEditSimpleProductOperationActive] = useState(true);
   const [editProductFiscalSectionOpen, setEditProductFiscalSectionOpen] = useState(false);
   const [editVariantSize, setEditVariantSize] = useState('');
   const [editVariantSku, setEditVariantSku] = useState('');
@@ -337,6 +361,8 @@ export function ProductsPage() {
     setProductFiscalDraft(createEmptyProductFiscalDraft());
     setProductImageDraft(createEmptyProductImageDraft());
     setProductActive(true);
+    setSimpleProductPresentation('');
+    setSimpleProductPriceInput('');
     setProductFiscalSectionOpen(false);
   }
 
@@ -393,8 +419,28 @@ export function ProductsPage() {
   }
 
   async function handleCreateProduct() {
+    const simpleSalePrice = parseNumberInput(simpleProductPriceInput);
+
     if (!productName.trim()) {
       setSubmitError('El nombre del producto es obligatorio.');
+      return;
+    }
+    if (
+      productCatalogDraft.productType === 'SIMPLE' &&
+      !simpleProductPresentation.trim()
+    ) {
+      setSubmitError('La presentacion es obligatoria para productos simples.');
+      return;
+    }
+    if (simpleProductPresentation.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('La presentacion no puede superar 15 caracteres.');
+      return;
+    }
+    if (
+      productCatalogDraft.productType === 'SIMPLE' &&
+      (simpleSalePrice === null || simpleSalePrice < 0)
+    ) {
+      setSubmitError('El precio de venta debe ser mayor o igual a 0.');
       return;
     }
     if (productImageDraft.error) {
@@ -409,6 +455,9 @@ export function ProductsPage() {
 
       const createdProduct = await posApi.createProduct({
         name: productName.trim(),
+        ...(productCatalogDraft.productType === 'SIMPLE'
+          ? { simplePresentation: simpleProductPresentation.trim() }
+          : {}),
         ...serializeProductCatalogDraft(productCatalogDraft),
         ...serializeProductFiscalDraft(
           showFiscalFields ? productFiscalDraft : createEmptyProductFiscalDraft(),
@@ -417,6 +466,12 @@ export function ProductsPage() {
       });
 
       let persistedProduct = createdProduct;
+      const operationalVariant = getSimpleOperationalVariant(createdProduct);
+
+      if (productCatalogDraft.productType === 'SIMPLE' && !operationalVariant) {
+        setSubmitError('No se pudo preparar la operacion simple del producto.');
+        return;
+      }
 
       try {
         const imageProduct = await persistProductImageDraft(
@@ -430,9 +485,9 @@ export function ProductsPage() {
       } catch (imageError) {
         addSessionProduct(createdProduct);
         resetCreateProductForm();
-        setMessage(`Producto #${createdProduct.id} creado correctamente.`);
+        setMessage('Producto creado correctamente.');
         setSubmitError(
-          `Producto #${createdProduct.id} creado, pero imagen no pudo ${resolveProductImageMutationAction(productImageDraft)}. Abre editar para reintentar. ${translateCatalogError(
+          `Producto creado, pero imagen no pudo ${resolveProductImageMutationAction(productImageDraft)}. Abre editar para reintentar. ${translateCatalogError(
             imageError instanceof Error ? imageError.message : 'No se pudo guardar la imagen.',
           )}`,
         );
@@ -440,12 +495,34 @@ export function ProductsPage() {
         return;
       }
 
+      if (productCatalogDraft.productType === 'SIMPLE' && operationalVariant) {
+        try {
+          await posApi.updateVariant(operationalVariant.id, {
+            sale_price: simpleSalePrice ?? 0,
+            active: productActive,
+          });
+        } catch (operationError) {
+          addSessionProduct(persistedProduct);
+          resetCreateProductForm();
+          setMessage('Producto creado correctamente.');
+          setSubmitError(
+            `Producto creado, pero precio de venta no pudo guardarse. ${translateCatalogError(
+              operationError instanceof Error
+                ? operationError.message
+                : 'No se pudo actualizar la operacion simple.',
+            )}`,
+          );
+          await refreshCatalog();
+          return;
+        }
+      }
+
       addSessionProduct(persistedProduct);
       resetCreateProductForm();
       setMessage(
         productImageDraft.pendingImageFile
-          ? `Producto #${persistedProduct.id} creado con imagen.`
-          : `Producto #${persistedProduct.id} creado correctamente.`,
+          ? 'Producto creado con imagen.'
+          : 'Producto creado correctamente.',
       );
       await refreshCatalog();
     } catch (error) {
@@ -476,8 +553,16 @@ export function ProductsPage() {
       );
       return;
     }
-    if (!variantSize.trim() || !variantSku.trim()) {
-      setSubmitError('Tamaño y SKU son obligatorios.');
+    if (!variantSize.trim()) {
+      setSubmitError('El tamano es obligatorio.');
+      return;
+    }
+    if (variantSize.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('El tamano no puede superar 15 caracteres.');
+      return;
+    }
+    if (!variantSku.trim()) {
+      setSubmitError('El SKU de venta es obligatorio.');
       return;
     }
     if (variantPrice === null || variantPrice < 0) {
@@ -504,7 +589,7 @@ export function ProductsPage() {
       setVariantSku('');
       setVariantPriceInput('');
       setVariantActive(true);
-      setMessage(`Variante #${variant.id} creada correctamente.`);
+      setMessage('Variante creada correctamente.');
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -518,12 +603,19 @@ export function ProductsPage() {
   }
 
   function openProductEditor(product: CatalogProduct) {
+    const operationalVariant = getSimpleOperationalVariant(product);
+
     setSelectedProduct(product);
     setEditProductName(product.name);
     setEditProductCatalogDraft(getProductCatalogDraft(product));
     setEditProductFiscalDraft(getProductFiscalDraft(product));
     setEditProductImageDraft(getProductImageDraft(product));
     setEditProductActive(product.active);
+    setEditSimpleProductPresentation(getSimpleProductPresentation(product));
+    setEditSimpleProductPriceInput(
+      operationalVariant ? String(Number(operationalVariant.sale_price)) : '',
+    );
+    setEditSimpleProductOperationActive(operationalVariant?.active ?? product.active);
     setEditProductFiscalSectionOpen(showFiscalFields && hasConfiguredFiscalData(product));
     setProductEditorOpen(true);
     setSubmitError(null);
@@ -531,8 +623,28 @@ export function ProductsPage() {
 
   async function handleSaveProduct() {
     if (!selectedProduct) return;
+    const simpleSalePrice = parseNumberInput(editSimpleProductPriceInput);
+
     if (!editProductName.trim()) {
       setSubmitError('El nombre del producto es obligatorio.');
+      return;
+    }
+    if (
+      editProductCatalogDraft.productType === 'SIMPLE' &&
+      !editSimpleProductPresentation.trim()
+    ) {
+      setSubmitError('La presentacion es obligatoria para productos simples.');
+      return;
+    }
+    if (editSimpleProductPresentation.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('La presentacion no puede superar 15 caracteres.');
+      return;
+    }
+    if (
+      editProductCatalogDraft.productType === 'SIMPLE' &&
+      (simpleSalePrice === null || simpleSalePrice < 0)
+    ) {
+      setSubmitError('El precio de venta debe ser mayor o igual a 0.');
       return;
     }
     if (editProductImageDraft.error) {
@@ -547,6 +659,9 @@ export function ProductsPage() {
 
       const updatedProduct = await posApi.updateProduct(selectedProduct.id, {
         name: editProductName.trim(),
+        ...(editProductCatalogDraft.productType === 'SIMPLE'
+          ? { simplePresentation: editSimpleProductPresentation.trim() }
+          : {}),
         ...serializeProductCatalogDraft(editProductCatalogDraft),
         ...serializeProductFiscalDraft(
           showFiscalFields ? editProductFiscalDraft : getProductFiscalDraft(selectedProduct),
@@ -567,9 +682,9 @@ export function ProductsPage() {
         }
       } catch (imageError) {
         setSelectedProduct(updatedProduct);
-        setMessage(`Producto #${selectedProduct.id} actualizado correctamente.`);
+        setMessage('Producto actualizado correctamente.');
         setSubmitError(
-          `Producto #${selectedProduct.id} actualizado, pero imagen no pudo ${resolveProductImageMutationAction(editProductImageDraft)}. ${translateCatalogError(
+          `Producto actualizado, pero imagen no pudo ${resolveProductImageMutationAction(editProductImageDraft)}. ${translateCatalogError(
             imageError instanceof Error ? imageError.message : 'No se pudo actualizar la imagen.',
           )}`,
         );
@@ -577,10 +692,41 @@ export function ProductsPage() {
         return;
       }
 
+      if (editProductCatalogDraft.productType === 'SIMPLE') {
+        const operationalVariant = getSimpleOperationalVariant(updatedProduct);
+
+        if (!operationalVariant) {
+          setSelectedProduct(persistedProduct);
+          setMessage('Producto actualizado correctamente.');
+          setSubmitError('No se pudo localizar la operacion simple del producto.');
+          await refreshCatalog();
+          return;
+        }
+
+        try {
+          await posApi.updateVariant(operationalVariant.id, {
+            sale_price: simpleSalePrice ?? 0,
+            active: editSimpleProductOperationActive,
+          });
+        } catch (operationError) {
+          setSelectedProduct(persistedProduct);
+          setMessage('Producto actualizado correctamente.');
+          setSubmitError(
+            `Producto actualizado, pero precio de venta no pudo guardarse. ${translateCatalogError(
+              operationError instanceof Error
+                ? operationError.message
+                : 'No se pudo actualizar la operacion simple.',
+            )}`,
+          );
+          await refreshCatalog();
+          return;
+        }
+      }
+
       setSelectedProduct(persistedProduct);
       setProductEditorOpen(false);
       setEditProductImageDraft(createEmptyProductImageDraft());
-      setMessage(buildProductUpdateSuccessMessage(selectedProduct.id, editProductImageDraft));
+      setMessage(buildProductUpdateSuccessMessage(editProductImageDraft));
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -599,7 +745,7 @@ export function ProductsPage() {
       setMessage(null);
       await posApi.updateProductStatus(product.id, { active: !product.active });
       setMessage(
-        `Producto #${product.id} ${product.active ? 'desactivado' : 'activado'} correctamente.`,
+        `Producto ${product.active ? 'desactivado' : 'activado'} correctamente.`,
       );
       await refreshCatalog();
     } catch (error) {
@@ -612,6 +758,8 @@ export function ProductsPage() {
   }
 
   function openVariantEditor(variant: CatalogVariant) {
+    if (variant.is_operational) return;
+
     setSelectedVariant(variant);
     setEditVariantSize(variant.size);
     setEditVariantSku(variant.sku);
@@ -625,12 +773,14 @@ export function ProductsPage() {
     if (!selectedVariant) return;
     const salePrice = parseNumberInput(editVariantPriceInput);
 
-    if ((!selectedVariant.is_operational && !editVariantSize.trim()) || !editVariantSku.trim()) {
+    if (!editVariantSize.trim() || !editVariantSku.trim()) {
       setSubmitError(
-        selectedVariant.is_operational
-          ? 'SKU obligatorio para la operacion simple.'
-          : 'Tamano y SKU son obligatorios.',
+        'Tamano y SKU de venta son obligatorios.',
       );
+      return;
+    }
+    if (editVariantSize.trim().length > PRESENTATION_MAX_LENGTH) {
+      setSubmitError('El tamano no puede superar 15 caracteres.');
       return;
     }
     if (salePrice === null || salePrice < 0) {
@@ -642,17 +792,13 @@ export function ProductsPage() {
       setEditingVariant(true);
       setSubmitError(null);
       await posApi.updateVariant(selectedVariant.id, {
-        ...(selectedVariant.is_operational ? {} : { size: editVariantSize.trim() }),
+        size: editVariantSize.trim(),
         sku: editVariantSku.trim(),
         sale_price: salePrice,
         active: editVariantActive,
       });
       setVariantEditorOpen(false);
-      setMessage(
-        selectedVariant.is_operational
-          ? `Operacion simple #${selectedVariant.id} actualizada correctamente.`
-          : `Variante #${selectedVariant.id} actualizada correctamente.`,
-      );
+      setMessage('Variante actualizada correctamente.');
       await refreshCatalog();
     } catch (error) {
       setSubmitError(
@@ -672,8 +818,8 @@ export function ProductsPage() {
       await posApi.updateVariantStatus(variant.id, { active: !variant.active });
       setMessage(
         variant.is_operational
-          ? `Operacion simple #${variant.id} ${variant.active ? 'desactivada' : 'activada'} correctamente.`
-          : `Variante #${variant.id} ${variant.active ? 'desactivada' : 'activada'} correctamente.`,
+          ? `Operacion simple ${variant.active ? 'desactivada' : 'activada'} correctamente.`
+          : `Variante ${variant.active ? 'desactivada' : 'activada'} correctamente.`,
       );
       await refreshCatalog();
     } catch (error) {
@@ -690,7 +836,7 @@ export function ProductsPage() {
       kind: 'PRODUCT',
       id: product.id,
       label: product.name,
-      detail: `Producto #${product.id}`,
+      detail: 'Producto de catalogo',
     });
     setSubmitError(null);
   }
@@ -700,7 +846,7 @@ export function ProductsPage() {
       kind: 'VARIANT',
       id: variant.id,
       label: formatVariantDisplayName(variant),
-      detail: `${variant.is_operational ? 'Operacion simple' : 'Variante'} #${variant.id} - ${variant.sku}`,
+      detail: `${variant.is_operational ? 'Operacion simple' : 'Variante'} - SKU ${variant.sku}`,
     });
     setSubmitError(null);
   }
@@ -719,7 +865,7 @@ export function ProductsPage() {
           setProductEditorOpen(false);
           setSelectedProduct(null);
         }
-        setMessage(`Producto #${deleteTarget.id} eliminado correctamente.`);
+        setMessage('Producto eliminado correctamente.');
       } else {
         await posApi.deleteVariant(deleteTarget.id);
         if (selectedVariant?.id === deleteTarget.id) {
@@ -728,7 +874,7 @@ export function ProductsPage() {
           setSelectedVariant(null);
           setLoadedRecipe(null);
         }
-        setMessage(`Variante #${deleteTarget.id} eliminada correctamente.`);
+        setMessage('Variante eliminada correctamente.');
       }
 
       setDeleteTarget(null);
@@ -982,65 +1128,116 @@ export function ProductsPage() {
   const visibleProductsLabel = productSearchTerm.trim()
     ? `${filteredProducts.length} coincidencias`
     : productListFilter === 'ACTIVE'
-      ? `${activeProductsCount} activos visibles`
-      : `${inactiveProductsCount} inactivos visibles`;
+      ? `${activeProductsCount} activos`
+      : `${inactiveProductsCount} inactivos`;
   const visibleVariantsLabel = variantSearchTerm.trim()
     ? `${filteredRealVariants.length} coincidencias`
     : variantListFilter === 'ACTIVE'
-      ? `${activeRealVariantsCount} activas visibles`
-      : `${inactiveRealVariantsCount} inactivas visibles`;
+      ? `${activeRealVariantsCount} activas`
+      : `${inactiveRealVariantsCount} inactivas`;
   const visibleSimpleProductsLabel = simpleProductSearchTerm.trim()
     ? `${filteredSimpleProducts.length} coincidencias`
     : simpleProductListFilter === 'ACTIVE'
-      ? `${activeSimpleProductsCount} activos visibles`
-      : `${inactiveSimpleProductsCount} inactivos visibles`;
-  const accessStatusLabel = canManageCatalog ? 'Edicion habilitada' : 'Solo lectura';
+      ? `${activeSimpleProductsCount} activos`
+      : `${inactiveSimpleProductsCount} inactivos`;
+  const catalogExplorerCountLabel = catalogExplorerTab === 'PRODUCTS'
+    ? visibleProductsLabel
+    : catalogExplorerTab === 'SIMPLES'
+      ? visibleSimpleProductsLabel
+      : visibleVariantsLabel;
+  const catalogExplorerSearchValue = catalogExplorerTab === 'PRODUCTS'
+    ? productSearchTerm
+    : catalogExplorerTab === 'SIMPLES'
+      ? simpleProductSearchTerm
+      : variantSearchTerm;
+  const catalogExplorerActiveFilter = catalogExplorerTab === 'PRODUCTS'
+    ? productListFilter
+    : catalogExplorerTab === 'SIMPLES'
+      ? simpleProductListFilter
+      : variantListFilter;
+  const catalogExplorerFilterOptions = catalogExplorerTab === 'VARIANTS'
+    ? variantStatusFilterOptions
+    : productStatusFilterOptions;
+  const catalogExplorerSearchLabel = catalogExplorerTab === 'PRODUCTS'
+    ? 'Buscar productos por nombre o SKU'
+    : catalogExplorerTab === 'SIMPLES'
+      ? 'Buscar productos simples por nombre o SKU'
+      : 'Buscar variantes por nombre o SKU';
+  const catalogExplorerTabLabel = catalogExplorerTabs.find(
+    (tab) => tab.value === catalogExplorerTab,
+  )?.label ?? 'Catalogo';
+  function handleCatalogExplorerSearchChange(value: string) {
+    if (catalogExplorerTab === 'PRODUCTS') {
+      setProductSearchTerm(value);
+      return;
+    }
+
+    if (catalogExplorerTab === 'SIMPLES') {
+      setSimpleProductSearchTerm(value);
+      return;
+    }
+
+    setVariantSearchTerm(value);
+  }
+  function handleCatalogExplorerFilterChange(value: StatusOnlyFilter) {
+    if (catalogExplorerTab === 'PRODUCTS') {
+      setProductListFilter(value);
+      return;
+    }
+
+    if (catalogExplorerTab === 'SIMPLES') {
+      setSimpleProductListFilter(value);
+      return;
+    }
+
+    setVariantListFilter(value);
+  }
   const heroSummaryLabel = showRecipeModule ? 'Cobertura activa' : 'Operacion activa';
   const heroSummaryValue = showRecipeModule ? recipeBadgeLabel : operationalBadgeLabel;
   const heroSummaryNote = catalogAccessDenied
-    ? 'Tu perfil actual solo puede revisar estado general del catalogo.'
+    ? 'Solo lectura'
     : showRecipeModule
       ? activeVariantsCount > 0
-        ? `${configuredRecipesCount} recetas listas para ${activeVariantsCount} operaciones activas`
-        : 'Crea operaciones para medir cobertura administrativa.'
-      : `${activeSimpleOperationalCount} simples y ${activeRealVariantsCount} variantes activas en POS`;
+        ? `${configuredRecipesCount}/${activeVariantsCount} con receta`
+        : 'Sin operaciones'
+      : `${activeSimpleOperationalCount} simples / ${activeRealVariantsCount} variantes`;
   const productsHeroMetrics: ModulePageHeaderCard[] = [
     {
-      label: 'Catalogo total',
+      label: 'Catalogo',
       value: String(products.length),
       note: loadingCatalog
-        ? 'Sincronizando productos y operaciones'
+        ? 'Sincronizando'
         : inactiveProductsCount > 0
-          ? `${activeProductsCount} activos y ${inactiveProductsCount} inactivos`
-          : `${activeProductsCount} activos en catalogo`,
+          ? `${activeProductsCount} activos / ${inactiveProductsCount} inactivos`
+          : `${activeProductsCount} activos`,
       accent: catalogStatusTone,
       icon: <PackageSearch size={16} />,
       iconTone: catalogStatusTone,
     },
     {
-      label: 'Productos simples',
+      label: 'Simples',
       value: String(simpleProducts.length),
       note:
         simpleProducts.length > 0
-          ? `${activeSimpleProductsCount} activos con operacion unificada`
-          : 'Aun no hay productos simples configurados',
+          ? `${activeSimpleProductsCount} activos`
+          : 'Sin simples',
       accent: 'default' as const,
       icon: <Package2 size={16} />,
       iconTone: 'default',
     },
     {
-      label: 'Variantes reales',
+      label: 'Variantes',
       value: String(realVariants.length),
       note:
         realVariants.length > 0
-          ? `${activeRealVariantsCount} listas para venta`
-          : 'Sin variantes reales configuradas',
+          ? `${activeRealVariantsCount} activas`
+          : 'Sin variantes',
       accent: 'info' as const,
       icon: <Layers3 size={16} />,
       iconTone: 'info',
     },
     {
-      label: showRecipeModule ? 'Cobertura receta' : 'Operaciones activas',
+      label: showRecipeModule ? 'Receta' : 'Operaciones',
       value: showRecipeModule
         ? activeVariantsCount > 0
           ? `${configuredRecipesCount}/${activeVariantsCount}`
@@ -1049,7 +1246,7 @@ export function ProductsPage() {
       note: showRecipeModule
         ? activeVariantsCount > 0
           ? recipeBadgeLabel
-          : 'Sin cobertura pendiente por medir'
+          : 'Sin operaciones'
         : `${activeSimpleOperationalCount} simples y ${activeRealVariantsCount} variantes activas`,
       accent: showRecipeModule ? recipeCoverageTone : ('success' as const),
       icon: <CircleDot size={16} />,
@@ -1061,99 +1258,314 @@ export function ProductsPage() {
       label: catalogStatusLabel,
       tone: catalogStatusTone,
     },
-    {
-      label: accessStatusLabel,
-      tone: canManageCatalog ? ('info' as const) : ('default' as const),
-    },
+    ...(!canManageCatalog
+      ? [
+          {
+            label: 'Solo lectura',
+            tone: 'default' as const,
+          },
+        ]
+      : []),
   ];
-  return (
-    <div className="products-page grid min-w-0 gap-4 sm:gap-5">
-      <section className="module-page-header" aria-label="Estado operativo de productos">
-        <div className="module-page-header__shell">
-          <div className="module-page-header__main">
-            <div className="module-page-header__copy">
-              <p className="module-page-header__eyebrow">Administracion de catalogo</p>
-              <div className="module-page-header__title-row">
-                <div className="module-page-header__title-wrap">
-                  <span className="module-page-header__title-icon" aria-hidden="true">
-                    <Boxes size={18} />
-                  </span>
-                  <h1 className="module-page-header__title">Productos</h1>
-                  <ModuleInfoTooltip
-                    label="Mas info sobre productos"
-                    content="Controla estado del catalogo, productos simples, variantes activas y cobertura de recetas dentro del mismo flujo administrativo."
-                  />
-                  <div className="module-page-header__badges">
-                    {productsHeaderBadges.map((badge, index) => (
-                      <StatusBadge
-                        key={`${badge.label}-${badge.tone ?? 'default'}-${index}`}
-                        label={badge.label}
-                        tone={badge.tone ?? 'default'}
-                        className={clsx('module-page-header__badge', badge.className)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <p className="module-page-header__description">
-                Catalogo comercial, operaciones de venta y control administrativo para mantener producto y receta en orden.
-              </p>
-            </div>
 
-            <div className="module-page-header__aside">
-              <div className="module-page-header__summary">
-                <p className="module-page-header__summary-label">{heroSummaryLabel}</p>
-                <p className="module-page-header__summary-value">{heroSummaryValue}</p>
-                <p className="module-page-header__summary-note">{heroSummaryNote}</p>
-              </div>
-              <div className="module-page-header__aside-action">
-                <Button
-                  variant="secondary"
-                  onClick={() => void refreshCatalog()}
-                >
-                  Actualizar catalogo
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="module-page-header__cards">
-            {productsHeroMetrics.map((card, index) => (
-              <div
-                key={`module-card-${index}`}
-                className="module-page-header__card"
-                data-accent={card.accent ?? 'default'}
-              >
-                <div className="module-page-header__card-main">
-                  {card.icon ? (
-                    <span
-                      className="module-page-header__card-icon"
-                      aria-hidden="true"
-                      data-tone={card.iconTone ?? 'default'}
-                    >
-                      {card.icon}
-                    </span>
-                  ) : null}
-                  <div className="min-w-0">
-                    <div className="module-page-header__card-top">
-                      <p className="module-page-header__card-label">{card.label}</p>
-                      {card.badge ? (
-                        <StatusBadge
-                          label={card.badge.label}
-                          tone={card.badge.tone ?? 'default'}
-                          className={clsx('module-page-header__card-badge', card.badge.className)}
-                        />
-                      ) : null}
-                    </div>
-                    <p className="module-page-header__card-value">{card.value}</p>
-                    {card.note ? <p className="module-page-header__card-note">{card.note}</p> : null}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+  function renderMobileInfoItem(
+    label: string,
+    value: ReactNode,
+    options?: { accent?: 'price' | 'default' },
+  ) {
+    return (
+      <div className="products-mobile-card__info-item">
+        <span className="products-mobile-card__info-label">{label}</span>
+        <div
+          className={clsx(
+            'products-mobile-card__info-value',
+            options?.accent === 'price' && 'products-mobile-card__info-value--price',
+          )}
+        >
+          {value}
         </div>
-      </section>
+      </div>
+    );
+  }
+
+  function renderMobileEntityHeader(
+    label: string,
+    image: { src: string | null; alt: string | null; kind: 'SIMPLE' | 'VARIANT' },
+    chip: { label: string; tone: 'info' | 'default' },
+    sku?: string | null,
+  ) {
+    return (
+      <div className="products-mobile-card__header">
+        <ProductMedia
+          size="sm"
+          label={label}
+          src={image.src}
+          alt={image.alt ?? label}
+          kind={image.kind}
+          className="products-mobile-card__media"
+        />
+        <div className="min-w-0 products-mobile-card__header-copy">
+          <p className="products-mobile-card__name">{label}</p>
+          <StatusBadge label={chip.label} tone={chip.tone} className="products-mobile-card__type" />
+          {sku ? <p className="products-mobile-card__sku">SKU {sku}</p> : null}
+        </div>
+      </div>
+    );
+  }
+
+  function renderProductMobileCard(product: EnrichedCatalogProduct) {
+    const displayVariant = getProductCardVariant(product);
+    const operationSummary = getProductOperationSummary(product, displayVariant);
+    const recipeState = showRecipeModule
+      ? getProductCardRecipeState(product, recipeStatusByVariant)
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          product.name,
+          {
+            src: product.imageUrl,
+            alt: product.imageAlt,
+            kind: product.productType === 'VARIANT' ? 'VARIANT' : 'SIMPLE',
+          },
+          {
+            label: product.productType === 'SIMPLE' ? 'Simple' : 'Variantes',
+            tone: 'info',
+          },
+          product.internalCode,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem('Operacion', operationSummary.title || 'Sin presentacion')}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {getProductCardPriceLabel(product, displayVariant)}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge
+              label={product.active ? 'Activo' : 'Inactivo'}
+              tone={product.active ? 'success' : 'default'}
+            />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem(
+                'Receta',
+                <StatusBadge label={recipeState.label} tone={recipeState.tone} />,
+              )
+            : null}
+        </div>
+        {canManageCatalog ? (
+          <div className="products-mobile-card__actions">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="product-editor-dialog"
+              onClick={() => openProductEditor(product)}
+            >
+              Editar
+            </Button>
+            <Button
+              variant="ghost"
+              className={product.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleProductStatus(product)}
+            >
+              {product.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestProductDelete(product)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderSimpleProductMobileCard(product: EnrichedCatalogProduct) {
+    const displayVariant = getProductCardVariant(product);
+    const recipeState = showRecipeModule
+      ? getProductCardRecipeState(product, recipeStatusByVariant)
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          product.name,
+          { src: product.imageUrl, alt: product.imageAlt, kind: 'SIMPLE' },
+          { label: 'Simple', tone: 'info' },
+          product.internalCode,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem(
+            'Presentacion',
+            displayVariant?.size.trim() || 'Sin presentacion',
+          )}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {getProductCardPriceLabel(product, displayVariant)}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge
+              label={getSimpleProductTableStatus(product)}
+              tone={product.active && product.operationalVariant?.active ? 'success' : 'default'}
+            />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem(
+                'Receta',
+                <StatusBadge label={recipeState.label} tone={recipeState.tone} />,
+              )
+            : null}
+        </div>
+        {canManageCatalog && product.operationalVariant ? (
+          <div className="products-mobile-card__actions products-mobile-card__actions--grid">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="product-editor-dialog"
+              onClick={() => openProductEditor(product)}
+            >
+              Editar
+            </Button>
+            {showRecipeModule ? (
+              <Button
+                variant="secondary"
+                className="action-soft-brand"
+                aria-haspopup="dialog"
+                aria-controls="recipe-manager-dialog"
+                onClick={() => void openRecipeManager(product.operationalVariant!)}
+              >
+                Receta
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              className={product.operationalVariant.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}
+            >
+              {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestProductDelete(product)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderVariantMobileCard(variant: CatalogVariant) {
+    const recipeState = showRecipeModule
+      ? {
+          label: recipeStatusByVariant[variant.id] ? 'Con receta' : 'Sin receta',
+          tone: recipeStatusByVariant[variant.id] ? ('info' as const) : ('warning' as const),
+        }
+      : null;
+
+    return (
+      <article className="products-mobile-card">
+        {renderMobileEntityHeader(
+          variant.product_name,
+          { src: variant.image_url, alt: variant.image_alt, kind: 'VARIANT' },
+          { label: 'Variante', tone: 'info' },
+          variant.sku,
+        )}
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem('Presentacion', variant.size || 'Sin tamano')}
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {formatCurrency(Number(variant.sale_price))}
+            </span>,
+            { accent: 'price' },
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge label={variant.active ? 'Activa' : 'Inactiva'} tone={variant.active ? 'success' : 'default'} />,
+          )}
+          {showRecipeModule && recipeState
+            ? renderMobileInfoItem('Receta', <StatusBadge label={recipeState.label} tone={recipeState.tone} />)
+            : null}
+        </div>
+        {canManageCatalog ? (
+          <div className="products-mobile-card__actions products-mobile-card__actions--grid">
+            <Button
+              variant="secondary"
+              className="action-soft-brand"
+              aria-haspopup="dialog"
+              aria-controls="variant-editor-dialog"
+              onClick={() => openVariantEditor(variant)}
+            >
+              Editar
+            </Button>
+            {showRecipeModule ? (
+              <Button
+                variant="secondary"
+                className="action-soft-brand"
+                aria-haspopup="dialog"
+                aria-controls="recipe-manager-dialog"
+                onClick={() => void openRecipeManager(variant)}
+              >
+                Receta
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              className={variant.active ? 'products-action-toggle' : 'action-soft-success'}
+              onClick={() => void handleToggleVariantStatus(variant)}
+            >
+              {variant.active ? 'Desactivar' : 'Activar'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="action-soft-danger"
+              onClick={() => requestVariantDelete(variant)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  return (
+    <div className="products-page products-page--catalog grid min-w-0 gap-4 sm:gap-5">
+      <ModulePageHeader
+        ariaLabel="Estado operativo de productos"
+        eyebrow="Administracion de catalogo"
+        title="Productos"
+        icon={<Boxes size={18} />}
+        badges={productsHeaderBadges}
+        summary={{
+          label: heroSummaryLabel,
+          value: heroSummaryValue,
+          note: heroSummaryNote,
+        }}
+        asideAction={
+          <Button variant="secondary" onClick={() => void refreshCatalog()}>
+            Actualizar catalogo
+          </Button>
+        }
+        cards={productsHeroMetrics}
+      />
 
       {message ? <FeedbackMessage tone="success" className="products-feedback">{message}</FeedbackMessage> : null}
 
@@ -1162,7 +1574,7 @@ export function ProductsPage() {
       {catalogError ? <FeedbackMessage tone="error" className="products-feedback">{catalogError}</FeedbackMessage> : null}
 
       {catalogAccessDenied ? (
-        <AccessState description="Tu perfil actual no puede consultar productos, operaciones de venta ni recetas administrativas." />
+        <AccessState description="Sin permiso para consultar catalogo." />
       ) : null}
 
       <div className="products-workspace grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:gap-5 xl:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
@@ -1170,297 +1582,299 @@ export function ProductsPage() {
           <Card
             padding="none"
             glow={false}
-            className="products-panel products-panel--form"
+            className="products-panel products-panel--form products-panel--creation-workspace"
             contentClassName="products-panel__body"
           >
-            <div className="products-panel__intro">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Administracion base</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Crear producto</h2>
-                <p className="products-panel__description">
-                  Define ficha comercial, tipo de producto y estado operativo sin cambiar flujo.
-                </p>
-              </div>
-            </div>
-            <div className="products-panel__highlights">
-              <div className="products-panel__spotlight products-panel__spotlight--variant">
-                <p className="products-panel__spotlight-label">Familias disponibles</p>
-                <p className="products-panel__spotlight-value">{variantReadyProducts.length}</p>
-                <p className="products-panel__spotlight-note">
-                  Solo se habilitan productos activos configurados para trabajar con variantes.
-                </p>
-              </div>
-              <div className="products-panel__spotlight products-panel__spotlight--product">
-                <p className="products-panel__spotlight-label">Tipo base</p>
-                <p className="products-panel__spotlight-value">
-                  {productCatalogDraft.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
-                </p>
-                <p className="products-panel__spotlight-note">
-                  {productName.trim()
-                    ? productName
-                    : 'Define la ficha base antes de crear operaciones de venta.'}
-                </p>
-              </div>
-            </div>
-            <div className="products-form-stack grid gap-4">
-              <Input
-                label="Nombre"
-                wrapperClassName="products-field"
-                labelClassName="products-field__label"
-                className="products-field__control"
-                value={productName}
-                onChange={(event) => setProductName(event.target.value)}
-                placeholder="Latte avellana"
-              />
-              <ProductImageField
-                productName={productName}
-                productType={productCatalogDraft.productType}
-                imageUrl={productImageDraft.imageUrl}
-                imageAlt={productImageDraft.imageAlt}
-                pendingImageFile={productImageDraft.pendingImageFile}
-                markedForRemoval={productImageDraft.markedForRemoval}
-                error={productImageDraft.error}
-                disabled={!canManageCatalog || creatingProduct}
-                onSelectImage={(file) =>
-                  setProductImageDraft((current) => selectProductImage(current, file))
-                }
-                onRemoveImage={() =>
-                  setProductImageDraft((current) => removeProductImage(current))
-                }
-                onRestoreImage={() =>
-                  setProductImageDraft((current) => restoreProductImage(current))
-                }
-              />
-              <ProductCatalogFieldsSection
-                draft={productCatalogDraft}
-                onInternalCodeChange={(value) =>
-                  setProductCatalogDraft((current) => ({
-                    ...current,
-                    internalCode: value,
-                  }))
-                }
-                onBarcodeChange={(value) =>
-                  setProductCatalogDraft((current) => ({
-                    ...current,
-                    barcode: value,
-                  }))
-                }
-                onSupplierReferenceChange={(value) =>
-                  setProductCatalogDraft((current) => ({
-                    ...current,
-                    supplierReference: value,
-                  }))
-                }
-                onDescriptionChange={(value) =>
-                  setProductCatalogDraft((current) => ({
-                    ...current,
-                    description: value,
-                  }))
-                }
-                onBrandChange={(value) =>
-                  setProductCatalogDraft((current) => ({
-                    ...current,
-                    brand: value,
-                  }))
-                }
-                onProductTypeChange={(value) =>
-                  setProductCatalogDraft((current) => ({
-                    ...current,
-                    productType: value,
-                  }))
-                }
-              />
+            <ProductsPanelHeader
+              eyebrow="Creacion"
+              title="Nuevo catalogo"
+              meta={
+                creationWorkspaceTab === 'PRODUCT' ? (
+                  <StatusBadge
+                    label={productCatalogDraft.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
+                    tone={productCatalogDraft.productType === 'VARIANT' ? 'info' : 'default'}
+                  />
+                ) : (
+                  <StatusBadge
+                    label={variantActive ? 'Activa' : 'Inactiva'}
+                    tone={variantActive ? 'success' : 'default'}
+                  />
+                )
+              }
+            />
+            <ProductsSegmentedControl
+              options={creationWorkspaceTabs}
+              value={creationWorkspaceTab}
+              onChange={setCreationWorkspaceTab}
+              ariaLabel="Seleccionar flujo de creacion"
+              idPrefix="products-create"
+            />
 
-              {showFiscalFields ? (
-                <ProductFiscalFieldsSection
-                  open={productFiscalSectionOpen}
-                  onOpenChange={handleProductFiscalSectionOpenChange}
-                  draft={productFiscalDraft}
-                  onUnspscCodeChange={(value) =>
-                    setProductFiscalDraft((current) => ({
-                      ...current,
-                      unspscCode: value,
-                    }))
-                  }
-                  onVatTypeChange={(value) =>
-                    setProductFiscalDraft((current) => ({
-                      ...current,
-                      vatType: value,
-                    }))
-                  }
-                  onTaxCategoryChange={(value) =>
-                    setProductFiscalDraft((current) => ({
-                      ...current,
-                      taxCategory: value,
-                    }))
-                  }
-                  onUnitMeasureChange={(value) =>
-                    setProductFiscalDraft((current) => ({
-                      ...current,
-                      unitMeasure: value,
-                    }))
-                  }
-                  onIsServiceChange={(value) =>
-                    setProductFiscalDraft((current) => ({
-                      ...current,
-                      isService: value,
-                    }))
-                  }
-                  onApplyIncChange={(value) =>
-                    setProductFiscalDraft((current) => ({
-                      ...current,
-                      applyInc: value,
-                    }))
-                  }
-                />
-              ) : null}
-              <CheckboxField
-                label="Activo"
-                description="Define si el producto estara disponible en el catalogo operativo."
-                wrapperClassName="products-toggle-card"
-                className="products-toggle-card__label"
-                checked={productActive}
-                onChange={(event) => setProductActive(event.target.checked)}
-              />
-
-
-              <div className="products-panel__actions flex gap-3">
-                <Button
-                  disabled={!canManageCatalog || creatingProduct || !productName.trim()}
-                  onClick={handleCreateProduct}
-                  className="products-panel__cta"
-                >
-                  {creatingProduct ? 'Guardando...' : 'Crear producto'}
-                </Button>
-                {!canManageCatalog ? (
-                  <Button variant="secondary" disabled className="products-panel__secondary">
-                    Solo lectura
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            padding="none"
-            glow={false}
-            className="products-panel products-panel--form"
-            contentClassName="products-panel__body"
-          >
-            <div className="products-panel__intro">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Operaciones de venta</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Crear variante</h2>
-                <p className="products-panel__description">
-                  Asigna SKU, tamano y precio a familias activas preparadas para POS.
-                </p>
-              </div>
-            </div>
-            <div className="products-panel__highlights">
-              <div className="products-panel__spotlight products-panel__spotlight--variant">
-                <p className="products-panel__spotlight-label">Familias disponibles</p>
-                <p className="products-panel__spotlight-value">{variantReadyProducts.length}</p>
-                <p className="products-panel__spotlight-note">
-                  Solo aparecen productos activos listos para trabajar con variantes reales.
-                </p>
-              </div>
-              <div className="products-panel__spotlight">
-                <p className="products-panel__spotlight-label">Estado inicial</p>
-                <p className="products-panel__spotlight-value">
-                  {variantActive ? 'Activa' : 'Inactiva'}
-                </p>
-                <p className="products-panel__spotlight-note">
-                  {variantProductId
-                    ? 'Se creara para la familia seleccionada.'
-                    : 'Selecciona primero una familia para continuar.'}
-                </p>
-              </div>
-            </div>
-            <div className="products-form-stack grid gap-4">
-              <Select
-                label="Producto"
-                wrapperClassName="products-field"
-                labelClassName="products-field__label"
-                className="products-field__control"
-                value={variantProductId}
-                onChange={(event) => setVariantProductId(event.target.value)}
+            {creationWorkspaceTab === 'PRODUCT' ? (
+              <div
+                id="products-create-product-panel"
+                role="tabpanel"
+                aria-labelledby="products-create-product-tab"
+                className="products-creation-pane"
               >
-                <option value="">
-                  {variantReadyProducts.length === 0
-                    ? 'No hay productos tipo variante activos'
-                    : 'Selecciona un producto'}
-                </option>
-                {variantReadyProducts.map((product) => (
-                  <option key={product.id} value={String(product.id)}>
-                    #{product.id} / {product.name}
-                  </option>
-                ))}
-              </Select>
-              <p className="products-inline-note">
-                Solo se listan productos activos configurados como tipo variante.
-              </p>
+                <div className="products-form-stack">
+                  <Input
+                    label="Nombre"
+                    wrapperClassName="products-field"
+                    labelClassName="products-field__label"
+                    className="products-field__control"
+                    value={productName}
+                    onChange={(event) => setProductName(event.target.value)}
+                    placeholder="Latte avellana"
+                  />
+                  <ProductImageField
+                    productName={productName}
+                    productType={productCatalogDraft.productType}
+                    imageUrl={productImageDraft.imageUrl}
+                    imageAlt={productImageDraft.imageAlt}
+                    pendingImageFile={productImageDraft.pendingImageFile}
+                    markedForRemoval={productImageDraft.markedForRemoval}
+                    error={productImageDraft.error}
+                    disabled={!canManageCatalog || creatingProduct}
+                    onSelectImage={(file) =>
+                      setProductImageDraft((current) => selectProductImage(current, file))
+                    }
+                    onRemoveImage={() =>
+                      setProductImageDraft((current) => removeProductImage(current))
+                    }
+                    onRestoreImage={() =>
+                      setProductImageDraft((current) => restoreProductImage(current))
+                    }
+                  />
+                  <ProductCatalogFieldsSection
+                    draft={productCatalogDraft}
+                    onInternalCodeChange={(value) =>
+                      setProductCatalogDraft((current) => ({
+                        ...current,
+                        internalCode: value,
+                      }))
+                    }
+                    onBarcodeChange={(value) =>
+                      setProductCatalogDraft((current) => ({
+                        ...current,
+                        barcode: value,
+                      }))
+                    }
+                    onSupplierReferenceChange={(value) =>
+                      setProductCatalogDraft((current) => ({
+                        ...current,
+                        supplierReference: value,
+                      }))
+                    }
+                    onDescriptionChange={(value) =>
+                      setProductCatalogDraft((current) => ({
+                        ...current,
+                        description: value,
+                      }))
+                    }
+                    onBrandChange={(value) =>
+                      setProductCatalogDraft((current) => ({
+                        ...current,
+                        brand: value,
+                      }))
+                    }
+                    onProductTypeChange={(value) =>
+                      setProductCatalogDraft((current) => ({
+                        ...current,
+                        productType: value,
+                      }))
+                    }
+                  />
+                  {productCatalogDraft.productType === 'SIMPLE' ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input
+                        label="Presentacion"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={simpleProductPresentation}
+                        onChange={(event) => setSimpleProductPresentation(event.target.value)}
+                        placeholder="Ej: Botella 350 ml"
+                        maxLength={15}
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        label="Precio de venta"
+                        wrapperClassName="products-field"
+                        labelClassName="products-field__label"
+                        className="products-field__control"
+                        value={simpleProductPriceInput}
+                        onChange={(event) => {
+                          const nextValue = normalizeNumberInput(event.target.value);
+                          if (nextValue !== null) setSimpleProductPriceInput(nextValue);
+                        }}
+                        placeholder="Ej: 12000"
+                      />
+                    </div>
+                  ) : null}
 
+                  {showFiscalFields ? (
+                    <ProductFiscalFieldsSection
+                      open={productFiscalSectionOpen}
+                      onOpenChange={handleProductFiscalSectionOpenChange}
+                      draft={productFiscalDraft}
+                      onUnspscCodeChange={(value) =>
+                        setProductFiscalDraft((current) => ({
+                          ...current,
+                          unspscCode: value,
+                        }))
+                      }
+                      onVatTypeChange={(value) =>
+                        setProductFiscalDraft((current) => ({
+                          ...current,
+                          vatType: value,
+                        }))
+                      }
+                      onTaxCategoryChange={(value) =>
+                        setProductFiscalDraft((current) => ({
+                          ...current,
+                          taxCategory: value,
+                        }))
+                      }
+                      onUnitMeasureChange={(value) =>
+                        setProductFiscalDraft((current) => ({
+                          ...current,
+                          unitMeasure: value,
+                        }))
+                      }
+                      onIsServiceChange={(value) =>
+                        setProductFiscalDraft((current) => ({
+                          ...current,
+                          isService: value,
+                        }))
+                      }
+                      onApplyIncChange={(value) =>
+                        setProductFiscalDraft((current) => ({
+                          ...current,
+                          applyInc: value,
+                        }))
+                      }
+                    />
+                  ) : null}
+                  <CheckboxField
+                    label="Activo"
+                    wrapperClassName="products-toggle-card"
+                    className="products-toggle-card__label"
+                    checked={productActive}
+                    onChange={(event) => setProductActive(event.target.checked)}
+                  />
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Tamaño"
-                  wrapperClassName="products-field"
-                  labelClassName="products-field__label"
-                  className="products-field__control"
-                  value={variantSize}
-                  onChange={(event) => setVariantSize(event.target.value)}
-                  placeholder="Ej: 12oz"
-                />
-                <Input
-                  label="SKU"
-                  wrapperClassName="products-field"
-                  labelClassName="products-field__label"
-                  className="products-field__control"
-                  value={variantSku}
-                  onChange={(event) => setVariantSku(event.target.value)}
-                  placeholder="Ej: CAF-AM-12"
-                />
+                  <div className="products-panel__actions">
+                    <Button
+                      disabled={!canManageCatalog || creatingProduct || !productName.trim()}
+                      onClick={handleCreateProduct}
+                      className="products-panel__cta"
+                    >
+                      {creatingProduct ? 'Guardando...' : 'Crear producto'}
+                    </Button>
+                    {!canManageCatalog ? (
+                      <Button variant="secondary" disabled className="products-panel__secondary">
+                        Solo lectura
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
+            ) : (
+              <div
+                id="products-create-variant-panel"
+                role="tabpanel"
+                aria-labelledby="products-create-variant-tab"
+                className="products-creation-pane"
+              >
+                <div className="products-form-stack">
+                  <Select
+                    label="Producto"
+                    wrapperClassName="products-field"
+                    labelClassName="products-field__label"
+                    className="products-field__control"
+                    value={variantProductId}
+                    onChange={(event) => setVariantProductId(event.target.value)}
+                  >
+                    <option value="">
+                      {variantReadyProducts.length === 0
+                        ? 'Sin familias activas'
+                        : 'Selecciona un producto'}
+                    </option>
+                    {variantReadyProducts.map((product) => (
+                      <option key={product.id} value={String(product.id)}>
+                        {product.name}{product.internalCode ? ` / ${product.internalCode}` : ''}
+                      </option>
+                    ))}
+                  </Select>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Input
+                      label="Tamano"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      value={variantSize}
+                      onChange={(event) => setVariantSize(event.target.value)}
+                      placeholder="Ej: 12oz"
+                      maxLength={15}
+                    />
+                    <Input
+                      label="SKU de venta"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      value={variantSku}
+                      onChange={(event) => setVariantSku(event.target.value)}
+                      placeholder="Ej: LAT-12OZ"
+                      maxLength={80}
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      label="Precio de venta"
+                      wrapperClassName="products-field"
+                      labelClassName="products-field__label"
+                      className="products-field__control"
+                      placeholder="Ej: 12000"
+                      value={variantPriceInput}
+                      onChange={(event) => {
+                        const nextValue = normalizeNumberInput(event.target.value);
+                        if (nextValue !== null) setVariantPriceInput(nextValue);
+                      }}
+                    />
+                  </div>
 
-              <Input
-                type="number"
-                min={0}
-                label="Precio de venta"
-                wrapperClassName="products-field"
-                labelClassName="products-field__label"
-                className="products-field__control"
-                placeholder="Ej: 12000"
-                value={variantPriceInput}
-                onChange={(event) => {
-                  const nextValue = normalizeNumberInput(event.target.value);
-                  if (nextValue !== null) setVariantPriceInput(nextValue);
-                }}
-              />
+                  <CheckboxField
+                    label="Activa"
+                    wrapperClassName="products-toggle-card"
+                    className="products-toggle-card__label"
+                    checked={variantActive}
+                    onChange={(event) => setVariantActive(event.target.checked)}
+                  />
 
-              <CheckboxField
-                label="Activa"
-                description="Las variantes inactivas no se muestran en POS."
-                wrapperClassName="products-toggle-card"
-                className="products-toggle-card__label"
-                checked={variantActive}
-                onChange={(event) => setVariantActive(event.target.checked)}
-              />
-
-              <div className="products-panel__actions flex gap-3">
-                <Button
-                  disabled={!canManageCatalog || creatingVariant || variantReadyProducts.length === 0}
-                  onClick={handleCreateVariant}
-                  className="products-panel__cta"
-                >
-                  {creatingVariant ? 'Guardando...' : 'Crear variante'}
-                </Button>
-                {!canManageCatalog ? (
-                  <Button variant="secondary" disabled className="products-panel__secondary">
-                    Solo lectura
-                  </Button>
-                ) : null}
+                  <div className="products-panel__actions">
+                    <Button
+                      disabled={
+                        !canManageCatalog ||
+                        creatingVariant ||
+                        variantReadyProducts.length === 0 ||
+                        !variantSku.trim()
+                      }
+                      onClick={handleCreateVariant}
+                      className="products-panel__cta"
+                    >
+                      {creatingVariant ? 'Guardando...' : 'Crear variante'}
+                    </Button>
+                    {!canManageCatalog ? (
+                      <Button variant="secondary" disabled className="products-panel__secondary">
+                        Solo lectura
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </Card>
         </div>
 
@@ -1468,34 +1882,43 @@ export function ProductsPage() {
           <Card
             padding="none"
             glow={false}
-            className="products-panel products-panel--list"
+            className="products-panel products-panel--list products-panel--catalog-explorer"
             contentClassName="products-panel__body"
           >
-            <div className="products-panel__header">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Vista general</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Productos</h2>
-                <p className="products-panel__description">
-                  Listado base del catalogo con operacion principal, estado y precio de referencia.
-                </p>
-              </div>
-            </div>
-
+            <ProductsPanelHeader
+              eyebrow="Explorador"
+              title="Catalogo"
+              meta={<StatusBadge label={catalogExplorerTabLabel} tone="info" />}
+            />
+            <ProductsSegmentedControl
+              options={catalogExplorerTabs}
+              value={catalogExplorerTab}
+              onChange={setCatalogExplorerTab}
+              ariaLabel="Seleccionar vista del catalogo"
+              idPrefix="products-explorer"
+            />
             <CatalogListToolbar
-              countLabel={visibleProductsLabel}
-              searchValue={productSearchTerm}
-              onSearchChange={setProductSearchTerm}
-              searchAriaLabel="Buscar productos por nombre o SKU"
-              activeFilter={productListFilter}
-              filters={productStatusFilterOptions}
-              onFilterChange={(value) => setProductListFilter(value as StatusOnlyFilter)}
+              countLabel={catalogExplorerCountLabel}
+              searchValue={catalogExplorerSearchValue}
+              onSearchChange={handleCatalogExplorerSearchChange}
+              searchAriaLabel={catalogExplorerSearchLabel}
+              activeFilter={catalogExplorerActiveFilter}
+              filters={catalogExplorerFilterOptions}
+              onFilterChange={handleCatalogExplorerFilterChange}
             />
 
-            {loadingCatalog ? (
-              <div className="mt-6">
+            {catalogExplorerTab === 'PRODUCTS' ? (
+              <div
+                id="products-explorer-products-panel"
+                role="tabpanel"
+                aria-labelledby="products-explorer-products-tab"
+                className="products-explorer-pane"
+              >
+                {loadingCatalog ? (
+                  <div className="mt-6">
                 <LoadingState
                   title="Cargando productos"
-                  description="Estamos preparando el catalogo y sus operaciones activas."
+                  description="Sincronizando catalogo."
                   rows={4}
                 />
               </div>
@@ -1504,17 +1927,17 @@ export function ProductsPage() {
                 <EmptyState
                   title={
                     productSearchTerm.trim()
-                      ? 'Sin coincidencias para esta busqueda'
+                      ? 'Sin coincidencias'
                       : productListFilter === 'ACTIVE'
                         ? 'Sin productos activos'
                         : 'Sin productos inactivos'
                   }
                   description={
                     productSearchTerm.trim()
-                      ? 'No encontramos productos que coincidan con el nombre o SKU ingresado.'
+                      ? 'Sin coincidencias.'
                       : productListFilter === 'ACTIVE'
-                        ? 'Activa un producto existente o crea uno nuevo para verlo en este listado.'
-                        : 'Cuando desactives productos, podras revisarlos y reactivarlos desde aqui.'
+                        ? 'Crea o reactiva un producto.'
+                        : 'Sin inactivos.'
                   }
                 />
               </div>
@@ -1523,58 +1946,59 @@ export function ProductsPage() {
                 ariaLabel="Listado de productos"
                 caption="Tabla general de productos del catalogo"
                 rows={filteredProducts}
+                mobileCardRender={(product) => renderProductMobileCard(product)}
                 rowKey={(product) => product.id}
                 rowClassName={(product) => (!product.active ? 'opacity-80' : undefined)}
-                tableMinWidthClassName="min-w-[1360px]"
+                tableMinWidthClassName="min-w-[1080px]"
                 columns={[
-                  {
-                    key: 'id',
-                    header: 'ID',
-                    width: '72px',
-                    cellClassName: 'whitespace-nowrap text-xs theme-text-muted',
-                    render: (product) => `#${product.id}`,
-                  },
                   {
                     key: 'product',
                     header: 'Producto',
                     width: '360px',
                     render: (product) => {
-                      const displayVariant = getProductCardVariant(product);
-                      const metaItems = getProductCardMetaItems(product, displayVariant);
+                      const metaItems = getProductCardMetaItems(product);
+                      const summary = getProductTableSummary(product);
 
                       return (
-                        <div className="products-table-entity">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate text-[15px] font-semibold theme-text-strong">
-                              {product.name}
-                            </p>
-                            <StatusBadge
-                              label={product.productType === 'SIMPLE' ? 'Simple' : 'Con variantes'}
-                              tone={product.productType === 'VARIANT' ? 'info' : 'default'}
-                            />
-                          </div>
-                          <p className="products-table-entity__summary">
-                            {getProductTableSummary(product)}
-                          </p>
-                          {metaItems.length > 0 ? (
-                            <div className="products-table-meta">
-                              {metaItems.map((item) => (
-                                <span key={item.label} className="products-table-meta__item">
-                                  <span className="text-[color:var(--text-faint)]">
-                                    {item.label}
-                                  </span>
+                        <div className="products-table-entity products-table-entity--with-media">
+                          <ProductMedia
+                            size="sm"
+                            label={product.name}
+                            src={product.imageUrl}
+                            alt={product.imageAlt ?? product.name}
+                            kind={product.productType === 'VARIANT' ? 'VARIANT' : 'SIMPLE'}
+                            className="products-table-media"
+                          />
+                          <div className="min-w-0">
+                            <div className="products-table-entity__title-row">
+                              <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
+                                {product.name}
+                              </p>
+                              <StatusBadge
+                                label={product.productType === 'SIMPLE' ? 'Simple' : 'Variantes'}
+                                tone="info"
+                              />
+                            </div>
+                            {metaItems.length > 0 ? (
+                              <div className="products-table-meta">
+                                {metaItems.map((item) => (
                                   <span
+                                    key={item.label}
                                     className={clsx(
-                                      'font-medium theme-text-strong',
-                                      item.mono && 'font-mono text-[11px]',
+                                      'products-table-meta__item',
+                                      item.mono && 'products-table-meta__item--mono',
                                     )}
                                   >
-                                    {item.value}
+                                    <span className="products-table-meta__label">{item.label}</span>
+                                    <span>{item.value}</span>
                                   </span>
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
+                                ))}
+                              </div>
+                            ) : null}
+                            {summary ? (
+                              <p className="products-table-entity__summary">{summary}</p>
+                            ) : null}
+                          </div>
                         </div>
                       );
                     },
@@ -1591,7 +2015,14 @@ export function ProductsPage() {
                         <div className="products-table-stack">
                           <p className="products-table-stack__title">{operationSummary.title}</p>
                           {operationSummary.detail ? (
-                            <p className="products-table-stack__detail">{operationSummary.detail}</p>
+                            <p
+                              className={clsx(
+                                'products-table-stack__detail',
+                                operationSummary.detailMono && 'products-table-stack__detail--mono',
+                              )}
+                            >
+                              {operationSummary.detail}
+                            </p>
                           ) : null}
                         </div>
                       );
@@ -1651,7 +2082,7 @@ export function ProductsPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: showRecipeModule ? '320px' : '256px',
+                    width: showRecipeModule ? '292px' : '232px',
                     render: (product) =>
                       canManageCatalog ? (
                         <div className="products-table-actions">
@@ -1691,33 +2122,15 @@ export function ProductsPage() {
                   },
                 ]}
               />
-            )}
-          </Card>
-
-          <Card
-            padding="none"
-            glow={false}
-            className="products-panel products-panel--list"
-            contentClassName="products-panel__body"
-          >
-            <div className="products-panel__header">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Operacion unificada</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Productos simples</h2>
-                <p className="products-panel__description">
-                  Vista operativa de productos simples con su registro POS asociado.
-                </p>
+                )}
               </div>
-            </div>
-            <CatalogListToolbar
-              countLabel={visibleSimpleProductsLabel}
-              searchValue={simpleProductSearchTerm}
-              onSearchChange={setSimpleProductSearchTerm}
-              searchAriaLabel="Buscar productos simples por nombre o SKU"
-              activeFilter={simpleProductListFilter}
-              filters={productStatusFilterOptions}
-              onFilterChange={(value) => setSimpleProductListFilter(value as StatusOnlyFilter)}
-            />
+            ) : catalogExplorerTab === 'SIMPLES' ? (
+              <div
+                id="products-explorer-simples-panel"
+                role="tabpanel"
+                aria-labelledby="products-explorer-simples-tab"
+                className="products-explorer-pane"
+              >
 
             {loadingCatalog ? (
               <div className="mt-6 grid gap-3">
@@ -1730,17 +2143,17 @@ export function ProductsPage() {
                 <EmptyState
                   title={
                     simpleProductSearchTerm.trim()
-                      ? 'Sin coincidencias para esta busqueda'
+                      ? 'Sin coincidencias'
                       : simpleProductListFilter === 'ACTIVE'
                       ? 'Sin productos simples activos'
                       : 'Sin productos simples inactivos'
                   }
                   description={
                     simpleProductSearchTerm.trim()
-                      ? 'No encontramos productos simples que coincidan con el nombre o SKU ingresado.'
+                      ? 'Sin coincidencias.'
                       : simpleProductListFilter === 'ACTIVE'
-                      ? 'Activa un producto simple existente o crea uno nuevo para verlo en este listado.'
-                      : 'Cuando desactives productos simples, podras revisarlos y reactivarlos desde aqui.'
+                      ? 'Crea o reactiva un producto simple.'
+                      : 'Sin inactivos.'
                   }
                 />
               </div>
@@ -1748,7 +2161,7 @@ export function ProductsPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Operacion simple pendiente"
-                  description="No se encontro configuracion operativa para los productos simples visibles. Refresca el catalogo para regenerarla."
+                  description="Refresca el catalogo para regenerarla."
                 />
               </div>
             ) : (
@@ -1756,51 +2169,107 @@ export function ProductsPage() {
                 ariaLabel="Listado de productos simples"
                 caption="Tabla de productos simples con operacion unificada"
                 rows={visibleSimpleProductsWithOperation}
+                mobileCardRender={(product) => renderSimpleProductMobileCard(product)}
                 rowKey={(product) => product.id}
                 rowClassName={(product) =>
                   !product.active || !product.operationalVariant?.active ? 'opacity-80' : undefined
                 }
-                tableMinWidthClassName="min-w-[1180px]"
+                tableMinWidthClassName="min-w-[1080px]"
                 columns={[
-                  {
-                    key: 'id',
-                    header: 'ID',
-                    width: '72px',
-                    cellClassName: 'whitespace-nowrap text-xs theme-text-muted',
-                    render: (product) => `#${product.id}`,
-                  },
                   {
                     key: 'product',
                     header: 'Producto',
-                    render: (product) => (
-                      <p className="truncate text-[15px] font-semibold theme-text-strong">
-                        {product.name}
-                      </p>
-                    ),
+                    width: '360px',
+                    render: (product) => {
+                      const metaItems = getProductCardMetaItems(product);
+                      const summary = getProductTableSummary(product);
+
+                      return (
+                        <div className="products-table-entity products-table-entity--with-media">
+                          <ProductMedia
+                            size="sm"
+                            label={product.name}
+                            src={product.imageUrl}
+                            alt={product.imageAlt ?? product.name}
+                            kind="SIMPLE"
+                            className="products-table-media"
+                          />
+                          <div className="min-w-0">
+                            <div className="products-table-entity__title-row">
+                              <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
+                                {product.name}
+                              </p>
+                              <StatusBadge label="Simple" tone="info" />
+                            </div>
+                            {metaItems.length > 0 ? (
+                              <div className="products-table-meta">
+                                {metaItems.map((item) => (
+                                  <span
+                                    key={item.label}
+                                    className={clsx(
+                                      'products-table-meta__item',
+                                      item.mono && 'products-table-meta__item--mono',
+                                    )}
+                                  >
+                                    <span className="products-table-meta__label">{item.label}</span>
+                                    <span>{item.value}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                            {summary ? (
+                              <p className="products-table-entity__summary">{summary}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    },
                   },
                   {
-                    key: 'sku',
-                    header: 'SKU',
-                    width: '148px',
-                    cellClassName: 'font-mono text-[12px]',
-                    render: (product) => product.operationalVariant?.sku ?? 'Sin SKU',
+                    key: 'operation',
+                    header: 'Operacion',
+                    width: '220px',
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+                      const operationSummary = getProductOperationSummary(product, displayVariant);
+
+                      return (
+                        <div className="products-table-stack">
+                          <p className="products-table-stack__title">{operationSummary.title}</p>
+                          {operationSummary.detail ? (
+                            <p
+                              className={clsx(
+                                'products-table-stack__detail',
+                                operationSummary.detailMono && 'products-table-stack__detail--mono',
+                              )}
+                            >
+                              {operationSummary.detail}
+                            </p>
+                          ) : null}
+                        </div>
+                      );
+                    },
                   },
                   {
                     key: 'price',
                     header: 'Precio',
-                    width: '112px',
+                    width: '116px',
                     align: 'right',
                     cellClassName: 'whitespace-nowrap',
-                    render: (product) => (
-                      <span className="metric-accent text-[15px] font-semibold">
-                        {formatCurrency(Number(product.operationalVariant?.sale_price ?? 0))}
-                      </span>
-                    ),
+                    render: (product) => {
+                      const displayVariant = getProductCardVariant(product);
+
+                      return (
+                        <span className="products-table-price">
+                          {getProductCardPriceLabel(product, displayVariant)}
+                        </span>
+                      );
+                    },
                   },
                   {
                     key: 'status',
                     header: 'Estado',
-                    width: '132px',
+                    width: '128px',
                     render: (product) => (
                       <StatusBadge
                         label={getSimpleProductTableStatus(product)}
@@ -1816,13 +2285,15 @@ export function ProductsPage() {
                           header: 'Receta',
                           width: '128px',
                           render: (product: EnrichedCatalogProduct) => {
-                            const variant = product.operationalVariant;
-                            const hasRecipe = variant ? recipeStatusByVariant[variant.id] ?? false : false;
+                            const recipeState = getProductCardRecipeState(
+                              product,
+                              recipeStatusByVariant,
+                            );
 
                             return (
                               <StatusBadge
-                                label={hasRecipe ? 'Con receta' : 'Sin receta'}
-                                tone={hasRecipe ? 'info' : 'warning'}
+                                label={recipeState.label}
+                                tone={recipeState.tone}
                                 className="min-w-[112px] justify-center"
                               />
                             );
@@ -1833,16 +2304,13 @@ export function ProductsPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: '332px',
+                    width: showRecipeModule ? '304px' : '232px',
                     render: (product) =>
                       canManageCatalog && product.operationalVariant ? (
                         <div className="products-table-actions">
                           <div className="products-table-actions__primary">
                             <Button variant="secondary" className="action-soft-brand products-action-edit" aria-haspopup="dialog" aria-controls="product-editor-dialog" onClick={() => openProductEditor(product)}>
                               Editar
-                            </Button>
-                            <Button variant="secondary" className="action-soft-brand products-action-operation" aria-haspopup="dialog" aria-controls="variant-editor-dialog" onClick={() => openVariantEditor(product.operationalVariant!)}>
-                              Operacion
                             </Button>
                             {showRecipeModule ? (
                               <Button variant="secondary" className="action-soft-brand products-action-recipe" aria-haspopup="dialog" aria-controls="recipe-manager-dialog" onClick={() => void openRecipeManager(product.operationalVariant!)}>
@@ -1854,6 +2322,9 @@ export function ProductsPage() {
                             <Button variant="ghost" className={product.operationalVariant.active ? 'products-action-toggle' : 'action-soft-success'} onClick={() => void handleToggleVariantStatus(product.operationalVariant!)}>
                               {product.operationalVariant.active ? 'Desactivar' : 'Activar'}
                             </Button>
+                            <Button variant="ghost" className="action-soft-danger products-action-delete" onClick={() => requestProductDelete(product)}>
+                              Eliminar
+                            </Button>
                           </div>
                         </div>
                       ) : (
@@ -1862,33 +2333,15 @@ export function ProductsPage() {
                   },
                 ]}
               />
-            )}
-          </Card>
-
-          <Card
-            padding="none"
-            glow={false}
-            className="products-panel products-panel--list"
-            contentClassName="products-panel__body"
-          >
-            <div className="products-panel__header">
-              <div className="products-panel__header-copy">
-                <p className="text-sm theme-text-muted">Listado real</p>
-                <h2 className="font-display text-2xl font-bold theme-text-strong">Variantes</h2>
-                <p className="products-panel__description">
-                  Seguimiento de variantes reales, precio, estado comercial y receta.
-                </p>
+                )}
               </div>
-            </div>
-            <CatalogListToolbar
-              countLabel={visibleVariantsLabel}
-              searchValue={variantSearchTerm}
-              onSearchChange={setVariantSearchTerm}
-              searchAriaLabel="Buscar variantes por nombre o SKU"
-              activeFilter={variantListFilter}
-              filters={variantStatusFilterOptions}
-              onFilterChange={(value) => setVariantListFilter(value as StatusOnlyFilter)}
-            />
+            ) : (
+              <div
+                id="products-explorer-variants-panel"
+                role="tabpanel"
+                aria-labelledby="products-explorer-variants-tab"
+                className="products-explorer-pane"
+              >
 
             {loadingCatalog ? (
               <div className="mt-6 grid gap-3">
@@ -1900,19 +2353,19 @@ export function ProductsPage() {
               <div className="mt-6">
                 <EmptyState
                   title="Sin variantes cargadas"
-                  description="Crea la primera variante real para ampliar el catalogo y los combos."
+                  description="Crea una variante para habilitar venta."
                 />
               </div>
             ) : filteredRealVariants.length === 0 ? (
               <div className="mt-6">
                 <EmptyState
-                  title={variantSearchTerm.trim() ? 'Sin coincidencias para esta busqueda' : 'No hay variantes para este filtro'}
+                  title={variantSearchTerm.trim() ? 'Sin coincidencias' : 'Sin variantes'}
                   description={
                     variantSearchTerm.trim()
-                      ? 'No encontramos variantes que coincidan con el nombre o SKU ingresado.'
+                      ? 'Sin coincidencias.'
                       : variantListFilter === 'ACTIVE'
-                      ? 'No hay variantes activas para mostrar en este momento.'
-                      : 'No hay variantes inactivas para revisar en este momento.'
+                      ? 'Sin variantes activas.'
+                      : 'Sin variantes inactivas.'
                   }
                 />
               </div>
@@ -1921,29 +2374,45 @@ export function ProductsPage() {
                 ariaLabel="Listado de variantes"
                 caption="Tabla de variantes del catalogo"
                 rows={filteredRealVariants}
+                mobileCardRender={(variant) => renderVariantMobileCard(variant)}
                 rowKey={(variant) => variant.id}
                 rowClassName={(variant) => (!variant.active ? 'opacity-80' : undefined)}
-                tableMinWidthClassName="min-w-[1280px]"
+                tableMinWidthClassName="min-w-[1040px]"
                 columns={[
-                  { key: 'id', header: 'ID', width: '64px', cellClassName: 'whitespace-nowrap text-xs theme-text-muted', render: (variant) => `#${variant.id}` },
                   {
                     key: 'product',
                     header: 'Producto',
                     render: (variant) => (
-                      <div className="min-w-0">
-                        <p className="truncate text-[15px] font-semibold theme-text-strong">
-                          {variant.product_name}
-                        </p>
-                        {!variant.active ? (
-                          <p className="mt-1 text-xs text-[color:var(--text-faint)]">
-                            Variante inactiva. Sigue disponible aqui para revision o reactivacion.
+                      <div className="products-table-entity products-table-entity--with-media">
+                        <ProductMedia
+                          size="sm"
+                          label={variant.product_name}
+                          src={variant.image_url}
+                          alt={variant.image_alt ?? variant.product_name}
+                          kind="VARIANT"
+                          className="products-table-media"
+                        />
+                        <div className="min-w-0">
+                          <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
+                            {variant.product_name}
                           </p>
-                        ) : null}
+                        </div>
                       </div>
                     ),
                   },
-                  { key: 'size', header: 'Tamano', width: '92px', cellClassName: 'whitespace-nowrap text-sm', render: (variant) => variant.size },
-                  { key: 'sku', header: 'SKU', width: '112px', cellClassName: 'font-mono text-[12px]', render: (variant) => variant.sku },
+                  {
+                    key: 'variant',
+                    header: 'Variante',
+                    width: '180px',
+                    render: (variant) => (
+                      <div className="products-table-stack">
+                        <p className="products-table-stack__title">{variant.size || 'Sin tamano'}</p>
+                        <p className="products-table-stack__detail products-table-stack__detail--mono">
+                          SKU {variant.sku}
+                        </p>
+                      </div>
+                    ),
+                  },
                   { key: 'price', header: 'Precio', width: '104px', align: 'right', cellClassName: 'whitespace-nowrap', render: (variant) => (<span className="metric-accent text-[15px] font-semibold">{formatCurrency(Number(variant.sale_price))}</span>) },
                   { key: 'status', header: 'Estado', width: '108px', render: (variant) => (<StatusBadge label={variant.active ? 'Activa' : 'Inactiva'} tone={variant.active ? 'success' : 'default'} className="min-w-[92px] justify-center" />) },
                   ...(showRecipeModule
@@ -1969,7 +2438,7 @@ export function ProductsPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: showRecipeModule ? '372px' : '252px',
+                    width: showRecipeModule ? '304px' : '232px',
                     render: (variant) =>
                       canManageCatalog ? (
                         <div className="products-table-actions">
@@ -2020,13 +2489,9 @@ export function ProductsPage() {
                   },
                 ]}
               />
-            )}
-
-            {showRecipeModule && activeVariantsCount > 0 ? (
-              <div className="products-inline-note products-inline-note--footer toolbar-shell mt-4 rounded-lg px-4 py-3 text-xs text-[color:var(--text-faint)]">
-                Las operaciones activas sin receta seguiran detectandose aqui para que administracion complete la configuracion antes de vender.
+                )}
               </div>
-            ) : null}
+            )}
           </Card>
         </div>
       </div>
@@ -2035,7 +2500,6 @@ export function ProductsPage() {
         open={productEditorOpen}
         onClose={() => setProductEditorOpen(false)}
         title="Editar producto"
-        subtitle="Actualiza la ficha comercial, el estado y la preparacion fiscal opcional del producto."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <Input
@@ -2102,6 +2566,33 @@ export function ProductsPage() {
               }))
             }
           />
+          {editProductCatalogDraft.productType === 'SIMPLE' ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label="Presentacion"
+                value={editSimpleProductPresentation}
+                onChange={(event) => setEditSimpleProductPresentation(event.target.value)}
+                placeholder="Ej: Botella 350 ml"
+                maxLength={15}
+              />
+              <Input
+                type="number"
+                min={0}
+                label="Precio de venta"
+                value={editSimpleProductPriceInput}
+                onChange={(event) => {
+                  const nextValue = normalizeNumberInput(event.target.value);
+                  if (nextValue !== null) setEditSimpleProductPriceInput(nextValue);
+                }}
+                placeholder="Ej: 12000"
+              />
+              <CheckboxField
+                label="Operativa en POS"
+                checked={editSimpleProductOperationActive}
+                onChange={(event) => setEditSimpleProductOperationActive(event.target.checked)}
+              />
+            </div>
+          ) : null}
           {showFiscalFields ? (
             <ProductFiscalFieldsSection
               open={editProductFiscalSectionOpen}
@@ -2147,7 +2638,6 @@ export function ProductsPage() {
           ) : null}
           <CheckboxField
             label="Activo"
-            description="Define si el producto estara disponible en el catalogo operativo."
             checked={editProductActive}
             onChange={(event) => setEditProductActive(event.target.checked)}
           />
@@ -2166,25 +2656,21 @@ export function ProductsPage() {
         id="variant-editor-dialog"
         open={variantEditorOpen}
         onClose={() => setVariantEditorOpen(false)}
-        title={selectedVariant?.is_operational ? 'Editar operacion simple' : 'Editar variante'}
-        subtitle={selectedVariant?.is_operational
-          ? 'Ajusta SKU, precio y estado de la operacion que mantiene compatible el producto simple con POS y recetas.'
-          : 'Ajusta tamano, SKU, precio y estado de la variante seleccionada.'}
+        title="Editar variante"
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
-          {selectedVariant?.is_operational ? null : (
-            <Input
-              label="Tamano"
-              value={editVariantSize}
-              onChange={(event) => setEditVariantSize(event.target.value)}
-              placeholder="Ej: 16oz"
-            />
-          )}
           <Input
-            label="SKU"
+            label="Tamano"
+            value={editVariantSize}
+            onChange={(event) => setEditVariantSize(event.target.value)}
+            placeholder="Ej: 16oz"
+            maxLength={15}
+          />
+          <Input
+            label="SKU de venta"
             value={editVariantSku}
             onChange={(event) => setEditVariantSku(event.target.value)}
-            placeholder={selectedVariant?.is_operational ? 'Ej: CAF-BASE' : 'Ej: LAT-AV-16'}
+            placeholder="Ej: LAT-AV-16"
           />
           <Input
             type="number"
@@ -2198,10 +2684,7 @@ export function ProductsPage() {
             placeholder="Ej: 15000"
           />
           <CheckboxField
-            label={selectedVariant?.is_operational ? 'Operativa en POS' : 'Activa'}
-            description={selectedVariant?.is_operational
-              ? 'Cuando se desactiva, el producto simple deja de operar en POS.'
-              : 'Las variantes inactivas no se muestran en POS.'}
+            label="Activa"
             checked={editVariantActive}
             onChange={(event) => setEditVariantActive(event.target.checked)}
           />
@@ -2225,7 +2708,7 @@ export function ProductsPage() {
           }
         }}
         title={deleteTarget?.kind === 'PRODUCT' ? 'Eliminar producto' : 'Eliminar variante'}
-        subtitle="Esta acción solo debe usarse cuando el registro ya no deba existir en el catálogo."
+        subtitle="Operacion permanente si no hay dependencias."
       >
         <div className="grid min-w-0 gap-4 sm:gap-5">
           <div className="products-delete-summary rounded-lg px-4 py-4">
@@ -2239,7 +2722,7 @@ export function ProductsPage() {
             ) : null}
           </div>
           <p className="text-sm text-[color:var(--text-secondary)]">
-            ¿Deseas continuar con la eliminación? Si el registro tiene ventas históricas o relaciones activas, el sistema bloqueará la operación y te pedirá desactivarlo o limpiar dependencias primero.
+            El sistema bloqueara la eliminacion si existen ventas o relaciones activas.
           </p>
           <div className="modal-action-row">
             <Button
@@ -2280,7 +2763,7 @@ export function ProductsPage() {
         {loadingRecipe ? (
           <LoadingState
             title="Cargando receta"
-            description="Estamos leyendo la configuración actual de ingredientes."
+            description="Leyendo ingredientes."
             rows={3}
           />
         ) : (
@@ -2389,6 +2872,72 @@ type CatalogFilterOption<T extends string> = {
   label: string;
 };
 
+type ProductsSegmentOption<T extends string> = {
+  value: T;
+  label: string;
+};
+
+function ProductsPanelHeader({
+  eyebrow,
+  title,
+  meta,
+}: {
+  eyebrow: string;
+  title: string;
+  meta?: ReactNode;
+}) {
+  return (
+    <div className="products-panel__header">
+      <div className="products-panel__header-copy">
+        <p className="products-panel__eyebrow">{eyebrow}</p>
+        <div className="products-panel__title-row">
+          <h2 className="font-display text-2xl font-bold theme-text-strong">{title}</h2>
+          {meta ? <div className="products-panel__meta">{meta}</div> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductsSegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+  idPrefix,
+}: {
+  options: Array<ProductsSegmentOption<T>> | readonly ProductsSegmentOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  ariaLabel: string;
+  idPrefix: string;
+}) {
+  return (
+    <div className="products-segmented-control" role="tablist" aria-label={ariaLabel}>
+      {options.map((option) => {
+        const active = value === option.value;
+        const optionId = String(option.value).toLocaleLowerCase();
+
+        return (
+          <button
+            key={option.value}
+            id={`${idPrefix}-${optionId}-tab`}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-controls={`${idPrefix}-${optionId}-panel`}
+            data-active={active || undefined}
+            className="products-segmented-control__item"
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function CatalogListToolbar<T extends string>({
   countLabel,
   searchValue,
@@ -2407,9 +2956,8 @@ function CatalogListToolbar<T extends string>({
   onFilterChange: (value: T) => void;
 }) {
   return (
-    <div className="products-list-toolbar toolbar-shell mt-4 grid gap-3 rounded-lg px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+    <div className="products-list-toolbar toolbar-shell mt-4 grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
       <div className="products-list-toolbar__summary">
-        <p className="products-list-toolbar__label">Vista activa</p>
         <p className="products-list-toolbar__count">{countLabel}</p>
       </div>
       <div className="products-list-toolbar__controls flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
@@ -2417,21 +2965,28 @@ function CatalogListToolbar<T extends string>({
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
           onClear={() => onSearchChange('')}
-          placeholder="Buscar por nombre o SKU"
+          placeholder="Nombre / SKU"
           aria-label={searchAriaLabel}
           fieldClassName="products-list-toolbar__search-field"
           className="min-h-10"
           wrapperClassName="products-list-toolbar__search w-full sm:max-w-[280px] xl:max-w-[320px]"
         />
-        <div className="products-list-toolbar__filters flex flex-wrap justify-end gap-2">
+        <div
+          className="products-list-toolbar__filters flex flex-wrap justify-end gap-2"
+          role="group"
+          aria-label="Filtrar por estado"
+        >
           {filters.map((filterOption) => (
-            <FilterChip
+            <button
+              type="button"
               key={filterOption.value}
-              active={activeFilter === filterOption.value}
-              className="products-list-toolbar__filter min-w-[90px] justify-center"
-              label={filterOption.label}
+              aria-pressed={activeFilter === filterOption.value}
+              data-active={activeFilter === filterOption.value || undefined}
+              className="products-list-toolbar__filter min-w-[78px] justify-center"
               onClick={() => onFilterChange(filterOption.value)}
-            />
+            >
+              {filterOption.label}
+            </button>
           ))}
         </div>
       </div>
@@ -2446,14 +3001,11 @@ function getProductCardVariant(product: EnrichedCatalogProduct) {
   return activeVariant ?? product.relatedVariants[0] ?? null;
 }
 
-function getProductCardMetaItems(
-  product: EnrichedCatalogProduct,
-  variant: CatalogVariant | null,
-) {
+function getProductCardMetaItems(product: EnrichedCatalogProduct) {
   const items: Array<{ label: string; value: string; mono?: boolean }> = [];
 
-  if (variant?.sku) {
-    items.push({ label: 'SKU', value: variant.sku, mono: true });
+  if (product.internalCode) {
+    items.push({ label: 'SKU', value: product.internalCode, mono: true });
   }
 
   if (product.brand) {
@@ -2505,35 +3057,24 @@ function getProductCardRecipeState(
 }
 
 function getProductTableSummary(product: EnrichedCatalogProduct) {
-  const description = product.description?.trim();
-  if (description) return description;
-
-  if (product.productType === 'SIMPLE') {
-    return product.operationalVariant
-      ? 'Producto simple listo para operacion unificada.'
-      : 'Producto simple pendiente de operacion en POS.';
-  }
-
-  return product.relatedVariants.length > 0
-    ? `${product.relatedVariants.length} variantes configuradas para venta.`
-    : 'Producto sin variantes reales configuradas.';
+  return null;
 }
 
 function getProductOperationSummary(
   product: EnrichedCatalogProduct,
   variant: CatalogVariant | null,
-) {
+): { title: string; detail?: string; detailMono?: boolean } {
   if (product.productType === 'SIMPLE') {
     if (!variant) {
       return {
-        title: 'Sin operacion unificada',
-        detail: 'Refresca catalogo para regenerar operacion.',
+        title: 'Sin presentacion',
+        detail: undefined,
       };
     }
 
     return {
-      title: 'Operacion unificada',
-      detail: variant.active ? 'Lista para operar en POS.' : 'Operacion POS inactiva.',
+      title: variant.size.trim() || 'Sin presentacion',
+      detail: undefined,
     };
   }
 
@@ -2553,20 +3094,20 @@ function getProductOperationSummary(
   if (sizes.length > 0) {
     return {
       title: sizes.join(' - '),
-      detail: undefined,
+      detail: `${comparableVariants.length} ${comparableVariants.length === 1 ? 'variante' : 'variantes'}`,
     };
   }
 
   if (comparableVariants.length > 0) {
     return {
-      title: 'Sin tamano definido',
-      detail: `${comparableVariants.length} variantes configuradas`,
+      title: 'Presentaciones por definir',
+      detail: `${comparableVariants.length} variantes`,
     };
   }
 
   return {
-    title: 'Sin variantes activas',
-    detail: 'Crea una variante para habilitar venta en POS.',
+    title: 'Sin variantes configuradas',
+    detail: 'Pendiente',
   };
 }
 
@@ -2586,7 +3127,8 @@ function matchesProductSearch(product: EnrichedCatalogProduct, searchTerm: strin
 
   const candidate = [
     product.name,
-    product.operationalVariant?.sku ?? '',
+    product.internalCode ?? '',
+    ...(product.productType === 'SIMPLE' ? [] : [product.operationalVariant?.sku ?? '']),
     ...product.relatedVariants.map((variant) => variant.sku),
   ]
     .join(' ')
@@ -2599,10 +3141,31 @@ function matchesSimpleProductSearch(product: EnrichedCatalogProduct, searchTerm:
   const normalizedSearch = normalizeCatalogSearch(searchTerm);
   if (!normalizedSearch) return true;
 
-  return [product.name, product.operationalVariant?.sku ?? '']
+  return [product.name, product.internalCode ?? '']
     .join(' ')
     .toLocaleLowerCase()
     .includes(normalizedSearch);
+}
+
+function getSimpleOperationalVariant(product: {
+  productType: ProductType;
+  variants?: Array<{ id: number; sale_price: number; active: boolean; size: string; is_operational?: boolean }>;
+}) {
+  if (product.productType !== 'SIMPLE') return null;
+
+  return (
+    product.variants?.find((variant) => variant.is_operational || variant.active) ??
+    product.variants?.[0] ??
+    null
+  );
+}
+
+function getSimpleProductPresentation(product: {
+  productType: ProductType;
+  variants?: Array<{ id: number; sale_price: number; active: boolean; size: string; is_operational?: boolean }>;
+}) {
+  const operationalVariant = getSimpleOperationalVariant(product);
+  return operationalVariant?.size ?? '';
 }
 
 function matchesVariantSearch(variant: CatalogVariant, searchTerm: string) {
@@ -2641,16 +3204,16 @@ async function persistProductImageDraft(productId: number, draft: ProductImageDr
   return null;
 }
 
-function buildProductUpdateSuccessMessage(productId: number, draft: ProductImageDraft) {
+function buildProductUpdateSuccessMessage(draft: ProductImageDraft) {
   if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
-    return `Producto #${productId} actualizado sin imagen.`;
+    return 'Producto actualizado sin imagen.';
   }
 
   if (draft.pendingImageFile) {
-    return `Producto #${productId} actualizado con imagen.`;
+    return 'Producto actualizado con imagen.';
   }
 
-  return `Producto #${productId} actualizado correctamente.`;
+  return 'Producto actualizado correctamente.';
 }
 
 function getProductCatalogDraft(product: {
@@ -2752,7 +3315,14 @@ function translateCatalogError(message: string) {
   if (message === 'Product name already exists') return 'Ya existe un producto con ese nombre.';
   if (message === 'Product internal code already exists') return 'Ya existe un producto con ese codigo interno.';
   if (message === 'Product barcode already exists') return 'Ya existe un producto con ese codigo de barras.';
+  if (message === 'Simple product SKU already exists') return 'Ya existe una variante u operacion con ese SKU.';
   if (message === 'Variant sku already exists') return 'Ya existe una variante con ese SKU.';
+  if (message === 'simplePresentation must be shorter than or equal to 15 characters') {
+    return 'La presentacion no puede superar 15 caracteres.';
+  }
+  if (message === 'size must be shorter than or equal to 15 characters') {
+    return 'El tamano no puede superar 15 caracteres.';
+  }
   if (message === 'Product not found') return 'El producto seleccionado ya no existe.';
   if (message === 'Variant not found') return 'La variante seleccionada ya no existe.';
   if (message === 'Product image file is required') return 'Selecciona una imagen valida antes de guardar.';

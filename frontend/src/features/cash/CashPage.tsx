@@ -7,11 +7,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { Input } from '@/components/Input';
-import type {
-  ModulePageHeaderBadge,
-  ModulePageHeaderCard,
-} from '@/components/ModulePageHeader';
-import { ModuleInfoTooltip } from '@/components/ModuleStatusHeader';
+import { ModulePageHeader, type ModulePageHeaderCard } from '@/components/ModulePageHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { posApi } from '@/services/api/posApi';
@@ -121,144 +117,83 @@ export function CashPage() {
     }
   }
 
+  const hasOpenCashSession = Boolean(currentCashSession);
+  const canOpenCash = Boolean(currentLocation && !currentCashSession);
   const openingCashPreview = parseNumberInput(openingCashInput);
   const openingValue = currentCashSession
     ? formatCurrency(toNumber(currentCashSession.openingCash))
     : openingCashPreview !== null
       ? formatCurrency(openingCashPreview)
-      : 'Pendiente';
-  const cashStatusTone = currentCashSession
-    ? 'success'
-    : currentLocation
-      ? 'warning'
-      : 'default';
+      : 'Sin definir';
+  const cashStatusTone = currentCashSession ? 'success' : 'warning';
   const cashStatusLabel = currentCashSession
     ? 'Abierta'
     : currentLocation
-      ? 'Pendiente'
+      ? 'Por abrir'
       : 'Sin POS';
-  const operationStatusLabel = currentCashSession
-    ? 'Caja operativa'
+  const nextActionLabel = currentCashSession
+    ? 'Cerrar caja'
     : currentLocation
-      ? 'Lista para apertura'
-      : 'Selecciona un POS';
+      ? 'Abrir caja'
+      : 'Seleccionar POS';
+  const nextActionNote = currentCashSession
+    ? 'Cierre disponible'
+    : currentLocation
+      ? 'Ingresa fondo inicial'
+      : 'POS requerido';
   const openingTone = currentCashSession
-    ? 'info'
+    ? 'success'
     : openingCashPreview !== null
-      ? 'warning'
-      : 'default';
+      ? 'info'
+      : currentLocation
+        ? 'warning'
+        : 'default';
   const openingStatusLabel = currentCashSession
     ? 'Registrada'
     : openingCashPreview !== null
-      ? 'Lista'
+      ? 'Ingresado'
       : 'Pendiente';
   const currentUserName = currentUser?.name || currentUser?.username || 'Sin usuario';
-  const currentUserHandle = currentUser?.username ? `@${currentUser.username}` : 'Sesion actual';
   const currentUserRole = formatUserRole(currentUser?.role);
-  // D2A keeps business flow intact and only derives copy/status blocks for the
-  // premium layout: hero context, primary opening panel, closing state and summary.
+  const responsibleBadgeLabel = currentUser
+    ? currentUserName.trim().toLowerCase() === currentUserRole.trim().toLowerCase()
+      ? 'Activo'
+      : currentUserRole
+    : 'Sin usuario';
   const closingCashPreview = parseNumberInput(closingCashCountedInput);
   const closingValue =
     closingCashPreview !== null ? formatCurrency(closingCashPreview) : 'Pendiente';
-  const openingPanelDescription = currentCashSession
-    ? 'Sesion activa para este POS. Revisa el fondo inicial y prepara el cierre cuando termine la operacion.'
-    : currentLocation
-      ? 'Registra el efectivo inicial o la base para comenzar a operar tu turno.'
-      : 'Selecciona un POS valido antes de abrir una nueva sesion.';
-  const openingPanelNote = currentCashSession
-    ? `Caja #${currentCashSession.id} ya esta operativa. El cierre queda disponible en panel derecho.`
-    : currentLocation
-      ? 'Define tu base y presiona el boton "Abrir caja".'
-      : 'Sin POS activo. Usa encabezado para elegir punto de venta y habilitar apertura.';
-  const closingPanelDescription = currentCashSession
-    ? 'Confirma el efectivo contado y genera el resumen final de la sesion actual.'
-    : 'El cierre quedara listo apenas exista una sesion abierta para este POS.';
-  const openingContextItems = [
-    {
-      label: 'POS activo',
-      value: currentLocation?.name ?? 'Sin POS activo',
-      meta: currentLocation ? `POS #${currentLocation.id}` : 'Selecciona un POS',
-      icon: <MapPin size={16} />,
-    },
-    {
-      label: 'Responsable',
-      value: currentUserName,
-      meta: `${currentUserRole} - ${currentUserHandle}`,
-      icon: <User size={16} />,
-    },
-  ];
+  const locationValue = currentLocation?.name ?? 'Sin POS';
   const closeSessionItems = currentCashSession
     ? [
         {
-          label: 'Caja actual',
-          value: `Caja #${currentCashSession.id}`,
-          meta: 'Sesion operativa',
+          label: 'Caja',
+          value: `#${currentCashSession.id}`,
+          meta: 'Abierta',
           icon: <CircleDot size={16} />,
         },
         {
           label: 'Apertura',
           value: formatCurrency(toNumber(currentCashSession.openingCash)),
-          meta: 'Fondo inicial registrado',
+          meta: 'Fondo inicial',
           icon: <Landmark size={16} />,
         },
         {
-          label: 'Abierta',
+          label: 'Inicio',
           value: formatDate(currentCashSession.openedAt),
-          meta: currentLocation?.name ?? 'POS activo',
+          meta: locationValue,
           icon: <Wallet size={16} />,
         },
       ]
     : [];
-  const closeEmptyItems = [
-    {
-      label: 'Estado',
-      value: 'Sin sesion activa',
-      meta: 'Todavia no hay cierre disponible',
-      icon: <CircleDot size={16} />,
-    },
-    {
-      label: 'POS actual',
-      value: currentLocation?.name ?? 'Sin POS activo',
-      meta: currentLocation ? `POS #${currentLocation.id}` : 'Selecciona un POS',
-      icon: <MapPin size={16} />,
-    },
-    {
-      label: 'Siguiente paso',
-      value: 'Abrir caja',
-      meta: 'Registra fondo inicial para habilitar cierre',
-      icon: <Landmark size={16} />,
-    },
-  ];
-  const cashHeaderBadges: ModulePageHeaderBadge[] = [
-    {
-      label: operationStatusLabel,
-      tone: cashStatusTone,
-    },
-  ];
-  const cashHeroSummaryLabel = currentCashSession
-    ? 'Sesion actual'
-    : currentLocation
-      ? 'Preparacion de turno'
-      : 'Estado operativo';
-  const cashHeroSummaryValue = currentCashSession
-    ? `Caja #${currentCashSession.id}`
-    : currentLocation
-      ? 'Lista para apertura'
-      : 'Sin POS activo';
-  const cashHeroSummaryNote = currentCashSession
-    ? `Abierta ${formatDate(currentCashSession.openedAt)} con cierre disponible en panel derecho.`
-    : currentLocation
-      ? 'Define fondo inicial, responsable y deja lista la operacion de caja.'
-      : 'Selecciona punto de venta para habilitar apertura y control de caja.';
+  const cashHeroSummaryLabel = 'Siguiente accion';
+  const cashHeroSummaryValue = nextActionLabel;
+  const cashHeroSummaryNote = nextActionNote;
   const cashHeaderCards: ModulePageHeaderCard[] = [
     {
-      label: 'Caja activa',
+      label: 'Estado',
       value: currentCashSession ? `Caja #${currentCashSession.id}` : 'Sin sesion',
-      note: currentCashSession
-        ? `Abierta ${formatDate(currentCashSession.openedAt)}`
-        : currentLocation
-          ? 'Lista para apertura'
-          : 'Selecciona un POS',
+      note: currentCashSession ? formatDate(currentCashSession.openedAt) : undefined,
       accent: cashStatusTone,
       icon: <CircleDot size={16} />,
       iconTone: cashStatusTone,
@@ -268,13 +203,30 @@ export function CashPage() {
       },
     },
     {
-      label: 'Apertura',
+      label: 'POS',
+      value: locationValue,
+      accent: currentLocation ? ('info' as const) : ('warning' as const),
+      icon: <MapPin size={16} />,
+      iconTone: currentLocation ? 'info' : 'warning',
+      badge: {
+        label: currentLocation ? `#${currentLocation.id}` : 'Requerido',
+        tone: currentLocation ? 'info' : 'warning',
+      },
+    },
+    {
+      label: 'Responsable',
+      value: currentUserName,
+      accent: currentUser ? ('info' as const) : ('default' as const),
+      icon: <User size={16} />,
+      iconTone: currentUser ? 'info' : 'default',
+      badge: {
+        label: responsibleBadgeLabel,
+        tone: currentUser ? 'info' : 'default',
+      },
+    },
+    {
+      label: 'Fondo inicial',
       value: openingValue,
-      note: currentCashSession
-        ? 'Fondo inicial registrado'
-        : openingCashPreview !== null
-          ? 'Listo para abrir'
-          : 'Define el efectivo inicial',
       accent: openingTone,
       icon: <Landmark size={16} />,
       iconTone: openingTone,
@@ -283,116 +235,23 @@ export function CashPage() {
         tone: openingTone,
       },
     },
-    {
-      label: 'Ubicacion',
-      value: currentLocation?.name ?? 'Sin POS activo',
-      note: currentLocation ? 'POS activo para la sesion' : 'Selecciona un POS',
-      accent: currentLocation ? ('info' as const) : ('default' as const),
-      icon: <MapPin size={16} />,
-      iconTone: currentLocation ? 'info' : 'default',
-      badge: {
-        label: currentLocation ? `POS #${currentLocation.id}` : 'No definido',
-        tone: currentLocation ? 'info' : 'default',
-      },
-    },
-    {
-      label: 'Responsable',
-      value: currentUserName,
-      note: currentUserHandle,
-      accent: currentUser ? ('info' as const) : ('default' as const),
-      icon: <User size={16} />,
-      iconTone: currentUser ? 'info' : 'default',
-      badge: {
-        label: currentUserRole,
-        tone: currentUser ? 'info' : 'default',
-      },
-    },
   ];
 
   return (
     <div className="cash-page grid min-w-0 gap-4 sm:gap-5">
-      <section className="module-page-header" aria-label="Estado operativo de caja">
-        <div className="module-page-header__shell">
-          <div className="module-page-header__main">
-            <div className="module-page-header__copy">
-              <p className="module-page-header__eyebrow">Operacion de caja</p>
-              <div className="module-page-header__title-row">
-                <div className="module-page-header__title-wrap">
-                  <span className="module-page-header__title-icon" aria-hidden="true">
-                    <Wallet size={18} />
-                  </span>
-                  <h1 className="module-page-header__title">Caja</h1>
-                  <ModuleInfoTooltip
-                    label="Mas info sobre caja"
-                    content="Controla apertura, cierre, POS activo, fondo inicial y responsable de la sesion."
-                  />
-                  <div className="module-page-header__badges">
-                    {cashHeaderBadges.map((badge, index) => (
-                      <StatusBadge
-                        key={`${badge.label}-${badge.tone ?? 'default'}-${index}`}
-                        label={badge.label}
-                        tone={badge.tone ?? 'default'}
-                        className={clsx('module-page-header__badge', badge.className)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <p className="module-page-header__description">
-                {currentCashSession
-                  ? 'Sesion activa para turno actual, con apertura registrada y cierre disponible.'
-                  : currentLocation
-                    ? 'Prepara apertura de caja, responsable y fondo inicial para empezar turno con control claro.'
-                    : 'Selecciona un POS para habilitar apertura, seguimiento de sesion y cierre.'}
-              </p>
-            </div>
-
-            <div className="module-page-header__aside">
-              <div className="module-page-header__summary">
-                <p className="module-page-header__summary-label">{cashHeroSummaryLabel}</p>
-                <p className="module-page-header__summary-value">{cashHeroSummaryValue}</p>
-                <p className="module-page-header__summary-note">{cashHeroSummaryNote}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="module-page-header__cards">
-            {cashHeaderCards.map((card, index) => (
-              <div
-                key={`module-card-${index}`}
-                className="module-page-header__card"
-                data-accent={card.accent ?? 'default'}
-              >
-                <div className="module-page-header__card-main">
-                  {card.icon ? (
-                    <span
-                      className="module-page-header__card-icon"
-                      aria-hidden="true"
-                      data-tone={card.iconTone ?? 'default'}
-                    >
-                      {card.icon}
-                    </span>
-                  ) : null}
-                  <div className="min-w-0">
-                    <div className="module-page-header__card-top">
-                      <p className="module-page-header__card-label">{card.label}</p>
-                      {card.badge ? (
-                        <StatusBadge
-                          label={card.badge.label}
-                          tone={card.badge.tone ?? 'default'}
-                          className={clsx('module-page-header__card-badge', card.badge.className)}
-                        />
-                      ) : null}
-                    </div>
-                    <p className="module-page-header__card-value">{card.value}</p>
-                    {card.note ? <p className="module-page-header__card-note">{card.note}</p> : null}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <ModulePageHeader
+        ariaLabel="Estado operativo de caja"
+        eyebrow="Operacion"
+        title="Caja"
+        icon={<Wallet size={18} />}
+        badges={[{ label: cashStatusLabel, tone: cashStatusTone }]}
+        summary={{
+          label: cashHeroSummaryLabel,
+          value: cashHeroSummaryValue,
+          note: cashHeroSummaryNote,
+        }}
+        cards={cashHeaderCards}
+      />
       {message ? (
         <FeedbackMessage tone="success" className="cash-feedback">
           {message}
@@ -405,14 +264,13 @@ export function CashPage() {
         </FeedbackMessage>
       ) : null}
 
-      {/* Workspace: left panel drives opening, right panel resolves close or empty state. */}
       <div className="cash-workspace grid min-w-0 gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)]">
         {!currentLocation ? (
           <Card glow={false} className="cash-alert-card lg:col-span-2">
             <EmptyState
               icon={<MapPin size={20} />}
-              title="Sin punto de venta activo"
-              description="Crea una ubicacion desde Admin o selecciona un POS valido en el encabezado antes de operar caja."
+              title="Selecciona un POS"
+              description="La apertura se habilita con un punto de venta activo."
             />
           </Card>
         ) : null}
@@ -420,17 +278,20 @@ export function CashPage() {
         <Card
           padding="none"
           glow={false}
-          className="cash-panel cash-panel--open"
+          className={clsx(
+            'cash-panel cash-panel--open',
+            canOpenCash && 'cash-panel--primary',
+            hasOpenCashSession && 'cash-panel--locked',
+          )}
           contentClassName="cash-panel__body"
         >
           <div className="cash-panel__hero">
             <SectionHeader
-              eyebrow="Operacion principal"
-              title="Apertura de caja"
-              description={openingPanelDescription}
+              eyebrow="Apertura"
+              title={hasOpenCashSession ? 'Caja abierta' : 'Abrir caja'}
               actions={
                 <StatusBadge
-                  label={currentCashSession ? 'Sesion abierta' : cashStatusLabel}
+                  label={currentCashSession ? 'Abierta' : cashStatusLabel}
                   tone={cashStatusTone}
                 />
               }
@@ -441,27 +302,12 @@ export function CashPage() {
               <p className="cash-panel__spotlight-value">{openingValue}</p>
               <p className="cash-panel__spotlight-meta">
                 {currentCashSession
-                  ? 'Registrado para sesion actual'
+                  ? 'Registrado'
                   : openingCashPreview !== null
-                    ? 'Listo para abrir'
-                    : 'Pendiente por definir'}
+                    ? 'Ingresado'
+                    : 'Por ingresar'}
               </p>
             </div>
-          </div>
-
-          <div className="cash-context-grid">
-            {openingContextItems.map((item) => (
-              <div key={item.label} className="cash-context-item">
-                <span className="cash-context-item__icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <div className="min-w-0">
-                  <p className="cash-context-item__label">{item.label}</p>
-                  <p className="cash-context-item__value">{item.value}</p>
-                  <p className="cash-context-item__meta">{item.meta}</p>
-                </div>
-              </div>
-            ))}
           </div>
 
           <div className="cash-form-grid">
@@ -470,7 +316,7 @@ export function CashPage() {
               min={0}
               label="Efectivo inicial"
               placeholder="Ej: 50000"
-              hint="Ingresa el fondo base para arrancar turno con contexto claro y cierre listo."
+              disabled={loading || !canOpenCash}
               wrapperClassName="cash-field"
               labelClassName="cash-field__label"
               fieldClassName="cash-field__shell"
@@ -498,28 +344,25 @@ export function CashPage() {
               {loading ? 'Procesando...' : 'Abrir caja'}
             </Button>
           </div>
-
-          <div className="cash-panel__footnote">
-            <p className="cash-panel__footnote-label">Guia rapida</p>
-            <p className="cash-panel__footnote-text">{openingPanelNote}</p>
-          </div>
         </Card>
 
         <Card
           padding="none"
           glow={false}
-          className="cash-panel cash-panel--close"
+          className={clsx(
+            'cash-panel cash-panel--close',
+            !hasOpenCashSession && 'cash-panel--secondary',
+          )}
           contentClassName="cash-panel__body"
         >
           <div className="cash-panel__hero">
             <SectionHeader
-              eyebrow="Operacion final"
-              title="Cierre de caja"
-              description={closingPanelDescription}
+              eyebrow="Cierre"
+              title="Cerrar caja"
               actions={
                 <StatusBadge
                   label={currentCashSession ? 'Disponible' : 'En espera'}
-                  tone={currentCashSession ? 'info' : 'default'}
+                  tone={currentCashSession ? 'success' : 'default'}
                 />
               }
               className="cash-panel__heading"
@@ -532,56 +375,43 @@ export function CashPage() {
               <p className="cash-panel__spotlight-meta">
                 {currentCashSession
                   ? closingCashPreview !== null
-                    ? 'Valor listo para enviar'
-                    : 'Ingresa conteo final'
-                  : 'Abre caja para habilitar cierre'}
+                    ? 'Listo'
+                    : 'Por contar'
+                  : 'En espera'}
               </p>
             </div>
           </div>
 
           {!currentCashSession ? (
-            <div className="cash-close-empty">
+            <div className="cash-close-empty" aria-live="polite">
               <div className="cash-close-empty__intro">
                 <div className="cash-close-empty__icon" aria-hidden="true">
                   <Wallet size={20} />
                 </div>
                 <div className="min-w-0">
-                  <p className="cash-close-empty__eyebrow">Estado actual</p>
-                  <h3 className="cash-close-empty__title">No hay caja abierta</h3>
+                  <p className="cash-close-empty__eyebrow">Cierre</p>
+                  <h3 className="cash-close-empty__title">No disponible</h3>
                   <p className="cash-close-empty__description">
-                    Abre una sesion para habilitar cierre, registrar conteo final y ver resumen
-                    del turno.
+                    Abre caja para habilitar el cierre.
                   </p>
                 </div>
-              </div>
-
-              <div className="cash-context-grid cash-context-grid--close-empty">
-                {closeEmptyItems.map((item) => (
-                  <div key={item.label} className="cash-context-item">
-                    <span className="cash-context-item__icon" aria-hidden="true">
-                      {item.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="cash-context-item__label">{item.label}</p>
-                      <p className="cash-context-item__value">{item.value}</p>
-                      <p className="cash-context-item__meta">{item.meta}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           ) : (
             <>
-              <div className="cash-context-grid cash-context-grid--close">
+              <div
+                className="cash-session-strip cash-session-strip--close"
+                aria-label="Caja abierta"
+              >
                 {closeSessionItems.map((item) => (
-                  <div key={item.label} className="cash-context-item">
-                    <span className="cash-context-item__icon" aria-hidden="true">
+                  <div key={item.label} className="cash-session-pill">
+                    <span className="cash-session-pill__icon" aria-hidden="true">
                       {item.icon}
                     </span>
                     <div className="min-w-0">
-                      <p className="cash-context-item__label">{item.label}</p>
-                      <p className="cash-context-item__value">{item.value}</p>
-                      <p className="cash-context-item__meta">{item.meta}</p>
+                      <p className="cash-session-pill__label">{item.label}</p>
+                      <p className="cash-session-pill__value">{item.value}</p>
+                      <p className="cash-session-pill__meta">{item.meta}</p>
                     </div>
                   </div>
                 ))}
@@ -594,7 +424,6 @@ export function CashPage() {
                   inputMode="numeric"
                   label="Efectivo contado"
                   placeholder="Ej: 80000"
-                  hint="Escribe el valor real contado. El sistema validara el cierre antes de enviarlo."
                   wrapperClassName="cash-field"
                   labelClassName="cash-field__label"
                   fieldClassName="cash-field__shell"
@@ -623,7 +452,6 @@ export function CashPage() {
       </div>
 
       {closeSummary ? (
-        // Summary keeps same premium system so backend-calculated close data feels part of Caja.
         <Card
           padding="none"
           glow={false}
@@ -631,9 +459,8 @@ export function CashPage() {
           contentClassName="cash-summary-card__body"
         >
           <SectionHeader
-            eyebrow="Resumen calculado por backend"
-            title="Resultado del cierre"
-            description="Vista final de apertura, ventas, esperado y diferencia para la sesion recien cerrada."
+            eyebrow="Resumen"
+            title="Cierre realizado"
             className="cash-summary-card__heading"
           />
           <div className="cash-summary-grid">

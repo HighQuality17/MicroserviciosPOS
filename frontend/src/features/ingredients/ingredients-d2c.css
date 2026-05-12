@@ -1,0 +1,307 @@
+.ingredients-page {
+  --ingredients-blue: var(--products-catalog-blue, rgb(var(--theme-accent-rgb) / 0.92));
+  --ingredients-blue-strong: var(--products-catalog-blue-strong, rgb(var(--theme-accent-rgb) / 1));
+  --ingredients-blue-soft: var(--products-catalog-blue-soft, rgb(var(--theme-accent-rgb) / 0.14));
+  --ingredients-card: var(--products-catalog-card, var(--bg-panel));
+  --ingredients-soft: var(--products-catalog-soft, var(--surface-ghost));
+  --ingredients-soft-strong: var(--products-catalog-soft-strong, var(--surface-ghost-strong));
+  --ingredients-line: var(--products-catalog-line, var(--line));
+  --ingredients-line-soft: var(--products-catalog-line-soft, var(--line-soft));
+  --ingredients-positive: var(--semantic-success-text);
+  --ingredients-positive-fill: var(--semantic-success-background);
+  --ingredients-warning: var(--semantic-warning-text);
+  --ingredients-warning-fill: var(--semantic-warning-background);
+  --ingredients-danger: var(--semantic-danger-text);
+  --ingredients-danger-fill: var(--semantic-danger-background);
+}
+
+:root[data-theme='professional-light'] .ingredients-page {
+  --ingredients-blue: #0052ff;
+  --ingredients-blue-strong: #003ecc;
+  --ingredients-blue-soft: #dfeaff;
+  --ingredients-positive: #14824f;
+  --ingredients-positive-fill: #e9f8f1;
+  --ingredients-warning: #b96b00;
+  --ingredients-warning-fill: #fff5df;
+  --ingredients-danger: #b42318;
+  --ingredients-danger-fill: #fff1ef;
+}
+
+.ingredients-page.products-page--catalog {
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--ingredients-blue-soft) 88%, transparent), transparent 24rem),
+    linear-gradient(180deg, var(--products-catalog-canvas, var(--bg)), transparent 24rem);
+}
+
+.ingredients-workspace-switcher .products-panel__body,
+.ingredients-explorer-switcher .products-panel__body {
+  gap: 0.95rem;
+}
+
+.ingredients-workspace-card .products-panel__body,
+.ingredients-explorer-panel .products-panel__body {
+  gap: 1rem;
+}
+
+.ingredients-page .ingredients-workspace-card .products-panel__header,
+.ingredients-page .ingredients-explorer-panel .products-panel__header {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ingredients-blue-soft) 58%, var(--ingredients-card)), var(--ingredients-card) 68%),
+    var(--ingredients-card);
+}
+
+.ingredients-page .ingredients-explorer-panel > .products-panel__body > .products-list-toolbar,
+.ingredients-page .ingredients-explorer-panel .products-panel__secondary {
+  display: none;
+}
+
+.ingredients-page .ingredients-explorer-switcher .products-list-toolbar {
+  margin-top: 0;
+}
+
+.ingredients-page .ingredients-explorer-switcher .products-list-toolbar__summary {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.ingredients-page .ingredients-explorer-switcher .products-list-toolbar__label {
+  line-height: 1;
+}
+
+.ingredients-page .products-list-toolbar__filters .status-badge {
+  min-height: 2.1rem;
+  border-radius: 999px;
+  box-shadow: none;
+  font-weight: 800;
+}
+
+.ingredients-toolbar-action-slot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ingredients-toolbar-action.ui-button-base {
+  min-height: 2.42rem;
+  border-radius: 999px;
+  box-shadow: none;
+  padding-inline: 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.ingredients-page .ingredients-movement-type-control {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ingredients-page .ingredients-movement-type-control__item {
+  min-height: 2.65rem;
+  white-space: normal;
+}
+
+.ingredients-page .ingredients-movement-type-control__item[data-active='true'][data-tone='ENTRY'] {
+  background: linear-gradient(180deg, #16a56a, #0d7a4d);
+  box-shadow: 0 12px 24px rgb(13 122 77 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.22);
+  color: #ffffff;
+}
+
+.ingredients-page .ingredients-movement-type-control__item[data-active='true'][data-tone='EXIT'] {
+  background: linear-gradient(180deg, #f3a11a, #b96b00);
+  box-shadow: 0 12px 24px rgb(185 107 0 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.24);
+  color: #241400;
+}
+
+.ingredients-page .ingredients-movement-type-control__item[data-active='true'][data-tone='ADJUSTMENT'] {
+  background: linear-gradient(180deg, var(--ingredients-blue), var(--ingredients-blue-strong));
+  color: #ffffff;
+}
+
+.ingredients-impact-shell {
+  border-color: color-mix(in srgb, var(--ingredients-blue-soft) 62%, var(--ingredients-line));
+}
+
+.ingredients-impact-preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.48rem;
+}
+
+.ingredients-impact-card {
+  display: grid;
+  min-height: 3.35rem;
+  align-content: center;
+  gap: 0.16rem;
+  border: 1px solid color-mix(in srgb, var(--ingredients-line-soft) 86%, transparent);
+  border-left: 3px solid var(--ingredients-line);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--ingredients-card) 88%, var(--ingredients-soft));
+  padding: 0.58rem 0.66rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.58);
+}
+
+.ingredients-impact-card[data-role='delta'] {
+  background: var(--ingredients-soft);
+}
+
+.ingredients-impact-card[data-role='delta'][data-tone='positive'] {
+  border-left-color: var(--ingredients-positive);
+  background: var(--ingredients-positive-fill);
+}
+
+.ingredients-impact-card[data-role='delta'][data-tone='negative'] {
+  border-left-color: var(--ingredients-warning);
+  background: var(--ingredients-warning-fill);
+}
+
+.ingredients-impact-card[data-role='next'] {
+  border-left-color: var(--ingredients-blue);
+  background: color-mix(in srgb, var(--ingredients-blue-soft) 70%, var(--ingredients-card));
+}
+
+.ingredients-impact-card__label {
+  color: color-mix(in srgb, var(--ingredients-blue-strong) 54%, var(--text-faint));
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.ingredients-impact-card__value {
+  color: var(--text);
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  font-size: clamp(0.94rem, 2.8vw, 1.12rem);
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.ingredients-impact-message {
+  margin-top: 0.58rem;
+  color: var(--ingredients-danger);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.ingredients-operator-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--ingredients-line-soft) 86%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--ingredients-soft) 66%, transparent);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.3;
+  padding: 0.62rem 0.72rem;
+}
+
+.ingredients-operator-strip > span:first-child {
+  color: color-mix(in srgb, var(--ingredients-blue-strong) 52%, var(--text-faint));
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ingredients-stock-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.ingredients-stock-value[data-tone='positive'] {
+  color: var(--ingredients-positive);
+}
+
+.ingredients-stock-value[data-tone='warning'] {
+  color: var(--ingredients-warning);
+}
+
+.ingredients-stock-value[data-tone='negative'] {
+  color: var(--ingredients-danger);
+}
+
+.ingredients-stock-value[data-tone='neutral'] {
+  color: var(--text-muted);
+}
+
+.products-page--catalog .ingredients-stock-value.products-table-price {
+  font-weight: 850;
+}
+
+.ingredients-mobile-card__icon {
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border: 1px solid color-mix(in srgb, var(--ingredients-blue-soft) 70%, var(--ingredients-line));
+  border-radius: 0.95rem;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--ingredients-blue-soft) 80%, transparent), transparent 68%),
+    var(--ingredients-card);
+  color: var(--ingredients-blue-strong);
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.74);
+}
+
+.ingredients-mobile-card__icon--movement[data-tone='success'] {
+  border-color: color-mix(in srgb, var(--ingredients-positive) 36%, transparent);
+  background: var(--ingredients-positive-fill);
+  color: var(--ingredients-positive);
+}
+
+.ingredients-mobile-card__icon--movement[data-tone='warning'] {
+  border-color: color-mix(in srgb, var(--ingredients-warning) 36%, transparent);
+  background: var(--ingredients-warning-fill);
+  color: var(--ingredients-warning);
+}
+
+.ingredients-mobile-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.36rem;
+  border-top: 1px solid color-mix(in srgb, var(--ingredients-line-soft) 84%, transparent);
+  padding-top: 0.72rem;
+}
+
+.ingredients-mobile-card__footer span {
+  display: inline-flex;
+  max-width: 100%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ingredients-soft) 72%, transparent);
+  padding: 0.22rem 0.58rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .ingredients-page .ingredients-movement-type-control {
+    grid-template-columns: 1fr;
+  }
+
+  .ingredients-toolbar-action-slot,
+  .ingredients-toolbar-action.ui-button-base {
+    width: 100%;
+  }
+
+  .ingredients-page .products-list-toolbar__filters {
+    grid-template-columns: 1fr;
+  }
+
+  .ingredients-impact-preview {
+    gap: 0.36rem;
+  }
+
+  .ingredients-impact-card {
+    min-height: 3rem;
+    padding: 0.5rem 0.54rem;
+  }
+}

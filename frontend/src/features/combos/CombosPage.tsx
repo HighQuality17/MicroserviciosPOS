@@ -1,5 +1,6 @@
 import '@/features/products/products-d2b.css';
-import { useEffect, useMemo, useState } from 'react';
+import '@/features/combos/combos-d2d.css';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Boxes, PackagePlus, Shapes } from 'lucide-react';
 import { AccessState } from '@/components/AccessState';
 import { Button } from '@/components/Button';
@@ -55,10 +56,20 @@ type ComboCompositionDraftItem = {
   variant: CatalogVariant;
 };
 
-type CombosToolbarBadge = {
-  label: string;
-  tone?: 'default' | 'success' | 'warning' | 'danger' | 'info';
-};
+type ComboWorkspaceTab = 'COMBO' | 'COMPOSITION';
+type ComboStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'PENDING';
+
+const comboWorkspaceTabs: Array<{ value: ComboWorkspaceTab; label: string }> = [
+  { value: 'COMBO', label: 'Combo' },
+  { value: 'COMPOSITION', label: 'Composicion' },
+];
+
+const comboStatusFilterOptions: Array<{ value: ComboStatusFilter; label: string }> = [
+  { value: 'ALL', label: 'Todos' },
+  { value: 'ACTIVE', label: 'Activos' },
+  { value: 'INACTIVE', label: 'Inactivos' },
+  { value: 'PENDING', label: 'Pendientes' },
+];
 
 function normalizeComboQty(value: number) {
   return Number(value.toFixed(3));
@@ -105,6 +116,10 @@ export function CombosPage() {
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [qtyInput, setQtyInput] = useState('');
   const [comboSearch, setComboSearch] = useState('');
+  const [comboWorkspaceTab, setComboWorkspaceTab] =
+    useState<ComboWorkspaceTab>('COMBO');
+  const [comboStatusFilter, setComboStatusFilter] =
+    useState<ComboStatusFilter>('ALL');
 
   const [comboEditorOpen, setComboEditorOpen] = useState(false);
   const [editingComboTarget, setEditingComboTarget] = useState<CatalogCombo | null>(
@@ -137,14 +152,22 @@ export function CombosPage() {
   const filteredCombos = useMemo(() => {
     const normalizedSearch = comboSearch.trim().toLowerCase();
 
-    if (!normalizedSearch) {
-      return combos;
-    }
+    return combos.filter((combo) => {
+      const matchesSearch = normalizedSearch
+        ? combo.name.toLowerCase().includes(normalizedSearch)
+        : true;
+      const matchesStatus =
+        comboStatusFilter === 'ALL'
+          ? true
+          : comboStatusFilter === 'ACTIVE'
+            ? combo.active
+            : comboStatusFilter === 'INACTIVE'
+              ? !combo.active
+              : combo.active && combo.items.length === 0;
 
-    return combos.filter((combo) =>
-      combo.name.toLowerCase().includes(normalizedSearch),
-    );
-  }, [combos, comboSearch]);
+      return matchesSearch && matchesStatus;
+    });
+  }, [combos, comboSearch, comboStatusFilter]);
 
   const compositionAvailableVariants = useMemo(() => {
     const selectedVariantIds = new Set(
@@ -367,8 +390,8 @@ export function CombosPage() {
       setCompositionEditorOpen(false);
       setMessage(
         itemsPayload.length > 0
-          ? `Composicion del combo #${editingCompositionCombo.id} actualizada correctamente.`
-          : `El combo #${editingCompositionCombo.id} quedo sin items configurados.`,
+          ? 'Composicion actualizada correctamente.'
+          : 'Combo guardado sin items.',
       );
       await refreshCatalog({ background: true });
     } catch (error) {
@@ -421,9 +444,9 @@ export function CombosPage() {
         addSessionCombo(createdCombo);
         resetCreateComboForm();
         setSelectedComboId(String(createdCombo.id));
-        setMessage(`Combo #${createdCombo.id} creado correctamente.`);
+        setMessage('Combo creado correctamente.');
         setSubmitError(
-          `Combo #${createdCombo.id} creado, pero imagen no pudo ${resolveComboImageMutationAction(comboImageDraft)}. Abre editar para reintentar. ${translateComboError(
+          `Combo creado, pero la imagen no se pudo ${resolveComboImageMutationAction(comboImageDraft)}. ${translateComboError(
             imageError instanceof Error ? imageError.message : 'No se pudo guardar la imagen.',
           )}`,
         );
@@ -436,8 +459,8 @@ export function CombosPage() {
       setSelectedComboId(String(persistedCombo.id));
       setMessage(
         comboImageDraft.pendingImageFile
-          ? `Combo #${persistedCombo.id} creado con imagen.`
-          : `Combo #${persistedCombo.id} creado correctamente.`,
+          ? 'Combo creado con imagen.'
+          : 'Combo creado correctamente.',
       );
       await refreshCatalog({ background: true });
     } catch (error) {
@@ -502,9 +525,9 @@ export function CombosPage() {
               }
             : current,
         );
-        setMessage(`Combo #${editingComboTarget.id} actualizado correctamente.`);
+        setMessage('Combo actualizado correctamente.');
         setSubmitError(
-          `Combo #${editingComboTarget.id} actualizado, pero imagen no pudo ${resolveComboImageMutationAction(editComboImageDraft)}. ${translateComboError(
+          `Combo actualizado, pero la imagen no se pudo ${resolveComboImageMutationAction(editComboImageDraft)}. ${translateComboError(
             imageError instanceof Error ? imageError.message : 'No se pudo actualizar la imagen.',
           )}`,
         );
@@ -514,7 +537,7 @@ export function CombosPage() {
 
       setComboEditorOpen(false);
       setEditComboImageDraft(createEmptyComboImageDraft());
-      setMessage(buildComboUpdateSuccessMessage(editingComboTarget.id, editComboImageDraft));
+      setMessage(buildComboUpdateSuccessMessage(editComboImageDraft));
       addSessionCombo(persistedCombo);
       await refreshCatalog({ background: true });
     } catch (error) {
@@ -538,9 +561,7 @@ export function CombosPage() {
         active: !combo.active,
       });
 
-      setMessage(
-        `Combo #${combo.id} ${combo.active ? 'desactivado' : 'activado'} correctamente.`,
-      );
+      setMessage(`Combo ${combo.active ? 'desactivado' : 'activado'} correctamente.`);
       await refreshCatalog({ background: true });
     } catch (error) {
       setSubmitError(
@@ -557,7 +578,7 @@ export function CombosPage() {
     setDeleteTarget({
       id: combo.id,
       name: combo.name,
-      detail: `Combo #${combo.id} - ${combo.items.length} items configurados`,
+      detail: `${combo.items.length} items configurados`,
     });
     setSubmitError(null);
   }
@@ -582,7 +603,7 @@ export function CombosPage() {
       }
 
       setDeleteTarget(null);
-      setMessage(`Combo #${deleteTarget.id} eliminado correctamente.`);
+      setMessage('Combo eliminado correctamente.');
       await refreshCatalog({ background: true });
     } catch (error) {
       setDeleteTarget(null);
@@ -644,8 +665,8 @@ export function CombosPage() {
 
       setMessage(
         previousQty > 0
-          ? `Cantidad actualizada para ${itemLabel} en el combo #${comboId}. Total configurado: ${nextQty}.`
-          : `Item ${itemLabel} agregado al combo #${comboId}.`,
+          ? `Cantidad actualizada para ${itemLabel}. Total: ${nextQty}.`
+          : `Item ${itemLabel} agregado.`,
       );
       setQtyInput('');
       await refreshCatalog({ background: true });
@@ -710,7 +731,7 @@ export function CombosPage() {
       : activeCombosCount === 0
         ? 'Sin activos'
         : readyCombosCount === activeCombosCount
-          ? 'POS listo'
+          ? 'Listo'
           : readyCombosCount > 0
             ? 'Cobertura parcial'
             : 'Pendiente';
@@ -726,13 +747,13 @@ export function CombosPage() {
   ];
   const comboHeaderCards: ModulePageHeaderCard[] = [
     {
-      label: 'Combos totales',
+      label: 'Combos',
       value: String(combos.length),
       note: loadingCatalog
-        ? 'Sincronizando base comercial.'
+        ? 'Sincronizando'
         : inactiveCombosCount > 0
           ? `${activeCombosCount} activos y ${inactiveCombosCount} inactivos`
-          : `${activeCombosCount} activos en gestion`,
+          : `${activeCombosCount} activos`,
       accent: comboStatusTone,
       icon: <Boxes size={16} />,
       iconTone: comboStatusTone,
@@ -742,13 +763,13 @@ export function CombosPage() {
       },
     },
     {
-      label: 'Items operativos',
+      label: 'Items',
       value: String(variants.length),
       note: loadingCatalog
-        ? 'Preparando base para composicion.'
+        ? 'Sincronizando'
         : variants.length > 0
-          ? `${activeVariantsCount} activos disponibles para combinar`
-          : 'Sin items cargados para combos',
+          ? `${activeVariantsCount} activos`
+          : 'Sin items',
       accent: variants.length > 0 ? 'info' : 'default',
       icon: <Shapes size={16} />,
       iconTone: variants.length > 0 ? 'info' : 'default',
@@ -758,13 +779,13 @@ export function CombosPage() {
       },
     },
     {
-      label: 'Listos para vender',
+      label: 'Listos',
       value: String(readyCombosCount),
       note: loadingCatalog
-        ? 'Validando cobertura comercial.'
+        ? 'Verificando'
         : activeCombosCount > 0
-          ? `${readyCombosCount}/${activeCombosCount} activos con composicion`
-          : 'Activa combos para medir cobertura',
+          ? `${readyCombosCount}/${activeCombosCount} activos`
+          : 'Sin activos',
       accent: comboCoverageTone,
       icon: <PackagePlus size={16} />,
       iconTone: comboCoverageTone,
@@ -774,21 +795,9 @@ export function CombosPage() {
       },
     },
   ];
-  const comboToolbarBadges: CombosToolbarBadge[] = [
-    {
-      label: `${activeCombosCount} activos`,
-      tone: activeCombosCount > 0 ? 'success' : 'default',
-    },
-    {
-      label: `${variants.length} items base`,
-      tone: variants.length > 0 ? 'info' : 'default',
-    },
-    {
-      label: `${readyCombosCount} listos POS`,
-      tone: comboCoverageTone,
-    },
-  ];
-  const comboSummaryLabel = selectedCombo ? `Combo #${selectedCombo.id}` : 'Cobertura comercial';
+  const comboWorkspaceTabLabel =
+    comboWorkspaceTabs.find((tab) => tab.value === comboWorkspaceTab)?.label ?? 'Combo';
+  const comboSummaryLabel = selectedCombo ? 'Combo activo' : 'Cobertura';
   const comboSummaryValue = selectedCombo
     ? selectedCombo.name
     : activeCombosCount > 0
@@ -796,30 +805,121 @@ export function CombosPage() {
       : 'Sin combos activos';
   const comboSummaryNote = selectedCombo
     ? selectedCombo.items.length > 0
-      ? `${selectedCombo.items.length} item(s) configurados para operacion y ajuste desde listado.`
-      : 'Combo creado sin composicion. Agrega items para dejarlo listo en POS.'
+      ? `${selectedCombo.items.length} items configurados`
+      : 'Sin composicion'
     : variants.length > 0
-      ? `${activeVariantsCount} items activos sostienen la base para nuevas composiciones.`
-      : 'Carga items operativos antes de completar cobertura comercial.';
-  const compositionInlineNote =
-    selectedCombo && selectedVariant
-      ? `La carga se suma sobre ${selectedCombo.name} usando ${formatVariantDisplayName(selectedVariant)}.`
-      : 'La carga suma cantidades al combo actual sin borrar items existentes. Usa "Composicion" para ajuste fino.';
-  const comboListCountLabel = comboSearch.trim()
-    ? `${filteredCombos.length} resultado(s) filtrados`
-    : `${combos.length} combo(s) en gestion`;
+      ? `${activeVariantsCount} items activos`
+      : 'Sin items base';
+  function renderMobileInfoItem(label: string, value: ReactNode) {
+    return (
+      <div className="products-mobile-card__info-item">
+        <span className="products-mobile-card__info-label">{label}</span>
+        <div className="products-mobile-card__info-value">{value}</div>
+      </div>
+    );
+  }
+
+  function renderComboMobileCard(combo: CatalogCombo) {
+    const coverageState = getComboCoverageState(combo);
+    const comboBusy = togglingComboId === combo.id;
+
+    return (
+      <article className="products-mobile-card combos-mobile-card">
+        <div className="products-mobile-card__header">
+          <ProductMedia
+            size="sm"
+            label={combo.name}
+            src={resolveApiAssetUrl(combo.imageUrl)}
+            alt={combo.imageAlt ?? combo.name}
+            kind="COMBO"
+            className="products-mobile-card__media"
+          />
+          <div className="products-mobile-card__header-copy min-w-0">
+            <p className="products-mobile-card__name">{combo.name}</p>
+            <StatusBadge
+              label={`${combo.items.length} items`}
+              tone={combo.items.length > 0 ? 'info' : 'warning'}
+              className="products-mobile-card__type"
+            />
+          </div>
+        </div>
+        <div className="products-mobile-card__info-grid">
+          {renderMobileInfoItem(
+            'Precio',
+            <span className="products-mobile-card__price">
+              {formatCurrency(Number(combo.sale_price))}
+            </span>,
+          )}
+          {renderMobileInfoItem(
+            'Estado',
+            <StatusBadge
+              label={combo.active ? 'Activo' : 'Inactivo'}
+              tone={combo.active ? 'success' : 'default'}
+            />,
+          )}
+          {renderMobileInfoItem(
+            'POS',
+            <StatusBadge label={coverageState.label} tone={coverageState.tone} />,
+          )}
+          {renderMobileInfoItem('Composicion', getComboCompositionSummary(combo))}
+        </div>
+        <div className="products-mobile-card__actions products-mobile-card__actions--grid">
+          <Button
+            variant="secondary"
+            className="action-soft-brand products-action-edit"
+            aria-haspopup="dialog"
+            aria-controls="combo-editor-dialog"
+            disabled={actionsLocked}
+            onClick={() => openComboEditor(combo)}
+          >
+            Editar
+          </Button>
+          <Button
+            variant="secondary"
+            className="action-soft-brand products-action-operation"
+            aria-haspopup="dialog"
+            aria-controls="combo-composition-dialog"
+            disabled={actionsLocked}
+            onClick={() => openCompositionEditor(combo)}
+          >
+            Composicion
+          </Button>
+          <Button
+            variant="ghost"
+            className={combo.active ? 'products-action-toggle' : 'action-soft-success'}
+            disabled={actionsLocked}
+            onClick={() => void handleToggleComboStatus(combo)}
+          >
+            {comboBusy
+              ? combo.active
+                ? 'Desactivando...'
+                : 'Activando...'
+              : combo.active
+                ? 'Desactivar'
+                : 'Activar'}
+          </Button>
+          <Button
+            variant="ghost"
+            className="action-soft-danger products-action-delete"
+            disabled={actionsLocked}
+            onClick={() => requestComboDelete(combo)}
+          >
+            Eliminar
+          </Button>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <>
-      <div className="products-page combos-page grid min-w-0 gap-5 sm:gap-6">
+      <div className="products-page products-page--catalog combos-page grid min-w-0 gap-4 sm:gap-5">
         <ModulePageHeader
           ariaLabel="Estado operativo de combos"
-          eyebrow="Operacion comercial"
+          eyebrow="Catalogo comercial"
           title="Combos"
           icon={<Boxes size={18} />}
-          helpText="Resume la base de combos, los items operativos disponibles y cuantos combos ya estan listos para vender."
           badges={comboHeaderBadges}
-          description="Base comercial, cobertura de composicion y control operativo con mismo lenguaje admin de Productos e Ingredientes."
           summary={{
             label: comboSummaryLabel,
             value: comboSummaryValue,
@@ -831,7 +931,7 @@ export function CombosPage() {
               disabled={loadingCatalog || actionsLocked}
               onClick={() => void refreshCatalog({ background: combos.length > 0 })}
             >
-              {refreshingCatalog ? 'Actualizando...' : 'Actualizar catalogo'}
+              {refreshingCatalog ? 'Actualizando...' : 'Actualizar combos'}
             </Button>
           }
           cards={comboHeaderCards}
@@ -856,51 +956,55 @@ export function CombosPage() {
         ) : null}
 
         {catalogAccessDenied ? (
-          <AccessState description="Tu perfil actual no tiene permiso para consultar o gestionar combos." />
+          <AccessState description="Sin permiso para gestionar combos." />
         ) : null}
 
-        <div className="products-workspace grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,25rem)_minmax(0,1fr)] xl:gap-5">
+        <div className="products-workspace grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,25rem)_minmax(0,1fr)] xl:gap-5">
           <div className="products-form-rail grid min-w-0 gap-4 sm:gap-5">
             <Card
               padding="none"
               glow={false}
-              className="products-panel products-panel--form"
+              className="products-panel products-panel--form products-panel--creation-workspace combos-workspace-switcher"
               contentClassName="products-panel__body"
             >
-              <div className="products-panel__intro">
-                <div className="products-panel__header-copy">
-                  <p className="text-sm theme-text-muted">Administracion base</p>
-                  <h2 className="font-display text-2xl font-bold theme-text-strong">
-                    Crear combo
-                  </h2>
-                  <p className="products-panel__description">
-                    Registra nombre, precio y estado con mismo criterio sobrio del catalogo principal.
-                  </p>
-                </div>
-              </div>
-              <div className="products-panel__highlights">
-                <div className="products-panel__spotlight products-panel__spotlight--variant">
-                  <p className="products-panel__spotlight-label">Combos activos</p>
-                  <p className="products-panel__spotlight-value">{activeCombosCount}</p>
-                  <p className="products-panel__spotlight-note">
-                    {combos.length > 0
-                      ? `${inactiveCombosCount} en revision o pendientes de reactivacion.`
-                      : 'Aun no existe base comercial para combos.'}
-                  </p>
-                </div>
-                <div className="products-panel__spotlight">
-                  <p className="products-panel__spotlight-label">Alta inicial</p>
-                  <p className="products-panel__spotlight-value">
-                    {comboActive ? 'Activa' : 'Inactiva'}
-                  </p>
-                  <p className="products-panel__spotlight-note">
-                    {comboName.trim()
-                      ? comboName
-                      : 'Define nombre comercial y estado inicial antes de guardar.'}
-                  </p>
-                </div>
-              </div>
-              <div className="products-form-stack grid gap-4">
+              <CombosPanelHeader
+                eyebrow="Workspace"
+                title="Combo"
+                meta={<StatusBadge label={comboWorkspaceTabLabel} tone="info" />}
+              />
+              <CombosSegmentedControl
+                options={comboWorkspaceTabs}
+                value={comboWorkspaceTab}
+                onChange={setComboWorkspaceTab}
+                ariaLabel="Seleccionar flujo de combos"
+                idPrefix="combos-workspace"
+              />
+            </Card>
+
+            {comboWorkspaceTab === 'COMBO' ? (
+              <Card
+                padding="none"
+                glow={false}
+                className="products-panel products-panel--form products-panel--creation-workspace combos-workspace-card"
+                contentClassName="products-panel__body"
+              >
+                <CombosPanelHeader
+                  eyebrow="Creacion"
+                  title="Crear combo"
+                  meta={
+                    <StatusBadge
+                      label={comboActive ? 'Activo' : 'Inactivo'}
+                      tone={comboActive ? 'success' : 'default'}
+                    />
+                  }
+                />
+                <div
+                  id="combos-workspace-combo-panel"
+                  role="tabpanel"
+                  aria-labelledby="combos-workspace-combo-tab"
+                  className="products-creation-pane"
+                >
+                  <div className="products-form-stack grid gap-4">
                 <Input
                   label="Nombre"
                   wrapperClassName="products-field"
@@ -932,10 +1036,7 @@ export function CombosPage() {
                 />
                 <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
                   <p className="products-form-group__label">Definicion comercial</p>
-                  <p className="products-form-group__description">
-                    Mantiene precio de venta y disponibilidad con mismo orden operativo del sistema.
-                  </p>
-                  <div className="mt-4 grid gap-4">
+                  <div className="mt-3 grid gap-4">
                     <Input
                       type="number"
                       min={0}
@@ -954,7 +1055,6 @@ export function CombosPage() {
                     />
                     <CheckboxField
                       label="Activo"
-                      description="Solo combos activos deben aparecer en POS."
                       wrapperClassName="products-toggle-card"
                       className="products-toggle-card__label"
                       checked={comboActive}
@@ -962,9 +1062,6 @@ export function CombosPage() {
                     />
                   </div>
                 </div>
-                <p className="products-inline-note">
-                  Nuevo combo queda listo para composicion y control de estado sin alterar flujo comercial actual.
-                </p>
                 <div className="products-panel__actions flex gap-3">
                   <Button
                     className="products-panel__cta"
@@ -974,57 +1071,42 @@ export function CombosPage() {
                     {creatingCombo ? 'Guardando...' : 'Crear combo'}
                   </Button>
                 </div>
-              </div>
+                  </div>
+                </div>
             </Card>
+            ) : null}
 
+            {comboWorkspaceTab === 'COMPOSITION' ? (
             <Card
               padding="none"
               glow={false}
-              className="products-panel products-panel--form"
+              className="products-panel products-panel--form products-panel--creation-workspace combos-workspace-card"
               contentClassName="products-panel__body"
             >
-              <div className="products-panel__intro">
-                <div className="products-panel__header-copy">
-                  <p className="text-sm theme-text-muted">Composicion operativa</p>
-                  <h2 className="font-display text-2xl font-bold theme-text-strong">
-                    Agregar items
-                  </h2>
-                  <p className="products-panel__description">
-                    Carga incremental para sostener cobertura POS sin salir del flujo administrativo.
-                  </p>
-                </div>
-              </div>
-              <div className="products-panel__highlights">
-                <div className="products-panel__spotlight products-panel__spotlight--variant">
-                  <p className="products-panel__spotlight-label">Combo objetivo</p>
-                  <p className="products-panel__spotlight-value">
-                    {selectedCombo ? `#${selectedCombo.id}` : '--'}
-                  </p>
-                  <p className="products-panel__spotlight-note">
-                    {selectedCombo
-                      ? selectedCombo.name
-                      : 'Selecciona combo para sumar items sin borrar composicion actual.'}
-                  </p>
-                </div>
-                <div className="products-panel__spotlight">
-                  <p className="products-panel__spotlight-label">Item base</p>
-                  <p className="products-panel__spotlight-value">
-                    {selectedVariant ? 'Listo' : '--'}
-                  </p>
-                  <p className="products-panel__spotlight-note">
-                    {selectedVariant
-                      ? formatVariantDisplayName(selectedVariant)
-                      : 'Selecciona item operativo y cantidad antes de guardar.'}
-                  </p>
-                </div>
-              </div>
-              <div className="products-form-stack grid gap-4">
+              <CombosPanelHeader
+                eyebrow="Composicion"
+                title="Agregar items"
+                meta={
+                  selectedCombo ? (
+                    <StatusBadge
+                      label={getComboCoverageState(selectedCombo).label}
+                      tone={getComboCoverageState(selectedCombo).tone}
+                    />
+                  ) : (
+                    <StatusBadge label={`${variants.length} items`} tone="info" />
+                  )
+                }
+              />
+              <div
+                id="combos-workspace-composition-panel"
+                role="tabpanel"
+                aria-labelledby="combos-workspace-composition-tab"
+                className="products-creation-pane"
+              >
+                <div className="products-form-stack grid gap-4">
                 <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
-                  <p className="products-form-group__label">Carga incremental</p>
-                  <p className="products-form-group__description">
-                    Esta operacion suma cantidades al combo actual. Para quitar o corregir detalle usa la accion de composicion del listado.
-                  </p>
-                  <div className="mt-4 grid gap-4">
+                  <p className="products-form-group__label">Seleccion</p>
+                  <div className="mt-3 grid gap-4">
                     <Select
                       label="Combo"
                       wrapperClassName="products-field"
@@ -1038,7 +1120,7 @@ export function CombosPage() {
                       </option>
                       {combos.map((combo) => (
                         <option key={combo.id} value={String(combo.id)}>
-                          #{combo.id} - {combo.name} {!combo.active ? '(Inactivo)' : ''}
+                          {combo.name} {!combo.active ? '(Inactivo)' : ''}
                         </option>
                       ))}
                     </Select>
@@ -1079,7 +1161,13 @@ export function CombosPage() {
                     />
                   </div>
                 </div>
-                <p className="products-inline-note">{compositionInlineNote}</p>
+                {selectedCombo ? (
+                  <div className="combos-composition-strip">
+                    <span>{selectedCombo.name}</span>
+                    <strong>{selectedCombo.items.length} items</strong>
+                    <span>{formatCurrency(Number(selectedCombo.sale_price))}</span>
+                  </div>
+                ) : null}
                 <div className="products-panel__actions flex gap-3">
                   <Button
                     className="products-panel__cta"
@@ -1089,49 +1177,46 @@ export function CombosPage() {
                     {addingItems ? 'Guardando...' : 'Agregar item'}
                   </Button>
                 </div>
+                </div>
               </div>
             </Card>
+            ) : null}
           </div>
 
           <Card
             padding="none"
             glow={false}
-            className="products-panel products-panel--list"
+            className="products-panel products-panel--list products-panel--catalog-explorer combos-explorer-panel"
             contentClassName="products-panel__body"
           >
-            <div className="products-panel__header">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="products-panel__header-copy">
-                  <p className="text-sm theme-text-muted">Listado real</p>
-                  <h2 className="font-display text-2xl font-bold theme-text-strong">
-                    Combos comerciales
-                  </h2>
-                  <p className="products-panel__description">
-                    Vista administrativa de precio, cobertura y acciones por fila con la misma tabla enterprise del sistema.
-                  </p>
-                </div>
-                <Button
-                  variant="secondary"
-                  className="products-panel__secondary"
-                  disabled={loadingCatalog || actionsLocked}
-                  onClick={() => void refreshCatalog({ background: combos.length > 0 })}
-                >
-                  {refreshingCatalog ? 'Actualizando...' : 'Refrescar'}
-                </Button>
-              </div>
-            </div>
+            <CombosPanelHeader
+              eyebrow="Explorador"
+              title="Combos comerciales"
+              meta={<StatusBadge label={getComboStatusFilterLabel(comboStatusFilter)} tone="info" />}
+            />
 
             <CombosListToolbar
               label="Vista activa"
-              value={comboListCountLabel}
-              badges={comboToolbarBadges}
               searchValue={comboSearch}
               onSearchChange={setComboSearch}
+              activeFilter={comboStatusFilter}
+              filters={comboStatusFilterOptions}
+              onFilterChange={setComboStatusFilter}
+              action={
+                <Button
+                  variant="secondary"
+                  className="combos-toolbar-action"
+                  disabled={loadingCatalog || actionsLocked}
+                  onClick={() => void refreshCatalog({ background: combos.length > 0 })}
+                >
+                  {refreshingCatalog ? 'Actualizando...' : 'Actualizar'}
+                </Button>
+              }
             />
 
             {refreshingCatalog && combos.length > 0 ? (
               <div className="products-inline-note products-inline-note--footer toolbar-shell mt-4 rounded-lg px-4 py-3 text-xs text-[color:var(--text-faint)]">
-                Actualizando listado y cobertura operativa...
+                Actualizando listado...
               </div>
             ) : null}
 
@@ -1139,7 +1224,7 @@ export function CombosPage() {
               <div className="mt-4">
                 <LoadingState
                   title="Cargando combos"
-                  description="Estamos leyendo la base comercial y los items operativos disponibles."
+                  description="Sincronizando catalogo."
                   rows={4}
                 />
               </div>
@@ -1147,14 +1232,14 @@ export function CombosPage() {
               <div className="mt-4">
                 <EmptyState
                   title="Sin combos cargados"
-                  description="Crea el primer combo y usa items operativos existentes para definir su contenido."
+                  description="Crea el primer combo."
                 />
               </div>
             ) : filteredCombos.length === 0 ? (
               <div className="mt-4">
                 <EmptyState
                   title="Sin resultados"
-                  description="No encontramos combos que coincidan con el nombre buscado."
+                  description="Ajusta la busqueda."
                 />
               </div>
             ) : (
@@ -1162,59 +1247,34 @@ export function CombosPage() {
                 ariaLabel="Listado de combos comerciales"
                 caption="Tabla de combos comerciales"
                 rows={filteredCombos}
+                mobileCardRender={(combo) => renderComboMobileCard(combo)}
                 rowKey={(combo) => combo.id}
                 rowClassName={(combo) => (!combo.active ? 'opacity-80' : undefined)}
-                tableMinWidthClassName="min-w-[1260px]"
+                tableMinWidthClassName="min-w-[1120px]"
                 columns={[
-                  {
-                    key: 'id',
-                    header: 'ID',
-                    width: '72px',
-                    cellClassName: 'whitespace-nowrap text-xs theme-text-muted',
-                    render: (combo) => `#${combo.id}`,
-                  },
                   {
                     key: 'combo',
                     header: 'Combo',
                     width: '360px',
                     render: (combo) => (
-                      <div className="products-table-entity flex items-start gap-3">
+                      <div className="products-table-entity products-table-entity--with-media">
                         <ProductMedia
                           label={combo.name}
                           src={resolveApiAssetUrl(combo.imageUrl)}
-                          alt={combo.imageAlt ?? `Imagen de ${combo.name}`}
+                          alt={combo.imageAlt ?? combo.name}
                           kind="COMBO"
                           size="sm"
-                          className="shrink-0"
+                          className="products-table-media"
                         />
                         <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate text-[15px] font-semibold theme-text-strong">
+                          <div className="products-table-entity__title-row">
+                            <p className="products-table-entity__name text-[15px] font-semibold theme-text-strong">
                               {combo.name}
                             </p>
                             <StatusBadge
                               label={`${combo.items.length} item(s)`}
                               tone={combo.items.length > 0 ? 'info' : 'default'}
                             />
-                          </div>
-                          <p className="products-table-entity__summary">
-                            {combo.active
-                              ? 'Combo habilitado para gestion y venta agrupada.'
-                              : 'Combo desactivado, disponible para revision administrativa.'}
-                          </p>
-                          <div className="products-table-meta">
-                            <span className="products-table-meta__item">
-                              <span className="text-[color:var(--text-faint)]">Precio</span>
-                              <span className="font-medium theme-text-strong">
-                                {formatCurrency(Number(combo.sale_price))}
-                              </span>
-                            </span>
-                            <span className="products-table-meta__item">
-                              <span className="text-[color:var(--text-faint)]">Cobertura</span>
-                              <span className="font-medium theme-text-strong">
-                                {getComboCoverageState(combo).label}
-                              </span>
-                            </span>
                           </div>
                         </div>
                       </div>
@@ -1227,12 +1287,7 @@ export function CombosPage() {
                     render: (combo) => (
                       <div className="products-table-stack">
                         <p className="products-table-stack__title">
-                          {combo.items.length > 0
-                            ? `${combo.items.length} items configurados`
-                            : 'Sin composicion cargada'}
-                        </p>
-                        <p className="products-table-stack__detail">
-                          {getComboCompositionSummary(combo)}
+                          {combo.items.length > 0 ? getComboCompositionSummary(combo) : 'Sin composicion'}
                         </p>
                       </div>
                     ),
@@ -1263,7 +1318,7 @@ export function CombosPage() {
                   },
                   {
                     key: 'coverage',
-                    header: 'Cobertura',
+                    header: 'POS',
                     width: '132px',
                     render: (combo) => {
                       const coverageState = getComboCoverageState(combo);
@@ -1280,23 +1335,13 @@ export function CombosPage() {
                   {
                     key: 'actions',
                     header: 'Acciones',
-                    width: '328px',
+                    width: '304px',
                     render: (combo) => {
                       const comboBusy = togglingComboId === combo.id;
 
                       return (
                         <div className="products-table-actions">
                           <div className="products-table-actions__primary">
-                            <Button
-                              variant="secondary"
-                              className="action-soft-brand products-action-operation"
-                              aria-haspopup="dialog"
-                              aria-controls="combo-composition-dialog"
-                              disabled={actionsLocked}
-                              onClick={() => openCompositionEditor(combo)}
-                            >
-                              Composicion
-                            </Button>
                             <Button
                               variant="secondary"
                               className="action-soft-brand products-action-edit"
@@ -1306,6 +1351,16 @@ export function CombosPage() {
                               onClick={() => openComboEditor(combo)}
                             >
                               Editar
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              className="action-soft-brand products-action-operation"
+                              aria-haspopup="dialog"
+                              aria-controls="combo-composition-dialog"
+                              disabled={actionsLocked}
+                              onClick={() => openCompositionEditor(combo)}
+                            >
+                              Composicion
                             </Button>
                           </div>
                           <div className="products-table-actions__secondary">
@@ -1352,7 +1407,6 @@ export function CombosPage() {
           }
         }}
         title="Editar combo"
-        subtitle="Actualiza el nombre comercial, el precio de venta y el estado operativo del combo."
       >
         <div className="products-form-stack grid min-w-0 gap-4 sm:gap-5">
           {submitError ? (
@@ -1391,10 +1445,7 @@ export function CombosPage() {
           />
           <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
             <p className="products-form-group__label">Ajuste comercial</p>
-            <p className="products-form-group__description">
-              Conserva precio y disponibilidad con misma jerarquia administrativa del listado.
-            </p>
-            <div className="mt-4 grid gap-4">
+            <div className="mt-3 grid gap-4">
               <Input
                 type="number"
                 min={0}
@@ -1413,7 +1464,6 @@ export function CombosPage() {
               />
               <CheckboxField
                 label="Activo"
-                description="Define si el combo debe seguir disponible para venta desde POS."
                 wrapperClassName="products-toggle-card"
                 className="products-toggle-card__label"
                 checked={editComboActive}
@@ -1450,7 +1500,6 @@ export function CombosPage() {
           }
         }}
         title="Editar composicion"
-        subtitle="Revisa la composicion actual del combo, ajusta cantidades, quita items puntuales y agrega nuevos antes de guardar."
       >
         <div className="products-form-stack grid min-w-0 gap-4 sm:gap-5">
           {submitError ? (
@@ -1468,7 +1517,7 @@ export function CombosPage() {
                     {editingCompositionCombo.name}
                   </p>
                   <p className="products-form-group__description mt-1">
-                    Combo #{editingCompositionCombo.id} - {compositionDraftItems.length} item(s) en borrador
+                    {compositionDraftItems.length} items en borrador
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1486,11 +1535,8 @@ export function CombosPage() {
 
           <div className="products-form-group products-form-group--strong rounded-lg p-4 sm:p-5">
             <p className="products-form-group__label">Agregar item</p>
-            <p className="products-form-group__description">
-                Si agregas un item ya existente, su cantidad se suma en el borrador antes de guardar.
-            </p>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,1fr)_140px_auto] md:items-end">
+            <div className="mt-3 grid gap-4 md:grid-cols-[minmax(0,1fr)_140px_auto] md:items-end">
               <Select
                 label="Item operativo"
                 wrapperClassName="products-field"
@@ -1547,7 +1593,7 @@ export function CombosPage() {
           {compositionDraftItems.length === 0 ? (
             <EmptyState
               title="Sin items en composicion"
-              description="Este combo no tiene items en el borrador. Puedes guardar vacio o agregar nuevos items antes de cerrar."
+              description="Agrega items para completar el combo."
             />
           ) : (
             <div className="grid gap-3">
@@ -1631,7 +1677,6 @@ export function CombosPage() {
           }
         }}
         title="Eliminar combo"
-        subtitle="Esta accion solo debe usarse cuando el combo ya no deba existir en la base comercial."
       >
         <div className="products-form-stack grid min-w-0 gap-4 sm:gap-5">
           <div className="products-delete-summary rounded-lg p-4">
@@ -1645,9 +1690,7 @@ export function CombosPage() {
             ) : null}
           </div>
           <div className="products-inline-note products-inline-note--footer">
-            Deseas continuar con la eliminacion? Si el combo tiene ventas historicas,
-            el sistema bloqueara la operacion y te pedira desactivarlo en lugar de
-            eliminarlo.
+            Si tiene ventas historicas, desactivalo en lugar de eliminarlo.
           </div>
           <div className="products-panel__actions modal-action-row">
             <Button
@@ -1683,7 +1726,7 @@ function getComboCoverageState(combo: CatalogCombo): {
   }
 
   if (combo.items.length > 0) {
-    return { label: 'Listo POS', tone: 'success' };
+    return { label: 'Listo', tone: 'success' };
   }
 
   return { label: 'Pendiente', tone: 'warning' };
@@ -1705,16 +1748,16 @@ async function persistComboImageDraft(comboId: number, draft: ComboImageDraft) {
   return null;
 }
 
-function buildComboUpdateSuccessMessage(comboId: number, draft: ComboImageDraft) {
+function buildComboUpdateSuccessMessage(draft: ComboImageDraft) {
   if (draft.markedForRemoval && draft.imageUrl && !draft.pendingImageFile) {
-    return `Combo #${comboId} actualizado sin imagen.`;
+    return 'Combo actualizado sin imagen.';
   }
 
   if (draft.pendingImageFile) {
-    return `Combo #${comboId} actualizado con imagen.`;
+    return 'Combo actualizado con imagen.';
   }
 
-  return `Combo #${comboId} actualizado correctamente.`;
+  return 'Combo actualizado correctamente.';
 }
 
 function translateComboError(message: string) {
@@ -1754,12 +1797,12 @@ function translateComboError(message: string) {
 
 function getComboCompositionSummary(combo: CatalogCombo) {
   if (combo.items.length === 0) {
-    return 'Usa la accion de composicion para cargar items y cantidades.';
+    return 'Sin items';
   }
 
   const previewItems = combo.items.slice(0, 2).map((item) => {
-    const subtitle = formatVariantSubtitle(item.variant);
-    const parts = [formatVariantDisplayName(item.variant), subtitle, `qty ${item.qty}`].filter(
+    const size = item.variant.size.trim();
+    const parts = [item.variant.product_name, size, `qty ${item.qty}`].filter(
       Boolean,
     );
 
@@ -1767,30 +1810,103 @@ function getComboCompositionSummary(combo: CatalogCombo) {
   });
 
   if (combo.items.length > 2) {
-    return `${previewItems.join(' / ')} / +${combo.items.length - 2} item(s)`;
+    return `${previewItems.join(' / ')} / +${combo.items.length - 2}`;
   }
 
   return previewItems.join(' / ');
 }
 
+function getComboStatusFilterLabel(filter: ComboStatusFilter) {
+  return comboStatusFilterOptions.find((option) => option.value === filter)?.label ?? 'Todos';
+}
+
+type CombosSegmentOption<T extends string> = {
+  value: T;
+  label: string;
+};
+
+function CombosPanelHeader({
+  eyebrow,
+  title,
+  meta,
+}: {
+  eyebrow: string;
+  title: string;
+  meta?: ReactNode;
+}) {
+  return (
+    <div className="products-panel__header">
+      <div className="products-panel__header-copy">
+        <p className="products-panel__eyebrow">{eyebrow}</p>
+        <div className="products-panel__title-row">
+          <h2 className="font-display text-2xl font-bold theme-text-strong">{title}</h2>
+          {meta ? <div className="products-panel__meta">{meta}</div> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CombosSegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+  idPrefix,
+}: {
+  options: Array<CombosSegmentOption<T>> | readonly CombosSegmentOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  ariaLabel: string;
+  idPrefix: string;
+}) {
+  return (
+    <div className="products-segmented-control" role="tablist" aria-label={ariaLabel}>
+      {options.map((option) => {
+        const active = value === option.value;
+        const optionId = String(option.value).toLocaleLowerCase();
+
+        return (
+          <button
+            key={option.value}
+            id={`${idPrefix}-${optionId}-tab`}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            aria-controls={`${idPrefix}-${optionId}-panel`}
+            data-active={active || undefined}
+            className="products-segmented-control__item"
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function CombosListToolbar({
   label,
-  value,
-  badges = [],
   searchValue,
   onSearchChange,
+  activeFilter,
+  filters,
+  onFilterChange,
+  action,
 }: {
   label: string;
-  value: string;
-  badges?: CombosToolbarBadge[];
   searchValue: string;
   onSearchChange: (value: string) => void;
+  activeFilter: ComboStatusFilter;
+  filters: readonly { value: ComboStatusFilter; label: string }[];
+  onFilterChange: (value: ComboStatusFilter) => void;
+  action?: ReactNode;
 }) {
   return (
     <div className="products-list-toolbar toolbar-shell mt-4 grid gap-3 rounded-lg px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
       <div className="products-list-toolbar__summary">
         <p className="products-list-toolbar__label">{label}</p>
-        <p className="products-list-toolbar__count">{value}</p>
       </div>
       <div className="products-list-toolbar__controls flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end xl:w-auto">
         <SearchField
@@ -1803,17 +1919,25 @@ function CombosListToolbar({
           className="min-h-10"
           wrapperClassName="products-list-toolbar__search w-full sm:max-w-[280px] xl:max-w-[320px]"
         />
-        {badges.length > 0 ? (
-          <div className="products-list-toolbar__filters flex flex-wrap justify-end gap-2">
-            {badges.map((badge) => (
-              <StatusBadge
-                key={`${badge.label}-${badge.tone ?? 'default'}`}
-                label={badge.label}
-                tone={badge.tone ?? 'default'}
-              />
-            ))}
-          </div>
-        ) : null}
+        <div
+          className="products-list-toolbar__filters flex flex-wrap justify-end gap-2"
+          role="group"
+          aria-label="Filtrar combos"
+        >
+          {filters.map((filterOption) => (
+            <button
+              key={filterOption.value}
+              type="button"
+              aria-pressed={activeFilter === filterOption.value}
+              data-active={activeFilter === filterOption.value || undefined}
+              className="products-list-toolbar__filter min-w-[78px] justify-center"
+              onClick={() => onFilterChange(filterOption.value)}
+            >
+              {filterOption.label}
+            </button>
+          ))}
+        </div>
+        {action ? <div className="combos-toolbar-action-slot">{action}</div> : null}
       </div>
     </div>
   );
