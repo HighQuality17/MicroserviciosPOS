@@ -43,14 +43,14 @@ El script de exportacion resuelve esa ruta de forma explicita y la copia a un ba
 ### 1. Preparar entorno
 
 ```bash
-npm install
-npm run prisma:generate
+pnpm install
+pnpm exec prisma generate
 ```
 
 ### 2. Congelar la fuente SQLite
 
 ```bash
-npm run db:sqlite:export -- --artifacts-dir C:\Temp\MicroserviciosPOS\migration-20260402
+pnpm run db:sqlite:export -- --artifacts-dir C:\Temp\MicroserviciosPOS\migration-20260402
 ```
 
 Salida esperada dentro de `artifacts-dir`:
@@ -71,7 +71,7 @@ Salida esperada dentro de `artifacts-dir`:
 ### 3. Aplicar baseline PostgreSQL
 
 ```bash
-npm run prisma:migrate:deploy
+pnpm exec prisma migrate deploy
 ```
 
 ### 4. Importar snapshot a PostgreSQL
@@ -79,7 +79,7 @@ npm run prisma:migrate:deploy
 La base destino debe estar vacia. El script aborta si detecta tablas con datos.
 
 ```bash
-npm run db:postgres:import -- --artifacts-dir C:\Temp\MicroserviciosPOS\migration-20260402
+pnpm run db:postgres:import -- --artifacts-dir C:\Temp\MicroserviciosPOS\migration-20260402
 ```
 
 El import respeta este orden:
@@ -106,13 +106,13 @@ El mismo flujo ajusta secuencias al `MAX(id)` de cada tabla autoincremental.
 Si solo necesitas re-ajustar secuencias:
 
 ```bash
-npm run db:postgres:reset-sequences
+pnpm run db:postgres:reset-sequences
 ```
 
 ### 5. Verificar paridad
 
 ```bash
-npm run db:postgres:verify -- --artifacts-dir C:\Temp\MicroserviciosPOS\migration-20260402
+pnpm run db:postgres:verify -- --artifacts-dir C:\Temp\MicroserviciosPOS\migration-20260402
 ```
 
 La verificacion valida al menos:
@@ -134,7 +134,7 @@ Con la verificacion limpia:
 3. inicia backend:
 
 ```bash
-npm run start:dev
+pnpm run start:dev
 ```
 
 4. valida manualmente:
@@ -150,13 +150,13 @@ npm run start:dev
 Si necesitas entorno de pruebas sobre una base vacia que no venga de importacion:
 
 ```bash
-npm run prisma:seed:demo
+pnpm run prisma:seed:demo
 ```
 
 Si la base esta vacia y no viene de SQLite, puedes correr antes:
 
 ```bash
-npm run prisma:seed
+pnpm run prisma:seed
 ```
 
 No ejecutes este comando sobre una base real importada desde SQLite.

@@ -62,8 +62,8 @@ Levantar una base nueva o vacia:
 
 ```bash
 docker compose --env-file .env.docker up -d postgres
-docker compose --env-file .env.docker run --rm backend npm run prisma:migrate:deploy
-docker compose --env-file .env.docker run --rm backend npm run prisma:seed
+docker compose --env-file .env.docker run --rm backend pnpm exec prisma migrate deploy
+docker compose --env-file .env.docker run --rm backend pnpm run prisma:seed
 docker compose --env-file .env.docker up --build -d backend frontend
 ```
 
@@ -108,15 +108,15 @@ Usa este orden para evitar que el backend arranque antes de que exista el esquem
 
 ```bash
 docker compose --env-file .env.docker up -d postgres
-docker compose --env-file .env.docker run --rm backend npm run prisma:migrate:deploy
-docker compose --env-file .env.docker run --rm backend npm run prisma:seed
+docker compose --env-file .env.docker run --rm backend pnpm exec prisma migrate deploy
+docker compose --env-file .env.docker run --rm backend pnpm run prisma:seed
 docker compose --env-file .env.docker up --build -d backend frontend
 ```
 
 Si quieres usuarios demo en una base de pruebas vacia:
 
 ```bash
-docker compose --env-file .env.docker run --rm backend npm run prisma:seed:demo
+docker compose --env-file .env.docker run --rm backend pnpm run prisma:seed:demo
 ```
 
 ### Base ya migrada o importada
@@ -134,19 +134,19 @@ No ejecutes `prisma:seed` ni `prisma:seed:demo` sobre una base importada con dat
 Migracion del esquema:
 
 ```bash
-docker compose --env-file .env.docker run --rm backend npm run prisma:migrate:deploy
+docker compose --env-file .env.docker run --rm backend pnpm exec prisma migrate deploy
 ```
 
 Seed seguro para base vacia:
 
 ```bash
-docker compose --env-file .env.docker run --rm backend npm run prisma:seed
+docker compose --env-file .env.docker run --rm backend pnpm run prisma:seed
 ```
 
 Seed demo solo para pruebas sobre base vacia:
 
 ```bash
-docker compose --env-file .env.docker run --rm backend npm run prisma:seed:demo
+docker compose --env-file .env.docker run --rm backend pnpm run prisma:seed:demo
 ```
 
 El contenedor de backend no ejecuta migraciones automaticamente al iniciar. El flujo recomendado sigue siendo explicito y manual.
