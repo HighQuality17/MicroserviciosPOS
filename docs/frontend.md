@@ -18,10 +18,9 @@ El frontend está ubicado en `frontend/` y construido con React 19, Vite y TypeS
 ## Scripts disponibles
 
 ```bash
-cd frontend
-npm run dev
-npm run build
-npm run preview
+pnpm -C frontend run dev -- --host
+pnpm -C frontend run build
+pnpm -C frontend run preview
 ```
 
 Observación verificable: el `package.json` del frontend no expone scripts de test ni lint.

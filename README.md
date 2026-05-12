@@ -156,7 +156,7 @@ Notas de arquitectura verificadas:
 ## Requisitos previos
 
 - Node.js 20 o superior recomendado
-- npm
+- pnpm 11.1.1
 - Entorno capaz de ejecutar backend NestJS y frontend Vite
 - Docker Desktop o Docker Engine con Compose plugin, solo si vas a usar el stack Docker local
 - Puerto `3000` disponible para la API 
@@ -167,14 +167,14 @@ Notas de arquitectura verificadas:
 ### 1. Backend
 
 ```bash
-npm install
+pnpm install
 # crear .env a partir de .env.example
-npm run prisma:generate
-npm run prisma:migrate:deploy
-npm run prisma:seed
+pnpm exec prisma generate
+pnpm exec prisma migrate deploy
+pnpm run prisma:seed
 # opcional: solo para una base vacia de pruebas
-npm run prisma:seed:demo
-npm run start:dev
+pnpm run prisma:seed:demo
+pnpm run start:dev
 ```
 
 La API quedará disponible en `http://localhost:3000/api`.
@@ -183,9 +183,8 @@ Si vienes de una base SQLite existente, sigue antes la guia de [docs/postgresql-
 ### 2. Frontend
 
 ```bash
-cd frontend
-npm install
-npm run dev
+pnpm -C frontend install
+pnpm -C frontend run dev -- --host
 ```
 
 Si no se define otra URL, el frontend consumirá `http://localhost:3000/api`.
@@ -253,8 +252,8 @@ Comandos principales:
 ```bash
 cp .env.docker.example .env.docker
 docker compose --env-file .env.docker up -d postgres
-docker compose --env-file .env.docker run --rm backend npm run prisma:migrate:deploy
-docker compose --env-file .env.docker run --rm backend npm run prisma:seed
+docker compose --env-file .env.docker run --rm backend pnpm exec prisma migrate deploy
+docker compose --env-file .env.docker run --rm backend pnpm run prisma:seed
 docker compose --env-file .env.docker up --build -d backend frontend
 ```
 
@@ -266,7 +265,7 @@ docker compose --env-file .env.docker up --build -d
 
 ## Usuarios de prueba
 
-Los usuarios demo siguen disponibles, pero ahora viven en un flujo separado para no interferir con importaciones reales. Cargalos con `npm run prisma:seed:demo` cuando trabajes sobre una base vacia de pruebas. El script aborta si detecta una base con datos operativos:
+Los usuarios demo siguen disponibles, pero ahora viven en un flujo separado para no interferir con importaciones reales. Cargalos con `pnpm run prisma:seed:demo` cuando trabajes sobre una base vacia de pruebas. El script aborta si detecta una base con datos operativos:
 
 | Rol | Username | Email | Contraseña |
 | --- | --- | --- | --- |
@@ -298,16 +297,15 @@ Detalle completo en [`docs/theme-system.md`](docs/theme-system.md).
 ### Build backend
 
 ```bash
-npm run build
-npm run start:prod
+pnpm run build
+pnpm run start:prod
 ```
 
 ### Build frontend
 
 ```bash
-cd frontend
-npm run build
-npm run preview
+pnpm -C frontend run build
+pnpm -C frontend run preview
 ```
 
 Observaciones verificadas en el repositorio:

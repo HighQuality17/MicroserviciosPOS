@@ -5,8 +5,8 @@ Frontend web para el POS offline-first, preparado para integrarse más adelante 
 ## Ejecutar
 
 ```bash
-npm install
-npm run dev
+pnpm -C frontend install
+pnpm -C frontend run dev -- --host
 ```
 
 ## Notas
