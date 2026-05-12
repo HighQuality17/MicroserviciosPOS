@@ -1041,7 +1041,11 @@ export function SalesPage() {
               </div>
             </div>
 
-            <div className="sales-filter-panel mt-4" data-open={filtersExpanded}>
+            <div
+              className="sales-filter-panel mt-4"
+              data-open={filtersExpanded}
+              data-active={activeFilterCount > 0}
+            >
               <div className="sales-filter-panel__bar">
                 <div className="min-w-0">
                   <p className="products-form-group__label">Filtros avanzados</p>
@@ -1182,7 +1186,7 @@ export function SalesPage() {
               </div>
             ) : (
               <>
-                <div className="sales-history-mobile-list mt-4 md:hidden">
+                <div className="sales-history-list mt-4" aria-label="Ventas encontradas">
                   {historyItems.map((sale) => {
                     const isSelected = selectedSaleId === sale.sale_id;
 
@@ -1193,158 +1197,44 @@ export function SalesPage() {
                         aria-pressed={isSelected}
                         aria-label={getHistorySaleButtonLabel(sale, isSelected)}
                         onClick={() => void handleSelectReceipt(sale.sale_id)}
+                        data-status={sale.status}
                         className={[
-                          'sales-history-mobile-card products-mobile-card text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]',
-                          isSelected ? 'sales-history-mobile-card--selected' : '',
+                          'sales-history-row text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-strong)]',
+                          isSelected ? 'sales-history-row--selected' : '',
                         ].join(' ')}
                       >
-                        <div className="sales-history-mobile-card__header">
-                          <div className="min-w-0">
-                            <p className="products-mobile-card__name">Venta #{sale.sale_id}</p>
-                            <p className="sales-history-mobile-card__date">{formatDate(sale.created_at)}</p>
-                          </div>
-                          <span className="products-mobile-card__price">
-                            {formatCurrency(sale.total)}
+                        <div className="sales-history-row__identity">
+                          <p className="sales-history-row__id">Venta #{sale.sale_id}</p>
+                          <p className="sales-history-row__date">{formatDate(sale.created_at)}</p>
+                        </div>
+
+                        <div className="sales-history-row__signals">
+                          <StatusBadge
+                            label={formatStatus(sale.status)}
+                            tone={getSaleStatusTone(sale.status)}
+                          />
+                          <StatusBadge
+                            label={formatPaymentMethod(sale.payment_method)}
+                            tone={getPaymentMethodTone(sale.payment_method)}
+                          />
+                          <span className="sales-history-row__meta">
+                            <span>POS</span>
+                            {sale.location_name}
+                          </span>
+                          <span className="sales-history-row__meta">
+                            <span>Cajero</span>
+                            {sale.cashier_name}
                           </span>
                         </div>
-                        <div className="products-mobile-card__info-grid sales-history-mobile-card__grid">
-                          <div className="products-mobile-card__info-item">
-                            <span className="products-mobile-card__info-label">Estado</span>
-                            <div className="products-mobile-card__info-value">
-                              <StatusBadge
-                                label={formatStatus(sale.status)}
-                                tone={getSaleStatusTone(sale.status)}
-                              />
-                            </div>
-                          </div>
-                          <div className="products-mobile-card__info-item">
-                            <span className="products-mobile-card__info-label">Pago</span>
-                            <div className="products-mobile-card__info-value">
-                              <StatusBadge
-                                label={formatPaymentMethod(sale.payment_method)}
-                                tone={getPaymentMethodTone(sale.payment_method)}
-                              />
-                            </div>
-                          </div>
-                          <div className="products-mobile-card__info-item">
-                            <span className="products-mobile-card__info-label">Ubicacion</span>
-                            <div className="products-mobile-card__info-value">{sale.location_name}</div>
-                          </div>
-                          <div className="products-mobile-card__info-item">
-                            <span className="products-mobile-card__info-label">Accion</span>
-                            <div className="products-mobile-card__info-value sales-history-mobile-card__action">
-                              Ver detalle
-                            </div>
-                          </div>
+
+                        <div className="sales-history-row__amount">
+                          <span>Total</span>
+                          <strong>{formatCurrency(sale.total)}</strong>
+                          <span className="sales-action-chip">Ver detalle</span>
                         </div>
                       </button>
                     );
                   })}
-                </div>
-
-                <div className="sales-history-table mt-4 hidden overflow-x-auto overscroll-x-contain touch-pan-x pb-1 md:block">
-                  <div className="min-w-[1080px] overflow-hidden rounded-lg table-shell">
-                    <ScrollPanel
-                      className="sm:pr-0"
-                      maxHeightClassName="max-h-[30rem]"
-                      tabIndex={0}
-                      aria-label="Resultados del historial de ventas"
-                    >
-                      <table className="w-full table-fixed border-separate border-spacing-0 text-sm text-[color:var(--text-secondary)]">
-                        <caption className="sr-only">Historial completo de ventas</caption>
-                        <colgroup>
-                          <col style={{ width: '92px' }} />
-                          <col style={{ width: '170px' }} />
-                          <col style={{ width: '120px' }} />
-                          <col style={{ width: '128px' }} />
-                          <col style={{ width: '144px' }} />
-                          <col style={{ width: '170px' }} />
-                          <col />
-                          <col style={{ width: '110px' }} />
-                        </colgroup>
-                        <thead className="table-head">
-                          <tr>
-                            <th scope="col" className="table-head-cell px-4 py-3 text-left">
-                              ID
-                            </th>
-                            <th scope="col" className="table-head-cell px-4 py-3 text-left">
-                              Fecha
-                            </th>
-                            <th scope="col" className="table-head-cell px-4 py-3 text-right">
-                              Total
-                            </th>
-                            <th scope="col" className="table-head-cell px-4 py-3 text-left">
-                              Estado
-                            </th>
-                            <th scope="col" className="table-head-cell px-4 py-3 text-left">
-                              Metodo
-                            </th>
-                            <th scope="col" className="table-head-cell px-4 py-3 text-left">
-                              Ubicacion
-                            </th>
-                            <th scope="col" className="table-head-cell px-4 py-3 text-left">
-                              Cajero
-                            </th>
-                            <th scope="col" className="table-head-cell px-4 py-3 text-left">
-                              Accion
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {historyItems.map((sale, index) => {
-                            const isSelected = selectedSaleId === sale.sale_id;
-
-                            return (
-                              <tr
-                                key={sale.sale_id}
-                                tabIndex={0}
-                                aria-label={getHistorySaleButtonLabel(sale, isSelected)}
-                                onClick={() => void handleSelectReceipt(sale.sale_id)}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter' || event.key === ' ') {
-                                    event.preventDefault();
-                                    void handleSelectReceipt(sale.sale_id);
-                                  }
-                                }}
-                                className={[
-                                  'cursor-pointer text-[color:var(--text-secondary)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-inset focus-visible:ring-offset-0',
-                                  index > 0 ? 'border-t theme-border-soft' : '',
-                                  isSelected
-                                    ? 'table-row table-row-selected theme-text-strong'
-                                    : 'table-row table-row-interactive',
-                                ].join(' ')}
-                              >
-                                <td className="px-4 py-4 align-middle whitespace-nowrap theme-text-muted" data-column="id" data-label="ID">#{sale.sale_id}</td>
-                                <td className="px-4 py-4 align-middle whitespace-nowrap" data-column="date" data-label="Fecha">{formatDate(sale.created_at)}</td>
-                                <td className="px-4 py-4 align-middle whitespace-nowrap text-right" data-column="total" data-label="Total">
-                                  <span className="products-table-price">{formatCurrency(sale.total)}</span>
-                                </td>
-                                <td className="px-4 py-4 align-middle whitespace-nowrap" data-column="status" data-label="Estado">
-                                  <StatusBadge label={formatStatus(sale.status)} tone={getSaleStatusTone(sale.status)} />
-                                </td>
-                                <td className="px-4 py-4 align-middle whitespace-nowrap" data-column="payment" data-label="Metodo">
-                                  <StatusBadge label={formatPaymentMethod(sale.payment_method)} tone={getPaymentMethodTone(sale.payment_method)} />
-                                </td>
-                                <td className="px-4 py-4 align-middle" data-column="location" data-label="Ubicacion">
-                                  <span className="block truncate theme-text-strong">{sale.location_name}</span>
-                                  <span className="mt-1 block truncate text-xs text-[color:var(--text-faint)]">POS #{sale.location_id}</span>
-                                </td>
-                                <td className="px-4 py-4 align-middle" data-column="cashier" data-label="Cajero">
-                                  <span className="block truncate theme-text-strong">{sale.cashier_name}</span>
-                                  <span className="mt-1 block truncate text-xs text-[color:var(--text-faint)]">Usuario #{sale.cashier_id}</span>
-                                </td>
-                                <td className="px-4 py-4 align-middle whitespace-nowrap" data-column="action" data-label="Accion">
-                                  <span className="table-action-chip sales-action-chip theme-text-strong">
-                                    Ver detalle
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </ScrollPanel>
-                  </div>
                 </div>
                 <div className="products-inline-note products-inline-note--footer toolbar-shell mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg px-4 py-3 text-sm text-[color:var(--text-muted)]">
                   <span>
