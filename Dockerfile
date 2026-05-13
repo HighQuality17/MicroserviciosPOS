@@ -1,18 +1,30 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:22-bookworm-slim AS base
 WORKDIR /app
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable && corepack prepare pnpm@11.1.1 --activate
+RUN pnpm config set store-dir /pnpm/store
+RUN pnpm config set registry https://registry.npmjs.org/ \
+  && pnpm config set fetch-retries 5 \
+  && pnpm config set fetch-retry-mintimeout 10000 \
+  && pnpm config set fetch-retry-maxtimeout 120000 \
+  && pnpm config set fetch-timeout 600000 \
+  && pnpm config set network-concurrency 4
 
 FROM base AS deps
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY frontend/package.json ./frontend/package.json
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 FROM base AS build
 WORKDIR /app
@@ -23,8 +35,8 @@ COPY prisma ./prisma
 COPY scripts ./scripts
 COPY src ./src
 
-RUN pnpm exec prisma generate
-RUN pnpm run build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm exec prisma generate
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm run build
 
 FROM base AS runtime
 WORKDIR /app
