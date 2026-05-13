@@ -17,14 +17,14 @@ Si quieres levantar el sistema con contenedores en lugar del flujo manual por pr
 ### Backend
 
 ```bash
-npm install
+pnpm install
 # crear .env a partir de .env.example
-npm run prisma:generate
-npm run prisma:migrate:deploy
-npm run prisma:seed
+pnpm exec prisma generate
+pnpm exec prisma migrate deploy
+pnpm run prisma:seed
 # opcional: solo para una base vacia de pruebas
-npm run prisma:seed:demo
-npm run start:dev
+pnpm run prisma:seed:demo
+pnpm run start:dev
 ```
 
 Resultado esperado:
@@ -37,9 +37,8 @@ Resultado esperado:
 ### Frontend
 
 ```bash
-cd frontend
-npm install
-npm run dev
+pnpm -C frontend install
+pnpm -C frontend run dev -- --host
 ```
 
 Resultado esperado:
@@ -53,10 +52,10 @@ Resultado esperado:
 Usa la guia detallada en [docs/postgresql-migration.md](./postgresql-migration.md). El flujo resumido es:
 
 ```bash
-npm run db:sqlite:export -- --artifacts-dir <ruta-artifacts>
-npm run prisma:migrate:deploy
-npm run db:postgres:import -- --artifacts-dir <ruta-artifacts>
-npm run db:postgres:verify -- --artifacts-dir <ruta-artifacts>
+pnpm run db:sqlite:export -- --artifacts-dir <ruta-artifacts>
+pnpm exec prisma migrate deploy
+pnpm run db:postgres:import -- --artifacts-dir <ruta-artifacts>
+pnpm run db:postgres:verify -- --artifacts-dir <ruta-artifacts>
 ```
 
 ## Build
@@ -64,8 +63,8 @@ npm run db:postgres:verify -- --artifacts-dir <ruta-artifacts>
 ### Backend
 
 ```bash
-npm run build
-npm run start:prod
+pnpm run build
+pnpm run start:prod
 ```
 
 Artefacto generado: `dist/`
@@ -73,9 +72,8 @@ Artefacto generado: `dist/`
 ### Frontend
 
 ```bash
-cd frontend
-npm run build
-npm run preview
+pnpm -C frontend run build
+pnpm -C frontend run preview
 ```
 
 Artefacto generado: `frontend/dist/`

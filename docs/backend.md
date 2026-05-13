@@ -17,20 +17,20 @@ El backend está construido con NestJS y TypeScript en la raíz del repositorio.
 ## Scripts disponibles
 
 ```bash
-npm run build
-npm run start
-npm run start:dev
-npm run start:prod
-npm run lint
-npm run format
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:migrate:deploy
-npm run prisma:seed
-npm run prisma:seed:demo
-npm run db:sqlite:export
-npm run db:postgres:import
-npm run db:postgres:verify
+pnpm run build
+pnpm run start
+pnpm run start:dev
+pnpm run start:prod
+pnpm run lint
+pnpm run format
+pnpm exec prisma generate
+pnpm run prisma:migrate
+pnpm run prisma:migrate:deploy
+pnpm run prisma:seed
+pnpm run prisma:seed:demo
+pnpm run db:sqlite:export
+pnpm run db:postgres:import
+pnpm run db:postgres:verify
 ```
 
 Observación verificable: el backend sí expone script de lint; no expone script de test automatizado en `package.json`.
