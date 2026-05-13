@@ -518,7 +518,7 @@ export function PosPage() {
         cards={posHeaderCards}
       />
 
-      <div className="pos-workspace grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.16fr)_minmax(24rem,28rem)]">
+      <div className="pos-workspace grid min-w-0 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(23.5rem,27rem)]">
         <Card padding="none" glow={false} className="self-start pos-workspace__catalog">
           <div className="pos-catalog-shell">
             <div className="pos-catalog-shell__header">
