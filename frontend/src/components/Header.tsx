@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { MapPin } from 'lucide-react';
+import { MapPin, UserRound } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAppStore } from '@/store/appStore';
 import { useSessionStore } from '@/store/sessionStore';
@@ -17,12 +17,12 @@ export function Header() {
   return (
     <header
       className={clsx(
-        'glass-panel app-header rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-5 lg:p-6',
+        'glass-panel app-header',
       )}
       aria-label="Barra superior del sistema"
     >
-      <div className="app-header__body flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="app-header__identity flex min-w-0 items-center gap-3">
+      <div className="app-header__body">
+        <div className="app-header__identity">
           <span className="app-header__brand-mark" aria-hidden="true">
             <img
               src={registryMark}
@@ -32,24 +32,30 @@ export function Header() {
             />
           </span>
           <div className="app-header__identity-copy min-w-0">
-            <p className="app-header__eyebrow text-xs uppercase tracking-[0.32em] text-[color:var(--text-faint)]">
+            <p className="app-header__eyebrow">
               Operacion comercial conectada
             </p>
-            <h1 className="app-header__title font-display text-2xl font-bold text-[color:var(--text)] sm:text-3xl">
-              Registry POS
-            </h1>
+            <div className="app-header__title-row">
+              <h1 className="app-header__title font-display">Registry POS</h1>
+              <span className="app-header__identity-status" aria-label="Modo operativo activo">
+                <span className="app-header__status-dot" aria-hidden="true" />
+                Comando POS
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="app-header__controls flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="app-header__controls" aria-label="Controles operativos">
           <div className="app-header__control app-header__control--theme min-w-0">
             <ThemeSelector />
           </div>
 
-          <div className="app-header__control app-header__control--location surface-subtle flex w-full min-w-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto sm:max-w-full">
-            <MapPin size={16} className="theme-accent-icon shrink-0" aria-hidden="true" />
+          <div className="app-header__control app-header__control--location app-header__control-card surface-subtle">
+            <span className="app-header__control-icon" aria-hidden="true">
+              <MapPin size={16} />
+            </span>
             <div className="min-w-0 flex-1">
-              <p className="app-header__control-label text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
+              <p className="app-header__control-label">
                 Punto de venta
               </p>
               {locationsLoading ? (
@@ -88,16 +94,21 @@ export function Header() {
             </div>
           </div>
 
-          <div className="app-header__control app-header__control--user surface-subtle w-full rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto">
-            <p className="app-header__control-label text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
-              Sesion
-            </p>
-            <span className="app-header__control-value mt-1 flex min-w-0 items-center gap-2 text-[color:var(--text)]">
-              <span className="min-w-0 truncate">{currentUser?.name}</span>
-              <span className="app-header__role-pill shrink-0">
-                {formatUserRole(currentUser?.role)}
-              </span>
+          <div className="app-header__control app-header__control--user app-header__control-card surface-subtle">
+            <span className="app-header__control-icon" aria-hidden="true">
+              <UserRound size={16} />
             </span>
+            <div className="min-w-0 flex-1">
+              <p className="app-header__control-label">
+                Sesion
+              </p>
+              <span className="app-header__control-value mt-1 flex min-w-0 items-center gap-2 text-[color:var(--text)]">
+                <span className="min-w-0 truncate">{currentUser?.name}</span>
+                <span className="app-header__role-pill shrink-0">
+                  {formatUserRole(currentUser?.role)}
+                </span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
