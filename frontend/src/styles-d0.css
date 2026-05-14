@@ -2664,6 +2664,12 @@ body {
   color: var(--text-secondary);
 }
 
+.app-sidebar__nav-link.app-nav-link-expanded:not(.app-nav-link-active) {
+  border-color: rgba(125, 211, 252, 0.14);
+  background: rgba(56, 213, 255, 0.045);
+  color: var(--text-secondary);
+}
+
 .app-nav-link-active,
 .app-nav-link-active:hover,
 .app-sidebar__nav-link.app-nav-link-active,
@@ -2842,6 +2848,45 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .app-sidebar-shell .app-nav-link:not(.app-nav-link-active):hover,
+  .app-sidebar-shell .app-sidebar__nav-link:not(.app-nav-link-active):hover {
+    transform: none;
+    border-color: transparent;
+    background: var(--nav-item-background);
+    color: var(--text-secondary);
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+
+  .app-sidebar-shell .app-nav-link:not(.app-nav-link-active):hover::before,
+  .app-sidebar-shell .app-sidebar__nav-link:not(.app-nav-link-active):hover::before {
+    opacity: 0;
+  }
+
+  .app-sidebar-shell .app-nav-link:not(.app-nav-link-active):hover .app-nav-link__icon,
+  .app-sidebar-shell .app-sidebar__nav-link:not(.app-nav-link-active):hover .app-nav-link__icon {
+    border-color: transparent;
+    background: var(--nav-item-icon-background);
+    color: var(--text-muted);
+    box-shadow: none;
+  }
+
+  .app-sidebar-shell .app-sidebar__nav-link:not(.app-nav-link-active):hover .app-nav-link__chevron {
+    color: var(--text-faint);
+  }
+
+  .app-sidebar-shell .app-sidebar__subnav-link:not(.app-sidebar__subnav-link--active):hover {
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-muted);
+    box-shadow: none;
+  }
+
+  .app-sidebar-shell .app-sidebar__subnav-link:not(.app-sidebar__subnav-link--active):hover .app-sidebar__subnav-icon {
+    color: var(--text-faint);
+  }
 }
 
 .app-sidebar__footer {

@@ -130,7 +130,10 @@ export function Sidebar({
         {links.map(({ to, label, icon: Icon }) => {
           const isAdminLink = to === '/admin';
           const canRenderAdminSubnav = isAdminLink && !isDesktopCollapsed && adminSubLinks.length > 0;
-          const isAdminSubnavOpen = canRenderAdminSubnav && isAdminRoute;
+          const isMainLinkActive = isAdminLink
+            ? isAdminRoute
+            : pathname === to || pathname.startsWith(`${to}/`);
+          const isAdminSubnavExpanded = canRenderAdminSubnav && isAdminRoute;
 
           return (
             <div
@@ -139,22 +142,29 @@ export function Sidebar({
                 'app-sidebar__nav-group',
                 isAdminLink && 'app-sidebar__nav-group--admin',
                 isDesktopCollapsed && 'app-sidebar__nav-group--collapsed',
+                isAdminSubnavExpanded && 'app-sidebar__nav-group--expanded',
               )}
-              data-open={isAdminSubnavOpen ? 'true' : undefined}
+              data-active={isMainLinkActive ? 'true' : undefined}
+              data-expanded={isAdminSubnavExpanded ? 'true' : undefined}
             >
               <NavLink
                 to={to}
                 onClick={() => {
+                  if (isMobile && isAdminLink) {
+                    return;
+                  }
+
                   onClose?.();
                 }}
                 aria-label={isDesktopCollapsed ? label : undefined}
                 title={isDesktopCollapsed ? label : undefined}
-                aria-expanded={canRenderAdminSubnav ? isAdminSubnavOpen : undefined}
-                className={({ isActive }) =>
+                aria-expanded={canRenderAdminSubnav ? isAdminSubnavExpanded : undefined}
+                className={() =>
                   clsx(
                     'app-nav-link app-sidebar__nav-link flex min-h-11 items-center rounded-2xl py-3 text-sm font-medium transition',
                     isDesktopCollapsed ? 'w-[3.25rem] justify-center px-3' : 'gap-3 px-4',
-                    (isActive || (isAdminLink && isAdminRoute)) && 'app-nav-link-active',
+                    isMainLinkActive && 'app-nav-link-active',
+                    isAdminSubnavExpanded && 'app-nav-link-expanded',
                   )
                 }
               >
@@ -174,7 +184,7 @@ export function Sidebar({
                   <span
                     className={clsx(
                       'app-nav-link__chevron',
-                      isAdminSubnavOpen && 'app-nav-link__chevron--open',
+                      isAdminSubnavExpanded && 'app-nav-link__chevron--open',
                     )}
                     aria-hidden="true"
                   >
@@ -188,8 +198,8 @@ export function Sidebar({
                   className="app-sidebar__subnav"
                   role="group"
                   aria-label="Submodulos Admin"
-                  aria-hidden={!isAdminSubnavOpen}
-                  data-open={isAdminSubnavOpen ? 'true' : 'false'}
+                  aria-hidden={!isAdminSubnavExpanded}
+                  data-open={isAdminSubnavExpanded ? 'true' : 'false'}
                 >
                   {adminSubLinks.map(({ to: childTo, label: childLabel, icon: ChildIcon }) => (
                     <NavLink
@@ -197,7 +207,7 @@ export function Sidebar({
                       to={childTo}
                       end={childTo === '/admin'}
                       onClick={onClose}
-                      tabIndex={isAdminSubnavOpen ? undefined : -1}
+                      tabIndex={isAdminSubnavExpanded ? undefined : -1}
                       className={({ isActive }) =>
                         clsx(
                           'app-sidebar__subnav-link',
