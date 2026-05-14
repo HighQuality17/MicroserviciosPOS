@@ -1457,21 +1457,6 @@ body {
   box-shadow: none;
 }
 
-.app-header__role-pill {
-  display: inline-flex;
-  min-height: 1.45rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  border-radius: 999px;
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-  padding: 0.15rem 0.55rem;
-  color: #1e3a8a;
-  font-size: 0.72rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
 .theme-accent-icon {
   color: var(--theme-accent-icon-color);
   filter: var(--theme-accent-icon-filter);
@@ -1756,16 +1741,6 @@ body {
   white-space: nowrap;
 }
 
-.app-header__subtitle {
-  overflow: hidden;
-  color: var(--header-text-secondary);
-  font-size: 0.76rem;
-  font-weight: 650;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .app-header__identity-status {
   display: inline-flex;
   min-height: 1.62rem;
@@ -1925,18 +1900,24 @@ body {
 .app-header__session-value {
   display: flex;
   min-width: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.4rem;
 }
 
-.app-header__theme-value > span:first-child,
-.app-header__session-role,
 .app-header__location-value,
 .app-header__control-value--status {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__theme-name {
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -1946,6 +1927,7 @@ body {
   color: #ffffff;
   font-weight: 900;
   text-overflow: clip;
+  white-space: nowrap;
 }
 
 .app-header__control-value--status {
@@ -1974,8 +1956,7 @@ body {
   color: var(--app-header-control-accent);
 }
 
-.app-header__locked-pill,
-.app-header__role-pill {
+.app-header__locked-pill {
   display: inline-flex;
   min-height: 1.34rem;
   max-width: 100%;
@@ -1993,11 +1974,6 @@ body {
   padding: 0.14rem 0.48rem;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.app-header__role-pill {
-  max-width: 12rem;
-  color: #dbeafe;
 }
 
 .surface-inline-select {
@@ -2029,7 +2005,7 @@ body {
   .app-header__body {
     display: grid;
     align-items: center;
-    grid-template-columns: minmax(20rem, 0.72fr) minmax(0, 1fr);
+    grid-template-columns: minmax(16.5rem, 0.55fr) minmax(0, 1fr);
   }
 
   .app-header__operations-kicker {
@@ -2037,7 +2013,7 @@ body {
   }
 
   .app-header__controls {
-    grid-template-columns: minmax(11.5rem, 0.86fr) minmax(13.5rem, 1.1fr) minmax(15.2rem, 1fr);
+    grid-template-columns: minmax(15rem, 0.95fr) minmax(13rem, 1fr) minmax(10.5rem, 0.72fr);
   }
 
   .app-header__control-card:not(:last-child)::after {
@@ -2054,15 +2030,14 @@ body {
     padding: 0.76rem 0.92rem;
   }
 
-  .app-header__theme-value,
-  .app-header__session-value {
-    flex-wrap: nowrap;
+  .app-header__control--theme.surface-subtle {
+    min-width: 15rem;
   }
 }
 
 @media (min-width: 1500px) {
   .app-header__controls {
-    grid-template-columns: minmax(12.5rem, 0.86fr) minmax(16rem, 1.16fr) minmax(16rem, 1fr);
+    grid-template-columns: minmax(15.5rem, 0.95fr) minmax(16rem, 1.16fr) minmax(11rem, 0.72fr);
   }
 }
 
@@ -2132,10 +2107,6 @@ body {
     font-size: clamp(1.26rem, 5.4vw, 1.58rem);
   }
 
-  .app-header__subtitle {
-    font-size: 0.7rem;
-  }
-
   .app-header__identity-status {
     min-height: 1.42rem;
     padding: 0.12rem 0.48rem;
@@ -2185,9 +2156,6 @@ body {
     font-size: 0.84rem;
   }
 
-  .app-header__role-pill {
-    max-width: min(12rem, 100%);
-  }
 }
 
 @media (max-width: 420px) {
@@ -2199,9 +2167,6 @@ body {
     align-items: flex-start;
   }
 
-  .app-header__subtitle {
-    white-space: normal;
-  }
 }
 
 @media (max-width: 359px) {

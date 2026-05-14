@@ -16,7 +16,7 @@ export function ThemeSelector() {
           Tema
         </p>
         <span className="app-header__control-value app-header__theme-value">
-          <span>{activeTheme.label}</span>
+          <span className="app-header__theme-name">{activeTheme.label}</span>
           <span className="app-header__locked-pill">Fijo</span>
         </span>
       </div>

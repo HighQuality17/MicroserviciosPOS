@@ -12,7 +12,6 @@ export function Header() {
   const locationsLoading = useAppStore((state) => state.locationsLoading);
   const locationsError = useAppStore((state) => state.locationsError);
   const setCurrentLocation = useAppStore((state) => state.setCurrentLocation);
-  const sessionName = currentUser?.name || 'Sin usuario';
   const sessionRole = formatUserRole(currentUser?.role);
 
   return (
@@ -42,9 +41,6 @@ export function Header() {
                   Sistema activo
                 </span>
               </div>
-              <p className="app-header__subtitle">
-                Centro de comando para ventas, caja e inventario
-              </p>
             </div>
           </div>
 
@@ -110,9 +106,6 @@ export function Header() {
                   </p>
                   <span className="app-header__session-value">
                     <span className="app-header__session-role">{sessionRole}</span>
-                    <span className="app-header__role-pill">
-                      {sessionName}
-                    </span>
                   </span>
                 </div>
               </div>
