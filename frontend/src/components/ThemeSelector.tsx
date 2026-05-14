@@ -7,14 +7,17 @@ export function ThemeSelector() {
   const activeTheme = getThemeOption(theme);
 
   return (
-    <div className="app-header__theme-surface surface-subtle flex w-full min-w-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm text-[color:var(--text-secondary)] sm:w-auto sm:max-w-full">
-      <Palette size={16} className="theme-accent-icon shrink-0" aria-hidden="true" />
-      <div className="min-w-0 flex-1">
-        <p className="app-header__control-label text-[11px] uppercase tracking-[0.2em] text-[color:var(--text-faint)]">
+    <div className="app-header__control app-header__control--theme app-header__theme-surface app-header__control-card surface-subtle">
+      <span className="app-header__control-icon" aria-hidden="true">
+        <Palette size={16} />
+      </span>
+      <div className="app-header__control-copy">
+        <p className="app-header__control-label">
           Tema
         </p>
-        <span className="app-header__control-value mt-1 block truncate text-[color:var(--text)]">
-          {activeTheme.label}
+        <span className="app-header__control-value app-header__theme-value">
+          <span className="app-header__theme-name">{activeTheme.label}</span>
+          <span className="app-header__locked-pill">Fijo</span>
         </span>
       </div>
     </div>

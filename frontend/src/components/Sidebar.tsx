@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { LogOut, X } from 'lucide-react';
 import clsx from 'clsx';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { getAdminSubnavigationByRole, getNavigationByRole } from '@/app/permissions';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
+import { useLogout } from '@/hooks/useLogout';
 import { useSessionStore } from '@/store/sessionStore';
 import registryLogo from '@/assets/branding/registry-pos-logo.png';
 import registryMark from '@/assets/branding/registry-pos-mark.png';
@@ -24,10 +25,9 @@ export function Sidebar({
   navigationId,
   onClose,
 }: SidebarProps) {
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const currentUser = useSessionStore((state) => state.currentUser);
-  const clearSession = useSessionStore((state) => state.clearSession);
+  const logout = useLogout();
   const { isModuleEnabled } = useBusinessModules();
   const links = getNavigationByRole(currentUser?.role).filter((link) => {
     if (link.to === '/ingredients') {
@@ -206,8 +206,7 @@ export function Sidebar({
           )}
           onClick={() => {
             onClose?.();
-            clearSession();
-            navigate('/login');
+            logout();
           }}
         >
           <LogOut size={16} aria-hidden="true" />
