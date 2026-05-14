@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { ChevronLeft, Menu } from 'lucide-react';
 import clsx from 'clsx';
 import { Outlet, useLocation } from 'react-router-dom';
 import { ScrollToTop } from '@/app/router/ScrollToTop';
@@ -22,7 +22,7 @@ export function AppLayout() {
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   const navigationId = 'primary-navigation-drawer';
   const desktopSidebarToggleStyle = {
-    top: '1.75rem',
+    top: '6.1rem',
     left: isDesktopSidebarCollapsed ? '104px' : '260px',
   };
   const shouldShowMobileNavigationButton =
@@ -138,16 +138,17 @@ export function AppLayout() {
           onClose={() => setIsMobileNavigationOpen(false)}
         />
         <div
-          className="absolute z-20 hidden -translate-x-1/2 lg:block"
+          className="app-sidebar-toggle-anchor absolute z-30 hidden -translate-x-1/2 transition-[left] duration-300 ease-out lg:block"
           style={desktopSidebarToggleStyle}
         >
           <Button
             type="button"
             variant="secondary"
             className={clsx(
-              'app-sidebar-toggle surface-subtle-strong h-11 w-11 px-0 shadow-[0_18px_38px_rgba(10,14,28,0.18)] transition-all duration-300 hover:-translate-y-px',
+              'app-sidebar-toggle px-0',
               isOpsAdminRoute && 'app-sidebar-toggle--ops-admin',
             )}
+            data-collapsed={isDesktopSidebarCollapsed ? 'true' : 'false'}
             aria-label={
               isDesktopSidebarCollapsed
                 ? 'Expandir navegacion lateral'
@@ -156,11 +157,7 @@ export function AppLayout() {
             aria-expanded={!isDesktopSidebarCollapsed}
             onClick={() => setIsDesktopSidebarCollapsed((collapsed) => !collapsed)}
           >
-            {isDesktopSidebarCollapsed ? (
-              <ChevronRight size={18} aria-hidden="true" />
-            ) : (
-              <ChevronLeft size={18} aria-hidden="true" />
-            )}
+            <ChevronLeft className="app-sidebar-toggle__icon" size={18} aria-hidden="true" />
           </Button>
         </div>
 
@@ -169,22 +166,21 @@ export function AppLayout() {
             className={clsx(
               'app-layout-shell mx-auto flex min-h-screen w-full max-w-[1680px] flex-col px-3 pb-3 sm:px-4 sm:pb-4 md:px-6 lg:px-8 lg:py-4',
               'pt-[calc(env(safe-area-inset-top,0px)+1rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]',
+              shouldShowMobileNavigationButton && 'app-layout-shell--with-mobile-trigger',
             )}
           >
             {shouldShowMobileNavigationButton ? (
               <Button
                 type="button"
                 variant="secondary"
-                className={clsx(
-                  'mb-3 self-start lg:hidden app-mobile-nav-button',
-                )}
+                className="app-mobile-nav-button lg:hidden"
                 aria-label="Abrir menu de navegacion"
                 aria-controls={navigationId}
                 aria-expanded={false}
                 onClick={() => setIsMobileNavigationOpen(true)}
               >
-                <Menu size={18} aria-hidden="true" />
-                <span>Menu</span>
+                <Menu className="app-mobile-nav-button__icon" size={18} aria-hidden="true" />
+                <span className="app-mobile-nav-button__label">Navegar</span>
               </Button>
             ) : null}
             <Header />
