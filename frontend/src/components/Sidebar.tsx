@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { LogOut, X } from 'lucide-react';
+import { ChevronDown, LogOut, X } from 'lucide-react';
 import clsx from 'clsx';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/Button';
@@ -44,7 +44,6 @@ export function Sidebar({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const isMobile = variant === 'mobile';
   const isDesktopCollapsed = !isMobile && isCollapsed;
-  const canShowSubnav = !isDesktopCollapsed && adminSubLinks.length > 0;
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
 
   useEffect(() => {
@@ -130,26 +129,42 @@ export function Sidebar({
       >
         {links.map(({ to, label, icon: Icon }) => {
           const isAdminLink = to === '/admin';
+          const canRenderAdminSubnav = isAdminLink && !isDesktopCollapsed && adminSubLinks.length > 0;
+          const isMainLinkActive = isAdminLink
+            ? isAdminRoute
+            : pathname === to || pathname.startsWith(`${to}/`);
+          const isAdminSubnavExpanded = canRenderAdminSubnav && isAdminRoute;
 
           return (
             <div
               key={to}
               className={clsx(
                 'app-sidebar__nav-group',
+                isAdminLink && 'app-sidebar__nav-group--admin',
                 isDesktopCollapsed && 'app-sidebar__nav-group--collapsed',
+                isAdminSubnavExpanded && 'app-sidebar__nav-group--expanded',
               )}
+              data-active={isMainLinkActive ? 'true' : undefined}
+              data-expanded={isAdminSubnavExpanded ? 'true' : undefined}
             >
               <NavLink
                 to={to}
-                onClick={onClose}
+                onClick={() => {
+                  if (isMobile && isAdminLink) {
+                    return;
+                  }
+
+                  onClose?.();
+                }}
                 aria-label={isDesktopCollapsed ? label : undefined}
                 title={isDesktopCollapsed ? label : undefined}
-                aria-expanded={isAdminLink && canShowSubnav ? isAdminRoute : undefined}
-                className={({ isActive }) =>
+                aria-expanded={canRenderAdminSubnav ? isAdminSubnavExpanded : undefined}
+                className={() =>
                   clsx(
                     'app-nav-link app-sidebar__nav-link flex min-h-11 items-center rounded-2xl py-3 text-sm font-medium transition',
                     isDesktopCollapsed ? 'w-[3.25rem] justify-center px-3' : 'gap-3 px-4',
-                    (isActive || (isAdminLink && isAdminRoute)) && 'app-nav-link-active',
+                    isMainLinkActive && 'app-nav-link-active',
+                    isAdminSubnavExpanded && 'app-nav-link-expanded',
                   )
                 }
               >
@@ -165,16 +180,34 @@ export function Sidebar({
                 >
                   {label}
                 </span>
+                {canRenderAdminSubnav ? (
+                  <span
+                    className={clsx(
+                      'app-nav-link__chevron',
+                      isAdminSubnavExpanded && 'app-nav-link__chevron--open',
+                    )}
+                    aria-hidden="true"
+                  >
+                    <ChevronDown size={15} />
+                  </span>
+                ) : null}
               </NavLink>
 
-              {isAdminLink && canShowSubnav ? (
-                <div className="app-sidebar__subnav" role="group" aria-label="Submodulos Admin">
+              {canRenderAdminSubnav ? (
+                <div
+                  className="app-sidebar__subnav"
+                  role="group"
+                  aria-label="Submodulos Admin"
+                  aria-hidden={!isAdminSubnavExpanded}
+                  data-open={isAdminSubnavExpanded ? 'true' : 'false'}
+                >
                   {adminSubLinks.map(({ to: childTo, label: childLabel, icon: ChildIcon }) => (
                     <NavLink
                       key={childTo}
                       to={childTo}
                       end={childTo === '/admin'}
                       onClick={onClose}
+                      tabIndex={isAdminSubnavExpanded ? undefined : -1}
                       className={({ isActive }) =>
                         clsx(
                           'app-sidebar__subnav-link',

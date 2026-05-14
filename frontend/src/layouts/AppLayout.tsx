@@ -61,6 +61,10 @@ export function AppLayout() {
   }, [setAvailableLocations, setLocationsError, setLocationsLoading]);
 
   useEffect(() => {
+    if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+      return;
+    }
+
     setIsMobileNavigationOpen(false);
   }, [pathname]);
 
