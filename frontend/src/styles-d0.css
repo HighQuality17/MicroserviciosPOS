@@ -1127,8 +1127,9 @@ body {
 
 .app-header.glass-panel {
   position: relative;
+  z-index: 20;
   isolation: isolate;
-  overflow: hidden;
+  overflow: visible;
   border-color: var(--shell-header-border);
   border-radius: clamp(1.18rem, 1.35vw, 1.7rem);
   background: var(--shell-header-background);
@@ -1593,6 +1594,7 @@ body {
 .app-header.glass-panel::after {
   inset: 0;
   z-index: 0;
+  border-radius: inherit;
   background:
     linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0%, transparent 28%),
     radial-gradient(circle at 70% 110%, rgba(30, 64, 175, 0.42), transparent 22rem);
@@ -1601,7 +1603,7 @@ body {
 .app-header__command-surface {
   position: relative;
   z-index: 1;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgba(147, 197, 253, 0.18);
   border-radius: calc(clamp(1.12rem, 1.25vw, 1.55rem) - 0.24rem);
   background:
@@ -1618,6 +1620,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   pointer-events: none;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.09) 0%, transparent 29%),
@@ -1794,7 +1797,8 @@ body {
 .app-header__controls {
   display: grid;
   min-width: 0;
-  overflow: hidden;
+  position: relative;
+  overflow: visible;
   gap: 0;
   border: 1px solid rgba(147, 197, 253, 0.2);
   border-radius: 1rem;
@@ -1840,6 +1844,69 @@ body {
 
 .app-header__control--user.surface-subtle {
   --app-header-control-accent: #60a5fa;
+}
+
+.app-header__location-trigger {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--header-text);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.app-header__location-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(56, 213, 255, 0.16);
+}
+
+.app-header__location-trigger-value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--header-text);
+  font-size: 0.9rem;
+  font-weight: 850;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__location-trigger-caret {
+  width: 0.44rem;
+  height: 0.44rem;
+  flex: 0 0 auto;
+  border-right: 1.5px solid rgba(191, 212, 246, 0.9);
+  border-bottom: 1.5px solid rgba(191, 212, 246, 0.9);
+  transform: translateY(-0.12rem) rotate(45deg);
+}
+
+.app-header__session-menu {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.app-header__session-trigger {
+  width: 100%;
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.app-header__session-trigger:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(147, 197, 253, 0.2),
+    0 0 0 3px rgba(56, 213, 255, 0.18);
 }
 
 .app-header__control-card::before {
@@ -1928,6 +1995,147 @@ body {
   font-weight: 900;
   text-overflow: clip;
   white-space: nowrap;
+}
+
+.app-header__session-popover,
+.app-header__location-popover {
+  position: fixed;
+  z-index: 1000;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  border-radius: 0.95rem;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(56, 213, 255, 0.13), transparent 9rem),
+    linear-gradient(180deg, rgba(8, 24, 57, 0.98), rgba(4, 13, 32, 0.98));
+  box-shadow:
+    0 22px 48px rgba(2, 8, 23, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: var(--header-text);
+  padding: 0.55rem;
+}
+
+.app-header__location-popover {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.app-header__location-option {
+  display: flex;
+  width: 100%;
+  min-height: 2.45rem;
+  align-items: center;
+  gap: 0.58rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: #dbeafe;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 0.6rem 0.68rem;
+  text-align: left;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.app-header__location-option:hover,
+.app-header__location-option:focus-visible {
+  border-color: rgba(56, 213, 255, 0.26);
+  background: rgba(56, 213, 255, 0.1);
+  color: #ffffff;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.app-header__location-option[data-selected='true'] {
+  border-color: rgba(56, 213, 255, 0.32);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(56, 213, 255, 0.15), transparent 7rem),
+    rgba(37, 99, 235, 0.18);
+  color: #ffffff;
+}
+
+.app-header__location-option-indicator {
+  width: 0.56rem;
+  height: 0.56rem;
+  flex: 0 0 0.56rem;
+  border: 1px solid rgba(125, 211, 252, 0.38);
+  border-radius: 999px;
+  background: rgba(8, 24, 57, 0.8);
+}
+
+.app-header__location-option[data-selected='true'] .app-header__location-option-indicator {
+  border-color: rgba(56, 213, 255, 0.8);
+  background: #38d5ff;
+  box-shadow:
+    0 0 0 4px rgba(56, 213, 255, 0.1),
+    0 0 16px rgba(56, 213, 255, 0.32);
+}
+
+.app-header__location-option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__session-popover-info {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid rgba(147, 197, 253, 0.14);
+  border-radius: 0.75rem;
+  background: rgba(15, 38, 88, 0.56);
+  padding: 0.62rem 0.7rem;
+}
+
+.app-header__session-popover-label {
+  color: var(--header-text-muted);
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.app-header__session-popover-value {
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.app-header__logout-action {
+  display: flex;
+  width: 100%;
+  min-height: 2.45rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.055);
+  color: #dbeafe;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.58rem 0.7rem;
+  text-align: left;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.app-header__logout-action:hover,
+.app-header__logout-action:focus-visible {
+  border-color: rgba(56, 213, 255, 0.3);
+  background: rgba(56, 213, 255, 0.1);
+  color: #ffffff;
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .app-header__control-value--status {
