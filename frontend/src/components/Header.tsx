@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { MapPin, UserRound } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { useAppStore } from '@/store/appStore';
@@ -14,12 +13,11 @@ export function Header() {
   const locationsError = useAppStore((state) => state.locationsError);
   const setCurrentLocation = useAppStore((state) => state.setCurrentLocation);
   const sessionName = currentUser?.name || 'Sin usuario';
+  const sessionRole = formatUserRole(currentUser?.role);
 
   return (
     <header
-      className={clsx(
-        'glass-panel app-header',
-      )}
+      className="glass-panel app-header"
       aria-label="Barra superior del sistema"
     >
       <div className="app-header__command-surface">
@@ -44,13 +42,16 @@ export function Header() {
                   Sistema activo
                 </span>
               </div>
+              <p className="app-header__subtitle">
+                Centro de comando para ventas, caja e inventario
+              </p>
             </div>
           </div>
 
-          <div className="app-header__operations">
-            <div className="app-header__operations-kicker" aria-hidden="true">
-              <span className="app-header__operations-dot" />
-              Centro de comando
+          <div className="app-header__operations" aria-label="Panel de comando operativo">
+            <div className="app-header__operations-kicker">
+              <span className="app-header__operations-dot" aria-hidden="true" />
+              Comando operativo
             </div>
             <div className="app-header__controls" aria-label="Controles operativos">
               <ThemeSelector />
@@ -68,11 +69,11 @@ export function Header() {
                       Cargando puntos de venta...
                     </span>
                   ) : availableLocations.length === 0 || !currentLocation ? (
-                    <span className="app-header__control-value app-header__control-value--status text-[color:var(--warning)]">
+                    <span className="app-header__control-value app-header__control-value--status app-header__control-value--warning">
                       {locationsError ? 'Sin POS disponibles' : 'Sin ubicaciones creadas'}
                     </span>
                   ) : availableLocations.length <= 1 ? (
-                    <span className="app-header__control-value app-header__location-value text-[color:var(--text)]">
+                    <span className="app-header__control-value app-header__location-value">
                       {currentLocation.name}
                     </span>
                   ) : (
@@ -87,7 +88,7 @@ export function Header() {
                           setCurrentLocation(nextLocation);
                         }
                       }}
-                      className="surface-inline-select"
+                      className="surface-inline-select app-header__location-select"
                     >
                       {availableLocations.map((item) => (
                         <option key={item.id} value={String(item.id)}>
@@ -108,9 +109,9 @@ export function Header() {
                     Sesion
                   </p>
                   <span className="app-header__session-value">
-                    <span className="app-header__session-name">{sessionName}</span>
+                    <span className="app-header__session-role">{sessionRole}</span>
                     <span className="app-header__role-pill">
-                      {formatUserRole(currentUser?.role)}
+                      {sessionName}
                     </span>
                   </span>
                 </div>
