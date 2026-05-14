@@ -2386,6 +2386,89 @@ body {
 }
 
 .app-sidebar-shell.glass-panel-strong {
+  --text: #f8fbff;
+  --text-secondary: #c7d8f4;
+  --text-muted: #8fb1df;
+  --text-faint: #6687bc;
+  --shell-sidebar-background:
+    radial-gradient(circle at 12% -8%, rgba(59, 130, 246, 0.28), transparent 16rem),
+    radial-gradient(circle at 108% 16%, rgba(56, 213, 255, 0.12), transparent 14rem),
+    linear-gradient(180deg, #071226 0%, #091a3b 48%, #051025 100%);
+  --shell-sidebar-border: rgba(96, 165, 250, 0.28);
+  --shell-sidebar-shadow:
+    1px 0 0 rgba(125, 211, 252, 0.08),
+    18px 0 46px rgba(2, 8, 23, 0.18),
+    inset -1px 0 0 rgba(255, 255, 255, 0.045);
+  --shell-sidebar-backdrop-filter: blur(22px);
+  --shell-sidebar-accent-line-background:
+    linear-gradient(90deg, transparent 0%, rgba(56, 213, 255, 0.76) 20%, rgba(37, 99, 235, 0.88) 58%, transparent 100%);
+  --shell-sidebar-accent-line-opacity: 1;
+  --shell-sidebar-edge-background:
+    linear-gradient(180deg, transparent 0%, rgba(56, 213, 255, 0.18) 14%, rgba(96, 165, 250, 0.16) 82%, transparent 100%);
+  --shell-sidebar-mobile-shadow:
+    30px 0 74px rgba(2, 8, 23, 0.48),
+    inset -1px 0 0 rgba(125, 211, 252, 0.12);
+  --shell-divider-line-background:
+    linear-gradient(90deg, transparent 0%, rgba(147, 197, 253, 0.14) 18%, rgba(56, 213, 255, 0.2) 52%, transparent 100%);
+  --shell-brand-background:
+    radial-gradient(circle at 12% 0%, rgba(56, 213, 255, 0.1), transparent 8rem),
+    linear-gradient(135deg, rgba(15, 38, 88, 0.74), rgba(5, 18, 43, 0.72));
+  --shell-brand-shadow:
+    0 16px 34px rgba(2, 8, 23, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shell-brand-inner-border: rgba(147, 197, 253, 0.13);
+  --brand-logo-plate-background:
+    radial-gradient(circle at 34% 18%, rgba(255, 255, 255, 0.95), transparent 32%),
+    linear-gradient(145deg, #f8fbff 0%, #dbeafe 52%, #60a5fa 100%);
+  --brand-logo-plate-border: rgba(125, 211, 252, 0.32);
+  --brand-logo-plate-shadow:
+    0 15px 30px rgba(37, 99, 235, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  --shell-control-background:
+    radial-gradient(circle at 16% 0%, rgba(56, 213, 255, 0.08), transparent 8rem),
+    linear-gradient(180deg, rgba(16, 42, 94, 0.62), rgba(7, 21, 50, 0.72));
+  --shell-control-hover-background:
+    radial-gradient(circle at 16% 0%, rgba(56, 213, 255, 0.14), transparent 8rem),
+    linear-gradient(180deg, rgba(24, 56, 122, 0.78), rgba(9, 28, 68, 0.8));
+  --shell-control-border: rgba(147, 197, 253, 0.18);
+  --nav-item-background: rgba(255, 255, 255, 0.015);
+  --nav-item-hover-background:
+    radial-gradient(circle at 0% 0%, rgba(56, 213, 255, 0.08), transparent 7rem),
+    rgba(255, 255, 255, 0.055);
+  --nav-item-hover-border: rgba(125, 211, 252, 0.16);
+  --nav-item-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 24px rgba(2, 8, 23, 0.12);
+  --nav-item-active-background:
+    radial-gradient(circle at 0% 0%, rgba(56, 213, 255, 0.18), transparent 7rem),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.34), rgba(11, 31, 72, 0.86));
+  --nav-item-active-border: rgba(56, 213, 255, 0.3);
+  --nav-item-active-shadow:
+    0 16px 32px rgba(37, 99, 235, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --nav-item-active-text: #ffffff;
+  --nav-item-active-icon-color: #ffffff;
+  --nav-item-active-indicator-background: linear-gradient(180deg, #38d5ff 0%, #60a5fa 48%, #2563eb 100%);
+  --nav-item-active-indicator-shadow: 0 0 18px rgba(56, 213, 255, 0.38);
+  --nav-item-overlay-background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 60%),
+    radial-gradient(circle at 0% 0%, rgba(56, 213, 255, 0.08), transparent 7rem);
+  --nav-item-icon-background: rgba(255, 255, 255, 0.035);
+  --nav-item-hover-icon-border: rgba(125, 211, 252, 0.18);
+  --nav-item-hover-icon-background: rgba(56, 213, 255, 0.08);
+  --nav-item-active-icon-border: rgba(125, 211, 252, 0.28);
+  --nav-item-active-icon-background: linear-gradient(180deg, rgba(56, 213, 255, 0.2), rgba(37, 99, 235, 0.12));
+  --nav-item-active-icon-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 18px rgba(56, 213, 255, 0.14);
+  --nav-item-focus-shadow: 0 0 0 3px rgba(56, 213, 255, 0.2), var(--nav-item-active-shadow);
+  --sidebar-logout-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 26px rgba(2, 8, 23, 0.16);
+  --sidebar-logout-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 16px 34px rgba(2, 8, 23, 0.22);
+  --subnav-border-color: rgba(125, 211, 252, 0.18);
+  --subnav-marker-background: rgba(125, 211, 252, 0.42);
+  --subnav-hover-background: rgba(56, 213, 255, 0.08);
+  --subnav-active-background:
+    radial-gradient(circle at 0% 0%, rgba(56, 213, 255, 0.12), transparent 6rem),
+    rgba(37, 99, 235, 0.16);
+  --subnav-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --subnav-active-marker-background: #38d5ff;
+  --subnav-active-marker-shadow: 0 0 16px rgba(56, 213, 255, 0.42);
   position: relative;
   isolation: isolate;
   border-color: var(--shell-sidebar-border);
@@ -2536,6 +2619,26 @@ body {
     box-shadow var(--transition-fast);
 }
 
+.app-sidebar__nav-link .app-nav-link__label {
+  flex: 1 1 auto;
+}
+
+.app-nav-link__chevron {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  transition:
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.app-nav-link__chevron--open {
+  color: #7dd3fc;
+  transform: rotate(180deg);
+}
+
 .app-nav-link:not(.app-nav-link-active):hover,
 .app-sidebar__nav-link:not(.app-nav-link-active):hover {
   transform: translateX(2px);
@@ -2555,6 +2658,10 @@ body {
   border-color: var(--nav-item-hover-icon-border);
   background: var(--nav-item-hover-icon-background);
   color: var(--text);
+}
+
+.app-sidebar__nav-link:not(.app-nav-link-active):hover .app-nav-link__chevron {
+  color: var(--text-secondary);
 }
 
 .app-nav-link-active,
@@ -2585,6 +2692,10 @@ body {
   box-shadow: var(--nav-item-active-icon-shadow);
 }
 
+.app-sidebar__nav-link.app-nav-link-active .app-nav-link__chevron {
+  color: #c7e7ff;
+}
+
 .app-nav-link:focus-visible,
 .app-sidebar__nav-link:focus-visible {
   outline: none;
@@ -2604,6 +2715,133 @@ body {
   width: 1.45rem;
   height: 3px;
   transform: translateX(-50%);
+}
+
+.app-sidebar__subnav {
+  display: grid;
+  max-height: 0;
+  gap: 0.34rem;
+  margin: 0 0 0 1.08rem;
+  overflow: hidden;
+  border-left: 1px solid var(--subnav-border-color);
+  opacity: 0;
+  padding-left: 0.62rem;
+  pointer-events: none;
+  transform: translateY(-0.28rem);
+  transition:
+    max-height 0.28s ease,
+    opacity 0.2s ease,
+    transform 0.22s ease,
+    margin-top 0.22s ease,
+    margin-bottom 0.22s ease;
+}
+
+.app-sidebar__subnav[data-open='true'] {
+  max-height: 16.5rem;
+  margin-top: 0.34rem;
+  margin-bottom: 0.18rem;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.app-sidebar__subnav-link {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 2.3rem;
+  align-items: center;
+  gap: 0.54rem;
+  border: 1px solid transparent;
+  border-radius: 0.78rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 760;
+  opacity: 0;
+  padding: 0.54rem 0.66rem;
+  text-decoration: none;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.app-sidebar__subnav[data-open='true'] .app-sidebar__subnav-link {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.app-sidebar__subnav[data-open='true'] .app-sidebar__subnav-link:nth-child(2) {
+  transition-delay: 0.025s;
+}
+
+.app-sidebar__subnav[data-open='true'] .app-sidebar__subnav-link:nth-child(3) {
+  transition-delay: 0.05s;
+}
+
+.app-sidebar__subnav[data-open='true'] .app-sidebar__subnav-link:nth-child(4) {
+  transition-delay: 0.075s;
+}
+
+.app-sidebar__subnav[data-open='true'] .app-sidebar__subnav-link:nth-child(5) {
+  transition-delay: 0.1s;
+}
+
+.app-sidebar__subnav-link::before {
+  position: absolute;
+  left: -0.81rem;
+  top: 50%;
+  width: 0.36rem;
+  height: 0.36rem;
+  border-radius: 999px;
+  background: var(--subnav-marker-background);
+  content: '';
+  transform: translateY(-50%);
+}
+
+.app-sidebar__subnav-link:hover,
+.app-sidebar__subnav-link:focus-visible {
+  border-color: rgba(125, 211, 252, 0.18);
+  background: var(--subnav-hover-background);
+  color: var(--text);
+  outline: none;
+}
+
+.app-sidebar__subnav-link--active,
+.app-sidebar__subnav-link--active:hover,
+.app-sidebar__subnav-link--active:focus-visible {
+  border-color: rgba(56, 213, 255, 0.24);
+  background: var(--subnav-active-background);
+  box-shadow: var(--subnav-active-shadow);
+  color: #ffffff;
+}
+
+.app-sidebar__subnav-link--active::before {
+  background: var(--subnav-active-marker-background);
+  box-shadow: var(--subnav-active-marker-shadow);
+}
+
+.app-sidebar__subnav-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--text-faint);
+}
+
+.app-sidebar__subnav-link:hover .app-sidebar__subnav-icon,
+.app-sidebar__subnav-link:focus-visible .app-sidebar__subnav-icon,
+.app-sidebar__subnav-link--active .app-sidebar__subnav-icon {
+  color: var(--text);
+}
+
+.app-sidebar__subnav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-sidebar__footer {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { LogOut, X } from 'lucide-react';
+import { ChevronDown, LogOut, X } from 'lucide-react';
 import clsx from 'clsx';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/Button';
@@ -44,7 +44,6 @@ export function Sidebar({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const isMobile = variant === 'mobile';
   const isDesktopCollapsed = !isMobile && isCollapsed;
-  const canShowSubnav = !isDesktopCollapsed && adminSubLinks.length > 0;
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
 
   useEffect(() => {
@@ -130,21 +129,27 @@ export function Sidebar({
       >
         {links.map(({ to, label, icon: Icon }) => {
           const isAdminLink = to === '/admin';
+          const canRenderAdminSubnav = isAdminLink && !isDesktopCollapsed && adminSubLinks.length > 0;
+          const isAdminSubnavOpen = canRenderAdminSubnav && isAdminRoute;
 
           return (
             <div
               key={to}
               className={clsx(
                 'app-sidebar__nav-group',
+                isAdminLink && 'app-sidebar__nav-group--admin',
                 isDesktopCollapsed && 'app-sidebar__nav-group--collapsed',
               )}
+              data-open={isAdminSubnavOpen ? 'true' : undefined}
             >
               <NavLink
                 to={to}
-                onClick={onClose}
+                onClick={() => {
+                  onClose?.();
+                }}
                 aria-label={isDesktopCollapsed ? label : undefined}
                 title={isDesktopCollapsed ? label : undefined}
-                aria-expanded={isAdminLink && canShowSubnav ? isAdminRoute : undefined}
+                aria-expanded={canRenderAdminSubnav ? isAdminSubnavOpen : undefined}
                 className={({ isActive }) =>
                   clsx(
                     'app-nav-link app-sidebar__nav-link flex min-h-11 items-center rounded-2xl py-3 text-sm font-medium transition',
@@ -165,16 +170,34 @@ export function Sidebar({
                 >
                   {label}
                 </span>
+                {canRenderAdminSubnav ? (
+                  <span
+                    className={clsx(
+                      'app-nav-link__chevron',
+                      isAdminSubnavOpen && 'app-nav-link__chevron--open',
+                    )}
+                    aria-hidden="true"
+                  >
+                    <ChevronDown size={15} />
+                  </span>
+                ) : null}
               </NavLink>
 
-              {isAdminLink && canShowSubnav ? (
-                <div className="app-sidebar__subnav" role="group" aria-label="Submodulos Admin">
+              {canRenderAdminSubnav ? (
+                <div
+                  className="app-sidebar__subnav"
+                  role="group"
+                  aria-label="Submodulos Admin"
+                  aria-hidden={!isAdminSubnavOpen}
+                  data-open={isAdminSubnavOpen ? 'true' : 'false'}
+                >
                   {adminSubLinks.map(({ to: childTo, label: childLabel, icon: ChildIcon }) => (
                     <NavLink
                       key={childTo}
                       to={childTo}
                       end={childTo === '/admin'}
                       onClick={onClose}
+                      tabIndex={isAdminSubnavOpen ? undefined : -1}
                       className={({ isActive }) =>
                         clsx(
                           'app-sidebar__subnav-link',
