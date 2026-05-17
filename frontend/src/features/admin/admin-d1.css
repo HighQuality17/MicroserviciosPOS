@@ -3704,12 +3704,33 @@
 
 /* Admin Dashboard refactor: executive overview, lightweight charts and mobile-first cards. */
 .admin-dashboard--refactor {
+  --admin-dashboard-blue: rgb(var(--theme-accent-rgb) / 0.92);
+  --admin-dashboard-blue-strong: rgb(var(--theme-accent-rgb) / 1);
+  --admin-dashboard-blue-soft: rgb(var(--theme-accent-rgb) / 0.13);
+  --admin-dashboard-card: var(--bg-panel);
+  --admin-dashboard-soft: var(--surface-ghost);
+  --admin-dashboard-soft-strong: var(--surface-ghost-strong);
+  --admin-dashboard-line: var(--line);
+  --admin-dashboard-line-soft: var(--line-soft);
+  --admin-dashboard-accent-line: linear-gradient(90deg, var(--admin-dashboard-blue), color-mix(in srgb, var(--admin-dashboard-blue) 26%, transparent));
   --admin-chart-cobalt: #2563eb;
   --admin-refactor-shadow: 0 1px 2px rgb(15 23 42 / 0.08), 0 16px 34px rgb(15 23 42 / 0.08);
   gap: 1rem;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at 18% 0%, var(--admin-dashboard-blue-soft), transparent 24rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 86%, var(--admin-dashboard-soft)), transparent 22rem);
 }
 
 :root[data-theme='professional-light'] .admin-dashboard--refactor {
+  --admin-dashboard-blue: #0052ff;
+  --admin-dashboard-blue-strong: #003ecc;
+  --admin-dashboard-blue-soft: #dfeaff;
+  --admin-dashboard-card: #ffffff;
+  --admin-dashboard-soft: #eef4ff;
+  --admin-dashboard-soft-strong: #e3ecfb;
+  --admin-dashboard-line: #cbd8ea;
+  --admin-dashboard-line-soft: #dfe7f3;
   --admin-chart-cobalt: #0052ff;
   --admin-chart-cyan: #0284c7;
   --admin-chart-emerald: #059669;
@@ -3720,14 +3741,213 @@
   --admin-shadow-soft: 0 1px 2px rgb(15 23 42 / 0.06), 0 10px 22px rgb(15 23 42 / 0.05);
 }
 
+.admin-dashboard--refactor .module-page-header__shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: var(--admin-dashboard-line);
+  border-radius: 1.35rem;
+  background: var(--admin-dashboard-card);
+  box-shadow: var(--admin-refactor-shadow);
+  padding: clamp(1rem, 1.4vw, 1.2rem);
+}
+
+.admin-dashboard--refactor .module-page-header__shell::before {
+  position: absolute;
+  z-index: 2;
+  inset: 0 auto auto 1.35rem;
+  width: min(9rem, 42%);
+  height: 2px;
+  pointer-events: none;
+  background: var(--admin-dashboard-accent-line);
+  content: "";
+}
+
+.admin-dashboard--refactor .module-page-header__main {
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.admin-dashboard--refactor .module-page-header__copy {
+  gap: 0.28rem;
+}
+
+.admin-dashboard--refactor .module-page-header__title-row {
+  margin-top: 0.08rem;
+}
+
+.admin-dashboard--refactor .module-page-header__title {
+  color: var(--text);
+  font-size: clamp(1.48rem, 1.26rem + 0.54vw, 1.88rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+}
+
+.admin-dashboard--refactor .module-page-header__eyebrow,
+.admin-dashboard--refactor .module-page-header__summary-label,
+.admin-dashboard--refactor .module-page-header__card-label {
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.admin-dashboard--refactor .module-page-header .module-page-header__badge,
+.admin-dashboard--refactor .module-page-header .module-page-header__card-badge {
+  min-height: 1.6rem;
+  border-radius: 999px;
+  box-shadow: none;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.admin-dashboard--refactor .module-page-header__summary {
+  border-color: var(--admin-dashboard-line);
+  border-left: 3px solid var(--admin-dashboard-blue);
+  border-radius: 0.95rem;
+  background: var(--admin-dashboard-soft-strong);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.58);
+  padding: 0.84rem 0.92rem;
+}
+
+.admin-dashboard--refactor .module-page-header__summary-value {
+  color: var(--text);
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.admin-dashboard--refactor .module-page-header__summary-note,
+.admin-dashboard--refactor .module-page-header__card-note {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.admin-dashboard--refactor .module-page-header__aside-action > .ui-button-base {
+  min-height: 2.42rem;
+  border-radius: 999px;
+  box-shadow: none;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-dashboard--refactor .module-page-header__cards {
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.admin-dashboard--refactor .module-page-header__card {
+  display: flex;
+  min-height: 5.15rem;
+  align-items: center;
+  border-color: var(--admin-dashboard-line);
+  border-radius: 0.95rem;
+  background: var(--admin-dashboard-soft);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.58);
+  padding: 0.78rem 0.86rem;
+}
+
+.admin-dashboard--refactor .module-page-header__card-main {
+  width: 100%;
+  align-items: center;
+  gap: 0.68rem;
+}
+
+.admin-dashboard--refactor .module-page-header__card-icon {
+  min-height: 2rem;
+  min-width: 2rem;
+  border-radius: 0.7rem;
+}
+
+.admin-dashboard--refactor .module-page-header__card-value {
+  margin-top: 0.2rem;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 760;
+  line-height: 1.15;
+}
+
 .admin-dashboard--refactor .admin-panel {
-  border-radius: 0.9rem;
+  border-radius: 1.15rem;
   box-shadow: var(--admin-shadow);
 }
 
 .admin-dashboard--refactor .admin-panel__body {
-  gap: 1rem;
+  gap: 0.9rem;
   padding: 0.95rem;
+}
+
+.admin-dashboard--refactor .admin-dashboard-section-heading.products-panel__header {
+  border: 1px solid color-mix(in srgb, var(--admin-dashboard-line) 80%, transparent);
+  border-radius: 1.15rem;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--admin-dashboard-blue-soft) 76%, var(--admin-dashboard-card)), var(--admin-dashboard-card) 64%),
+    var(--admin-dashboard-card);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.74);
+  padding: 0.98rem 1rem;
+}
+
+.admin-dashboard--refactor .admin-dashboard-section-heading .products-panel__header-copy {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.admin-dashboard--refactor .admin-dashboard-section-heading .products-panel__title-row {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.admin-dashboard--refactor .admin-dashboard-section-heading .products-panel__eyebrow {
+  color: var(--admin-dashboard-blue-strong);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.admin-dashboard--refactor .admin-dashboard-section-heading .font-display {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.72rem, 1.36rem + 0.9vw, 2.14rem);
+  font-weight: 820;
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+}
+
+.admin-dashboard--refactor .admin-dashboard-section-heading .products-panel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.admin-dashboard--refactor .admin-dashboard-section-heading .products-panel__meta .status-badge {
+  min-height: 1.78rem;
+  border-color: color-mix(in srgb, var(--admin-dashboard-blue) 38%, var(--admin-dashboard-line));
+  background: var(--admin-dashboard-blue-soft);
+  color: var(--admin-dashboard-blue-strong);
+  border-radius: 999px;
+  padding-inline: 0.7rem;
+  box-shadow: none;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.admin-dashboard--refactor .admin-panel .shrink-0 .status-badge {
+  border-radius: 999px;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.admin-dashboard--refactor .admin-panel .section-note {
+  font-size: 0.74rem;
+  line-height: 1.35;
 }
 
 .admin-dashboard__header-actions,
@@ -3824,10 +4044,10 @@
 .admin-kpi-card {
   display: grid;
   align-content: space-between;
-  min-height: 9rem;
+  min-height: 7.65rem;
   overflow: hidden;
-  border-radius: 0.82rem;
-  padding: 0.82rem;
+  border-radius: 0.9rem;
+  padding: 0.74rem;
 }
 
 .admin-kpi-card::before,
@@ -3889,9 +4109,9 @@
 }
 
 .admin-kpi-card__icon {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.7rem;
+  width: 2.05rem;
+  height: 2.05rem;
+  border-radius: 0.66rem;
   filter: drop-shadow(0 8px 18px var(--tile-accent-glow));
 }
 
@@ -3899,9 +4119,9 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 0.25rem;
+  gap: 0.22rem;
   min-width: 0;
-  margin-top: 1.2rem;
+  margin-top: 0.82rem;
 }
 
 .admin-kpi-card__copy > span,
@@ -3914,17 +4134,17 @@
 .admin-top-items-card__item p,
 .admin-quick-action__copy span {
   color: var(--text-faint);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0;
+  font-size: 0.64rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .admin-kpi-card__copy strong {
   overflow: hidden;
   color: var(--text);
-  font-size: clamp(1.35rem, 2vw, 1.8rem);
-  font-weight: 860;
+  font-size: clamp(1.18rem, 1.45vw, 1.48rem);
+  font-weight: 800;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3933,8 +4153,8 @@
 
 .admin-kpi-card--primary .admin-kpi-card__copy strong {
   color: var(--metric-accent-strong-color);
-  font-size: clamp(1.85rem, 4vw, 2.75rem);
-  letter-spacing: -0.04em;
+  font-size: clamp(1.55rem, 3vw, 2.08rem);
+  letter-spacing: -0.03em;
 }
 
 .admin-kpi-card__copy p,
@@ -3945,8 +4165,8 @@
 .admin-inline-empty p {
   overflow: hidden;
   color: var(--text-muted);
-  font-size: 0.76rem;
-  line-height: 1.35;
+  font-size: 0.72rem;
+  line-height: 1.3;
   text-overflow: ellipsis;
 }
 
@@ -3989,8 +4209,8 @@
   display: block;
   margin-top: 0.2rem;
   color: var(--metric-accent-strong-color);
-  font-size: clamp(1.45rem, 3vw, 2.2rem);
-  font-weight: 860;
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  font-weight: 800;
   line-height: 1;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
@@ -3998,7 +4218,7 @@
 
 .admin-trend-card__chart {
   width: 100%;
-  height: 13.5rem;
+  height: 11.75rem;
   min-width: 0;
   margin-top: 0.75rem;
 }
@@ -4049,7 +4269,7 @@
 }
 
 .admin-trend-card__skeleton {
-  min-height: 18rem;
+  min-height: 15rem;
   border: 1px solid var(--admin-border);
   border-radius: 0.8rem;
   background:
@@ -4078,8 +4298,8 @@
   overflow: hidden;
   margin-top: 0.16rem;
   color: var(--text);
-  font-size: 0.98rem;
-  font-weight: 840;
+  font-size: 0.92rem;
+  font-weight: 800;
   line-height: 1.05;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4110,8 +4330,8 @@
 
 .admin-payment-chart-card__chart-center strong {
   color: var(--metric-accent-strong-color);
-  font-size: 1rem;
-  font-weight: 860;
+  font-size: 0.94rem;
+  font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -4145,7 +4365,7 @@
   background: rgb(var(--theme-accent-rgb) / 0.1);
   color: var(--metric-accent-strong-color);
   font-size: 0.64rem;
-  font-weight: 860;
+  font-weight: 800;
 }
 
 .admin-top-items-card__item-head div {
@@ -4156,8 +4376,8 @@
   display: block;
   overflow: hidden;
   color: var(--text);
-  font-size: 0.84rem;
-  font-weight: 820;
+  font-size: 0.8rem;
+  font-weight: 760;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4165,7 +4385,7 @@
 
 .admin-top-items-card__item-head em {
   color: var(--metric-accent-color);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-style: normal;
   font-weight: 860;
   font-variant-numeric: tabular-nums;
@@ -4222,8 +4442,8 @@
 .admin-quick-action__copy strong {
   overflow: hidden;
   color: var(--text);
-  font-size: 0.88rem;
-  font-weight: 820;
+  font-size: 0.82rem;
+  font-weight: 760;
   line-height: 1.14;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4348,7 +4568,7 @@
 
 @media (min-width: 640px) {
   .admin-dashboard--refactor .admin-panel__body {
-    padding: 1rem;
+    padding: 0.98rem;
   }
 
   .admin-kpi-grid,
@@ -4401,11 +4621,48 @@
   }
 
   .admin-trend-card__chart {
-    height: 14.75rem;
+    height: 12.6rem;
   }
 }
 
 @media (max-width: 767px) {
+  .admin-dashboard--refactor .module-page-header__shell {
+    border-radius: 1.1rem;
+    padding: 0.88rem;
+  }
+
+  .admin-dashboard--refactor .module-page-header__shell::before {
+    inset-inline-start: 0.95rem;
+    width: min(7rem, 48%);
+  }
+
+  .admin-dashboard--refactor .module-page-header__title {
+    font-size: 1.42rem;
+  }
+
+  .admin-dashboard--refactor .module-page-header__badges {
+    gap: 0.35rem;
+  }
+
+  .admin-dashboard--refactor .module-page-header__summary {
+    padding: 0.72rem 0.78rem;
+  }
+
+  .admin-dashboard--refactor .module-page-header__cards {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 0.7rem;
+  }
+
+  .admin-dashboard--refactor .module-page-header__card {
+    min-height: 4.6rem;
+    border-radius: 0.82rem;
+    padding: 0.68rem 0.72rem;
+  }
+
+  .admin-dashboard--refactor .admin-dashboard-section-heading.products-panel__header {
+    padding: 0.76rem 0.8rem;
+  }
+
   .admin-dashboard--refactor .admin-panel__body {
     gap: 0.78rem;
     padding: 0.76rem;
@@ -4427,22 +4684,22 @@
   }
 
   .admin-kpi-card {
-    min-height: 8.25rem;
+    min-height: 7.25rem;
     border-radius: 0.74rem;
     padding: 0.72rem;
   }
 
   .admin-kpi-card__copy {
-    margin-top: 0.85rem;
+    margin-top: 0.68rem;
   }
 
   .admin-kpi-card__copy strong {
-    font-size: 1.45rem;
+    font-size: 1.25rem;
     white-space: normal;
   }
 
   .admin-kpi-card--primary .admin-kpi-card__copy strong {
-    font-size: 2rem;
+    font-size: 1.68rem;
   }
 
   .admin-trend-card__chart-head {
@@ -4454,7 +4711,7 @@
   }
 
   .admin-trend-card__chart {
-    height: 10.75rem;
+    height: 9.8rem;
   }
 
   .admin-trend-card__axis {

@@ -1,5 +1,6 @@
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { AdminDashboardSectionHeader } from '@/features/admin/AdminDashboardSectionHeader';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatCurrency } from '@/utils/format';
@@ -12,10 +13,11 @@ interface AdminPaymentMethodDatum {
 
 interface AdminPaymentMethodChartCardProps {
   title: string;
-  description: string;
+  description?: string;
   data: AdminPaymentMethodDatum[];
   emptyTitle: string;
   emptyDescription: string;
+  headingVariant?: 'default' | 'dashboard';
 }
 
 export function AdminPaymentMethodChartCard({
@@ -24,26 +26,36 @@ export function AdminPaymentMethodChartCard({
   data,
   emptyTitle,
   emptyDescription,
+  headingVariant = 'default',
 }: AdminPaymentMethodChartCardProps) {
   const chartData = data.filter((item) => item.value > 0);
   const total = chartData.reduce((sum, item) => sum + item.value, 0);
   const dominantMethod = [...chartData].sort((left, right) => right.value - left.value)[0] ?? null;
   const donutGradient = buildDonutGradient(chartData, total);
+  const headingStatus = (
+    <StatusBadge
+      label={chartData.length > 0 ? 'Mix listo' : 'Sin pagos'}
+      tone={chartData.length > 0 ? 'success' : 'default'}
+    />
+  );
 
   return (
     <Card padding="none" glow={false} className="admin-panel admin-payment-chart-card">
       <div className="admin-panel__body">
-        <SectionHeader
-          eyebrow="Mix de ventas"
-          title={title}
-          description={description}
-          actions={
-            <StatusBadge
-              label={chartData.length > 0 ? 'Mix listo' : 'Sin pagos'}
-              tone={chartData.length > 0 ? 'success' : 'default'}
-            />
-          }
-        />
+        {headingVariant === 'dashboard' ? (
+          <AdminDashboardSectionHeader
+            eyebrow="Mix de ventas"
+            title={title}
+            meta={headingStatus}
+          />
+        ) : (
+          <SectionHeader
+            eyebrow="Mix de ventas"
+            title={title}
+            description={description}
+            actions={headingStatus}
+          />
+        )}
 
         {chartData.length === 0 ? (
           <div className="mt-4">

@@ -18,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { AccessState } from '@/components/AccessState';
 import { AdminActivityDetailDialog } from '@/features/admin/AdminActivityDetailDialog';
+import { AdminDashboardSectionHeader } from '@/features/admin/AdminDashboardSectionHeader';
 import {
   formatActivityType,
   formatPaymentMethod,
@@ -29,9 +30,11 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
 import { ModulePageHeader } from '@/components/ModulePageHeader';
-import type { ModulePageHeaderBadge } from '@/components/ModulePageHeader';
+import type {
+  ModulePageHeaderBadge,
+  ModulePageHeaderCard,
+} from '@/components/ModulePageHeader';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
-import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useBusinessModules } from '@/hooks/useBusinessModules';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -439,20 +442,60 @@ export function AdminPage() {
     },
   ];
   const adminHeaderSummaryNote = summaryLoading
-    ? 'Consultando ventas, caja e inventario.'
+    ? 'Consultando estado actual.'
     : lowStockCount > 0
-      ? `${lowStockCount.toLocaleString('es-CO')} alertas de stock por revisar.`
+      ? `${lowStockCount.toLocaleString('es-CO')} alertas de stock`
       : summary?.current_cash_session
-        ? `Caja abierta en ${summary.current_cash_session.location_name}.`
-        : 'Sin caja abierta en este momento.';
+        ? `Caja abierta en ${summary.current_cash_session.location_name}`
+        : 'Caja sin apertura';
+  const adminHeaderCards: ModulePageHeaderCard[] = [
+    {
+      label: 'Ventas hoy',
+      value: summaryLoading ? '...' : formatCurrency(summary?.sales_today_total ?? 0),
+      note: summaryLoading ? 'Sincronizando' : `${summary?.sales_count ?? 0} ventas`,
+      accent: salesTone,
+      icon: <ShoppingBag size={16} />,
+      iconTone: salesTone,
+      badge: {
+        label: (summary?.sales_count ?? 0) > 0 ? 'Activo' : 'Sin ventas',
+        tone: salesTone,
+      },
+    },
+    {
+      label: 'Caja',
+      value: summaryLoading ? '...' : summary?.current_cash_session ? 'Abierta' : 'Cerrada',
+      note: summary?.current_cash_session
+        ? summary.current_cash_session.location_name
+        : 'Sin sesion',
+      accent: cashTone,
+      icon: <Wallet size={16} />,
+      iconTone: cashTone,
+      badge: {
+        label: summary?.current_cash_session ? 'Operativa' : 'Pendiente',
+        tone: cashTone,
+      },
+    },
+    {
+      label: 'Stock',
+      value: summaryLoading || lowStockLoading ? '...' : lowStockCount.toLocaleString('es-CO'),
+      note: lowStockCount > 0 ? 'Alertas activas' : 'Controlado',
+      accent: stockTone,
+      icon: <AlertTriangle size={16} />,
+      iconTone: stockTone,
+      badge: {
+        label: lowStockCount > 0 ? 'Revisar' : 'OK',
+        tone: stockTone,
+      },
+    },
+  ];
 
   const kpiCards: DashboardKpiCardProps[] = [
     {
       title: 'Ventas del dia',
       value: summaryLoading ? '...' : formatCurrency(summary?.sales_today_total ?? 0),
       context: summaryLoading
-        ? 'Sincronizando ventas pagadas'
-        : `${(summary?.sales_count ?? 0).toLocaleString('es-CO')} ventas pagadas hoy`,
+        ? 'Sincronizando'
+        : `${(summary?.sales_count ?? 0).toLocaleString('es-CO')} ventas pagadas`,
       statusLabel: summaryLoading
         ? 'Actualizando'
         : (summary?.sales_count ?? 0) > 0
@@ -466,7 +509,7 @@ export function AdminPage() {
     {
       title: 'Numero de ventas',
       value: summaryLoading ? '...' : (summary?.sales_count ?? 0).toLocaleString('es-CO'),
-      context: 'Operacion comercial del dia',
+      context: 'Ventas pagadas',
       statusLabel: (summary?.sales_count ?? 0) > 0 ? 'Con movimiento' : 'Sin pagos',
       tone: salesTone,
       icon: <Receipt size={18} />,
@@ -476,8 +519,8 @@ export function AdminPage() {
       title: 'Ticket promedio',
       value: summaryLoading ? '...' : formatCurrency(summary?.average_ticket ?? 0),
       context: leadingPayment
-        ? `Metodo dominante: ${formatPaymentMethod(leadingPayment.method)}`
-        : 'Esperando pagos confirmados',
+        ? `Dominante: ${formatPaymentMethod(leadingPayment.method)}`
+        : 'Sin pagos',
       statusLabel: leadingPayment ? 'Mix listo' : 'Sin pagos',
       tone: ticketTone,
       icon: <Sparkles size={18} />,
@@ -503,7 +546,7 @@ export function AdminPage() {
       value: summaryLoading ? '...' : (summary?.active_products_count ?? 0).toLocaleString('es-CO'),
       context: featuredTopItem
         ? `Lider: ${featuredTopItem.name}`
-        : 'Productos activos para vender',
+        : 'Productos activos',
       statusLabel: (summary?.active_products_count ?? 0) > 0 ? 'Disponible' : 'Revisar',
       tone: catalogTone,
       icon: <Boxes size={18} />,
@@ -514,7 +557,7 @@ export function AdminPage() {
       value: summaryLoading || lowStockLoading ? '...' : lowStockCount.toLocaleString('es-CO'),
       context: lowStock.length > 0
         ? `${lowStock[0].ingredient_name} en ${lowStock[0].location_name}`
-        : 'Inventario sin alertas criticas',
+        : 'Sin alertas',
       statusLabel: lowStockCount > 0 ? 'Revisar' : 'Controlado',
       tone: stockTone,
       icon: <AlertTriangle size={18} />,
@@ -603,22 +646,20 @@ export function AdminPage() {
       {isAuditor ? (
         <RoleModeBanner
           title="Panel en modo auditoria"
-          description="Vista de solo lectura para metricas, alertas y actividad reciente."
+          description="Vista de solo lectura."
           tone="warning"
         />
       ) : null}
 
       <ModulePageHeader
-        ariaLabel="Estado general del dashboard administrativo"
+        ariaLabel="Estado del dashboard"
         className="admin-dashboard__hero"
         eyebrow="Centro de control"
-        title="Dashboard administrativo"
+        title="Dashboard"
         icon={<Sparkles size={18} />}
-        helpText="Vista ejecutiva para decidir rapido sin duplicar los modulos detallados."
         badges={adminHeaderBadges}
-        description="Ventas, caja, inventario y senales operativas clave."
         summary={{
-          label: 'Estado del negocio',
+          label: 'Estado',
           value: summaryLoading ? 'Sincronizando' : dashboardStatusLabel,
           note: adminHeaderSummaryNote,
         }}
@@ -636,21 +677,21 @@ export function AdminPage() {
             ) : null}
           </div>
         }
+        cards={adminHeaderCards}
       />
 
       {summaryError && !summaryAccessDenied ? <BlockError message={summaryError} /> : null}
 
       {summaryAccessDenied ? (
-        <AccessState description="Tu perfil actual no tiene permiso para consultar el dashboard administrativo." />
+        <AccessState description="Tu perfil actual no tiene permiso para consultar el dashboard." />
       ) : (
         <>
           <Card padding="none" glow={false} className="admin-panel admin-panel--overview">
             <div className="admin-panel__body admin-overview-panel__body">
-              <SectionHeader
+              <AdminDashboardSectionHeader
                 eyebrow="Resumen ejecutivo"
-                title="Indicadores para decidir ahora"
-                description="Solo los signos vitales del negocio: venta, caja, catalogo e inventario."
-                actions={<StatusBadge label={dashboardStatusLabel} tone={dashboardStatusTone} />}
+                title="Indicadores clave"
+                meta={<StatusBadge label={dashboardStatusLabel} tone={dashboardStatusTone} />}
               />
 
               <div className="admin-kpi-grid">
@@ -675,10 +716,9 @@ export function AdminPage() {
                 {salesByPaymentError ? (
                   <Card padding="none" glow={false} className="admin-panel">
                     <div className="admin-panel__body">
-                      <SectionHeader
+                      <AdminDashboardSectionHeader
                         eyebrow="Mix de ventas"
-                        title="Ventas por metodo de pago"
-                        description="Distribucion del ingreso cobrado."
+                        title="Metodo de pago"
                       />
                       <BlockError message={salesByPaymentError} />
                     </div>
@@ -686,21 +726,20 @@ export function AdminPage() {
                 ) : salesByPaymentLoading ? (
                   <Card padding="none" glow={false} className="admin-panel">
                     <div className="admin-panel__body">
-                      <SectionHeader
+                      <AdminDashboardSectionHeader
                         eyebrow="Mix de ventas"
-                        title="Ventas por metodo de pago"
-                        description="Distribucion del ingreso cobrado."
+                        title="Metodo de pago"
                       />
                       <SkeletonRows rows={3} />
                     </div>
                   </Card>
                 ) : (
                   <AdminPaymentMethodChartCard
-                    title="Ventas por metodo de pago"
-                    description="Distribucion del ingreso cobrado."
+                    title="Metodo de pago"
                     data={paymentMethodData}
                     emptyTitle="Sin ventas por metodo"
                     emptyDescription="Aparecera cuando existan pagos confirmados."
+                    headingVariant="dashboard"
                   />
                 )}
 
@@ -834,11 +873,10 @@ function SalesTrendCard({
   return (
     <Card padding="none" glow={false} className="admin-panel admin-panel--trend">
       <div className="admin-panel__body admin-trend-card">
-        <SectionHeader
-          eyebrow="Tendencia comercial"
-          title="Ventas ultimos 7 dias"
-          description="Lectura rapida del ritmo reciente sin entrar al detalle de Reportes."
-          actions={<StatusBadge label={statusLabel} tone={statusTone} />}
+        <AdminDashboardSectionHeader
+          eyebrow="Tendencia"
+          title="Ventas recientes"
+          meta={<StatusBadge label={statusLabel} tone={statusTone} />}
         />
 
         {error ? (
@@ -993,11 +1031,10 @@ function TopItemsSignalCard({
   return (
     <Card padding="none" glow={false} className="admin-panel admin-top-items-card">
       <div className="admin-panel__body">
-        <SectionHeader
+        <AdminDashboardSectionHeader
           eyebrow="Demanda"
           title="Productos lideres"
-          description="Top compacto para entender que esta moviendo la caja."
-          actions={<StatusBadge label={statusLabel} tone={statusTone} />}
+          meta={<StatusBadge label={statusLabel} tone={statusTone} />}
         />
 
         {error ? (
@@ -1081,11 +1118,10 @@ function OperationalHealthCard({
   return (
     <Card padding="none" glow={false} className="admin-panel admin-health-panel">
       <div className="admin-panel__body">
-        <SectionHeader
-          eyebrow="Salud operacional"
-          title="Senales que requieren atencion"
-          description="Caja, inventario, catalogo y cobertura en formato corto."
-          actions={<StatusBadge label={lowStockCount > 0 ? 'Revisar' : 'Controlado'} tone={stockTone} />}
+        <AdminDashboardSectionHeader
+          eyebrow="Operacion"
+          title="Salud operacional"
+          meta={<StatusBadge label={lowStockCount > 0 ? 'Revisar' : 'Controlado'} tone={stockTone} />}
         />
 
         <div className="admin-health-grid">
@@ -1112,14 +1148,14 @@ function OperationalHealthCard({
           <HealthSignal
             title="Catalogo"
             value={summaryLoading ? '...' : `${(summary?.active_products_count ?? 0).toLocaleString('es-CO')} activos`}
-            description="Productos disponibles para operar"
+            description="Activos"
             tone={catalogTone}
             icon={<Boxes size={17} />}
           />
           <HealthSignal
             title="Puntos de venta"
             value={locationsLoading ? '...' : `${totalLocations.toLocaleString('es-CO')} POS`}
-            description={totalLocations > 0 ? 'Cobertura lista' : 'Sin ubicaciones activas'}
+            description={totalLocations > 0 ? 'Cobertura lista' : 'Sin POS'}
             tone={locationsTone}
             icon={<Store size={17} />}
           />
@@ -1225,19 +1261,18 @@ function RecentActivitySummary({
   return (
     <Card padding="none" glow={false} className="admin-panel admin-activity-summary-panel">
       <div className="admin-panel__body">
-        <SectionHeader
-          eyebrow="Actividad reciente"
-          title="Ultimos eventos relevantes"
-          description="Resumen compacto. El feed completo vive en Actividad."
-          actions={
+        <AdminDashboardSectionHeader
+          eyebrow="Resumen"
+          title="Actividad reciente"
+          meta={
             <div className="admin-activity-summary-panel__actions">
               <StatusBadge label={statusLabel} tone={statusTone} />
               <Button variant="secondary" size="sm" onClick={onOpenAll}>
                 Ver actividad
-              </Button>
-            </div>
-          }
-        />
+            </Button>
+          </div>
+        }
+      />
 
         {error ? (
           <BlockError message={error} />
@@ -1287,10 +1322,9 @@ function QuickActionsCard({
   return (
     <Card padding="none" glow={false} className="admin-panel admin-quick-actions-panel">
       <div className="admin-panel__body">
-        <SectionHeader
-          eyebrow="Accesos rapidos"
-          title="Operar mas rapido"
-          description="Atajos de supervision, no configuracion duplicada."
+        <AdminDashboardSectionHeader
+          eyebrow="Accesos"
+          title="Acciones rapidas"
         />
 
         {actions.length === 0 ? (
