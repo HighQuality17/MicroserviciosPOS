@@ -1905,7 +1905,7 @@
     0 8px 18px rgb(0 0 0 / 0.1);
 }
 
-.pos-page .pos-catalog-filter.filter-chip:hover:not(:disabled) {
+.pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: var(--pos-v2-hover-border);
   background: var(--surface-subtle-hover-background);
@@ -2696,10 +2696,11 @@
   box-shadow: none;
 }
 
-:root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:hover:not(:disabled) {
+:root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled) {
   transform: none;
   border-color: var(--border-strong);
   background: var(--surface-subtle-background);
+  color: var(--text);
   box-shadow: var(--surface-muted-shadow);
 }
 
@@ -3849,10 +3850,11 @@
   box-shadow: var(--pos-g13-inner-shadow);
 }
 
-:root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:hover:not(:disabled) {
+:root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: var(--pos-g13-border-strong);
   background: var(--pos-g13-panel);
+  color: var(--pos-g13-ink);
   box-shadow:
     0 1px 2px rgb(15 23 42 / 0.08),
     0 12px 24px rgb(15 23 42 / 0.1);
@@ -3875,6 +3877,119 @@
 :root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip[data-active='true'] .filter-chip__count {
   background: rgb(255 255 255 / 0.18);
   color: #ffffff;
+}
+
+.pos-page .pos-catalog-filter.filter-chip {
+  --pos-catalog-filter-idle-border: var(--pos-v2-border);
+  --pos-catalog-filter-idle-background: var(--pos-v2-card-background);
+  --pos-catalog-filter-idle-color: var(--text-secondary);
+  --pos-catalog-filter-idle-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.045),
+    0 8px 18px rgb(0 0 0 / 0.1);
+  --pos-catalog-filter-hover-border: rgb(var(--theme-accent-rgb) / 0.42);
+  --pos-catalog-filter-hover-background:
+    linear-gradient(180deg, rgb(var(--theme-accent-rgb) / 0.14) 0%, rgb(var(--theme-primary-rgb) / 0.06) 100%),
+    var(--pos-v2-card-background);
+  --pos-catalog-filter-hover-color: var(--text);
+  --pos-catalog-filter-hover-count-background: rgb(var(--theme-accent-rgb) / 0.18);
+  --pos-catalog-filter-hover-count-color: var(--text);
+  --pos-catalog-filter-hover-shadow:
+    0 12px 24px rgb(var(--theme-primary-rgb) / 0.16),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+  --pos-catalog-filter-active-border: rgb(var(--theme-primary-rgb) / 0.54);
+  --pos-catalog-filter-active-background: var(--button-primary-background);
+  --pos-catalog-filter-active-color: #ffffff;
+  --pos-catalog-filter-active-shadow:
+    0 16px 32px rgb(var(--theme-primary-rgb) / 0.28),
+    0 0 0 1px rgb(var(--theme-accent-rgb) / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+
+:root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip {
+  --pos-catalog-filter-idle-border: var(--pos-g13-border, var(--line));
+  --pos-catalog-filter-idle-background: var(--pos-g13-panel, var(--bg-panel));
+  --pos-catalog-filter-idle-color: var(--pos-g13-body, var(--text-secondary));
+  --pos-catalog-filter-idle-shadow: var(--pos-g13-inner-shadow, var(--surface-muted-shadow));
+  --pos-catalog-filter-hover-border: rgb(37 99 235 / 0.34);
+  --pos-catalog-filter-hover-background:
+    linear-gradient(180deg, rgb(239 246 255 / 0.98) 0%, rgb(219 234 254 / 0.72) 100%);
+  --pos-catalog-filter-hover-color: #0f172a;
+  --pos-catalog-filter-hover-count-background: #dbeafe;
+  --pos-catalog-filter-hover-count-color: #1d4ed8;
+  --pos-catalog-filter-hover-shadow:
+    0 1px 2px rgb(15 23 42 / 0.08),
+    0 14px 28px rgb(37 99 235 / 0.14);
+  --pos-catalog-filter-active-border: var(--pos-g13-blue, #0052ff);
+  --pos-catalog-filter-active-background: var(--pos-g13-blue, #0052ff);
+  --pos-catalog-filter-active-color: #ffffff;
+  --pos-catalog-filter-active-shadow:
+    0 1px 2px rgb(15 23 42 / 0.1),
+    0 16px 30px rgb(37 99 235 / 0.22);
+}
+
+.pos-page .pos-catalog-filter.filter-chip:focus-visible,
+:root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:focus-visible {
+  outline: none;
+  border-color: var(--pos-catalog-filter-hover-border);
+  background: var(--pos-catalog-filter-hover-background);
+  color: var(--pos-catalog-filter-hover-color);
+  box-shadow: var(--focus-ring-shadow), var(--pos-catalog-filter-hover-shadow);
+}
+
+.pos-page .pos-catalog-filter.filter-chip[data-active='true'],
+.pos-page .pos-catalog-filter.filter-chip[data-active='true']:focus-visible,
+:root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip[data-active='true'],
+:root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip[data-active='true']:focus-visible {
+  border-color: var(--pos-catalog-filter-active-border);
+  background: var(--pos-catalog-filter-active-background);
+  color: var(--pos-catalog-filter-active-color);
+  box-shadow: var(--pos-catalog-filter-active-shadow);
+}
+
+.pos-page .pos-catalog-filter.filter-chip[data-active='true'] .filter-chip__count {
+  background: rgb(255 255 255 / 0.18);
+  color: #ffffff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled),
+  :root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: var(--pos-catalog-filter-hover-border);
+    background: var(--pos-catalog-filter-hover-background);
+    color: var(--pos-catalog-filter-hover-color);
+    box-shadow: var(--pos-catalog-filter-hover-shadow);
+  }
+
+  .pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled) .filter-chip__count,
+  :root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled) .filter-chip__count {
+    background: var(--pos-catalog-filter-hover-count-background);
+    color: var(--pos-catalog-filter-hover-count-color);
+  }
+
+  .pos-page .pos-catalog-filter.filter-chip[data-active='true']:hover:not(:disabled),
+  :root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip[data-active='true']:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: var(--pos-catalog-filter-active-border);
+    background: var(--pos-catalog-filter-active-background);
+    color: var(--pos-catalog-filter-active-color);
+    box-shadow: var(--pos-catalog-filter-active-shadow);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .pos-page .pos-catalog-filter.filter-chip:hover:not(:disabled),
+  :root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled),
+  :root[data-theme='professional-light'] .pos-page .pos-catalog-filter.filter-chip:not([data-active='true']):hover:not(:disabled) {
+    border-color: var(--pos-catalog-filter-idle-border);
+    background: var(--pos-catalog-filter-idle-background);
+    color: var(--pos-catalog-filter-idle-color);
+    box-shadow: var(--pos-catalog-filter-idle-shadow);
+  }
 }
 
 :root[data-theme='professional-light'] .pos-catalog-grid {
