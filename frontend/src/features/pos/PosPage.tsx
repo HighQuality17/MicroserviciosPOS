@@ -398,7 +398,7 @@ export function PosPage() {
     {
       label: 'Cajero',
       value: currentUserName,
-      accent: currentUser ? ('info' as const) : ('default' as const),
+      accent: currentUser ? ('teal' as const) : ('default' as const),
       icon: <User size={16} />,
       iconTone: currentUser ? 'info' : 'default',
       badge: {

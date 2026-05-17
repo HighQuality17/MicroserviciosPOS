@@ -11,7 +11,7 @@ export type ModuleHeaderTone =
   | 'info'
   | 'violet';
 export type ModuleHeaderBadgeTone = Exclude<ModuleHeaderTone, 'violet'>;
-export type ModuleHeaderAccent = 'default' | 'info' | 'success' | 'warning' | 'danger';
+export type ModuleHeaderAccent = 'default' | 'info' | 'teal' | 'success' | 'warning' | 'danger';
 
 export interface ModulePageHeaderBadge {
   label: string;
