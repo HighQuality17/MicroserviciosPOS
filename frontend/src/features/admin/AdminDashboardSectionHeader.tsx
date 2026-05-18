@@ -4,6 +4,7 @@ import clsx from 'clsx';
 interface AdminDashboardSectionHeaderProps {
   eyebrow: string;
   title: string;
+  description?: ReactNode;
   meta?: ReactNode;
   className?: string;
 }
@@ -11,6 +12,7 @@ interface AdminDashboardSectionHeaderProps {
 export function AdminDashboardSectionHeader({
   eyebrow,
   title,
+  description,
   meta,
   className,
 }: AdminDashboardSectionHeaderProps) {
@@ -22,6 +24,7 @@ export function AdminDashboardSectionHeader({
           <h2 className="font-display text-2xl font-bold theme-text-strong">{title}</h2>
           {meta ? <div className="products-panel__meta">{meta}</div> : null}
         </div>
+        {description ? <p className="products-panel__description section-note">{description}</p> : null}
       </div>
     </div>
   );
