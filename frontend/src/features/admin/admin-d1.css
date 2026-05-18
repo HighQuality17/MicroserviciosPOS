@@ -3755,11 +3755,16 @@
 .admin-dashboard--refactor .module-page-header__shell::before {
   position: absolute;
   z-index: 2;
-  inset: 0 auto auto 1.35rem;
-  width: min(9rem, 42%);
-  height: 2px;
+  inset: 0 0 auto;
+  height: 5px;
   pointer-events: none;
-  background: var(--admin-dashboard-accent-line);
+  background: linear-gradient(
+    90deg,
+    var(--admin-dashboard-blue) 0%,
+    var(--admin-dashboard-blue-strong) 44%,
+    var(--admin-dashboard-line-soft) 44%,
+    var(--admin-dashboard-line-soft) 100%
+  );
   content: "";
 }
 
@@ -3823,14 +3828,6 @@
   color: var(--text-muted);
   font-size: 0.76rem;
   line-height: 1.35;
-}
-
-.admin-dashboard--refactor .module-page-header__aside-action > .ui-button-base {
-  min-height: 2.42rem;
-  border-radius: 999px;
-  box-shadow: none;
-  font-size: 0.78rem;
-  font-weight: 800;
 }
 
 .admin-dashboard--refactor .module-page-header__cards {
@@ -3950,7 +3947,6 @@
   line-height: 1.35;
 }
 
-.admin-dashboard__header-actions,
 .admin-activity-summary-panel__actions {
   display: flex;
   flex-wrap: wrap;
@@ -4668,8 +4664,6 @@
     padding: 0.76rem;
   }
 
-  .admin-dashboard__header-actions,
-  .admin-dashboard__header-actions .ui-button-base,
   .admin-activity-summary-panel__actions,
   .admin-activity-summary-panel__actions .ui-button-base {
     width: 100%;
