@@ -25,7 +25,6 @@ import {
   getActivityTone,
 } from '@/features/admin/admin-activity-format';
 import { AdminPaymentMethodChartCard } from '@/features/admin/AdminPaymentMethodChartCard';
-import { AdminSubmoduleNav } from '@/features/admin/AdminSubmoduleNav';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
@@ -330,6 +329,11 @@ export function AdminPage() {
       : '';
 
     void navigate(search ? `${navigation.path}?${search}` : navigation.path);
+  }
+
+  function handleRefreshDashboard() {
+    loadDashboard();
+    void loadRecentActivity();
   }
 
   const paymentMethodData = useMemo<PaymentMethodDatum[]>(
@@ -641,8 +645,6 @@ export function AdminPage() {
 
   return (
     <div className="admin-dashboard admin-dashboard--refactor grid min-w-0 gap-4 sm:gap-5">
-      <AdminSubmoduleNav />
-
       {isAuditor ? (
         <RoleModeBanner
           title="Panel en modo auditoria"
@@ -664,18 +666,14 @@ export function AdminPage() {
           note: adminHeaderSummaryNote,
         }}
         asideAction={
-          <div className="admin-dashboard__header-actions">
-            {canUse('canOperatePos') ? (
-              <Button variant="secondary" onClick={() => navigate('/pos')}>
-                POS
-              </Button>
-            ) : null}
-            {isAdmin || isAuditor ? (
-              <Button variant="secondary" onClick={() => navigate('/admin/reports')}>
-                Reportes
-              </Button>
-            ) : null}
-          </div>
+          <Button
+            variant="secondary"
+            disabled={dashboardLoading}
+            onClick={handleRefreshDashboard}
+            aria-label="Actualizar panel"
+          >
+            {dashboardLoading ? 'Actualizando...' : 'Actualizar panel'}
+          </Button>
         }
         cards={adminHeaderCards}
       />
