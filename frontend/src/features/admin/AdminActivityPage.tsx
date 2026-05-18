@@ -1,12 +1,12 @@
 import '@/features/admin/admin-d1.css';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Activity,
   Boxes,
   CreditCard,
+  Receipt,
   Search,
   Settings2,
-  ShoppingBag,
   Sparkles,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -38,12 +38,14 @@ const activityFilters: Array<{
   value: ActivityCategoryFilter;
   label: string;
   description: string;
+  tone: 'info' | 'warning' | 'success' | 'accent';
+  icon: typeof Activity;
 }> = [
-  { value: 'ALL', label: 'Todos', description: 'Ventas, caja, inventario y configuracion.' },
-  { value: 'CASH', label: 'Caja', description: 'Aperturas y cierres.' },
-  { value: 'SALES', label: 'Ventas', description: 'Ventas pagadas.' },
-  { value: 'INVENTORY', label: 'Inventario', description: 'Movimientos de stock.' },
-  { value: 'CONFIG', label: 'Configuracion', description: 'Cambios de BusinessConfig.' },
+  { value: 'ALL', label: 'Todos', description: 'Ventas, caja, inventario y configuracion.', tone: 'info', icon: Activity },
+  { value: 'CASH', label: 'Caja', description: 'Aperturas y cierres.', tone: 'warning', icon: CreditCard },
+  { value: 'SALES', label: 'Ventas', description: 'Ventas pagadas.', tone: 'info', icon: Receipt },
+  { value: 'INVENTORY', label: 'Inventario', description: 'Movimientos de stock.', tone: 'success', icon: Boxes },
+  { value: 'CONFIG', label: 'Configuracion', description: 'Cambios de BusinessConfig.', tone: 'accent', icon: Settings2 },
 ];
 
 export function AdminActivityPage() {
@@ -133,16 +135,6 @@ export function AdminActivityPage() {
       },
     },
   ];
-  const utilityCards = useMemo(
-    () => [
-      { label: 'Caja', icon: CreditCard, copy: 'Aperturas, cierres y sesiones.' },
-      { label: 'Ventas', icon: ShoppingBag, copy: 'Ventas pagadas con total y responsable.' },
-      { label: 'Inventario', icon: Boxes, copy: 'Entradas, salidas y ajustes.' },
-      { label: 'Configuracion', icon: Settings2, copy: 'Cambios de negocio con before/after.' },
-    ],
-    [],
-  );
-
   async function loadActivity(page: number) {
     try {
       setActivityLoading(true);
@@ -271,8 +263,10 @@ export function AdminActivityPage() {
                 type="button"
                 className="admin-activity-filter-card"
                 data-active={categoryFilter === filter.value}
+                data-tone={filter.tone}
                 onClick={() => applyFilter(filter.value)}
               >
+                <filter.icon size={17} />
                 <span>{filter.label}</span>
                 <p>{filter.description}</p>
               </button>
@@ -306,29 +300,6 @@ export function AdminActivityPage() {
               </Button>
             </div>
           </form>
-        </div>
-      </Card>
-
-      <Card padding="none" glow={false} className="admin-panel admin-activity-utility-panel">
-        <div className="admin-panel__body">
-          <AdminDashboardSectionHeader
-            eyebrow="Utilidad"
-            title="Cobertura del feed"
-            description="Eventos clave para supervision diaria y auditoria puntual."
-          />
-          <div className="admin-activity-utility-grid">
-            {utilityCards.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <div key={item.label} className="admin-activity-utility-card">
-                  <Icon size={17} />
-                  <strong>{item.label}</strong>
-                  <span>{item.copy}</span>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </Card>
 
