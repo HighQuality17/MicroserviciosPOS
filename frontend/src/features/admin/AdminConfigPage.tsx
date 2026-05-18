@@ -1,5 +1,5 @@
 import '@/features/admin/admin-d1.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -37,6 +37,7 @@ import { Input } from '@/components/Input';
 import { LoadingState } from '@/components/LoadingState';
 import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type { ModulePageHeaderCard } from '@/components/ModulePageHeader';
+import { PaginationControls } from '@/components/PaginationControls';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -78,6 +79,7 @@ interface BusinessConfigFormState {
 }
 
 type FormErrors = Partial<Record<'businessName' | 'currencyCode' | 'countryCode' | 'timezone' | 'email', string>>;
+const CONFIG_AUDIT_ITEMS_PER_PAGE = 5;
 
 const businessTypeOptions: Array<{
   value: BusinessType;
@@ -252,6 +254,7 @@ export function AdminConfigPage() {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
   const [auditItems, setAuditItems] = useState<AdminActivityListItem[]>([]);
+  const [auditPage, setAuditPage] = useState(1);
   const [auditLoading, setAuditLoading] = useState(true);
   const [auditError, setAuditError] = useState<string | null>(null);
   const [selectedAuditActivity, setSelectedAuditActivity] =
@@ -273,6 +276,24 @@ export function AdminConfigPage() {
   useEffect(() => {
     void loadConfigAudit();
   }, []);
+
+  const auditTotalPages = Math.ceil(auditItems.length / CONFIG_AUDIT_ITEMS_PER_PAGE);
+  const safeAuditPage = Math.min(auditPage, Math.max(auditTotalPages, 1));
+  const paginatedAuditItems = useMemo(() => {
+    const startIndex = (safeAuditPage - 1) * CONFIG_AUDIT_ITEMS_PER_PAGE;
+
+    return auditItems.slice(startIndex, startIndex + CONFIG_AUDIT_ITEMS_PER_PAGE);
+  }, [auditItems, safeAuditPage]);
+
+  useEffect(() => {
+    setAuditPage(1);
+  }, [auditItems]);
+
+  useEffect(() => {
+    if (auditPage > Math.max(auditTotalPages, 1)) {
+      setAuditPage(Math.max(auditTotalPages, 1));
+    }
+  }, [auditPage, auditTotalPages]);
 
   useEffect(() => {
     if (!config && !isLoadingConfig && !configError) {
@@ -1109,49 +1130,60 @@ export function AdminConfigPage() {
                 description="Cuando BusinessConfig cambie, aparecera aqui con before/after persistido."
               />
             ) : (
-              <div className="admin-config-audit-list">
-                {auditItems.map((item) => {
-                  const summary = item.summary as AdminConfigUpdatedActivitySummary;
-                  const visibleFields = summary.changed_fields.slice(0, 4);
+              <>
+                <div className="admin-config-audit-list">
+                  {paginatedAuditItems.map((item) => {
+                    const summary = item.summary as AdminConfigUpdatedActivitySummary;
+                    const visibleFields = summary.changed_fields.slice(0, 4);
 
-                  return (
-                    <article key={item.id} className="admin-config-audit-item">
-                      <div className="admin-config-audit-item__main">
-                        <div className="admin-config-audit-item__meta">
-                          <StatusBadge
-                            label={formatActivityType(item.activity_type)}
-                            tone={getActivityTone(item.activity_type)}
-                          />
-                          <span>{formatDate(item.occurred_at)}</span>
-                          <span>{summary.responsible_name}</span>
+                    return (
+                      <article key={item.id} className="admin-config-audit-item">
+                        <div className="admin-config-audit-item__main">
+                          <div className="admin-config-audit-item__meta">
+                            <StatusBadge
+                              label={formatActivityType(item.activity_type)}
+                              tone={getActivityTone(item.activity_type)}
+                            />
+                            <span>{formatDate(item.occurred_at)}</span>
+                            <span>{summary.responsible_name}</span>
+                          </div>
+                          <p>{item.title}</p>
+                          <span>{summary.changed_count} campos modificados</span>
+                          <div className="admin-config-audit-item__fields">
+                            {visibleFields.length > 0 ? (
+                              visibleFields.map((field) => (
+                                <span key={`${item.id}-${field}`}>{field}</span>
+                              ))
+                            ) : (
+                              <span>Sin campos</span>
+                            )}
+                          </div>
                         </div>
-                        <p>{item.title}</p>
-                        <span>{summary.changed_count} campos modificados</span>
-                        <div className="admin-config-audit-item__fields">
-                          {visibleFields.length > 0 ? (
-                            visibleFields.map((field) => (
-                              <span key={`${item.id}-${field}`}>{field}</span>
-                            ))
-                          ) : (
-                            <span>Sin campos</span>
-                          )}
+                        <div className="admin-config-audit-item__aside">
+                          <Activity size={17} />
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void handleOpenAuditDetail(item)}
+                          >
+                            Ver detalle
+                          </Button>
                         </div>
-                      </div>
-                      <div className="admin-config-audit-item__aside">
-                        <Activity size={17} />
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => void handleOpenAuditDetail(item)}
-                        >
-                          Ver detalle
-                        </Button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                      </article>
+                    );
+                  })}
+                </div>
+                {auditItems.length > CONFIG_AUDIT_ITEMS_PER_PAGE ? (
+                  <PaginationControls
+                    page={safeAuditPage}
+                    totalPages={auditTotalPages}
+                    totalItems={auditItems.length}
+                    itemLabel="cambios recientes"
+                    onPageChange={setAuditPage}
+                  />
+                ) : null}
+              </>
             )}
           </div>
         </Card>

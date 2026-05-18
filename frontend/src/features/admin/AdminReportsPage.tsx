@@ -39,6 +39,7 @@ import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
 import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type { ModulePageHeaderCard } from '@/components/ModulePageHeader';
+import { PaginationControls } from '@/components/PaginationControls';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Select } from '@/components/Select';
 import { Sheet } from '@/components/Sheet';
@@ -91,6 +92,7 @@ type InventoryReportFilters = {
 
 const allLocationsValue = 'ALL';
 const allIngredientsValue = 'ALL';
+const REPORT_TABLE_ITEMS_PER_PAGE = 10;
 const chartPalette = [
   'var(--admin-chart-cyan)',
   'var(--admin-chart-emerald)',
@@ -1675,7 +1677,38 @@ function InventoryMovementsTooltip({
   );
 }
 
+function useFrontendPagination<Row>(rows: Row[], itemsPerPage: number) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(rows.length / itemsPerPage);
+  const safePage = Math.min(page, Math.max(totalPages, 1));
+  const startIndex = (safePage - 1) * itemsPerPage;
+  const items = useMemo(
+    () => rows.slice(startIndex, startIndex + itemsPerPage),
+    [itemsPerPage, rows, startIndex],
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [rows, itemsPerPage]);
+
+  useEffect(() => {
+    if (page > Math.max(totalPages, 1)) {
+      setPage(Math.max(totalPages, 1));
+    }
+  }, [page, totalPages]);
+
+  return {
+    items,
+    page: safePage,
+    setPage,
+    startIndex,
+    totalPages,
+  };
+}
+
 function TopProductsTable({ report }: { report: AdminSalesReportResponse }) {
+  const pagination = useFrontendPagination(report.top_products, REPORT_TABLE_ITEMS_PER_PAGE);
+
   return (
     <Card padding="none" glow={false} className="admin-panel admin-reports-table-panel">
       <div className="admin-panel__body">
@@ -1709,11 +1742,11 @@ function TopProductsTable({ report }: { report: AdminSalesReportResponse }) {
                 </tr>
               </thead>
               <tbody>
-                {report.top_products.map((item, index) => (
+                {pagination.items.map((item, index) => (
                   <tr key={`${item.item_type}-${item.ref_id}`}>
                     <td>
                       <div className="admin-reports-product-cell">
-                        <span>{String(index + 1).padStart(2, '0')}</span>
+                        <span>{String(pagination.startIndex + index + 1).padStart(2, '0')}</span>
                         <strong title={item.name}>{item.name}</strong>
                       </div>
                     </td>
@@ -1726,6 +1759,15 @@ function TopProductsTable({ report }: { report: AdminSalesReportResponse }) {
             </table>
           </div>
         )}
+        {report.top_products.length > REPORT_TABLE_ITEMS_PER_PAGE ? (
+          <PaginationControls
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            totalItems={report.top_products.length}
+            itemLabel="productos"
+            onPageChange={pagination.setPage}
+          />
+        ) : null}
       </div>
     </Card>
   );
@@ -1738,6 +1780,8 @@ function CashSessionsTable({
   sessions: AdminCashReportSessionItem[];
   onOpenDetail: (session: AdminCashReportSessionItem) => void;
 }) {
+  const pagination = useFrontendPagination(sessions, REPORT_TABLE_ITEMS_PER_PAGE);
+
   return (
     <Card padding="none" glow={false} className="admin-panel admin-reports-table-panel">
       <div className="admin-panel__body">
@@ -1778,7 +1822,7 @@ function CashSessionsTable({
                 </tr>
               </thead>
               <tbody>
-                {sessions.map((item) => (
+                {pagination.items.map((item) => (
                   <tr key={`${item.status}-${item.cash_session_id}`}>
                     <td>
                       <div className="admin-reports-product-cell">
@@ -1818,6 +1862,15 @@ function CashSessionsTable({
             </table>
           </div>
         )}
+        {sessions.length > REPORT_TABLE_ITEMS_PER_PAGE ? (
+          <PaginationControls
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            totalItems={sessions.length}
+            itemLabel="sesiones"
+            onPageChange={pagination.setPage}
+          />
+        ) : null}
       </div>
     </Card>
   );
@@ -1828,6 +1881,8 @@ function InventoryMovementsTable({
 }: {
   movements: AdminInventoryReportMovementItem[];
 }) {
+  const pagination = useFrontendPagination(movements, REPORT_TABLE_ITEMS_PER_PAGE);
+
   return (
     <Card padding="none" glow={false} className="admin-panel admin-reports-table-panel">
       <div className="admin-panel__body">
@@ -1868,7 +1923,7 @@ function InventoryMovementsTable({
                 </tr>
               </thead>
               <tbody>
-                {movements.map((item) => (
+                {pagination.items.map((item) => (
                   <tr key={item.movement_id}>
                     <td>
                       <div className="admin-reports-product-cell">
@@ -1899,6 +1954,15 @@ function InventoryMovementsTable({
             </table>
           </div>
         )}
+        {movements.length > REPORT_TABLE_ITEMS_PER_PAGE ? (
+          <PaginationControls
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            totalItems={movements.length}
+            itemLabel="movimientos"
+            onPageChange={pagination.setPage}
+          />
+        ) : null}
       </div>
     </Card>
   );

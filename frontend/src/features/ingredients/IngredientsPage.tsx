@@ -1703,6 +1703,7 @@ export function IngredientsPage() {
                 ariaLabel="Catalogo de ingredientes"
                 caption="Tabla base de ingredientes"
                 rows={filteredCatalogIngredients}
+                paginationLabel="ingredientes"
                 mobileCardRender={(ingredient) => renderIngredientMobileCard(ingredient)}
                 rowKey={(ingredient) => ingredient.id}
                 rowClassName={(ingredient) =>
@@ -1893,6 +1894,7 @@ export function IngredientsPage() {
                 ariaLabel="Stock por ubicacion"
                 caption="Tabla de stock por ubicacion"
                 rows={filteredStockItems}
+                paginationLabel="existencias"
                 mobileCardRender={(item) => renderStockMobileCard(item)}
                 rowKey={(item) => `${item.ingredientId}-${item.locationId}`}
                 rowClassName={(item) =>
@@ -2057,6 +2059,7 @@ export function IngredientsPage() {
                 ariaLabel="Historial de movimientos de stock"
                 caption="Tabla de movimientos auditados"
                 rows={filteredAdjustmentItems}
+                paginationLabel="movimientos"
                 mobileCardRender={(item) => renderAdjustmentMobileCard(item)}
                 rowKey={(item) => item.id}
                 rowClassName={(item) =>
