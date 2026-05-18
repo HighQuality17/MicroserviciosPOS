@@ -1,6 +1,7 @@
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
+import { PaginationControls } from '@/components/PaginationControls';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
 import {
@@ -124,31 +125,16 @@ export function AdminActivityFeedList({
       </ScrollPanel>
 
       {showPagination ? (
-        <div className="admin-activity-pagination">
-          <span>
-            {total} eventos - pagina {page} de {Math.max(totalPages, 1)}
-          </span>
-          <div className="admin-activity-pagination__actions">
-            <Button
-              className="admin-activity-pagination__button"
-              variant="primary"
-              size="sm"
-              disabled={loading || page <= 1}
-              onClick={() => onPageChange?.(Math.max(1, page - 1))}
-            >
-              Anterior
-            </Button>
-            <Button
-              className="admin-activity-pagination__button"
-              variant="primary"
-              size="sm"
-              disabled={loading || totalPages === 0 || page >= totalPages}
-              onClick={() => onPageChange?.(page + 1)}
-            >
-              Siguiente
-            </Button>
-          </div>
-        </div>
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalItems={total}
+          itemLabel="eventos"
+          onPageChange={(nextPage) => onPageChange?.(nextPage)}
+          className="admin-activity-pagination"
+          actionsClassName="admin-activity-pagination__actions"
+          buttonClassName="admin-activity-pagination__button"
+        />
       ) : null}
     </>
   );

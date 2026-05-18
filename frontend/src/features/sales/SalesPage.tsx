@@ -20,6 +20,7 @@ import type {
   ModulePageHeaderBadge,
   ModulePageHeaderCard,
 } from '@/components/ModulePageHeader';
+import { PaginationControls } from '@/components/PaginationControls';
 import { RoleModeBanner } from '@/components/RoleModeBanner';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { Select } from '@/components/Select';
@@ -1366,27 +1367,15 @@ export function SalesPage() {
                     );
                   })}
                 </div>
-                <div className="products-inline-note products-inline-note--footer toolbar-shell mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg px-4 py-3 text-sm text-[color:var(--text-muted)]">
-                  <span>
-                    {historyTotal} ventas encontradas - pagina {historyPage} de {Math.max(historyTotalPages, 1)}
-                  </span>
-                  <nav className="flex gap-3" aria-label="Paginacion del historial de ventas">
-                    <Button
-                      variant="secondary"
-                      disabled={historyPage <= 1 || historyLoading}
-                      onClick={() => setHistoryPage((current) => Math.max(1, current - 1))}
-                    >
-                      Anterior
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      disabled={historyLoading || historyPage >= historyTotalPages || historyTotalPages === 0}
-                      onClick={() => setHistoryPage((current) => current + 1)}
-                    >
-                      Siguiente
-                    </Button>
-                  </nav>
-                </div>
+                <PaginationControls
+                  page={historyPage}
+                  totalPages={historyTotalPages}
+                  totalItems={historyTotal}
+                  itemLabel="ventas encontradas"
+                  onPageChange={setHistoryPage}
+                  disabled={historyLoading}
+                  className="products-inline-note products-inline-note--footer toolbar-shell"
+                />
               </>
             )}
           </Card>
