@@ -1,18 +1,14 @@
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { FeedbackMessage } from '@/components/FeedbackMessage';
+import { PaginationControls } from '@/components/PaginationControls';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { StatusBadge } from '@/components/StatusBadge';
-import {
-  getAdminActivityNavigation,
-  getAdminActivityNavigationCapability,
-} from '@/features/admin/admin-activity-navigation';
 import {
   formatActivityType,
   getActivityHighlights,
   getActivityTone,
 } from '@/features/admin/admin-activity-format';
-import { usePermissions } from '@/hooks/usePermissions';
 import type {
   AdminActivityListItem,
   AdminActivityNavigation,
@@ -52,7 +48,7 @@ export function AdminActivityFeedList({
   onOpenDetail,
   onNavigate,
 }: AdminActivityFeedListProps) {
-  const { can } = usePermissions();
+  void onNavigate;
 
   if (error) {
     return (
@@ -84,11 +80,6 @@ export function AdminActivityFeedList({
         aria-label="Actividad del negocio"
       >
         {items.map((item) => {
-          const activityNavigation = getAdminActivityNavigation(item);
-          const canShowNavigation =
-            activityNavigation !== null &&
-            can(getAdminActivityNavigationCapability(item.activity_type));
-
           return (
             <article
               key={`${item.id}-${item.activity_type}-${item.entity_id}`}
@@ -115,58 +106,35 @@ export function AdminActivityFeedList({
                   ))}
                 </div>
               </div>
-              <div className="admin-activity-item__aside">
-                <time>{formatDate(item.occurred_at)}</time>
-                <div className="admin-activity-item__actions">
+                <div className="admin-activity-item__aside">
+                  <time>{formatDate(item.occurred_at)}</time>
+                  <div className="admin-activity-item__actions">
                   <Button
                     className="admin-activity-item__details-button"
                     variant="secondary"
                     size="sm"
                     onClick={() => onOpenDetail(item)}
-                  >
-                    Mas detalles
-                  </Button>
-                  {canShowNavigation && activityNavigation ? (
-                    <Button
-                      className="admin-activity-item__nav-button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onNavigate(activityNavigation)}
                     >
-                      {activityNavigation.label}
+                      Mas detalles
                     </Button>
-                  ) : null}
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
           );
         })}
       </ScrollPanel>
 
       {showPagination ? (
-        <div className="admin-activity-pagination">
-          <span>
-            {total} eventos - pagina {page} de {Math.max(totalPages, 1)}
-          </span>
-          <div className="admin-activity-pagination__actions">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={loading || page <= 1}
-              onClick={() => onPageChange?.(Math.max(1, page - 1))}
-            >
-              Anterior
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={loading || totalPages === 0 || page >= totalPages}
-              onClick={() => onPageChange?.(page + 1)}
-            >
-              Siguiente
-            </Button>
-          </div>
-        </div>
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalItems={total}
+          itemLabel="eventos"
+          onPageChange={(nextPage) => onPageChange?.(nextPage)}
+          className="admin-activity-pagination"
+          actionsClassName="admin-activity-pagination__actions"
+          buttonClassName="admin-activity-pagination__button"
+        />
       ) : null}
     </>
   );

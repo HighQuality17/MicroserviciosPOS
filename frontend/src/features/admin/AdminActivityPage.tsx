@@ -1,25 +1,23 @@
 import '@/features/admin/admin-d1.css';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Activity,
   Boxes,
   CreditCard,
-  RefreshCw,
+  Receipt,
   Search,
   Settings2,
-  ShoppingBag,
   Sparkles,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AdminActivityDetailDialog } from '@/features/admin/AdminActivityDetailDialog';
 import { AdminActivityFeedList } from '@/features/admin/AdminActivityFeedList';
-import { AdminSubmoduleNav } from '@/features/admin/AdminSubmoduleNav';
+import { AdminDashboardSectionHeader } from '@/features/admin/AdminDashboardSectionHeader';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type { ModulePageHeaderCard } from '@/components/ModulePageHeader';
-import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import {
   formatActivityType,
@@ -40,12 +38,14 @@ const activityFilters: Array<{
   value: ActivityCategoryFilter;
   label: string;
   description: string;
+  tone: 'info' | 'warning' | 'success' | 'accent';
+  icon: typeof Activity;
 }> = [
-  { value: 'ALL', label: 'Todos', description: 'Ventas, caja, inventario y configuracion.' },
-  { value: 'CASH', label: 'Caja', description: 'Aperturas y cierres.' },
-  { value: 'SALES', label: 'Ventas', description: 'Ventas pagadas.' },
-  { value: 'INVENTORY', label: 'Inventario', description: 'Movimientos de stock.' },
-  { value: 'CONFIG', label: 'Configuracion', description: 'Cambios de BusinessConfig.' },
+  { value: 'ALL', label: 'Todos', description: 'Ventas, caja, inventario y configuracion.', tone: 'info', icon: Activity },
+  { value: 'CASH', label: 'Caja', description: 'Aperturas y cierres.', tone: 'warning', icon: CreditCard },
+  { value: 'SALES', label: 'Ventas', description: 'Ventas pagadas.', tone: 'info', icon: Receipt },
+  { value: 'INVENTORY', label: 'Inventario', description: 'Movimientos de stock.', tone: 'success', icon: Boxes },
+  { value: 'CONFIG', label: 'Configuracion', description: 'Cambios de BusinessConfig.', tone: 'accent', icon: Settings2 },
 ];
 
 export function AdminActivityPage() {
@@ -84,6 +84,16 @@ export function AdminActivityPage() {
     : activityItems.length > 0
       ? 'Eventos listos'
       : 'Sin eventos';
+  const activitySummaryValue = activityLoading
+    ? 'Sincronizando'
+    : latestActivity
+      ? formatActivityType(latestActivity.activity_type)
+      : 'Sin eventos';
+  const activitySummaryNote = activityLoading
+    ? 'Consultando actividad reciente.'
+    : latestActivity
+      ? `${formatDate(latestActivity.occurred_at)} · ${latestActivity.actor?.user_name ?? 'Sistema'}`
+      : 'Esperando movimiento';
   const headerCards: ModulePageHeaderCard[] = [
     {
       label: 'Eventos',
@@ -125,16 +135,6 @@ export function AdminActivityPage() {
       },
     },
   ];
-  const utilityCards = useMemo(
-    () => [
-      { label: 'Caja', icon: CreditCard, copy: 'Aperturas, cierres y sesiones.' },
-      { label: 'Ventas', icon: ShoppingBag, copy: 'Ventas pagadas con total y responsable.' },
-      { label: 'Inventario', icon: Boxes, copy: 'Entradas, salidas y ajustes.' },
-      { label: 'Configuracion', icon: Settings2, copy: 'Cambios de negocio con before/after.' },
-    ],
-    [],
-  );
-
   async function loadActivity(page: number) {
     try {
       setActivityLoading(true);
@@ -221,25 +221,27 @@ export function AdminActivityPage() {
   }
 
   return (
-    <div className="admin-dashboard admin-activity-page grid min-w-0 gap-4 sm:gap-5">
-      <AdminSubmoduleNav />
-
+    <div className="admin-dashboard admin-dashboard--refactor admin-activity-page grid min-w-0 gap-4 sm:gap-5">
       <ModulePageHeader
         ariaLabel="Actividad del negocio"
-        eyebrow="Admin / Actividad"
+        className="admin-dashboard__hero"
+        eyebrow="ADMIN / ACTIVIDAD"
         title="Actividad del negocio"
-        description="Consulta ventas, caja, inventario y trazabilidad operativa desde un feed dedicado."
-        helpText="Esta vista reutiliza el detalle interactivo existente y conserva CTAs contextuales por evento."
         icon={<Activity size={18} />}
         badges={[{ label: activityLabel, tone: activityTone }]}
+        summary={{
+          label: 'Ultimo evento',
+          value: activitySummaryValue,
+          note: activitySummaryNote,
+        }}
         asideAction={
           <Button
             variant="secondary"
             disabled={activityLoading}
             onClick={() => void loadActivity(activityPage)}
+            aria-label="Refrescar"
           >
-            <RefreshCw size={16} />
-            Refrescar
+            {activityLoading ? 'Actualizando...' : 'Refrescar'}
           </Button>
         }
         cards={headerCards}
@@ -247,11 +249,11 @@ export function AdminActivityPage() {
 
       <Card padding="none" glow={false} className="admin-panel admin-activity-control-panel">
         <div className="admin-panel__body">
-          <SectionHeader
+          <AdminDashboardSectionHeader
             eyebrow="Auditoria operativa"
             title="Filtros de actividad"
             description="Separa movimientos por area sin perder paginacion ni detalle."
-            actions={<StatusBadge label={activeFilter?.label ?? 'Todos'} tone="info" />}
+            meta={<StatusBadge label={activeFilter?.label ?? 'Todos'} tone="info" />}
           />
 
           <div className="admin-activity-filter-grid">
@@ -261,8 +263,10 @@ export function AdminActivityPage() {
                 type="button"
                 className="admin-activity-filter-card"
                 data-active={categoryFilter === filter.value}
+                data-tone={filter.tone}
                 onClick={() => applyFilter(filter.value)}
               >
+                <filter.icon size={17} />
                 <span>{filter.label}</span>
                 <p>{filter.description}</p>
               </button>
@@ -299,36 +303,13 @@ export function AdminActivityPage() {
         </div>
       </Card>
 
-      <Card padding="none" glow={false} className="admin-panel admin-activity-utility-panel">
-        <div className="admin-panel__body">
-          <SectionHeader
-            eyebrow="Utilidad"
-            title="Cobertura del feed"
-            description="Eventos clave para supervision diaria y auditoria puntual."
-          />
-          <div className="admin-activity-utility-grid">
-            {utilityCards.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <div key={item.label} className="admin-activity-utility-card">
-                  <Icon size={17} />
-                  <strong>{item.label}</strong>
-                  <span>{item.copy}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Card>
-
       <Card padding="none" glow={false} className="admin-panel admin-activity-feed-panel">
         <div className="admin-panel__body">
-          <SectionHeader
+          <AdminDashboardSectionHeader
             eyebrow="Feed"
             title="Eventos registrados"
             description="Cards paginadas con fecha, responsable, POS y accion contextual."
-            actions={<StatusBadge label={`${activityTotal} eventos`} tone={activityTone} />}
+            meta={<StatusBadge label={`${activityTotal} eventos`} tone={activityTone} />}
           />
 
           <AdminActivityFeedList

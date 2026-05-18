@@ -23,6 +23,7 @@ import { Input } from '@/components/Input';
 import { Modal } from '@/components/Modal';
 import { ModulePageHeader } from '@/components/ModulePageHeader';
 import type { ModulePageHeaderCard } from '@/components/ModulePageHeader';
+import { PaginationControls } from '@/components/PaginationControls';
 import { ScrollPanel } from '@/components/ScrollPanel';
 import { SectionHeader } from '@/components/SectionHeader';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -32,6 +33,7 @@ import type { Location } from '@/types/api';
 
 type BadgeTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
 type LocationStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
+const LOCATION_ITEMS_PER_PAGE = 8;
 
 function SkeletonRows({ rows = 3 }: { rows?: number }) {
   return (
@@ -59,6 +61,7 @@ export function AdminLocationsPage() {
   const [creatingLocation, setCreatingLocation] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LocationStatusFilter>('ALL');
+  const [locationsPage, setLocationsPage] = useState(1);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [editName, setEditName] = useState('');
   const [editNameError, setEditNameError] = useState<string | null>(null);
@@ -94,6 +97,23 @@ export function AdminLocationsPage() {
       return matchesStatus && matchesSearch;
     });
   }, [adminLocations, searchTerm, statusFilter]);
+  const locationTotalPages = Math.ceil(filteredLocations.length / LOCATION_ITEMS_PER_PAGE);
+  const safeLocationsPage = Math.min(locationsPage, Math.max(locationTotalPages, 1));
+  const paginatedLocations = useMemo(() => {
+    const startIndex = (safeLocationsPage - 1) * LOCATION_ITEMS_PER_PAGE;
+
+    return filteredLocations.slice(startIndex, startIndex + LOCATION_ITEMS_PER_PAGE);
+  }, [filteredLocations, safeLocationsPage]);
+
+  useEffect(() => {
+    setLocationsPage(1);
+  }, [searchTerm, statusFilter]);
+
+  useEffect(() => {
+    if (locationsPage > Math.max(locationTotalPages, 1)) {
+      setLocationsPage(Math.max(locationTotalPages, 1));
+    }
+  }, [locationTotalPages, locationsPage]);
 
   const locationsTone: BadgeTone = locationsLoading
     ? 'info'
@@ -488,24 +508,35 @@ export function AdminLocationsPage() {
                   }
                 />
               ) : (
-                <ScrollPanel
-                  className="admin-pos-list"
-                  maxHeightClassName="max-h-[34rem]"
-                  tabIndex={0}
-                  aria-label="Puntos de venta disponibles"
-                >
-                  {filteredLocations.map((location, index) => (
-                    <LocationListItem
-                      key={location.id}
-                      location={location}
-                      index={index}
-                      isHighlighted={location.id === highlightedLocation?.id}
-                      isUpdatingStatus={statusUpdatingId === location.id}
-                      onEdit={() => openEditModal(location)}
-                      onStatusChange={() => requestStatusChange(location)}
+                <>
+                  <ScrollPanel
+                    className="admin-pos-list"
+                    maxHeightClassName="max-h-[34rem]"
+                    tabIndex={0}
+                    aria-label="Puntos de venta disponibles"
+                  >
+                    {paginatedLocations.map((location, index) => (
+                      <LocationListItem
+                        key={location.id}
+                        location={location}
+                        index={(safeLocationsPage - 1) * LOCATION_ITEMS_PER_PAGE + index}
+                        isHighlighted={location.id === highlightedLocation?.id}
+                        isUpdatingStatus={statusUpdatingId === location.id}
+                        onEdit={() => openEditModal(location)}
+                        onStatusChange={() => requestStatusChange(location)}
+                      />
+                    ))}
+                  </ScrollPanel>
+                  {filteredLocations.length > LOCATION_ITEMS_PER_PAGE ? (
+                    <PaginationControls
+                      page={safeLocationsPage}
+                      totalPages={locationTotalPages}
+                      totalItems={filteredLocations.length}
+                      itemLabel="puntos visibles"
+                      onPageChange={setLocationsPage}
                     />
-                  ))}
-                </ScrollPanel>
+                  ) : null}
+                </>
               )}
             </section>
           </div>

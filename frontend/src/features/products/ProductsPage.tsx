@@ -1085,8 +1085,9 @@ export function ProductsPage() {
   const configuredRecipesCount = activeVariants.filter(
     (variant) => recipeStatusByVariant[variant.id],
   ).length;
-  const visibleSimpleProductsWithOperation = filteredSimpleProducts.filter(
-    (product) => product.operationalVariant !== null,
+  const visibleSimpleProductsWithOperation = useMemo(
+    () => filteredSimpleProducts.filter((product) => product.operationalVariant !== null),
+    [filteredSimpleProducts],
   );
   const catalogStatusTone = catalogAccessDenied
     ? 'danger'
@@ -1946,6 +1947,7 @@ export function ProductsPage() {
                 ariaLabel="Listado de productos"
                 caption="Tabla general de productos del catalogo"
                 rows={filteredProducts}
+                paginationLabel="productos"
                 mobileCardRender={(product) => renderProductMobileCard(product)}
                 rowKey={(product) => product.id}
                 rowClassName={(product) => (!product.active ? 'opacity-80' : undefined)}
@@ -2169,6 +2171,7 @@ export function ProductsPage() {
                 ariaLabel="Listado de productos simples"
                 caption="Tabla de productos simples con operacion unificada"
                 rows={visibleSimpleProductsWithOperation}
+                paginationLabel="productos"
                 mobileCardRender={(product) => renderSimpleProductMobileCard(product)}
                 rowKey={(product) => product.id}
                 rowClassName={(product) =>
@@ -2374,6 +2377,7 @@ export function ProductsPage() {
                 ariaLabel="Listado de variantes"
                 caption="Tabla de variantes del catalogo"
                 rows={filteredRealVariants}
+                paginationLabel="variantes"
                 mobileCardRender={(variant) => renderVariantMobileCard(variant)}
                 rowKey={(variant) => variant.id}
                 rowClassName={(variant) => (!variant.active ? 'opacity-80' : undefined)}

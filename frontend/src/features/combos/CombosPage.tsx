@@ -1247,6 +1247,7 @@ export function CombosPage() {
                 ariaLabel="Listado de combos comerciales"
                 caption="Tabla de combos comerciales"
                 rows={filteredCombos}
+                paginationLabel="combos"
                 mobileCardRender={(combo) => renderComboMobileCard(combo)}
                 rowKey={(combo) => combo.id}
                 rowClassName={(combo) => (!combo.active ? 'opacity-80' : undefined)}
